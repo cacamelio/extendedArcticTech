@@ -1,0 +1,64 @@
+#pragma once
+#include "../../SDK/Interfaces.h"
+#include "../../SDK/Misc/CBasePlayer.h"
+
+class CSVCMsg_VoiceData;
+
+struct ESPInfo_t {
+	CBasePlayer*	m_pEnt = nullptr;
+	Vector			m_vecOrigin;
+	Vector2			m_BoundingBox[2];
+	int				m_nFakeDuckTicks = 0;
+	int				m_nHealth;
+	bool			m_bFakeDuck = 0;
+	bool			m_bIsScoped = false;
+	bool			m_bExploiting = false;
+	bool			m_bBreakingLagComp = false;
+	bool			m_bDormant = false;
+	bool			m_bValid = false;
+	float			m_flAlpha = 0.f;
+	float			m_flLastUpdateTime = 0.f;
+	int				m_iActiveWeapon;
+};
+
+enum SharedESPFlags {
+	Shared_Scoped = (1 << 0),
+	Shared_BreakLC = (1 << 1),
+	Shared_Exploiting = (1 << 2),
+	Shared_FakeDuck = (1 << 3),
+};
+
+struct SharedESP_t {
+	char	m_iPlayer;
+	short	m_iActiveWeapon;
+	bool	m_bIsScoped;
+	char	m_iHealth;
+	bool	m_bExploiting;
+	bool	m_bBreakingLagComp;
+	bool	m_bFakeDuck;
+	Vector	m_vecOrigin;
+};
+
+struct ESPFlag_t {
+	std::string flag;
+	Color color;
+};
+
+extern ESPInfo_t ESPInfo[64];
+
+namespace ESP {
+	void		ProcessSounds();
+	void		RegisterCallback();
+
+	void		ProcessSharedESP(const CSVCMsg_VoiceData& data);
+	void		UpdatePlayer(int id);
+	void		Draw();
+	void		DrawPlayer(int id);
+	void		DrawBox(ESPInfo_t info);
+	void		DrawHealth(ESPInfo_t info);
+	void		DrawName(ESPInfo_t info);
+	void		DrawFlags(ESPInfo_t info);
+	void		DrawWeapon(ESPInfo_t info);
+
+	void		DrawGrenades();
+}
