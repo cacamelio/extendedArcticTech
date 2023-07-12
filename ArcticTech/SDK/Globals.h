@@ -54,6 +54,7 @@ struct CVars {
 	ConVar* r_DrawSpecificStaticProp;
 	ConVar* fog_override;
 	ConVar* fog_color;
+	ConVar* post_processing;
 	ConVar* fog_start;
 	ConVar* fog_end;
 	ConVar* fog_maxdensity;

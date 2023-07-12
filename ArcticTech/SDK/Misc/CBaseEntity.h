@@ -246,6 +246,10 @@ public:
 
 	CBaseEntity* m_pMoveParent();
 
+	void* networkable( ) {
+		return reinterpret_cast< void* >( uintptr_t( this ) + 0x8 );
+	}
+
 	IClientNetworkable* GetClientNetworkable();
 	IClientUnknown* GetClientUnknown();
 	ICollideable* GetCollideable();
@@ -271,6 +275,68 @@ public:
 	void SetAbsOrigin(Vector origin);
 	void SetAbsAngles(QAngle angles);
 };
+
+class CBaseViewModel {
+public:
+	NETVAR( m_nSequence, int, "DT_BaseViewModel", "m_nSequence" )
+		NETVAR( m_nAnimationParity, int, "DT_BaseViewModel", "m_nAnimationParity" )
+		NETVAR( model_index, int, "DT_BaseViewModel", "m_nModelIndex" )
+		NETVAR( m_hweapon, int, "DT_BaseViewModel", "m_hWeapon" )
+};
+
+class econ_view_item_t {
+public:
+	NETVAR( is_initialized, bool, "DT_ScriptCreatedItem", "m_bInitialized" )
+		NETVAR( entity_level, int, "DT_ScriptCreatedItem", "m_iEntityLevel" )
+		NETVAR( account_id, int, "DT_ScriptCreatedItem", "m_iAccountID" )
+		NETVAR( item_id_low, int, "DT_ScriptCreatedItem", "m_iItemIDLow" )
+
+};
+
+class attributable_item_t : public CBaseEntity {
+public:
+	NETVAR( model_index, int, "DT_BaseViewModel", "m_nModelIndex" )
+		NETVAR( original_owner_xuid_low, int, "DT_BaseAttributableItem", "m_OriginalOwnerXuidLow" )
+		NETVAR( original_owner_xuid_high, int, "DT_BaseAttributableItem", "m_OriginalOwnerXuidHigh" )
+		NETVAR( fallback_stattrak, int, "DT_BaseAttributableItem", "m_nFallbackStatTrak" )
+		NETVAR( fallback_paint_kit, int, "DT_BaseAttributableItem", "m_nFallbackPaintKit" )
+		NETVAR( fallback_seed, int, "DT_BaseAttributableItem", "m_nFallbackSeed" )
+		NETVAR( entity_quality, int, "DT_BaseAttributableItem", "m_iEntityQuality" )
+		NETVAR( fallback_wear, float, "DT_BaseAttributableItem", "m_flFallbackWear" )
+		NETVAR( world_model_handle, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel" )
+		NETVAR( item_definition_index, short, "DT_BaseAttributableItem", "m_iItemDefinitionIndex" );
+	NETVAR( item_id_high, int, "DT_BaseAttributableItem", "m_iItemIDHigh" )
+		NETVAR( acc_id, int, "DT_BaseAttributableItem", "m_iAccountID" )
+
+		void net_pre_data_update( int update_type ) {
+		using original_fn = void( __thiscall* )( void*, int );
+		return ( *( original_fn** )networkable( ) )[ 6 ]( networkable( ), update_type );
+	}
+
+	void net_release( ) {
+		using original_fn = void( __thiscall* )( void* );
+		return ( *( original_fn** )networkable( ) )[ 1 ]( networkable( ) );
+	}
+
+	int net_set_destroyed_on_recreate_entities( ) {
+		using original_fn = int( __thiscall* )( void* );
+		return ( *( original_fn** )networkable( ) )[ 13 ]( networkable( ) );
+	}
+
+	void set_model_index( int index ) {
+		using original_fn = void( __thiscall* )( void*, int );
+		return ( *( original_fn** )this )[ 75 ]( this, index );
+	}
+
+	CBaseViewModel* get_view_model( ) {
+		return ( CBaseViewModel* )( DWORD )this;
+	}
+
+	econ_view_item_t& item( ) {
+		return *( econ_view_item_t* )this;
+	}
+};
+
 
 class CBaseGrenade : public CBaseEntity {
 public:

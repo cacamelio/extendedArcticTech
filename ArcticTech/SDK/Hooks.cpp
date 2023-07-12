@@ -26,6 +26,7 @@
 #include "../Features/RageBot/AnimationSystem.h"
 #include "../Features/Misc/Misc.h"
 #include "../Features/Misc/EventListner.h"
+#include "../Features/Visuals/SkinChanger.h"
 
 GrenadePrediction NadePrediction;
 
@@ -435,7 +436,12 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		Chams->UpdateSettings();
 
 		cvars.r_aspectratio->SetFloat(config.visuals.effects.aspect_ratio->get());
-		cvars.mat_postprocessing_enable->SetInt(!config.visuals.effects.removals->get(0));
+
+		if ( config.visuals.effects.removals->get(8) )
+			cvars.mat_postprocessing_enable->SetInt( 0 );
+		else
+			cvars.mat_postprocessing_enable->SetInt( 1 );
+		
 		cvars.cl_csm_shadows->SetInt(!config.visuals.effects.removals->get(2));
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
@@ -448,9 +454,13 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
+		SkinChanger->AgentChanger( stage );
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
+		break;
+	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
+		SkinChanger->Run( );
 		break;
 	}
 
@@ -689,19 +699,6 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	oCL_Move(accamulatedExtraSamples, bFinalTick);
 
 	DoubleTap->HandleTeleport(oCL_Move, accamulatedExtraSamples);
-
-	//if (nc && !ctx.send_packet && !(ClientState->m_nChokedCommands % 4)) {
-	//	auto b_seq_nr = nc->m_nOutSequenceNr;
-	//	auto b_choked = nc->m_nChokedPackets;
-
-	//	nc->m_nChokedPackets = 0;
-	//	nc->m_nOutSequenceNr = out_seq_nr;
-
-	//	nc->SendDatagram();
-
-	//	nc->m_nOutSequenceNr = b_seq_nr;
-	//	nc->m_nChokedPackets = b_choked;
-	//}
 }
 
 QAngle* __fastcall hkGetEyeAngles(CBasePlayer* thisptr, void* edx) {
@@ -717,60 +714,6 @@ QAngle* __fastcall hkGetEyeAngles(CBasePlayer* thisptr, void* edx) {
 
 	return &Cheat.thirdpersonAngles;
 }
-
-//bool __fastcall hkWriteUserCmdDeltaToBuffer(IBaseClientDLL* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-//	static auto oWriteUserCmdDeltaToBuffer = (tWriteUserCmdDeltaToBuffer)Hooks::ClientVMT->GetOriginal(24);
-//
-//	if (!Cheat.InGame || !Cheat.LocalPlayer /*|| !Cheat.ticksToShift*/)
-//		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
-//
-//	if (from != -1)
-//		return true;
-//
-//	auto p_new_commands = (int*)((DWORD)buf - 0x2C);
-//	auto p_backup_commands = (int*)((DWORD)buf - 0x30);
-//	auto new_commands = *p_new_commands;
-//
-//	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->GetChokedCommands() + 1;
-//
-//	//auto total_new_commands = std::clamp(Cheat.ticksToShift, 0, 16);
-//	//Cheat.ticksToShift -= total_new_commands;
-//
-//	from = -1;
-//
-//	*p_new_commands = 0/*total_new_commands*/;
-//	*p_backup_commands = 0;
-//
-//	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++)
-//	{
-//		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, true))
-//			return false;
-//
-//		from = to;
-//	}
-//
-//	CUserCmd* last_real_cmd = Input->GetUserCmd(slot, from);
-//	CUserCmd from_cmd;
-//
-//	if (last_real_cmd)
-//		memcpy(&from_cmd, last_real_cmd, sizeof(CUserCmd));
-//
-//	CUserCmd to_cmd;
-//	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
-//
-//	to_cmd.command_number++;
-//	to_cmd.tick_count += 192;
-//
-//	for (int i = new_commands; i <= 0/*total_new_commands*/; i++)
-//	{
-//		Utils::WriteUserCmd(buf, &to_cmd, &from_cmd);
-//		memcpy(&from_cmd, &to_cmd, sizeof(CUserCmd));
-//		to_cmd.command_number++;
-//		to_cmd.tick_count++;
-//	}
-//
-//	return true;
-//}
 
 bool __fastcall hkSendNetMsg(INetChannel* thisptr, void* edx, INetMessage& msg, bool bForceReliable, bool bVoice) {
 	if (msg.GetType() == 14) // Return and don't send messsage if its FileCRCCheck

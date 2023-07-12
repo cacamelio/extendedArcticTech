@@ -123,7 +123,7 @@ void CLagCompensation::OnNetUpdate() {
 					nc->SendNetMsg(&msg, false, true);
 				}
 			}
-			while (records.size() > 64) {
+			while (records.size() > TIME_TO_TICKS(1)) {
 				records.pop_front();
 			}
 		}

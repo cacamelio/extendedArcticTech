@@ -50,6 +50,11 @@ bool& CBasePlayer::m_bMaintainSequenceTransitions() {
 	return *(bool*)(this + _m_bMaintainSequenceTransitions);
 }
 
+void CBasePlayer::SetGloveModelIIndex( int modelIndex )
+{
+	return CallVFunction<void( __thiscall* )( void*, int )>( this, 75 )( this, modelIndex );
+}
+
 void CBasePlayer::SelectItem(const char* string, int subtype) {
 	static auto select_item_fn = reinterpret_cast<void(__thiscall*)(void*, const char*, int)>(Utils::PatternScan("client.dll", "55 8B EC 56 8B F1 ? ? ? 85 C9 74 71 8B 06"));
 	select_item_fn(this, string, subtype);

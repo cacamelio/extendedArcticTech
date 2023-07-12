@@ -59,6 +59,11 @@ void CWorld::Fog() {
 	}
 }
 
+void CWorld::DisablePostProcessing( )
+{
+
+}
+
 void CWorld::SkyBox() {
 	static auto load_skybox = reinterpret_cast<void(__fastcall*)(const char*)>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 57 8B F9 C7 45"));
 

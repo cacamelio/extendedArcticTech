@@ -156,7 +156,7 @@ void CMenu::Init() {
 	AddGroupBox("VISUALS", "Effects", 0.6f, 1);
 	{
 		config.visuals.effects.fov = AddSlider("VISUALS", "Effects", "Field of view", 80, 130, 90);
-		config.visuals.effects.removals = AddMultiCombo("VISUALS", "Effects", "Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites" });
+		config.visuals.effects.removals = AddMultiCombo("VISUALS", "Effects", "Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites", "Post processing"} );
 		config.visuals.effects.world_color_enable = AddCheckBox("VISUALS", "Effects", "World color");
 		config.visuals.effects.world_color = AddColorPicker("VISUALS", "Effects", "World color");
 		config.visuals.effects.props_color_enable = AddCheckBox("VISUALS", "Effects", "Props color");
@@ -269,6 +269,10 @@ void CMenu::Init() {
 			"M9 Bayonet",
 			"Karambit",
 		});
+
+		config.skins.agent_model = AddComboBox( "SKINS", "Knife options", "Agent model", {
+			"Default","Special Agent Ava "," FBI","Operator "," FBI SWAT","Markus Delrow "," FBI HRT","Michael Syfers "," FBI Sniper","B Squadron Officer "," SAS","Seal Team 6 Soldier "," NSWC SEAL","Buckshot "," NSWC SEAL","Lt. Commander Ricksaw "," NSWC SEAL","Third Commando Company "," KSK","'Two Times' McCoy "," USAF TACP","Dragomir "," Sabre","Rezan The Ready "," Sabre","'The Doctor' Romanov "," Sabre","Maximus "," Sabre","Blackwolf "," Sabre","The Elite Mr. Muhlik "," Elite Crew","Ground Rebel "," Elite Crew","Osiris "," Elite Crew","Prof. Shahmat "," Elite Crew","Enforcer "," Phoenix","Slingshot "," Phoenix","Soldier "," Phoenix"
+			} );
 	}
 
 	AddGroupBox("SKINS", "Glove options", 0.4f, 0);

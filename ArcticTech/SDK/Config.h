@@ -234,6 +234,7 @@ struct config_t {
 
     struct skinchanger_t {
         CComboBox* knife_model;
+        CComboBox* agent_model;
     } skins;
 };
 

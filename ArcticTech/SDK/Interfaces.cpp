@@ -80,6 +80,7 @@ void Interfaces::Initialize() {
 	cvars.r_DrawSpecificStaticProp = CVar->FindVar("r_DrawSpecificStaticProp");
 	cvars.fog_override = CVar->FindVar("fog_override");
 	cvars.fog_color = CVar->FindVar("fog_color");
+	cvars.post_processing = CVar->FindVar( "fog_color" );
 	cvars.fog_start = CVar->FindVar("fog_start");
 	cvars.fog_end = CVar->FindVar("fog_end");
 	cvars.fog_maxdensity = CVar->FindVar("fog_maxdensity");
