@@ -9,9 +9,6 @@
 CNetMessages* NetMessages = new CNetMessages;
 
 
-//#define DEBUG_PRINT_VOICEDATA
-
-
 CCLCMsg_VoiceData_t::CCLCMsg_VoiceData_t() {
 	static auto init_fn = reinterpret_cast<CCLCMsg_VoiceData_t* (__thiscall*)(CCLCMsg_VoiceData_t*)>(Memory->ToAbsolute((uintptr_t)Utils::PatternScan("engine.dll", "E8 ? ? ? ? 56 8D 84 24 ? ? ? ? 50 8D 4C 24 28", 0x1)));
 
@@ -35,6 +32,7 @@ void CNetMessages::SendNetMessage(SharedVoiceData_t* data) {
 	msg.section_number() = data->section_number;
 	msg.sequence_bytes() = data->sequence_bytes;
 	msg.uncompressed_sample_offset() = data->uncompressed_sample_offset;
+
 
 	//player_info_t pinfo;
 	//if (EngineClient->GetPlayerInfo(EngineClient->GetLocalPlayer(), &pinfo)) {

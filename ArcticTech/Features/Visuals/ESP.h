@@ -52,6 +52,7 @@ namespace ESP {
 	void		ProcessSharedESP(const SharedVoiceData_t* data);
 	void		UpdatePlayer(int id);
 	void		Draw();
+	void		IconDisplay( CBasePlayer* pLocal, int Level );
 	void		DrawPlayer(int id);
 	void		DrawBox(ESPInfo_t info);
 	void		DrawHealth(ESPInfo_t info);
