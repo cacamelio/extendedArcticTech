@@ -213,6 +213,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	ctx.is_peeking = AntiAim->IsPeeking();
 
+	DoubleTap->DefensiveDoubletap();
 	AntiAim->SlowWalk();
 
 	QAngle storedAng = cmd->viewangles;
@@ -457,7 +458,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		SkinChanger->Run( false );
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
-		SkinChanger->Run( true );
+		//SkinChanger->Run( true );
 		break;
 	}
 

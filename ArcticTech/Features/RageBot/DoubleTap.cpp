@@ -122,4 +122,10 @@ void CDoubleTap::ForceTeleport() {
 	teleport_next_tick = false;
 }
 
+
+void CDoubleTap::DefensiveDoubletap()
+{
+
+}
+
 CDoubleTap* DoubleTap = new CDoubleTap;

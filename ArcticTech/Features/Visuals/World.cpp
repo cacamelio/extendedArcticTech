@@ -209,8 +209,8 @@ void CWorld::RemoveBlood() {
 		if (!material || material->IsErrorMaterial())
 			continue;
 
-		material->IncrementReferenceCount();
-		material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(6));
+		//material->IncrementReferenceCount();
+		//material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(6));
 	}
 }
 
