@@ -102,8 +102,12 @@ void CLagCompensation::OnNetUpdate() {
 				if (config.visuals.esp.share_with_enemies->get() || !pl->IsTeammate()) {
 					CCLCMsg_VoiceData_t msg;
 
-					msg.has_bits() = VoiceData_Has::Xuid | VoiceData_Has::SectionNumber | VoiceData_Has::SequenceBytes | VoiceData_Has::UncompressedSampleOffset;
+					std::string voice_data;
+					msg.set_data(voice_data.data(), 0);
 
+					msg.has_bits() = VoiceData_Has::Xuid | VoiceData_Has::SectionNumber | VoiceData_Has::SequenceBytes | VoiceData_Has::UncompressedSampleOffset | VoiceData_Has::Data | VoiceData_Has::Format;
+
+					msg.format() = 0;
 					msg.xuid_low() = NET_ARCTIC_CODE;
 					*(char*)&msg.xuid_high() = i;
 					char& flags = *(char*)(reinterpret_cast<uintptr_t>(&msg.xuid_high()) + 1);
@@ -135,7 +139,18 @@ void CLagCompensation::OnNetUpdate() {
 }
 
 float CLagCompensation::GetLerpTime() {
-	return cvars.cl_interp_ratio->GetFloat() * GlobalVars->interval_per_tick;
+	static const auto cl_interp = CVar->FindVar("cl_interp");
+	static const auto cl_updaterate = CVar->FindVar("cl_updaterate");
+	static const auto sv_minupdaterate = CVar->FindVar("sv_minupdaterate");
+	static const auto sv_maxupdaterate = CVar->FindVar("sv_maxupdaterate");
+	static const auto cl_interp_ratio = CVar->FindVar("cl_interp_ratio");
+	static const auto sv_min_interp_ratio = CVar->FindVar("sv_client_min_interp_ratio");
+	static const auto sv_max_interp_ratio = CVar->FindVar("sv_client_max_interp_ratio");
+
+	const float update_rate = std::clamp<float>(cl_updaterate->GetFloat(), sv_minupdaterate->GetFloat(), sv_maxupdaterate->GetFloat());
+	const float interp_ratio = std::clamp<float>(cl_interp_ratio->GetFloat(), sv_min_interp_ratio->GetFloat(), sv_max_interp_ratio->GetFloat());
+
+	return std::clamp< float >(interp_ratio / update_rate, cl_interp->GetFloat(), 1.f);
 }
 
 bool CLagCompensation::ValidRecord(LagRecord* record) {
@@ -162,10 +177,8 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	// correct tick send by player 
 	float flTargetTime = record->m_flSimulationTime;
 
-	int tick_base = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift;
-
 	// calculate difference between tick sent by player and our latency based tick
-	float deltaTime = correct - (TICKS_TO_TIME(tick_base) - flTargetTime);
+	float deltaTime = correct - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) - flTargetTime);
 
 	return std::abs(deltaTime) < 0.2f;
 }

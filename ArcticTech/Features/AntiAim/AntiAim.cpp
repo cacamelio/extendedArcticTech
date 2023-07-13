@@ -124,6 +124,9 @@ void CAntiAim::Angles() {
 		if (config.antiaim.anti_aimbot_angles.yaw_jitter->get())
 			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.anti_aimbot_angles.modifier_value->get() : config.antiaim.anti_aimbot_angles.modifier_value->get();
 	}
+	else {
+		notModifiedYaw = ctx.cmd->viewangles.yaw;
+	}
 
 	Desync();
 }

@@ -8,6 +8,6 @@
 class IGameTypes {
 public:
 	CUtlStringList GetPlayerModelsT() {
-		return CallVFunction<CUtlStringList
+
 	}
 };

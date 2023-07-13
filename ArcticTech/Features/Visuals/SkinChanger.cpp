@@ -44,6 +44,7 @@ bool CSkinChanger::ApplyKnifeModel( CAttributableItem* weapon, const char* model
 	return true;
 }
 
+// TODO: fix knife anim sequence
 
 void CSkinChanger::AgentChanger( ) {
 	static constexpr std::array models {

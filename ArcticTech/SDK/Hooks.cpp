@@ -151,6 +151,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	ctx.cmd = cmd;
 	ctx.send_packet = true;
 
+	if (config.misc.movement.infinity_duck->get())
+		ctx.cmd->buttons |= IN_BULLRUSH;
+
 	if (config.misc.movement.auto_jump->get()) {
 		if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) && Cheat.LocalPlayer->m_MoveType() != MOVETYPE_NOCLIP && Cheat.LocalPlayer->m_MoveType() != MOVETYPE_LADDER)
 			cmd->buttons &= ~IN_JUMP;
@@ -207,9 +210,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	}
 
 	// pre_prediction
-
-	if (config.misc.movement.infinity_duck->get())
-		ctx.cmd->buttons |= IN_BULLRUSH;
 
 	AntiAim->SlowWalk();
 

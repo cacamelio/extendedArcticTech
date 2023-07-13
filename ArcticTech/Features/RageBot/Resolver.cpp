@@ -144,7 +144,7 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 
 	EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &negTrace);
 
-	ray.Init(posPos, negPos + forward * 120.f);
+	ray.Init(posPos, posPos + forward * 120.f);
 	EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &posTrace);
 
 	if (negTrace.startsolid && posTrace.startsolid)
@@ -202,7 +202,9 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 		flLastDelta = record->resolver_data.delta_negative;
 	}
 
-	if (flMaxDelta < 0.000001f || (record->resolver_data.anim_accuracy = 1.f - flLastDelta / flMaxDelta, record->resolver_data.anim_accuracy < config.ragebot.aimbot.resolver_treshold->get() * 0.01f)) {
+	record->resolver_data.anim_accuracy = 1.f - flLastDelta / flMaxDelta;
+
+	if (flMaxDelta < 0.000001f || (record->resolver_data.anim_accuracy < config.ragebot.aimbot.resolver_treshold->get() * 0.01f) || player->m_vecVelocity().LengthSqr() < 64.f) {
 		if (record->resolver_data.antiaim_type == R_AntiAimType::JITTER && prevRecord) {
 			float eyeYaw = player->m_angEyeAngles().yaw;
 			float prevEyeYaw = prevRecord->m_viewAngle.yaw;
