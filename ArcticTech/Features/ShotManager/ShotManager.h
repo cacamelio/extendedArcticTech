@@ -8,42 +8,49 @@
 
 class CBasePlayer;
 class IGameEvent;
-struct RegisteredShot_t;
-struct ClientShot_t;
 struct LagRecord;
 
-struct Impact_t {
-	CBasePlayer* player;
-	Vector position;
-	int tick;
+struct PlayerHurt_t {
+	CBasePlayer* victim;
+	int damagegroup = -1;
 };
 
 struct RegisteredShot_t {
-	Vector				position;
-	QAngle				angle;
-	int					tick = 0;
-	short				weapon_id = 0;
-	std::vector<Impact_t>impacts;
-	CBasePlayer*		hit_player = nullptr;
-	int					damagegroup = -1;
-	bool				open = false;
-};
-
-struct RagebotShot_t {
-	Vector shoot_pos;
-	QAngle angle;
-	CBasePlayer* target;
+	// client info
+	Vector client_shoot_pos;
+	Vector target_pos;
+	QAngle client_angle;
+	int shot_tick;
+	int wanted_damage;
+	int wanted_damagegroup;
+	int hitchance = 0;
+	int backtrack = 0;
 	LagRecord* record;
-	int target_damagegroup;
+
+	// acked info
+	Vector shoot_pos;
+	Vector end_pos;
+	QAngle angle;
+	int	ack_tick = 0;
+	std::vector<Vector> impacts;
+	int damage = 0;
+	int	damagegroup = -1;
+	Vector hit_point;
+
+	bool unregistered = false;
+	bool death = false;
+	bool player_death = false;
+	bool acked = false;
 };
 
 class CShotManager {
 	std::vector<RegisteredShot_t>	m_RegisteredShots;
-	std::vector<Impact_t>			m_UnprocessedImpacts;
-
 public:
 	void	OnCreateMove();
 	void	OnNetUpdate();
-	void	OnEvent(IGameEvent* event);
+	bool	OnEvent(IGameEvent* event);
+	void	AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, LagRecord* record);
 	void	Reset();
 };
+
+extern CShotManager* ShotManager;

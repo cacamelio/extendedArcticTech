@@ -323,11 +323,12 @@ public:
     PRED_DESC_MAP(m_vecAbsVelocity, Vector, "m_vecAbsVelocity")
     OFFSET(m_bDormant, bool, 0xED)
     NETVAR_O(GetAnimstate, CCSGOPlayerAnimationState*, "DT_CSPlayer", "m_bIsScoped", -0x14)
-    NETVAR_O(v_angle, QAngle, "DT_BasePlayer", "deadflag", 0x4);
-    OFFSET(m_nOcclusionFlags, uint32_t, 0xA28);
-    OFFSET(m_nOcclusionFrame, int, 0xA30);
-    OFFSET(m_BoneAccessor, CBoneAccessor, 0x26a4);
-    NETVAR(m_bIsWalking, bool, "DT_CSPlayer", "m_bIsWalking");
+    NETVAR_O(v_angle, QAngle, "DT_BasePlayer", "deadflag", 0x4)
+    OFFSET(m_nOcclusionFlags, uint32_t, 0xA28)
+    OFFSET(m_nOcclusionFrame, int, 0xA30)
+    OFFSET(m_BoneAccessor, CBoneAccessor, 0x26a4)
+    NETVAR(m_bIsWalking, bool, "DT_CSPlayer", "m_bIsWalking")
+    NETVAR_O(m_iMostRecentModelBoneCounter, unsigned long, "DT_BaseAnimating", "m_nForceBone", 0x4)
 
     bool& m_bMaintainSequenceTransitions();
 
@@ -431,8 +432,8 @@ public:
 
     void                DrawServerHitboxes(float duration, bool monoColor);
 
-    uint32_t& m_iMostRecentModelBoneCounter();
     float& m_flLastBoneSetupTime();
     void InvalidateBoneCache();
+    void ForceBoneCache();
     CStudioHdr* GetStudioHdr();
 };

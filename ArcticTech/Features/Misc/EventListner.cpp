@@ -7,6 +7,7 @@
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/LagCompensation.h"
 #include "../Visuals/ESP.h"
+#include "../ShotManager/ShotManager.h"
 
 CEventListner* EventListner = new CEventListner;
 
@@ -31,6 +32,8 @@ static std::vector<const char*> s_RgisterEvents = {
 void CEventListner::FireGameEvent(IGameEvent* event) {
 	const std::string name = event->GetName();
 
+	bool skip_hurt = ShotManager->OnEvent(event);
+
 	if (name == "player_hurt") {
 		CBasePlayer* victim = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
 
@@ -38,7 +41,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			if (config.visuals.esp.hitsound->get())
 				EngineClient->ExecuteClientCmd("play buttons/arena_switch_press_02.wav");
 
-			if (config.misc.miscellaneous.logs->get(0)) {
+			if (config.misc.miscellaneous.logs->get(0) && !skip_hurt) {
 				Console->Log(std::format("hurt {}'s {} for {} damage ({} remaining)", victim->GetName(), GetHitgroupName(event->GetInt("hitgroup")), event->GetInt("dmg_health"), event->GetInt("health")));
 			}
 		}

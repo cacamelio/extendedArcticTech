@@ -134,6 +134,7 @@ enum EDamageGroup {
     DAMAGEGROUP_HEAD,
     DAMAGEGROUP_CHEST,
     DAMAGEGROUP_STOMACH,
+    DAMAGEGROUP_ARM,
     DAMAGEGROUP_LEG,
 };
 
@@ -151,6 +152,13 @@ inline int HitboxToDamagegroup(int hitbox) {
     case HITBOX_RIGHT_FOOT:
     case HITBOX_RIGHT_THIGH:
         return DAMAGEGROUP_LEG;
+    case HITBOX_LEFT_FOREARM:
+    case HITBOX_LEFT_UPPER_ARM:
+    case HITBOX_LEFT_HAND:
+    case HITBOX_RIGHT_FOREARM:
+    case HITBOX_RIGHT_UPPER_ARM:
+    case HITBOX_RIGHT_HAND:
+        return DAMAGEGROUP_ARM;
     }
 
     return DAMAGEGROUP_CHEST;
@@ -165,9 +173,26 @@ inline int HitgroupToDamagegroup(int hitgroup) {
     case HITGROUP_LEFTLEG:
     case HITGROUP_RIGHTLEG:
         return DAMAGEGROUP_LEG;
+    case HITGROUP_CHEST:
+        return DAMAGEGROUP_CHEST;
     }
 
-    return DAMAGEGROUP_CHEST;
+    return DAMAGEGROUP_ARM;
+}
+
+inline const char* GetDamagegroupName(int damagegroup) {
+    switch (damagegroup) {
+    case DAMAGEGROUP_HEAD:
+        return "head";
+    case DAMAGEGROUP_CHEST:
+        return "chest";
+    case DAMAGEGROUP_STOMACH:
+        return "stomach";
+    case DAMAGEGROUP_ARM:
+        return "arm";
+    }
+
+    return "leg";
 }
 
 struct mstudiobbox_t

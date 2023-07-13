@@ -59,8 +59,9 @@ void CLagCompensation::BacktrackEntity(LagRecord* record) {
 	player->m_vecVelocity() = record->m_vecVelocity;
 	player->m_flPoseParameter() = record->flPoseParamaters;
 	player->SetAbsAngles(record->m_vecAbsAngles);
+	player->ForceBoneCache();
 
-	if (record->rollMatrixFilled && abs(flSimulationTime - record->m_flSimulationTime) > 0.002f)
+	if (record->rollMatrixFilled && flSimulationTime != record->m_flSimulationTime > 0.002f)
 		memcpy(player->GetCachedBoneData().Base(), record->rollMatrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
 	else
 		memcpy(player->GetCachedBoneData().Base(), record->boneMatrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));

@@ -27,6 +27,7 @@
 #include "../Features/Misc/Misc.h"
 #include "../Features/Misc/EventListner.h"
 #include "../Features/Visuals/SkinChanger.h"
+#include "../Features/ShotManager/ShotManager.h"
 
 GrenadePrediction NadePrediction;
 
@@ -328,6 +329,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 
 		GrenadePrediction::PrecacheParticles();
 		Ragebot->CalcSpreadValues();
+		ShotManager->Reset();
 	}
 
 	return result;
@@ -341,6 +343,7 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 	LagCompensation->Reset();
 	AnimationSystem->ResetInterpolation();
 	World->SunDirection(true);
+	ShotManager->Reset();
 
 	oLevelShutdown(thisptr);
 }
@@ -453,6 +456,8 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
+		ShotManager->OnNetUpdate();
+
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->Run( false );
@@ -461,6 +466,9 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		//SkinChanger->Run( true );
 		break;
 	}
+
+	if (Cheat.InGame && Cheat.LocalPlayer && DoubleTap->ShouldCharge())
+		GlobalVars->interpolation_amount = 0.f;
 
 	AnimationSystem->FrameStageNotify(stage);
 
@@ -478,23 +486,6 @@ void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
 
 bool __fastcall hkShouldSkipAnimationFrame(void* thisptr, void* edx) {
 	return false;
-}
-
-bool __fastcall hkInterpolateViewmodel(CBaseEntity* thisptr, void* edx, float time) {
-	if (!DoubleTap->ShouldCharge())
-		return oInterpolateViewmodel(thisptr, edx, time);
-
-	const auto owner = EntityList->GetClientEntityFromHandle(thisptr->m_hOwner());
-	if (owner != Cheat.LocalPlayer)
-		return oInterpolateViewmodel(thisptr, edx, time);
-
-	const float lerp_amount = GlobalVars->interpolation_amount;
-
-	GlobalVars->interpolation_amount = 0.f;
-	const bool result = oInterpolateViewmodel(thisptr, edx, time);
-	GlobalVars->interpolation_amount = lerp_amount;
-
-	return result;
 }
 
 bool __fastcall hkShouldInterpolate(CBasePlayer* thisptr, void* edx) {
@@ -601,7 +592,6 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 		if (command == cmd->command_number) {
 			player->m_nTickBase() = backup_tickbase;
-			break;
 		}
 
 		++i;
@@ -936,7 +926,6 @@ void Hooks::Initialize() {
 	oShouldInterpolate = HookFunction<tShouldInterpolate>(Utils::PatternScan("client.dll", "56 8B F1 E8 ? ? ? ? 3B F0"), hkShouldInterpolate);
 	oPacketStart = HookFunction<tPacketStart>(Utils::PatternScan("engine.dll", "55 8B EC 8B 45 08 89 81 ? ? ? ? 8B 45 0C 89 81 ? ? ? ? 5D C2 08 00 CC CC CC CC CC CC CC 56"), hkPacketStart);
 	oPacketEnd = HookFunction<tPacketEnd>(Utils::PatternScan("engine.dll", "56 8B F1 E8 ? ? ? ? 8B 8E ? ? ? ? 3B 8E ? ? ? ? 75 34"), hkPacketEnd);
-	oInterpolateViewmodel = HookFunction<tInterpolateViewmodel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE ? ? ? ? ?"), hkInterpolateViewmodel);
 	//oFX_FireBullets = HookFunction<tFX_FireBullets>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 C0 F3 0F 10 45"), hkFX_FireBullets);
 	oProcessMovement = HookFunction<tProcessMovement>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 C0 83 EC 38 A1 ? ? ? ?"), hkProcessMovement);
 	oLogDirect = HookFunction<tLogDirect>(Utils::PatternScan("tier0.dll", "55 8B EC 83 E4 F8 8B 45 08 83 EC 14 53 56 8B F1 57 85 C0 0F 88 ? ? ? ?"), hkLogDirect);
@@ -990,7 +979,6 @@ void Hooks::End() {
 	RemoveHook(oShouldInterpolate, hkShouldInterpolate);
 	RemoveHook(oPacketStart, hkPacketStart);
 	RemoveHook(oPacketEnd, hkPacketEnd);
-	RemoveHook(oInterpolateViewmodel, hkInterpolateViewmodel);
 	//RemoveHook(oFX_FireBullets, hkFX_FireBullets);
 	RemoveHook(oProcessMovement, hkProcessMovement);
 	RemoveHook(oLogDirect, hkLogDirect);

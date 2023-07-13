@@ -8,6 +8,7 @@
 #include "../Misc/AutoPeek.h"
 #include "DoubleTap.h"
 #include "../../Utils/Console.h"
+#include "../ShotManager/ShotManager.h"
 
 void CRagebot::CalcSpreadValues() {
 	for (int i = 0; i < 50; i++) {
@@ -631,6 +632,8 @@ void CRagebot::Run() {
 			static_cast<int>(record->resolver_data.anim_accuracy * 100.f)
 		));
 	}
+
+	ShotManager->AddShot(eye_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.record);
 }
 
 void CRagebot::DrawDebugData() {

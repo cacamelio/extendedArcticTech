@@ -264,17 +264,15 @@ float& CBasePlayer::m_flLastBoneSetupTime()
 	return *(float*)((uintptr_t)this + last_bone_setup_time);
 }
 
-uint32_t& CBasePlayer::m_iMostRecentModelBoneCounter()
-{
-	static auto invalidate_bone_cache = (uintptr_t)Utils::PatternScan("client.dll", "80 3D ?? ?? ?? ?? ?? 74 16 A1 ?? ?? ?? ?? 48 C7 81");
-	static auto most_recent_model_bone_counter = *(uintptr_t*)(invalidate_bone_cache + 0x1B);
-
-	return *(uint32_t*)((uintptr_t)this + most_recent_model_bone_counter);
-}
-
 void CBasePlayer::InvalidateBoneCache() {
 	m_flLastBoneSetupTime() = -FLT_MAX;
 	m_iMostRecentModelBoneCounter() = UINT_MAX;
+}
+
+void CBasePlayer::ForceBoneCache() {
+	static int* g_iModelBoneCounter = *reinterpret_cast<int**>(Utils::PatternScan("client.dll", "80 3D ?? ?? ?? ?? ?? 74 16 A1 ?? ?? ?? ?? 48 C7 81", 0xA));
+
+	*g_iModelBoneCounter = m_iMostRecentModelBoneCounter();
 }
 
 CStudioHdr* CBasePlayer::GetStudioHdr() {

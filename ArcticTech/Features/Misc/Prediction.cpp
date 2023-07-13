@@ -107,21 +107,21 @@ void CPrediction::Start(CUserCmd* cmd) {
 
 
 	if (const auto weapon = Cheat.LocalPlayer->GetActiveWeapon()) {
-		const auto backup_vel = Cheat.LocalPlayer->m_vecVelocity();
-		const auto backup_abs_vel = Cheat.LocalPlayer->m_vecAbsVelocity();
-		const auto backup_flags = Cheat.LocalPlayer->m_iEFlags();
+		//const auto backup_vel = Cheat.LocalPlayer->m_vecVelocity();
+		//const auto backup_abs_vel = Cheat.LocalPlayer->m_vecAbsVelocity();
+		//const auto backup_flags = Cheat.LocalPlayer->m_iEFlags();
 
-		Cheat.LocalPlayer->m_iEFlags() &= ~EFL_DIRTY_ABSVELOCITY;
-		Cheat.LocalPlayer->m_vecVelocity() = m_vecVelocity;
-		Cheat.LocalPlayer->m_vecAbsVelocity() = m_vecVelocity;
+		//Cheat.LocalPlayer->m_iEFlags() &= ~EFL_DIRTY_ABSVELOCITY;
+		//Cheat.LocalPlayer->m_vecVelocity() = m_vecVelocity;
+		//Cheat.LocalPlayer->m_vecAbsVelocity() = m_vecVelocity;
 
 		weapon->UpdateAccuracyPenality();
 		weaponInaccuracy = weapon->GetInaccuracy();
 		weaponSpread = weapon->GetSpread();
 
-		Cheat.LocalPlayer->m_vecVelocity() = backup_vel;
-		Cheat.LocalPlayer->m_vecAbsVelocity() = backup_abs_vel;
-		Cheat.LocalPlayer->m_iEFlags() = backup_flags;
+		//Cheat.LocalPlayer->m_vecVelocity() = backup_vel;
+		//Cheat.LocalPlayer->m_vecAbsVelocity() = backup_abs_vel;
+		//Cheat.LocalPlayer->m_iEFlags() = backup_flags;
 	}
 
 	Prediction->bInPrediction = bOldInPrediction;
