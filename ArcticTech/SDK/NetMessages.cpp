@@ -79,5 +79,5 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	for (auto handler : m_arcticDataCallbacks)
 		handler(data);
 
-	delete[] data;
+	delete data;
 }
