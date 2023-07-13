@@ -10,6 +10,7 @@
 #include "SDK/Config.h"
 #include "Features/Visuals/Chams.h"
 #include "SDK/Globals.h"
+#include "Features/Visuals/SkinChanger.h"
 
 LONG __stdcall ExceptionHandler(_EXCEPTION_POINTERS* exceptionInfo) {
     std::string exceptionText;
@@ -44,6 +45,7 @@ void Initialize(HMODULE hModule) {
 
     Interfaces::Initialize();
     Hooks::Initialize();
+    SkinChanger->FixViewModelSequence( );
 
     while (!GetAsyncKeyState(VK_END)) {
         Sleep(1000);

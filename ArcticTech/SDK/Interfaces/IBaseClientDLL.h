@@ -70,6 +70,7 @@ public:
 };
 
 typedef void(*RecvVarProxyFn)(const CRecvProxyData* pData, void* pStruct, void* pOut);
+using RecvVarProxy_t = void( __cdecl* )( CRecvProxyData* data, void* struct_ptr, void* out );
 typedef void(*ArrayLengthRecvProxyFn)(void* pStruct, int objectID, int currentArrayLength);
 typedef void(*DataTableRecvVarProxyFn)(const RecvProp* pProp, void** pOut, void* pData, int objectID);
 
@@ -84,7 +85,7 @@ public:
     const void* m_pExtraData;
     RecvProp* m_pArrayProp;
     ArrayLengthRecvProxyFn  m_ArrayLengthProxy;
-    RecvVarProxyFn          m_ProxyFn;
+    RecvVarProxy_t			 m_ProxyFn;
     DataTableRecvVarProxyFn m_DataTableProxyFn;
     RecvTable* m_pDataTable;
     int                     m_Offset;
@@ -92,8 +93,8 @@ public:
     int                     m_nElements;
     const char* m_pParentArrayPropName;
 
-    RecvVarProxyFn			GetProxyFn() const;
-    void					SetProxyFn(RecvVarProxyFn fn);
+    RecvVarProxy_t			GetProxyFn() const;
+    void					SetProxyFn( RecvVarProxy_t fn);
     DataTableRecvVarProxyFn	GetDataTableProxyFn() const;
     void					SetDataTableProxyFn(DataTableRecvVarProxyFn fn);
 
@@ -110,12 +111,12 @@ public:
     bool                    m_bInMainList;
 };
 
-inline RecvVarProxyFn RecvProp::GetProxyFn() const
+inline RecvVarProxy_t RecvProp::GetProxyFn() const
 {
     return m_ProxyFn;
 }
 
-inline void RecvProp::SetProxyFn(RecvVarProxyFn fn)
+inline void RecvProp::SetProxyFn( RecvVarProxy_t fn)
 {
     m_ProxyFn = fn;
 }
