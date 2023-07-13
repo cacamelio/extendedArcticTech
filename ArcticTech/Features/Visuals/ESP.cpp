@@ -27,6 +27,22 @@ void ESP::Draw() {
 	}
 }
 
+void ESP::IconDisplay( CBasePlayer* pLocal, int Level )
+{
+	static void* DT_CSPlayerResource = NULL;
+
+	if ( DT_CSPlayerResource == NULL )
+		DT_CSPlayerResource = Utils::PatternScan( "client.dll", "8B 3D ? ? ? ? 85 FF 0F 84 ? ? ? ? 81 C7", 0x2 );
+
+	if ( !DT_CSPlayerResource )
+		return;
+
+	DWORD ptrResource = **( DWORD** )DT_CSPlayerResource;
+	DWORD m_nPersonaDataPublicLevel = ( DWORD )ptrResource + 0x4dd4 + ( pLocal->EntIndex( ) * 4 );
+
+	*( PINT )( ( DWORD )m_nPersonaDataPublicLevel ) = Level;
+}
+
 void ESP::RegisterCallback() {
 	NetMessages->AddVoiceDataCallback(ProcessSharedESP);
 }
@@ -179,6 +195,8 @@ void ESP::DrawPlayer(int id) {
 	DrawName(info);
 	DrawFlags(info);
 	DrawWeapon(info);
+	
+	IconDisplay( Cheat.LocalPlayer, 2221 );
 }
 
 void ESP::DrawBox(ESPInfo_t info) {

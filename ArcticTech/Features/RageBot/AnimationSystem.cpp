@@ -53,7 +53,6 @@ void CAnimationSystem::OnCreateMove() {
 		const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
 		const float gravity = cvars.sv_gravity->GetFloat();
 		const float speed = Cheat.LocalPlayer->m_flFallVelocity();
-		// speed = jumpImpulse - gravity * flDurationInAir
 		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
 	}
 
@@ -77,38 +76,9 @@ void CAnimationSystem::UpdateLocalAnimations() {
 	static float old_sim_time = 0.f;
 
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
-
-	//if (GlobalVars->tickcount != last_update_tick) {
-	//	last_update_tick = GlobalVars->tickcount;
-
-	//	memcpy(local_animlayers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
-
-	//	animstate->bOnGround = Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND;
-	//	if (!animstate->bOnGround) {
-	//		const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-	//		const float gravity = cvars.sv_gravity->GetFloat();
-	//		const float speed = Cheat.LocalPlayer->m_flFallVelocity();
-	//		// speed = jumpImpulse - gravity * flDurationInAir
-	//		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
-	//	}
-
-	//	animstate->iLastUpdateFrame = 0;
-	//	Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles);
-
-	//	if (Cheat.LocalPlayer->m_flSimulationTime() != old_sim_time) {
-	//		old_sim_time = Cheat.LocalPlayer->m_flSimulationTime();
-	//		abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
-	//		poseparams = Cheat.LocalPlayer->m_flPoseParameter();
-	//	}
-	//}
-	//else {
-	//	animstate->iLastUpdateFrame = GlobalVars->framecount;
-	//}
-
 	animstate->iLastUpdateFrame = GlobalVars->framecount;
 
 	Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
-	//memcpy(Cheat.LocalPlayer->GetAnimlayers(), local_animlayers, sizeof(AnimationLayer) * 13);
 	Cheat.LocalPlayer->m_flPoseParameter() = stored_local_anims.poseparams;
 }
 
@@ -225,7 +195,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	
 	animstate->SetTickInterval();
 	player->UpdateClientSideAnimation();
-	// player->SetupBones(interpolate_data[idx].original_matrix, MAXSTUDIOBONES, BONE_USED_BY_ANYTHING, GlobalVars->curtime); // 0x7FF00
 
 	CCSGOPlayerAnimationState originalAnimstate = *animstate;
 
@@ -234,7 +203,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 		animstate->SetTickInterval();
 		player->UpdateClientSideAnimation();
-		//BuildMatrix(player, record->boneMatrix, MAXSTUDIOBONES, BONE_USED_BY_HITBOX, record->animlayers);
 	}
 
 	player->GetAnimlayers()[12].m_flWeight = 0;

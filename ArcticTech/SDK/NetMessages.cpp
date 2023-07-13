@@ -9,9 +9,6 @@
 CNetMessages* NetMessages = new CNetMessages;
 
 
-//#define DEBUG_PRINT_VOICEDATA
-
-
 CCLCMsg_VoiceData_t::CCLCMsg_VoiceData_t() {
 	static auto init_fn = reinterpret_cast<CCLCMsg_VoiceData_t* (__thiscall*)(CCLCMsg_VoiceData_t*)>(Memory->ToAbsolute((uintptr_t)Utils::PatternScan("engine.dll", "E8 ? ? ? ? 56 8D 84 24 ? ? ? ? 50 8D 4C 24 28", 0x1)));
 
@@ -37,6 +34,7 @@ void CNetMessages::SendNetMessage(void* data, int length) {
 	msg.format() = 0;
 
 	msg.set_data(formatted_data, new_size);
+
 
 	//player_info_t pinfo;
 	//if (EngineClient->GetPlayerInfo(EngineClient->GetLocalPlayer(), &pinfo)) {
