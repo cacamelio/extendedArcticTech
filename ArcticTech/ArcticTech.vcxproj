@@ -203,6 +203,7 @@
     <ClCompile Include="SDK\Misc\checksum_crc.cpp" />
     <ClCompile Include="SDK\Misc\KeyValues.cpp" />
     <ClCompile Include="SDK\Misc\UtlReference.h" />
+    <ClCompile Include="SDK\Misc\UtlStringList.h" />
     <ClCompile Include="SDK\Misc\Vector.cpp" />
     <ClCompile Include="SDK\NetMessages.cpp" />
     <ClCompile Include="Utils\Animation.cpp" />
@@ -255,6 +256,7 @@
     <ClInclude Include="Resources\skinchanger-img.h" />
     <ClInclude Include="Resources\visuals-img.h" />
     <ClInclude Include="SDK\Interfaces\IEffects.h" />
+    <ClInclude Include="SDK\Interfaces\IGameTypes.h" />
     <ClInclude Include="SDK\Interfaces\NetworkStringTable.h" />
     <ClInclude Include="SDK\Interfaces.h" />
     <ClInclude Include="SDK\Interfaces\CCSPlayerResource.h" />

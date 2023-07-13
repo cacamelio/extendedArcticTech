@@ -557,7 +557,6 @@ void CRagebot::Run() {
 			}
 			else {
 				should_autostop = true;
-				best_target.player = nullptr;
 			}
 		}
 

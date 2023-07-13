@@ -283,7 +283,6 @@ public:
     NETVAR(m_vecViewOffset, Vector, "DT_BasePlayer", "m_vecViewOffset[0]")
     NETVAR(m_iTeamNum, int, "DT_BaseEntity", "m_iTeamNum")
     NETVAR(m_bIsScoped, bool, "DT_CSPlayer", "m_bIsScoped")
-    NETVAR(view_model, int,  "DT_BasePlayer", "m_hViewModel[0]")
     NETVAR_O(m_MoveType, int, "DT_BaseEntity", "m_nRenderMode", 1)
     NETVAR(m_flDuckAmount, float, "DT_BasePlayer", "m_flDuckAmount")
     NETVAR(m_flDuckSpeed, float, "DT_BasePlayer", "m_flDuckSpeed")
@@ -332,7 +331,7 @@ public:
 
     bool& m_bMaintainSequenceTransitions();
 
-    void SetGloveModelIIndex( int modelIndex );
+    void SetModelIndex( int modelIndex );
 
     inline bool IsArmored(const int iHitGroup)
     {

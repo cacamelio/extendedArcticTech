@@ -303,9 +303,9 @@ void ESP::DrawWeapon(ESPInfo_t info) {
 	if (!weapon_data)
 		return;
 
-	const char* weap = info.m_pEnt->GetActiveWeapon()->GetName(weapon_data);
+	std::string weap = info.m_pEnt->GetActiveWeapon()->GetName(weapon_data);
 
-	Render->Text(std::string(weap), Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) / 2, info.m_BoundingBox[1].y + 2), info.m_bDormant ? config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha) : config.visuals.esp.weapon_text_color->get().alpha_modulatef(info.m_flAlpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
+	Render->Text(weap, Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) / 2, info.m_BoundingBox[1].y + 2), info.m_bDormant ? config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha) : config.visuals.esp.weapon_text_color->get().alpha_modulatef(info.m_flAlpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
 }
 
 void ESP::DrawGrenades() {

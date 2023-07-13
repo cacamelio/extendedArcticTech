@@ -8,12 +8,19 @@
 
 class CBaseCombatWeapon;
 
-
+struct KnifeModel_t {
+	std::string ui_name;
+	std::string model_name;
+};
 
 class CSkinChanger {
+	std::vector<KnifeModel_t> knife_models;
 public:
-	bool ApplyKnifeModel( attributable_item_t* weapon, const char* model );
-	void AgentChanger( EClientFrameStage stage );
+	void LoadKnifeModels();
+	std::vector<std::string> GetUIKnifeModels();
+	bool ApplyKnifeModel( CAttributableItem* weapon, const char* model );
+	void FixViewModelSequence( CAttributableItem* weapon );
+	void AgentChanger( );
 	void Run();
 };
 

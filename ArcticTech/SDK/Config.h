@@ -233,6 +233,8 @@ struct config_t {
     } misc;
 
     struct skinchanger_t {
+        CCheckbox* override_knife;
+        CCheckbox* override_agent;
         CComboBox* knife_model;
         CComboBox* agent_model;
     } skins;

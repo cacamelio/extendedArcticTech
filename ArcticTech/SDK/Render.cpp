@@ -137,30 +137,30 @@ void CRender::RenderDrawData() {
 
 				RECT outlineRect = { object.pRect.left - 1, object.pRect.top - 1, object.pRect.right - 1, object.pRect.bottom - 1 };
 
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				outlineRect = { object.pRect.left - 1, object.pRect.top, object.pRect.right - 1, object.pRect.bottom };
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				outlineRect = { object.pRect.left - 1, object.pRect.top + 1, object.pRect.right - 1, object.pRect.bottom + 1 };
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				outlineRect = { object.pRect.left, object.pRect.top - 1, object.pRect.right, object.pRect.bottom - 1 };
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				outlineRect = { object.pRect.left, object.pRect.top + 1, object.pRect.right, object.pRect.bottom + 1 };
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				outlineRect = { object.pRect.left + 1, object.pRect.top - 1, object.pRect.right + 1, object.pRect.bottom - 1 };
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				outlineRect = { object.pRect.left + 1, object.pRect.top + 1, object.pRect.right + 1, object.pRect.bottom + 1 };
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				outlineRect = { object.pRect.left + 1, object.pRect.top, object.pRect.right + 1, object.pRect.bottom };
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
-				font->DrawTextW(sprite, wtext.c_str(), const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
+				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
 
 				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
@@ -179,15 +179,94 @@ void CRender::RenderDrawData() {
 
 				RECT outlineRect = { object.pRect.left + 1, object.pRect.top + 1, object.pRect.right + 1, object.pRect.bottom + 1 };
 
-				font->DrawTextW(sprite, wtext.c_str(), &outlineRect, object.clipType, outlineColor);
-				font->DrawTextW(sprite, wtext.c_str(), const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
 
 				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 				device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			}
 			else {
-				font->DrawTextW(sprite, wtext.c_str(), const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
+				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
+			}
+
+			sprite->Flush();
+			device->SetTexture(0, 0);
+
+			break;
+		}
+		case EDrawType::WTEXT: {
+			const auto& object = std::any_cast<wtext_command_t>(data.object);
+
+			D3DXFont* font = object.font;
+
+			const wchar_t* wide_text = object.text.c_str();
+
+			if (object.outlined)
+			{
+				device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
+				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
+
+				DWORD outlineColor = (object.color & 0xFF000000) | 0x000000; // Black outline color with the same alpha as the text color
+				char dummy[4];
+				*(DWORD*)dummy = outlineColor;
+				dummy[0] *= 0.3f;
+				outlineColor = *(DWORD*)dummy;
+
+				RECT outlineRect = { object.pRect.left - 1, object.pRect.top - 1, object.pRect.right - 1, object.pRect.bottom - 1 };
+
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				outlineRect = { object.pRect.left - 1, object.pRect.top, object.pRect.right - 1, object.pRect.bottom };
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				outlineRect = { object.pRect.left - 1, object.pRect.top + 1, object.pRect.right - 1, object.pRect.bottom + 1 };
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				outlineRect = { object.pRect.left, object.pRect.top - 1, object.pRect.right, object.pRect.bottom - 1 };
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				outlineRect = { object.pRect.left, object.pRect.top + 1, object.pRect.right, object.pRect.bottom + 1 };
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				outlineRect = { object.pRect.left + 1, object.pRect.top - 1, object.pRect.right + 1, object.pRect.bottom - 1 };
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				outlineRect = { object.pRect.left + 1, object.pRect.top + 1, object.pRect.right + 1, object.pRect.bottom + 1 };
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				outlineRect = { object.pRect.left + 1, object.pRect.top, object.pRect.right + 1, object.pRect.bottom };
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+
+				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
+
+				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			}
+			else if (object.dropshadow) {
+				device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
+				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
+
+				DWORD outlineColor = (object.color & 0xFF000000) | 0x000000; // Black outline color with the same alpha as the text color
+				char dummy[4];
+				*(DWORD*)dummy = outlineColor;
+				dummy[0] *= 0.5f;
+				outlineColor = *(DWORD*)dummy;
+
+				RECT outlineRect = { object.pRect.left + 1, object.pRect.top + 1, object.pRect.right + 1, object.pRect.bottom + 1 };
+
+				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
+				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
+
+				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			}
+			else {
+				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
 			}
 
 			sprite->Flush();
@@ -508,6 +587,11 @@ Vector2 CRender::CalcTextSize(const std::string& text, D3DXFont* font) {
 	return font->CalcTextSizeW(w_text.c_str());
 }
 
+
+Vector2 CRender::CalcTextSize(const std::wstring& text, D3DXFont* font) {
+	return font->CalcTextSizeW(text.c_str());
+}
+
 void CRender::Text(const std::string& text, const Vector2& pos, Color color, D3DXFont* font, int flags) {
 	RECT rect(pos.x, pos.y, pos.x, pos.y);
 
@@ -524,6 +608,24 @@ void CRender::Text(const std::string& text, const Vector2& pos, Color color, D3D
 	}
 
 	vecDrawData.emplace_back(DrawCommand_t(EDrawType::TEXT, text_command_t{ text, font, rect, clipType, color.d3d_color(), bool(flags & TEXT_OUTLINED), bool(flags & TEXT_DROPSHADOW)}));
+}
+
+void CRender::Text(const std::wstring& text, const Vector2& pos, Color color, D3DXFont* font, int flags) {
+	RECT rect(pos.x, pos.y, pos.x, pos.y);
+
+	if (clipping) {
+		rect.right = clipRect.right;
+		rect.bottom = clipRect.bottom;
+	}
+
+	DWORD clipType = clipping ? DT_LEFT : DT_NOCLIP;
+
+	if (flags & TEXT_CENTERED) {
+		Vector2 text_size = CalcTextSize(text, font);
+		rect.left -= text_size.x / 2;
+	}
+
+	vecDrawData.emplace_back(DrawCommand_t(EDrawType::WTEXT, wtext_command_t{ text, font, rect, clipType, color.d3d_color(), bool(flags & TEXT_OUTLINED), bool(flags & TEXT_DROPSHADOW) }));
 }
 
 IDirect3DTexture9* CRender::LoadImageFromMemory(void* data, int dataSize, const Vector2& size) {

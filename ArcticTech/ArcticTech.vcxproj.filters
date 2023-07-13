@@ -192,6 +192,9 @@
     <ClCompile Include="SDK\Misc\KeyValues.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="SDK\Misc\UtlStringList.h">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\Utils.h">
@@ -474,6 +477,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="SDK\Misc\KeyValues.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Interfaces\IGameTypes.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

@@ -135,11 +135,17 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 
 	Vector right = Math::AngleVectors(QAngle(0, notModifiedYaw + 90.f, 0));
 
-	Vector negPos = eyePos - right * 16.f;
-	Vector posPos = eyePos + right * 16.f;
+	Vector negPos = eyePos - right * 20.f;
+	Vector posPos = eyePos + right * 20.f;
 
-	CGameTrace negTrace = EngineTrace->TraceRay(negPos, negPos + forward * 100.f, CONTENTS_SOLID, player);
-	CGameTrace posTrace = EngineTrace->TraceRay(posPos, posPos + forward * 100.f, CONTENTS_SOLID, player);
+	CTraceFilterWorldAndPropsOnly filter;
+	Ray_t ray(negPos, negPos + forward * 120.f);
+	CGameTrace negTrace, posTrace;
+
+	EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &negTrace);
+
+	ray.Init(posPos, negPos + forward * 120.f);
+	EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &posTrace);
 
 	if (negTrace.startsolid && posTrace.startsolid)
 		record->resolver_data.side = 0;

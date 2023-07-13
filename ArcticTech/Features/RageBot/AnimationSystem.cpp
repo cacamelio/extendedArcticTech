@@ -209,6 +209,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	player->SetAbsVelocity(player->m_vecVelocity());
 	player->SetAbsOrigin(player->m_vecOrigin());
 
+	player->GetAnimlayers()[12].m_flWeight = 0;
+
 	// fix in air legs
 	animstate->bOnGround = player->m_fFlags() & FL_ONGROUND;
 	if (!animstate->bOnGround) {
@@ -234,6 +236,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		player->UpdateClientSideAnimation();
 		//BuildMatrix(player, record->boneMatrix, MAXSTUDIOBONES, BONE_USED_BY_HITBOX, record->animlayers);
 	}
+
+	player->GetAnimlayers()[12].m_flWeight = 0;
 
 	BuildMatrix(player, interpolate_data[idx].original_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
 	memcpy(record->boneMatrix, interpolate_data[idx].original_matrix, sizeof(matrix3x4_t) * 128);

@@ -13,7 +13,7 @@ CCSWeaponData* CBaseCombatWeapon::GetWeaponInfo() {
 	return WeaponSystem->GetWeaponData(m_iItemDefinitionIndex());
 }
 
-const char* CBaseCombatWeapon::GetName(CCSWeaponData* data) {
+std::string CBaseCombatWeapon::GetName(CCSWeaponData* data) {
 	if (!data)
 		data = GetWeaponInfo();
 
@@ -21,12 +21,7 @@ const char* CBaseCombatWeapon::GetName(CCSWeaponData* data) {
 		return "";
 
 	const wchar_t* name = Localize->FindSafe(data->szHudName);
-	char buffer[64];
-	size_t len = wcstombs(buffer, name, wcslen(name));
-	char* result = new char[len + 1];
-	memset(result, 0, len + 1);
-	memcpy(result, buffer, len);
-	return result;
+	return Localize->utf16le_to_utf8(name);
 }
 
 bool CBaseCombatWeapon::CanShoot() {

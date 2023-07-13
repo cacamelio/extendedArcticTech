@@ -243,7 +243,10 @@ void CConfig::Init() {
     add(config.misc.movement.edge_jump_key);
     add(config.misc.movement.infinity_duck);
     add(config.misc.movement.quick_stop);
+    add(config.skins.override_knife);
+    add(config.skins.override_agent);
     add(config.skins.knife_model);
+    add(config.skins.agent_model);
 
     add(Menu->menu_color_picker);
     add(Menu->menu_key_bind);

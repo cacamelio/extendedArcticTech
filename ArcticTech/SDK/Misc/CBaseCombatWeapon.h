@@ -2,6 +2,8 @@
 
 #include "CBaseEntity.h"
 
+#include <string>
+
 class CCSWeaponData
 {
 public:
@@ -67,6 +69,11 @@ public:
 	float flRecoilMagnitude[2];		// 0x01A0
 	float flRecoilMagnitudeVariance[2]; // 0x01A8
 	int iSpreadSeed;				// 0x01B0
+
+    std::string GetName() {
+        const wchar_t* name = Localize->FindSafe(szHudName);
+        return Localize->utf16le_to_utf8(name);
+    }
 };
 
 class CBaseCombatWeapon : public CBaseEntity {
@@ -77,7 +84,7 @@ public:
     NETVAR(m_hOwner, unsigned long, "DT_BaseCombatWeapon", "m_hOwner")
     NETVAR(m_iClip, unsigned long, "DT_BaseCombatWeapon", "m_iClip1")
     NETVAR(m_fAccuracyPenalty, float, "CWeaponCSBase", "m_fAccuracyPenalty")
-    NETVAR(m_hCombatWeaponParent, unsigned long, "DT_BaseWeaponWorldModel", "m_hCombatWeaponParent")
+    NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")
 
     inline bool IsGrenade() {
         if (!this)
@@ -111,7 +118,7 @@ public:
     }
 
 	CCSWeaponData* GetWeaponInfo();
-	const char* GetName(CCSWeaponData* custom_data = nullptr);
+	std::string GetName(CCSWeaponData* custom_data = nullptr);
     bool CanShoot();
 };
 

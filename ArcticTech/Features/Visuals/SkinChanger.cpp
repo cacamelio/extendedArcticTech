@@ -1,32 +1,85 @@
 #include "SkinChanger.h"
 
-bool CSkinChanger::ApplyKnifeModel( attributable_item_t* weapon, const char* model) {
 
-	auto local_player = Cheat.LocalPlayer;
+void CSkinChanger::LoadKnifeModels() {
+	for (int i = 0; i < 1000; i++) { // last knife index is ~500 but this func is called once
+		CCSWeaponData* wdata = WeaponSystem->GetWeaponData(i);
 
-	if ( !local_player )
-		return false;
+		if (!wdata || wdata->nWeaponType != WEAPONTYPE_KNIFE || strstr(wdata->szViewModel, "taser"))
+			continue;
 
-	auto viewmodel = reinterpret_cast< CBaseViewModel* >( EntityList->GetClientEntityFromHandle( local_player->view_model( ) ) );
+		knife_models.emplace_back(KnifeModel_t{ wdata->GetName(), wdata->szViewModel });
+	}
+}
+
+std::vector<std::string> CSkinChanger::GetUIKnifeModels() {
+	std::vector<std::string> result;
+
+	for (auto& model : knife_models)
+		result.emplace_back(model.ui_name);
+
+	return result;
+}
+
+bool CSkinChanger::ApplyKnifeModel( CAttributableItem* weapon, const char* model) {
+	auto viewmodel = reinterpret_cast< CBaseViewModel* >( EntityList->GetClientEntityFromHandle( Cheat.LocalPlayer->m_hViewModel( )[0] ));
 	if ( !viewmodel )
 		return false;
 
-	auto h_view_model_weapon = viewmodel->m_hweapon( );
+	auto h_view_model_weapon = viewmodel->m_hWeapon( );
 	if ( !h_view_model_weapon )
 		return false;
 
-	auto view_model_weapon = reinterpret_cast< attributable_item_t* >( EntityList->GetClientEntityFromHandle( h_view_model_weapon ) );
+	auto view_model_weapon = reinterpret_cast< CAttributableItem* >( EntityList->GetClientEntityFromHandle( h_view_model_weapon ) );
 	if ( view_model_weapon != weapon )
 		return false;
 
-	viewmodel->model_index( ) = ModelInfoClient->GetModelIndex( model );
+	auto world_model_weapon = EntityList->GetClientEntityFromHandle(view_model_weapon->m_hWeaponWorldModel());
+
+	int model_index = ModelInfoClient->GetModelIndex(model);
+
+	viewmodel->SetModelIndex(model_index);
+	world_model_weapon->SetModelIndex(model_index + 1);
 
 	return true;
 }
 
-void CSkinChanger::AgentChanger( EClientFrameStage stage )
-{
+
+void CSkinChanger::AgentChanger( ) {
+	static constexpr std::array models {
+		"models/player/custom_player/legacy/ctm_fbi_variantb.mdl",
+		"models/player/custom_player/legacy/ctm_fbi_variantf.mdl",
+		"models/player/custom_player/legacy/ctm_fbi_variantg.mdl",
+		"models/player/custom_player/legacy/ctm_fbi_varianth.mdl",
+		"models/player/custom_player/legacy/ctm_sas_variantf.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variante.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantg.mdl",
+		"models/player/custom_player/legacy/ctm_st6_varianti.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantk.mdl",
+		"models/player/custom_player/legacy/ctm_st6_variantm.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantf.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantg.mdl",
+		"models/player/custom_player/legacy/tm_balkan_varianth.mdl",
+		"models/player/custom_player/legacy/tm_balkan_varianti.mdl",
+		"models/player/custom_player/legacy/tm_balkan_variantj.mdl",
+		"models/player/custom_player/legacy/tm_leet_variantf.mdl",
+		"models/player/custom_player/legacy/tm_leet_variantg.mdl",
+		"models/player/custom_player/legacy/tm_leet_varianth.mdl",
+		"models/player/custom_player/legacy/tm_leet_varianti.mdl",
+		"models/player/custom_player/legacy/tm_phoenix_variantf.mdl",
+		"models/player/custom_player/legacy/tm_phoenix_variantg.mdl",
+		"models/player/custom_player/legacy/tm_phoenix_varianth.mdl"
+	}; // TODO: fix this hardcode
+
 	static int originalIdx = 0;
+
+	if (!config.skins.override_agent->get()) {
+		if (Cheat.LocalPlayer && originalIdx) {
+			Cheat.LocalPlayer->SetModelIndex(originalIdx);
+			originalIdx = 0;
+		}
+		return;
+	}
 
 	auto pLocal = Cheat.LocalPlayer;
 
@@ -35,146 +88,25 @@ void CSkinChanger::AgentChanger( EClientFrameStage stage )
 		return;
 	}
 
-	constexpr auto getModel = [ ] ( int team ) constexpr -> const char* {
-		constexpr std::array models{
-			"models/player/custom_player/legacy/ctm_fbi_variantb.mdl",
-				"models/player/custom_player/legacy/ctm_fbi_variantf.mdl",
-				"models/player/custom_player/legacy/ctm_fbi_variantg.mdl",
-				"models/player/custom_player/legacy/ctm_fbi_varianth.mdl",
-				"models/player/custom_player/legacy/ctm_sas_variantf.mdl",
-				"models/player/custom_player/legacy/ctm_st6_variante.mdl",
-				"models/player/custom_player/legacy/ctm_st6_variantg.mdl",
-				"models/player/custom_player/legacy/ctm_st6_varianti.mdl",
-				"models/player/custom_player/legacy/ctm_st6_variantk.mdl",
-				"models/player/custom_player/legacy/ctm_st6_variantm.mdl",
-				"models/player/custom_player/legacy/tm_balkan_variantf.mdl",
-				"models/player/custom_player/legacy/tm_balkan_variantg.mdl",
-				"models/player/custom_player/legacy/tm_balkan_varianth.mdl",
-				"models/player/custom_player/legacy/tm_balkan_varianti.mdl",
-				"models/player/custom_player/legacy/tm_balkan_variantj.mdl",
-				"models/player/custom_player/legacy/tm_leet_variantf.mdl",
-				"models/player/custom_player/legacy/tm_leet_variantg.mdl",
-				"models/player/custom_player/legacy/tm_leet_varianth.mdl",
-				"models/player/custom_player/legacy/tm_leet_varianti.mdl",
-				"models/player/custom_player/legacy/tm_phoenix_variantf.mdl",
-				"models/player/custom_player/legacy/tm_phoenix_variantg.mdl",
-				"models/player/custom_player/legacy/tm_phoenix_varianth.mdl"
-		};
+	if ( !originalIdx )
+		originalIdx = pLocal->m_nModelIndex( );
 
-		switch ( team ) {
-			case 2: return static_cast< std::size_t >( config.skins.agent_model->get( ) ) < models.size( ) ? models[ config.skins.agent_model->get( ) ] : nullptr;
-			case 3: return static_cast< std::size_t >( config.skins.agent_model->get( ) ) < models.size( ) ? models[ config.skins.agent_model->get( ) ] : nullptr;
-			default: return nullptr;
-		}
-	};
-
-	if ( const auto model = getModel( pLocal->m_iTeamNum( ) ) ) {
-		if ( stage == EClientFrameStage::FRAME_RENDER_START )
-			originalIdx = pLocal->m_nModelIndex( );
-
-		const auto idx = stage == EClientFrameStage::FRAME_RENDER_END && originalIdx ? originalIdx : ModelInfoClient->GetModelIndex( model );
-
-		pLocal->SetGloveModelIIndex( idx );
-	}
+	pLocal->SetModelIndex(ModelInfoClient->GetModelIndex(models[config.skins.agent_model->get()]));
 }
 
 void CSkinChanger::Run() {
-	if ( !EngineClient->IsConnected( ) && !EngineClient->IsInGame( ) )
+	if ( !Cheat.InGame || !Cheat.LocalPlayer || !config.skins.override_knife->get() )
 		return;
 
-	auto local_player = Cheat.LocalPlayer;
-
-	if ( !local_player )
-		return;
-
-	auto active_weapon = local_player->GetActiveWeapon( );
-	if ( !active_weapon )
-		return;
-
-	const char* model_bayonet = "models/weapons/v_knife_bayonet.mdl";
-	const char* model_m9 = "models/weapons/v_knife_m9_bay.mdl";
-	const char* model_karambit = "models/weapons/v_knife_karam.mdl";
-	const char* model_bowie = "models/weapons/v_knife_survival_bowie.mdl";
-	const char* model_butterfly = "models/weapons/v_knife_butterfly.mdl";
-	const char* model_falchion = "models/weapons/v_knife_falchion_advanced.mdl";
-	const char* model_flip = "models/weapons/v_knife_flip.mdl";
-	const char* model_gut = "models/weapons/v_knife_gut.mdl";
-	const char* model_huntsman = "models/weapons/v_knife_tactical.mdl";
-	const char* model_shadow_daggers = "models/weapons/v_knife_push.mdl";
-	const char* model_navaja = "models/weapons/v_knife_gypsy_jackknife.mdl";
-	const char* model_stiletto = "models/weapons/v_knife_stiletto.mdl";
-	const char* model_talon = "models/weapons/v_knife_widowmaker.mdl";
-	const char* model_ursus = "models/weapons/v_knife_ursus.mdl";
-
-	int index_bayonet = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_bayonet.mdl" );
-	int index_m9 = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_m9_bay.mdl" );
-	int index_karambit = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_karam.mdl" );
-	int index_bowie = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_survival_bowie.mdl" );
-	int index_butterfly = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_butterfly.mdl" );
-	int index_falchion = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_falchion_advanced.mdl" );
-	int index_flip = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_flip.mdl" );
-	int index_gut = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_gut.mdl" );
-	int index_huntsman = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_tactical.mdl" );
-	int index_shadow_daggers = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_push.mdl" );
-	int index_navaja = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_gypsy_jackknife.mdl" );
-	int index_stiletto = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_stiletto.mdl" );
-	int index_talon = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_widowmaker.mdl" );
-	int index_ursus = ModelInfoClient->GetModelIndex( "models/weapons/v_knife_ursus.mdl" );
-
-	auto my_weapons = local_player->m_hMyWeapons( );
+	auto my_weapons = Cheat.LocalPlayer->m_hMyWeapons( );
 	for ( size_t i = 0; my_weapons[ i ] != 0xFFFFFFFF; i++ ) {
-		auto weapon = reinterpret_cast< attributable_item_t* >( EntityList->GetClientEntityFromHandle( my_weapons[ i ] ) );
+		auto weapon = reinterpret_cast< CAttributableItem* >( EntityList->GetClientEntityFromHandle( my_weapons[ i ] ) );
 
 		if ( !weapon )
 			return;
 
-		if ( active_weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
-			switch ( config.skins.knife_model->get() ) {
-				case 0:
-					break;
-				case 1:
-					ApplyKnifeModel( weapon, model_bayonet );
-					break;
-				case 2:
-					ApplyKnifeModel( weapon, model_m9 );
-					break;
-				case 3:
-					ApplyKnifeModel( weapon, model_karambit );
-					break;
-				case 4:
-					ApplyKnifeModel( weapon, model_bowie );
-					break;
-				case 5:
-					ApplyKnifeModel( weapon, model_butterfly );
-					break;
-				case 6:
-					ApplyKnifeModel( weapon, model_falchion );
-					break;
-				case 7:
-					ApplyKnifeModel( weapon, model_flip );
-					break;
-				case 8:
-					ApplyKnifeModel( weapon, model_gut );
-					break;
-				case 9:
-					ApplyKnifeModel( weapon, model_huntsman );
-					break;
-				case 10:
-					ApplyKnifeModel( weapon, model_shadow_daggers );
-					break;
-				case 11:
-					ApplyKnifeModel( weapon, model_navaja );
-					break;
-				case 12:
-					ApplyKnifeModel( weapon, model_stiletto );
-					break;
-				case 13:
-					ApplyKnifeModel( weapon, model_talon );
-					break;
-				case 14:
-					ApplyKnifeModel( weapon, model_ursus );
-					break;
-			}
+		if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
+			ApplyKnifeModel(weapon, knife_models[config.skins.knife_model->get()].model_name.c_str());
 		}
 	}
 }

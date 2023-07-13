@@ -276,39 +276,36 @@ public:
 	void SetAbsAngles(QAngle angles);
 };
 
-class CBaseViewModel {
+class CBaseViewModel : public CBaseEntity {
 public:
 	NETVAR( m_nSequence, int, "DT_BaseViewModel", "m_nSequence" )
-		NETVAR( m_nAnimationParity, int, "DT_BaseViewModel", "m_nAnimationParity" )
-		NETVAR( model_index, int, "DT_BaseViewModel", "m_nModelIndex" )
-		NETVAR( m_hweapon, int, "DT_BaseViewModel", "m_hWeapon" )
+	NETVAR( m_nAnimationParity, int, "DT_BaseViewModel", "m_nAnimationParity" )
+	NETVAR( m_nModelIndex, int, "DT_BaseViewModel", "m_nModelIndex" )
+	NETVAR( m_hWeapon, int, "DT_BaseViewModel", "m_hWeapon" )
 };
 
-class econ_view_item_t {
+class CEconViewItem : public CBaseEntity {
 public:
 	NETVAR( is_initialized, bool, "DT_ScriptCreatedItem", "m_bInitialized" )
-		NETVAR( entity_level, int, "DT_ScriptCreatedItem", "m_iEntityLevel" )
-		NETVAR( account_id, int, "DT_ScriptCreatedItem", "m_iAccountID" )
-		NETVAR( item_id_low, int, "DT_ScriptCreatedItem", "m_iItemIDLow" )
+	NETVAR( entity_level, int, "DT_ScriptCreatedItem", "m_iEntityLevel" )
+	NETVAR( account_id, int, "DT_ScriptCreatedItem", "m_iAccountID" )
+	NETVAR( item_id_low, int, "DT_ScriptCreatedItem", "m_iItemIDLow" )
 
 };
 
-class attributable_item_t : public CBaseEntity {
+class CAttributableItem : public CBaseEntity {
 public:
-	NETVAR( model_index, int, "DT_BaseViewModel", "m_nModelIndex" )
-		NETVAR( original_owner_xuid_low, int, "DT_BaseAttributableItem", "m_OriginalOwnerXuidLow" )
-		NETVAR( original_owner_xuid_high, int, "DT_BaseAttributableItem", "m_OriginalOwnerXuidHigh" )
-		NETVAR( fallback_stattrak, int, "DT_BaseAttributableItem", "m_nFallbackStatTrak" )
-		NETVAR( fallback_paint_kit, int, "DT_BaseAttributableItem", "m_nFallbackPaintKit" )
-		NETVAR( fallback_seed, int, "DT_BaseAttributableItem", "m_nFallbackSeed" )
-		NETVAR( entity_quality, int, "DT_BaseAttributableItem", "m_iEntityQuality" )
-		NETVAR( fallback_wear, float, "DT_BaseAttributableItem", "m_flFallbackWear" )
-		NETVAR( world_model_handle, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel" )
-		NETVAR( item_definition_index, short, "DT_BaseAttributableItem", "m_iItemDefinitionIndex" );
-	NETVAR( item_id_high, int, "DT_BaseAttributableItem", "m_iItemIDHigh" )
-		NETVAR( acc_id, int, "DT_BaseAttributableItem", "m_iAccountID" )
+	NETVAR(m_OriginalOwnerXuidLow, int, "DT_BaseAttributableItem", "m_OriginalOwnerXuidLow")
+	NETVAR(m_OriginalOwnerXuidHigh, int, "DT_BaseAttributableItem", "m_OriginalOwnerXuidHigh")
+	NETVAR(m_nFallbackStatTrak, int, "DT_BaseAttributableItem", "m_nFallbackStatTrak")
+	NETVAR(m_nFallbackPaintKit, int, "DT_BaseAttributableItem", "m_nFallbackPaintKit")
+	NETVAR(m_nFallbackSeed, int, "DT_BaseAttributableItem", "m_nFallbackSeed")
+	NETVAR(m_iEntityQuality, int, "DT_BaseAttributableItem", "m_iEntityQuality")
+	NETVAR(m_flFallbackWear, float, "DT_BaseAttributableItem", "m_flFallbackWear")
+	NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")
+	NETVAR(m_iItemDefinitionIndex, short, "DT_BaseAttributableItem", "m_iItemDefinitionIndex")
 
-		void net_pre_data_update( int update_type ) {
+	void net_pre_data_update( int update_type ) {
 		using original_fn = void( __thiscall* )( void*, int );
 		return ( *( original_fn** )networkable( ) )[ 6 ]( networkable( ), update_type );
 	}
@@ -323,17 +320,12 @@ public:
 		return ( *( original_fn** )networkable( ) )[ 13 ]( networkable( ) );
 	}
 
-	void set_model_index( int index ) {
-		using original_fn = void( __thiscall* )( void*, int );
-		return ( *( original_fn** )this )[ 75 ]( this, index );
-	}
-
 	CBaseViewModel* get_view_model( ) {
-		return ( CBaseViewModel* )( DWORD )this;
+		return ( CBaseViewModel* )this;
 	}
 
-	econ_view_item_t& item( ) {
-		return *( econ_view_item_t* )this;
+	CEconViewItem* item( ) {
+		return ( CEconViewItem* )this;
 	}
 };
 

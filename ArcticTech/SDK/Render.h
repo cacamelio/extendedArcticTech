@@ -26,6 +26,7 @@ enum class EDrawType : int
     NONE = 0,
     PRIMITIVE,
     TEXT,
+    WTEXT,
     IMAGE,
     CLIP,
     SETANTIALIAS
@@ -107,6 +108,16 @@ struct clip_command_t {
 
 struct text_command_t {
     std::string text;
+    D3DXFont* font;
+    RECT pRect;
+    DWORD clipType;
+    D3DCOLOR color;
+    bool outlined = false;
+    bool dropshadow = false;
+};
+
+struct wtext_command_t {
+    std::wstring text;
     D3DXFont* font;
     RECT pRect;
     DWORD clipType;
@@ -207,7 +218,9 @@ public:
     void                AddFontFromMemory(void* file, unsigned int size);
     D3DXFont*           LoadFont(const std::string& fontname, int size, int weight = 400, int flags = CLEARTYPE_QUALITY);
     Vector2             CalcTextSize(const std::string& text, D3DXFont* font);
+    Vector2             CalcTextSize(const std::wstring& text, D3DXFont* font);
     void                Text(const std::string& text, const Vector2& pos, Color color, D3DXFont* font, int flags = 0);
+    void                Text(const std::wstring& text, const Vector2& pos, Color color, D3DXFont* font, int flags = 0);
 
     IDirect3DTexture9*  LoadImageFromMemory(void* data, int dataSize, const Vector2& size);
     void                Image(IDirect3DTexture9* image, const Vector2& pos, Color color = Color(255, 255, 255));

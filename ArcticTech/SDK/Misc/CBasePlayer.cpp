@@ -50,7 +50,7 @@ bool& CBasePlayer::m_bMaintainSequenceTransitions() {
 	return *(bool*)(this + _m_bMaintainSequenceTransitions);
 }
 
-void CBasePlayer::SetGloveModelIIndex( int modelIndex )
+void CBasePlayer::SetModelIndex( int modelIndex )
 {
 	return CallVFunction<void( __thiscall* )( void*, int )>( this, 75 )( this, modelIndex );
 }

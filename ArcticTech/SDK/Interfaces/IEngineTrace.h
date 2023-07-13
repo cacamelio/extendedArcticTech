@@ -624,6 +624,7 @@ public:
 
         return trace;
     }
+
     CGameTrace      TraceHull(const Vector& start, const Vector& end, const Vector& mins, const Vector& maxs, unsigned int fMask, CBaseEntity* pSkip = nullptr) {
         CGameTrace trace;
         CTraceFilter filter;

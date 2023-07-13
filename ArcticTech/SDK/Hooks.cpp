@@ -436,25 +436,17 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		Chams->UpdateSettings();
 
 		cvars.r_aspectratio->SetFloat(config.visuals.effects.aspect_ratio->get());
-
-		if ( config.visuals.effects.removals->get(8) )
-			cvars.mat_postprocessing_enable->SetInt( 0 );
-		else
-			cvars.mat_postprocessing_enable->SetInt( 1 );
-		
+		cvars.mat_postprocessing_enable->SetInt(!config.visuals.effects.removals->get(0));
 		cvars.cl_csm_shadows->SetInt(!config.visuals.effects.removals->get(2));
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
+		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
 
-		if (config.visuals.effects.removals->get(5))
-			cvars.zoom_sensitivity_ratio_mouse->SetFloat(0.f);
-		else
-			cvars.zoom_sensitivity_ratio_mouse->SetFloat(1.f);
+		SkinChanger->AgentChanger();
 
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
-		SkinChanger->AgentChanger( stage );
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
@@ -826,6 +818,7 @@ void Hooks::Initialize() {
 
 	ESP::RegisterCallback();
 	Chams->LoadChams();
+	SkinChanger->LoadKnifeModels();
 
 	DirectXDeviceVMT = new VMT(DirectXDevice);
 	SurfaceVMT = new VMT(Surface);
