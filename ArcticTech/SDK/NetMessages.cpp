@@ -43,7 +43,7 @@ void CNetMessages::SendNetMessage(SharedVoiceData_t* data) {
 	INetChannel* netChan = ClientState->m_NetChannel;
 
 	if (netChan) {
-		netChan->SendNetMsg(&msg, false, false);
+		netChan->SendNetMsg(&msg, false, true);
 	}
 }
 
@@ -68,7 +68,7 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 
 	player_info_t info;
 	EngineClient->GetPlayerInfo(msg.client + 1, &info);
-	ctx.arctic_users.emplace_back(info.iSteamID);
+	ctx.arctic_users.insert(info.iSteamID);
 
 	SharedVoiceData_t* data = new SharedVoiceData_t;
 	data->xuid_high = msg.xuid_high;

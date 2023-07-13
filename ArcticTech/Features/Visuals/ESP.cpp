@@ -27,7 +27,7 @@ void ESP::Draw() {
 	}
 }
 
-void ESP::IconDisplay( CBasePlayer* pLocal, int Level )
+void ESP::IconDisplay( CBasePlayer* player, int Level )
 {
 	static void* DT_CSPlayerResource = NULL;
 
@@ -38,7 +38,7 @@ void ESP::IconDisplay( CBasePlayer* pLocal, int Level )
 		return;
 
 	DWORD ptrResource = **( DWORD** )DT_CSPlayerResource;
-	DWORD m_nPersonaDataPublicLevel = ( DWORD )ptrResource + 0x4dd4 + ( pLocal->EntIndex( ) * 4 );
+	DWORD m_nPersonaDataPublicLevel = ( DWORD )ptrResource + 0x4dd4 + ( player->EntIndex( ) * 4 );
 
 	*( PINT )( ( DWORD )m_nPersonaDataPublicLevel ) = Level;
 }
@@ -190,7 +190,10 @@ void ESP::DrawPlayer(int id) {
 	DrawFlags(info);
 	DrawWeapon(info);
 	
-	IconDisplay( Cheat.LocalPlayer, 2221 );
+	player_info_t pinfo;
+	EngineClient->GetPlayerInfo(id, &pinfo);
+	if (ctx.arctic_users.contains(pinfo.iSteamID))
+		IconDisplay( player, 2221 );
 }
 
 void ESP::DrawBox(ESPInfo_t info) {

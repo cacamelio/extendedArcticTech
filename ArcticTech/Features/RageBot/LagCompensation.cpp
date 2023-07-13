@@ -116,7 +116,7 @@ void CLagCompensation::OnNetUpdate() {
 					msg.m_ActiveWeapon = pl->GetActiveWeapon() ? pl->GetActiveWeapon()->m_iItemDefinitionIndex() : 0;
 					msg.m_vecOrigin = new_record->m_vecOrigin;
 
-					nc->SendNetMsg(&msg, false, true);
+					NetMessages->SendNetMessage((SharedVoiceData_t*)&msg);
 				}
 			}
 			while (records.size() > TIME_TO_TICKS(1)) {
