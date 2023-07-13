@@ -28,23 +28,17 @@ void ESP::Draw() {
 }
 
 void ESP::RegisterCallback() {
-	NetMessages->AddVoiceDataCallback(ProcessSharedESP);
+	NetMessages->AddArcticDataCallback(ProcessSharedESP);
 }
 
-void ESP::ProcessSharedESP(const CSVCMsg_VoiceData& data) {
-	uint32_t code = data.xuid_low;
+void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
+	SharedESP_t esp = *(SharedESP_t*)data;
 
-	if (code != NET_ARCTIC_CODE)
-		return;
+	char flags = esp.m_flags;
 
-	char entity = *(char*)(&data.xuid_high);
-	char flags = *(char*)(reinterpret_cast<uintptr_t>(&data.xuid_high) + 1);
-	short active_weapon = *(short*)(reinterpret_cast<uintptr_t>(&data.xuid_high) + 2);
-	Vector origin = *(Vector*)(reinterpret_cast<uintptr_t>(&data.sequence_bytes));
-
-	auto& esp_info = ESPInfo[entity];
-	esp_info.m_vecOrigin = origin;
-	esp_info.m_iActiveWeapon = active_weapon;
+	auto& esp_info = ESPInfo[esp.m_iPlayer];
+	esp_info.m_vecOrigin = esp.m_vecOrigin;
+	esp_info.m_iActiveWeapon = esp.m_ActiveWeapon;
 	esp_info.m_bIsScoped = flags & Shared_Scoped;
 	esp_info.m_bExploiting = flags & Shared_Exploiting;
 	esp_info.m_bFakeDuck = flags & Shared_FakeDuck;
@@ -52,7 +46,7 @@ void ESP::ProcessSharedESP(const CSVCMsg_VoiceData& data) {
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
 	esp_info.m_bValid = true;
 
-	g_LastSharedESPData[entity] = GlobalVars->realtime;
+	g_LastSharedESPData[esp.m_iPlayer] = GlobalVars->realtime;
 }
 
 void ESP::ProcessSounds() {

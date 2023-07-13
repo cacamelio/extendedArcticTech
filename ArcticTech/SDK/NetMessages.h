@@ -81,8 +81,15 @@ public:
 	uint32_t uncompressed_sample_offset;
 };
 
+struct SharedVoiceData_t {
+	uint32_t xuid_high;
+	int sequence_bytes;
+	uint32_t section_number;
+	uint32_t uncompressed_sample_offset;
+};
+
 typedef void(*tRecieveVoiceDataCallback)(const CSVCMsg_VoiceData&);
-typedef void(*tRecieveArcticDataCallback)(void* data, int length);
+typedef void(*tRecieveArcticDataCallback)(const SharedVoiceData_t*);
 
 class CNetMessages {
 	std::vector<tRecieveVoiceDataCallback> m_voiceDataCallbacks;
@@ -90,7 +97,7 @@ class CNetMessages {
 
 public:
 
-	void SendNetMessage(void* data, int length);
+	void SendNetMessage(SharedVoiceData_t* data);
 	void AddVoiceDataCallback(tRecieveVoiceDataCallback callback) {
 		m_voiceDataCallbacks.emplace_back(callback);
 	}

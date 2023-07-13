@@ -24,19 +24,17 @@ void CCLCMsg_VoiceData_t::set_data(void* data, int length) {
 	set_data_fn(reinterpret_cast<void*>((uintptr_t)this + 0x8), data, length);
 }
 
-void CNetMessages::SendNetMessage(void* data, int length) {
+void CNetMessages::SendNetMessage(SharedVoiceData_t* data) {
 	CCLCMsg_VoiceData_t msg;
 
-	const int new_size = length + 4;
-
-	void* formatted_data = new char[new_size];
-	*(int*)formatted_data = NET_ARCTIC_CODE;
-	std::memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(formatted_data) + 0x4), data, length);
-
-	msg.has_bits() = 0xFFFFFFFF;
+	msg.has_bits() = 63;
 	msg.format() = 0;
 
-	msg.set_data(formatted_data, new_size);
+	msg.xuid_low() = NET_ARCTIC_CODE;
+	msg.xuid_high() = data->xuid_high;
+	msg.section_number() = data->section_number;
+	msg.sequence_bytes() = data->sequence_bytes;
+	msg.uncompressed_sample_offset() = data->uncompressed_sample_offset;
 
 	//player_info_t pinfo;
 	//if (EngineClient->GetPlayerInfo(EngineClient->GetLocalPlayer(), &pinfo)) {
@@ -49,8 +47,6 @@ void CNetMessages::SendNetMessage(void* data, int length) {
 	if (netChan) {
 		netChan->SendNetMsg(&msg, false, false);
 	}
-
-	delete[] formatted_data;
 }
 
 bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
@@ -69,22 +65,21 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	}
 #endif
 
-	if (msg.voice_data->size() < 4) {
-		return false;
-	}
-
-	void* raw_data = msg.voice_data->data();
-
-	if (*(int*)raw_data != NET_ARCTIC_CODE)
+	if (msg.xuid_low != NET_ARCTIC_CODE)
 		return false;
 
-	int data_size = msg.voice_data->size() - 4;
-	void* data = new char[data_size];
+	player_info_t info;
+	EngineClient->GetPlayerInfo(msg.client + 1, &info);
+	ctx.arctic_users.emplace_back(info.iSteamID);
 
-	memcpy(data, reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(raw_data) + 4), data_size);
+	SharedVoiceData_t* data = new SharedVoiceData_t;
+	data->xuid_high = msg.xuid_high;
+	data->section_number = msg.section_number;
+	data->sequence_bytes = msg.sequence_bytes;
+	data->uncompressed_sample_offset = msg.uncompressed_sample_offset;
 
 	for (auto handler : m_arcticDataCallbacks)
-		handler(data, data_size);
+		handler(data);
 
 	delete[] data;
 }

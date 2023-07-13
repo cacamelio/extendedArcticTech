@@ -100,29 +100,21 @@ void CLagCompensation::OnNetUpdate() {
 
 			if (config.visuals.esp.shared_esp->get() && nc) {
 				if (config.visuals.esp.share_with_enemies->get() || !pl->IsTeammate()) {
-					CCLCMsg_VoiceData_t msg;
+					SharedESP_t msg;
 
-					std::string voice_data;
-					msg.set_data(voice_data.data(), 0);
-
-					msg.has_bits() = VoiceData_Has::Xuid | VoiceData_Has::SectionNumber | VoiceData_Has::SequenceBytes | VoiceData_Has::UncompressedSampleOffset | VoiceData_Has::Data | VoiceData_Has::Format;
-
-					msg.format() = 0;
-					msg.xuid_low() = NET_ARCTIC_CODE;
-					*(char*)&msg.xuid_high() = i;
-					char& flags = *(char*)(reinterpret_cast<uintptr_t>(&msg.xuid_high()) + 1);
+					msg.m_iPlayer = i;
 					
 					if (pl->m_bIsScoped())
-						flags |= Shared_Scoped;
+						msg.m_flags |= Shared_Scoped;
 					if (ESPInfo[i].m_nFakeDuckTicks > 12)
-						flags |= Shared_FakeDuck;
+						msg.m_flags |= Shared_FakeDuck;
 					if (new_record->shifting_tickbase)
-						flags |= Shared_Exploiting;
+						msg.m_flags |= Shared_Exploiting;
 					if (new_record->breaking_lag_comp)
-						flags |= Shared_BreakLC;
+						msg.m_flags |= Shared_BreakLC;
 
-					*(short*)(reinterpret_cast<uintptr_t>(&msg.xuid_high()) + 2) = pl->GetActiveWeapon() ? pl->GetActiveWeapon()->m_iItemDefinitionIndex() : 0;
-					*(Vector*)(reinterpret_cast<uintptr_t>(&msg.sequence_bytes())) = new_record->m_vecOrigin;
+					msg.m_ActiveWeapon = pl->GetActiveWeapon() ? pl->GetActiveWeapon()->m_iItemDefinitionIndex() : 0;
+					msg.m_vecOrigin = new_record->m_vecOrigin;
 
 					nc->SendNetMsg(&msg, false, true);
 				}

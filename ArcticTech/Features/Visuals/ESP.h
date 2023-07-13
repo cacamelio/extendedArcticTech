@@ -1,6 +1,7 @@
 #pragma once
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Misc/CBasePlayer.h"
+#include "../../SDK/NetMessages.h"
 
 class CSVCMsg_VoiceData;
 
@@ -30,14 +31,12 @@ enum SharedESPFlags {
 
 struct SharedESP_t {
 	char	m_iPlayer;
-	short	m_iActiveWeapon;
-	bool	m_bIsScoped;
-	char	m_iHealth;
-	bool	m_bExploiting;
-	bool	m_bBreakingLagComp;
-	bool	m_bFakeDuck;
+	char	m_flags;
+	short	m_ActiveWeapon;
 	Vector	m_vecOrigin;
 };
+
+static_assert(sizeof(SharedESP_t) == sizeof(SharedVoiceData_t));
 
 struct ESPFlag_t {
 	std::string flag;
@@ -50,7 +49,7 @@ namespace ESP {
 	void		ProcessSounds();
 	void		RegisterCallback();
 
-	void		ProcessSharedESP(const CSVCMsg_VoiceData& data);
+	void		ProcessSharedESP(const SharedVoiceData_t* data);
 	void		UpdatePlayer(int id);
 	void		Draw();
 	void		DrawPlayer(int id);
