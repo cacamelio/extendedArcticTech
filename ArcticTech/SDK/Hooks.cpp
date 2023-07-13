@@ -211,6 +211,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	// pre_prediction
 
+	ctx.is_peeking = AntiAim->IsPeeking();
+
 	AntiAim->SlowWalk();
 
 	QAngle storedAng = cmd->viewangles;

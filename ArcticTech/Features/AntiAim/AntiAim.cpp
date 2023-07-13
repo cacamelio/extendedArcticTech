@@ -59,19 +59,19 @@ void CAntiAim::FakeLag() {
 	else
 		ctx.send_packet = ClientState->m_nChokedCommands >= fakelagTicks;
 
-	//static bool hasPeeked = false;
+	static bool hasPeeked = false;
 
-	//if (IsPeeking()) {
-	//	if (!hasPeeked) {
-	//		hasPeeked = true;
+	if (ctx.is_peeking) {
+		if (!hasPeeked) {
+			hasPeeked = true;
 
-	//		if (ClientState->m_nChokedCommands > 0)
-	//			ctx.send_packet = true;
-	//	}
-	//}
-	//else {
-	//	hasPeeked = false;
-	//}
+			if (ClientState->m_nChokedCommands > 0)
+				ctx.send_packet = true;
+		}
+	}
+	else {
+		hasPeeked = false;
+	}
 }
 
 void CAntiAim::Angles() {
@@ -308,13 +308,13 @@ void CAntiAim::LegMovement() {
 }
 
 bool CAntiAim::IsPeeking() {
-	Vector velocity = Cheat.LocalPlayer->m_vecVelocity().Normalized();
+	Vector velocity = Cheat.LocalPlayer->m_vecVelocity().Q_Normalized();
 
 	Vector scan_points[] = {
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD) + velocity * 15,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT) + velocity * 15,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT) + velocity * 15,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS) + velocity * 15,
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD) + velocity * 10.f,
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT) + velocity * 8.f,
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT) + velocity * 8.f,
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS) + velocity * 10.f,
 	};
 
 	CBasePlayer* nearest = GetNearestTarget();
