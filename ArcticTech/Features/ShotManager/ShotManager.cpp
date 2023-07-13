@@ -109,7 +109,7 @@ void CShotManager::OnNetUpdate() {
 			break;
 
 		if (!it->ack_tick) { // dont recieved events yet or unregistered
-			int max_register_delay = 14;
+			int max_register_delay = 16;
 			INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 			if (nci) {
 				max_register_delay += TIME_TO_TICKS(nci->GetAvgLatency(FLOW_INCOMING) + nci->GetAvgLatency(FLOW_OUTGOING));
@@ -204,7 +204,12 @@ void CShotManager::OnNetUpdate() {
 					}
 				}
 				else {
-					Console->ColorPrint("resolver\n", Color(200, 255, 0));
+					if ((shot->hit_point - shot->target_pos).LengthSqr() < 16.f) {
+						Console->ColorPrint("damage rejection\n", Color(255, 20, 20)); // correct naming: sin shluhi s gmom
+					}
+					else {
+						Console->ColorPrint("resolver\n", Color(200, 255, 0));
+					}
 				}
 			}
 
