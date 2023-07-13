@@ -452,7 +452,10 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		}
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
-		SkinChanger->Run( );
+		SkinChanger->Run( false );
+		break;
+	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
+		SkinChanger->Run( true );
 		break;
 	}
 
