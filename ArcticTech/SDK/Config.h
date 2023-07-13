@@ -44,6 +44,7 @@ struct config_t {
             CCheckbox* doubletap;
             CKeyBind* doubletap_key;
             CSlider* doubletap_speed;
+            CCheckbox* defensive_doubletap;
             CKeyBind* force_teleport;
             CKeyBind* force_body_aim;
             CKeyBind* minimum_damage_override_key;

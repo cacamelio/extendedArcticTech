@@ -55,6 +55,7 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.doubletap);
     add(config.ragebot.aimbot.doubletap_key);
     add(config.ragebot.aimbot.doubletap_speed);
+    add(config.ragebot.aimbot.defensive_doubletap);
     add(config.ragebot.aimbot.force_teleport);
     add(config.ragebot.aimbot.force_body_aim);
     add(config.ragebot.aimbot.minimum_damage_override_key);

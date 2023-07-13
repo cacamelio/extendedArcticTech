@@ -123,9 +123,16 @@ void CDoubleTap::ForceTeleport() {
 }
 
 
-void CDoubleTap::DefensiveDoubletap()
-{
+void CDoubleTap::DefensiveDoubletap() {
+	if (ctx.is_peeking && config.ragebot.aimbot.defensive_doubletap->get()) {
+		peeking_ticks++;
 
+		if (peeking_ticks == 14)
+			peeking_ticks = 0;
+	}
+	else {
+		peeking_ticks = 0;
+	}
 }
 
 CDoubleTap* DoubleTap = new CDoubleTap;

@@ -196,10 +196,8 @@ void CSkinChanger::SetViewModelSequence( const CRecvProxyData* pDataConst, void*
 
 void CSkinChanger::Hooked_RecvProxy_Viewmodel( CRecvProxyData* pData, void* pStruct, void* pOut )
 {
-	std::vector<std::string> result;
-
-	for ( auto& model : SkinChanger->knife_models )
-		result.emplace_back( model.model_name );
+	if (SkinChanger->knife_models.empty())
+		return;
 
 	if ( Cheat.LocalPlayer && config.skins.override_knife->get() )
 	{

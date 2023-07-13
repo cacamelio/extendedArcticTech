@@ -36,6 +36,7 @@ void CMenu::Init() {
 		config.ragebot.aimbot.doubletap = AddCheckBox("RAGE", "Aimbot", "Double tap", true);
 		config.ragebot.aimbot.doubletap_key = AddKeyBind("RAGE", "Aimbot", "Double tap");
 		config.ragebot.aimbot.doubletap_speed = AddSlider("RAGE", "Aimbot", "Speed", 2, 15, 12, "tick");
+		config.ragebot.aimbot.defensive_doubletap = AddCheckBox("RAGE", "Aimbot", "Defensive doubletap");
 		config.ragebot.aimbot.force_teleport = AddKeyBind("RAGE", "Aimbot", "Force teleport");
 		config.ragebot.aimbot.force_body_aim = AddKeyBind("RAGE", "Aimbot", "Force body aim");
 		config.ragebot.aimbot.minimum_damage_override_key = AddKeyBind("RAGE", "Aimbot", "Minimum damage override");

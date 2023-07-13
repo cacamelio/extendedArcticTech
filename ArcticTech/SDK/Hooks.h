@@ -32,7 +32,6 @@ typedef bool(__fastcall* tSetupBones)(CBaseEntity*, void*, matrix3x4_t*, int, in
 typedef void(__cdecl* tCL_Move)(float, bool);
 typedef void(__fastcall* tHudUpdate)(IBaseClientDLL*, void*, bool);
 typedef void(__thiscall* tCHLCCreateMove)(IBaseClientDLL*, int, float, bool);
-typedef bool(__thiscall* tWriteUserCmdDeltaToBuffer)(void*, int, void*, int, int, bool);
 typedef void(__fastcall* tPhysicsSimulate)(CBasePlayer*, void*);
 typedef void(__fastcall* tClampBonesInBBox)(CBasePlayer*, void*, matrix3x4_t*, int);
 typedef void(__fastcall* tCalculateView)(CBasePlayer*, void*, Vector&, QAngle&, float&, float&, float&);
@@ -50,6 +49,7 @@ typedef CNewParticleEffect*(__fastcall* tCreateNewParticleEffect)(CBaseEntity*, 
 typedef bool(__fastcall* tSVCMsg_VoiceData)(CClientState*, void*, const CSVCMsg_VoiceData&);
 typedef bool(__fastcall* tSendNetMsg)(INetChannel*, void*, INetMessage&, bool, bool);
 typedef void(__stdcall* tDrawStaticProps)(void*, void*, const void*, int, bool, bool);
+typedef bool(__fastcall* tWriteUserCmdDeltaToBuffer)(CInput*, void*, int, void*, int, int, bool);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -80,6 +80,7 @@ inline tCreateNewParticleEffect oCreateNewParticleEffect;
 inline tSVCMsg_VoiceData oSVCMsg_VoiceData;
 inline tSendNetMsg oSendNetMsg;
 inline tDrawStaticProps oDrawStaticProps;
+inline tWriteUserCmdDeltaToBuffer oWriteUserCmdDeltaToBuffer;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

@@ -279,7 +279,7 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 
 		CBasePlayer* hit_player = reinterpret_cast<CBasePlayer*>(data.enterTrace.hit_entity);
 
-		if (hit_player && hit_player->IsTeammate())
+		if (hit_player && hit_player->m_iTeamNum() == attacker->m_iTeamNum())
 			return false;
 
 		if (data.enterTrace.hit_entity && data.enterTrace.hit_entity->IsPlayer())

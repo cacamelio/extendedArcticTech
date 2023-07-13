@@ -325,7 +325,7 @@ bool CAntiAim::IsPeeking() {
 	FireBulletData_t data;
 
 	for (auto& point : scan_points) {
-		if (AutoWall->FireBullet(nearest, nearest->GetEyePosition(), point, data, nearest) && data.damage >= 5.f)
+		if (AutoWall->FireBullet(nearest, nearest->GetEyePosition(), point, data, Cheat.LocalPlayer) && data.damage >= 5.f)
 			return true;
 	}
 

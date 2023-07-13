@@ -818,6 +818,65 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 	hook_info.in_draw_static_props = false;
 }
 
+bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !DoubleTap->ShouldBreakLC())
+		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
+
+	if (from != -1)
+		return true;
+
+	auto p_new_commands = (int*)((DWORD)buf - 0x2C);
+	auto p_backup_commands = (int*)((DWORD)buf - 0x30);
+	auto new_commands = *p_new_commands;
+
+	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
+
+	auto total_new_commands = 16;
+
+	from = -1;
+
+	*p_new_commands = total_new_commands;
+	*p_backup_commands = 0;
+
+	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++)
+	{
+		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, true))
+			return false;
+
+		from = to;
+	}
+
+	CUserCmd* last_real_cmd = Input->GetUserCmd(slot, from);
+	CUserCmd from_cmd;
+
+	if (last_real_cmd)
+		memcpy(&from_cmd, last_real_cmd, sizeof(CUserCmd));
+
+	CUserCmd to_cmd;
+	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
+
+	to_cmd.command_number++;
+	to_cmd.tick_count += 200;
+
+	for (int i = new_commands; i <= total_new_commands; i++)
+	{
+		static void* write_user_cmd = Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 51 53 56 8B D9 8B 0D");
+
+		__asm
+		{
+			mov     ecx, buf
+			mov     edx, to_cmd
+			push    from_cmd
+			call    write_user_cmd
+			add     esp, 4
+		}
+		memcpy(&from_cmd, &to_cmd, sizeof(CUserCmd));
+		to_cmd.command_number++;
+		to_cmd.tick_count++;
+	}
+
+	return true;
+}
 
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
@@ -857,7 +916,6 @@ void Hooks::Initialize() {
 	ClientVMT->Hook(11, hkHudUpdate);
 	ClientVMT->Hook(22, hkCHLCCreateMove);
 	ClientVMT->Hook(7, hkLevelShutdown);
-	//ClientVMT->Hook(24, hkWriteUserCmdDeltaToBuffer);
 	PredictionVMT->Hook(19, hkRunCommand);
 	KeyValuesVMT->Hook(2, hkAllocKeyValuesMemory);
 
@@ -886,6 +944,7 @@ void Hooks::Initialize() {
 	oCreateNewParticleEffect = HookFunction<tCreateNewParticleEffect>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 0C 53 56 8B F2 89 75 F8 57"), hkCreateNewParticleEffect_proxy);
 	oSVCMsg_VoiceData = HookFunction<tSVCMsg_VoiceData>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 81 EC ? ? ? ? 53 56 8B F1 B9 ? ? ? ? 57 FF 50 34 8B 7D 08 85 C0 74 13 8B 47 08 40 50"), hkSVCMsg_VoiceData);
 	oDrawStaticProps = HookFunction<tDrawStaticProps>(Utils::PatternScan("engine.dll", "55 8B EC 56 57 8B F9 8B 0D ? ? ? ? 8B B1 ? ? ? ? 85 F6 74 16 6A 04 6A 00 68"), hkDrawStaticProps);
+	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 68 53 56 8B D9 C7 45 ? ? ? ? ? 57 8D 4D 98"), hkWriteUserCmdDeltaToBuffer);
 
 	EventListner->Register();
 }
@@ -909,7 +968,6 @@ void Hooks::End() {
 	ClientVMT->UnHook(11);
 	ClientVMT->UnHook(22);
 	ClientVMT->UnHook(7);
-	//ClientVMT->UnHook(24);
 	PredictionVMT->UnHook(19);
 	//ClientVMT->UnHook(40);
 	KeyValuesVMT->UnHook(2);
@@ -941,4 +999,5 @@ void Hooks::End() {
 	RemoveHook(oSVCMsg_VoiceData, hkSVCMsg_VoiceData);
 	RemoveHook(oSendNetMsg, hkSendNetMsg);
 	RemoveHook(oDrawStaticProps, hkDrawStaticProps);
+	RemoveHook(oWriteUserCmdDeltaToBuffer, hkWriteUserCmdDeltaToBuffer);
 }

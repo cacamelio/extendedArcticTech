@@ -5,6 +5,7 @@ typedef void(__cdecl* CL_Move_t)(float, bool);
 
 class CDoubleTap {
 	bool teleport_next_tick = false;
+	int peeking_ticks = 0;
 
 public:
 	bool shifting_tickbase = false;
@@ -17,6 +18,7 @@ public:
 	inline bool& IsShifting() { return shifting_tickbase; };
 	inline float LastTeleportTime() { return last_teleport_time; };
 	inline int& TargetTickbaseShift() { return target_tickbase_shift; };
+	inline int ShouldBreakLC() { return peeking_ticks > 0; };
 
 	bool	ShouldCharge();
 	int		MaxTickbaseShift();
