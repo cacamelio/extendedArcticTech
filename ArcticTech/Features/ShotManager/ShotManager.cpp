@@ -95,7 +95,7 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 				break;
 
 			if (it->record->player->EntIndex() == userid && attacker != EngineClient->GetLocalPlayer()) {
-				it->acked = true;
+				it->ack_tick = GlobalVars->tickcount;
 				it->player_death = true;
 			}
 		}
@@ -109,7 +109,7 @@ void CShotManager::OnNetUpdate() {
 			break;
 
 		if (!it->ack_tick) { // dont recieved events yet or unregistered
-			int max_register_delay = 16;
+			int max_register_delay = 24;
 			INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 			if (nci) {
 				max_register_delay += TIME_TO_TICKS(nci->GetAvgLatency(FLOW_INCOMING) + nci->GetAvgLatency(FLOW_OUTGOING));
@@ -209,6 +209,8 @@ void CShotManager::OnNetUpdate() {
 					}
 					else {
 						Console->ColorPrint("resolver\n", Color(200, 255, 0));
+
+						Resolver->OnMiss(player, shot->record);
 					}
 				}
 			}

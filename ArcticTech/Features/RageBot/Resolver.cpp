@@ -13,11 +13,14 @@ CResolver* Resolver = new CResolver;
 void CResolver::Reset(CBasePlayer* pl) {
 	if (pl) {
 		m_CachedRollAngle[pl->EntIndex()] = 0.f;
+		brute_force_data[pl->EntIndex()].reset();
 		return;
 	}
 
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 64; ++i) {
 		m_CachedRollAngle[i] = 0.f;
+		brute_force_data[i].reset();
+	}
 }
 
 float CResolver::ResolveRollAnimation(CBasePlayer* player, const LagRecord* prevRecord) {
@@ -67,7 +70,7 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 	float avgDelta = 0.f;
 	float prevEyeYaw = player->m_angEyeAngles().yaw;
 
-	for (int i = records.size() - 1; i > records.size() - 3; i--) {
+	for (int i = records.size() - 2; i > records.size() - 5; i--) {
 		const LagRecord* record = &records.at(i);
 		float eyeYaw = record->m_viewAngle.yaw;
 
@@ -77,13 +80,13 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 
 		float maxDeltaDiff = record->m_nChokedTicks > 2 ? 30 : 15;
 
-		if (std::abs(delta - 60.f) < maxDeltaDiff)
+		if (std::abs(delta - 60.f) < maxDeltaDiff && delta > 30.f)
 			jitteredRecords++;
 
 		prevEyeYaw = eyeYaw;
 	}
 
-	if (jitteredRecords > 1)
+	if (jitteredRecords > 2)
 		return R_AntiAimType::JITTER;
 
 	if (avgDelta * 0.5f < 30.f)
@@ -131,43 +134,61 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 	Vector eyePos = player->GetEyePosition();
 
 	Vector forward = (Cheat.LocalPlayer->m_vecOrigin() - player->m_vecOrigin()).Q_Normalized();
-	float notModifiedYaw = Math::VectorAngles(forward).yaw;
+
+	float notModifiedYaw = player->m_angEyeAngles().yaw;
+
+	if (record->prev_record) {
+		notModifiedYaw += Math::AngleDiff(record->prev_record->m_viewAngle.yaw, notModifiedYaw) * 0.5f;
+	}
+
+	notModifiedYaw = Math::AngleNormalize(notModifiedYaw);
 
 	Vector right = Math::AngleVectors(QAngle(0, notModifiedYaw + 90.f, 0));
 
-	Vector negPos = eyePos - right * 24.f;
-	Vector posPos = eyePos + right * 24.f;
+	Vector negPos = eyePos - right * 16.f;
+	Vector posPos = eyePos + right * 16.f;
+
+	DebugOverlay->AddLineOverlay(eyePos, negPos, 255, 0, 0, 2, GlobalVars->interval_per_tick * 4);
+	DebugOverlay->AddLineOverlay(eyePos, posPos, 0, 255, 0, 2, GlobalVars->interval_per_tick * 4);
 
 	CTraceFilterWorldAndPropsOnly filter;
-	Ray_t ray(negPos, negPos + forward * 256.f);
+	Ray_t rayNeg(negPos, Cheat.LocalPlayer->GetShootPosition());
+	Ray_t rayPos(posPos, Cheat.LocalPlayer->GetShootPosition());
 	CGameTrace negTrace, posTrace;
 
-	EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &negTrace);
+	EngineTrace->TraceRay(rayNeg, MASK_SHOT_HULL | CONTENTS_GRATE, &filter, &negTrace);
+	EngineTrace->TraceRay(rayPos, MASK_SHOT_HULL | CONTENTS_GRATE, &filter, &posTrace);
 
-	ray.Init(posPos, posPos + forward * 256.f);
-	EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &posTrace);
-
-	if (negTrace.startsolid && posTrace.startsolid)
+	if (negTrace.startsolid && posTrace.startsolid) {
 		record->resolver_data.side = 0;
+		record->resolver_data.resolver_type = ResolverType::NONE;
+		return;
+	}
 	else if (negTrace.startsolid) {
 		record->resolver_data.side = -1;
+		record->resolver_data.resolver_type = ResolverType::FREESTAND;
+		return;
 	}
-	else if (posTrace.startsolid)
+	else if (posTrace.startsolid) {
 		record->resolver_data.side = 1;
+		record->resolver_data.resolver_type = ResolverType::FREESTAND;
+		return;
+	}
 
-	if (negTrace.fraction == 1.f && posTrace.fraction == 1.f)
+	if (negTrace.fraction == 1.f && posTrace.fraction == 1.f) {
 		record->resolver_data.side = 0;
-
+		record->resolver_data.resolver_type = ResolverType::NONE;
+		return;
+	}
 	record->resolver_data.side = negTrace.fraction < posTrace.fraction ? -1 : 1;
+	record->resolver_data.resolver_type = ResolverType::FREESTAND;
 }
 
 void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records) {
 	if (Cheat.freezetime || player->m_fFlags() & FL_FROZEN)
 		return;
 
-	LagRecord* prevRecord = nullptr;
-	if (records.size() > 2)
-		prevRecord = &records.back();
+	LagRecord* prevRecord = record->prev_record;
 
 	record->roll = ResolveRollAnimation(player, prevRecord);
 
@@ -222,7 +243,31 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 		}
 	}
 
+	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
+	if (bf_data->missed_shots > 0 && record->resolver_data.antiaim_type != R_AntiAimType::JITTER && GlobalVars->curtime - bf_data->last_shot < 8.f) { // don't bruteforce if data is too old or player using jitter antiaim
+		record->resolver_data.side = bf_data->current_side;
+		record->resolver_data.resolver_type = ResolverType::BRUTEFORCE;
+	}
+
 	if (record->resolver_data.side != 0) {
 		player->GetAnimstate()->flGoalFeetYaw = Math::NormalizeYaw(player->m_angEyeAngles().yaw + (player->GetMaxDesyncDelta() * record->resolver_data.side));
 	}
+}
+
+void CResolver::OnMiss(CBasePlayer* player, LagRecord* record) {
+	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
+
+	if (bf_data->missed_shots == 0) {
+		bf_data->current_side = record->resolver_data.side == 0 ? 1 : -record->resolver_data.side;
+	}
+	else {
+		bf_data->current_side = -bf_data->current_side;
+	}
+
+	bf_data->missed_shots++;
+	bf_data->last_shot = GlobalVars->curtime;
+}
+
+void CResolver::OnHit(CBasePlayer* player) {
+	brute_force_data[player->EntIndex()].reset();
 }

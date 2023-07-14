@@ -330,6 +330,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		GrenadePrediction::PrecacheParticles();
 		Ragebot->CalcSpreadValues();
 		ShotManager->Reset();
+		Resolver->Reset();
 	}
 
 	return result;

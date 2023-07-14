@@ -41,6 +41,8 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			if (config.visuals.esp.hitsound->get())
 				EngineClient->ExecuteClientCmd("play buttons/arena_switch_press_02.wav");
 
+			Resolver->OnHit(victim);
+
 			if (config.misc.miscellaneous.logs->get(0) && !skip_hurt) {
 				Console->Log(std::format("hurt {}'s {} for {} damage ({} remaining)", victim->GetName(), GetHitgroupName(event->GetInt("hitgroup")), event->GetInt("dmg_health"), event->GetInt("health")));
 			}
@@ -54,8 +56,10 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			ctx.reset();
 			DoubleTap->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
+			Resolver->Reset();
 		}
 
+		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
 		AnimationSystem->InvalidateInterpolation(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
 	}
 	else if (name == "round_start") {

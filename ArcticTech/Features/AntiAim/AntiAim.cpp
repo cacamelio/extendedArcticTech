@@ -221,8 +221,8 @@ int CAntiAim::DesyncFreestand() {
 	Vector negPos = eyePos - right * 16.f;
 	Vector posPos = eyePos + right * 16.f;
 
-	CGameTrace negTrace = EngineTrace->TraceRay(negPos, negPos + forward * 100.f, CONTENTS_SOLID, Cheat.LocalPlayer);
-	CGameTrace posTrace = EngineTrace->TraceRay(posPos, posPos + forward * 100.f, CONTENTS_SOLID, Cheat.LocalPlayer);
+	CGameTrace negTrace = EngineTrace->TraceRay(negPos, negPos + forward * 100.f, MASK_SHOT_HULL | CONTENTS_GRATE, Cheat.LocalPlayer);
+	CGameTrace posTrace = EngineTrace->TraceRay(posPos, posPos + forward * 100.f, MASK_SHOT_HULL | CONTENTS_GRATE, Cheat.LocalPlayer);
 
 	if (negTrace.startsolid && posTrace.startsolid)
 		return 0;
@@ -310,26 +310,47 @@ void CAntiAim::LegMovement() {
 bool CAntiAim::IsPeeking() {
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity().Q_Normalized();
 
+	Vector move_factor = velocity * GlobalVars->interval_per_tick * 4;
+
+	matrix3x4_t backup_matrix[128];
+	Cheat.LocalPlayer->CopyBones(backup_matrix);
+
+	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
+	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
+
+	Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), Cheat.LocalPlayer->GetAbsOrigin(), Cheat.LocalPlayer->GetAbsOrigin() + move_factor);
+	Cheat.LocalPlayer->SetAbsOrigin(backup_abs_orgin + move_factor);
+	Cheat.LocalPlayer->m_vecOrigin() += move_factor;
+	Cheat.LocalPlayer->ForceBoneCache();
+
 	Vector scan_points[] = {
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD) + velocity * 10.f,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT) + velocity * 8.f,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT) + velocity * 8.f,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS) + velocity * 10.f,
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
 	};
 
 	CBasePlayer* nearest = GetNearestTarget();
 
-	if (!nearest)
-		return false;
+	bool peeked = false;
+	if (nearest) {
+		FireBulletData_t data;
 
-	FireBulletData_t data;
+		Vector enemyShootPos = nearest->m_vecOrigin() + Vector(0, 0, 64 - nearest->m_flDuckAmount() * 16.f);
 
-	for (auto& point : scan_points) {
-		if (AutoWall->FireBullet(nearest, nearest->GetEyePosition(), point, data, Cheat.LocalPlayer) && data.damage >= 5.f)
-			return true;
+		for (auto& point : scan_points) {
+			AutoWall->FireBullet(nearest, enemyShootPos, point, data);
+			if (data.damage >= 4.f) {
+				peeked = true;
+				break;
+			}
+		}
 	}
 
-	return false;
+	Cheat.LocalPlayer->SetAbsOrigin(backup_abs_orgin);
+	Cheat.LocalPlayer->m_vecOrigin() = backup_origin;
+
+	return peeked;
 }
 
 void CAntiAim::OnKeyPressed(WPARAM key) {

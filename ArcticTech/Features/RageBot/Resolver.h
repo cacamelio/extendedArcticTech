@@ -24,6 +24,7 @@ enum class ResolverType {
 	FREESTAND,
 	LOGIC,
 	ANIM,
+	BRUTEFORCE
 };
 
 struct ResolverData_t {
@@ -37,22 +38,36 @@ struct ResolverData_t {
 	float delta_negative = 0.f;
 	float delta_center = 0.f;
 
-	matrix3x4_t matrix_middle[MAXSTUDIOBONES];
-	matrix3x4_t matrix_left[MAXSTUDIOBONES];
-	matrix3x4_t matrix_right[MAXSTUDIOBONES];
+	//matrix3x4_t matrix_middle[MAXSTUDIOBONES];
+	//matrix3x4_t matrix_left[MAXSTUDIOBONES];
+	//matrix3x4_t matrix_right[MAXSTUDIOBONES];
 
 	float anim_accuracy = 0.f;
 
 	int side = 0;
 };
 
+struct BruteForceData_t {
+	int missed_shots = 0;
+	int current_side = -1;
+	float last_shot = 0.f;
+
+	void reset() {
+		missed_shots = 0;
+		current_side = -1;
+		last_shot = 0.f;
+	}
+};
+
 class CResolver {
 	float m_CachedRollAngle[64];
-
+	BruteForceData_t brute_force_data[64];
 public:
 	CResolver() {
-		for (int i = 0; i < 64; ++i)
+		for (int i = 0; i < 64; ++i) {
 			m_CachedRollAngle[i] = 0.f;
+			brute_force_data[i].reset();
+		}
 	}	
 
 	void			Reset(CBasePlayer* pl = nullptr);
@@ -70,6 +85,9 @@ public:
 	void			DetectFreestand(CBasePlayer* player, LagRecord* record);
 
 	void			Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records);
+
+	void			OnMiss(CBasePlayer* player, LagRecord* record);
+	void			OnHit(CBasePlayer* player);
 };
 
 extern CResolver* Resolver;

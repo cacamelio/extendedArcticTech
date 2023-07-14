@@ -42,6 +42,8 @@ struct LagRecord {
 	std::array<float, 24> flPoseParamaters;
 
 	ResolverData_t resolver_data;
+
+	LagRecord* prev_record;
 };
 
 class CLagCompensation {

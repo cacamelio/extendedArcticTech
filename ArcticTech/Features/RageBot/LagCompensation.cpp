@@ -85,6 +85,8 @@ void CLagCompensation::OnNetUpdate() {
 			LagRecord* prev_record = !records.empty() ? &records.back() : nullptr;
 			LagRecord* new_record = &records.emplace_back();
 
+			new_record->prev_record = prev_record;
+
 			new_record->m_nChokedTicks = GlobalVars->tickcount - last_update_tick[i];
 			last_update_tick[i] = GlobalVars->tickcount;
 
