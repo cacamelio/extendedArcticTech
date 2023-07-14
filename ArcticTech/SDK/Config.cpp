@@ -252,7 +252,8 @@ void CConfig::Init() {
     add(config.skins.override_knife);
     add(config.skins.override_agent);
     add(config.skins.knife_model);
-    add(config.skins.agent_model);
+    add(config.skins.agent_model_t);
+    add(config.skins.agent_model_ct);
 
     add(Menu->menu_color_picker);
     add(Menu->menu_key_bind);

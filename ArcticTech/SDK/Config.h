@@ -242,7 +242,8 @@ struct config_t {
         CCheckbox* override_knife;
         CCheckbox* override_agent;
         CComboBox* knife_model;
-        CComboBox* agent_model;
+        CComboBox* agent_model_ct;
+        CComboBox* agent_model_t;
     } skins;
 };
 
