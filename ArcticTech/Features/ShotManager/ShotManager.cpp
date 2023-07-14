@@ -109,7 +109,7 @@ void CShotManager::OnNetUpdate() {
 		if (it->acked)
 			break;
 
-		if (!it->ack_tick) { // dont recieved events yet or unregistered
+		if (!it->ack_tick || it->impacts.size() == 0) { // dont recieved events yet or unregistered
 			int max_register_delay = 24;
 			INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 			if (nci) {
@@ -207,11 +207,11 @@ void CShotManager::OnNetUpdate() {
 						Console->ColorPrint(std::format(" [diff: {:.4f}]\n", (shot->shoot_pos - shot->client_shoot_pos).Q_Length()), Color(240, 240, 240));
 					}
 					else {
-						Console->ColorPrint("spred\n", Color(255, 200, 0));
+						Console->ColorPrint("spread\n", Color(255, 200, 0));
 					}
 				}
 				else {
-					if ((shot->hit_point - shot->target_pos).LengthSqr() < 16.f) {
+					if ((shot->hit_point - shot->target_pos).LengthSqr() < 36.f) {
 						Console->ColorPrint("damage rejection\n", Color(255, 20, 20)); // correct naming: sin shluhi s gmom
 					}
 					else {

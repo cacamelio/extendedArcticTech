@@ -226,6 +226,7 @@ void CMenu::Init() {
 		config.misc.miscellaneous.auto_buy = AddMultiCombo("MISC", "Miscellaneous", "Auto buy", { "AWP", "Scout", "Autosniper", "Deagle / R8", "Five-Seven / Tec-9", "Taser", "Armor", "Smoke", "Molotov", "HeGrenade", "Flashbang", "Defuse kit" });
 		config.misc.miscellaneous.filter_console = AddCheckBox("MISC", "Miscellaneous", "Filter console");
 		config.misc.miscellaneous.clantag = AddCheckBox("MISC", "Miscellaneous", "Clantag");
+		config.misc.miscellaneous.ad_block = AddCheckBox("MISC", "Miscellaneous", "Ad block");
 	}
 
 	AddGroupBox("MISC", "Movement", 0.5f, 1);

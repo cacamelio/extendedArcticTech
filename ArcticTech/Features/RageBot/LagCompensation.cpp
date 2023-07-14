@@ -87,7 +87,7 @@ void CLagCompensation::OnNetUpdate() {
 
 			new_record->prev_record = prev_record;
 
-			new_record->m_nChokedTicks = GlobalVars->tickcount - last_update_tick[i];
+			new_record->m_nChokedTicks = GlobalVars->tickcount - last_update_tick[i] - 1;
 			last_update_tick[i] = GlobalVars->tickcount;
 
 			AnimationSystem->UpdateAnimations(pl, new_record, records);
@@ -145,12 +145,10 @@ float CLagCompensation::GetLerpTime() {
 	const float update_rate = std::clamp<float>(cl_updaterate->GetFloat(), sv_minupdaterate->GetFloat(), sv_maxupdaterate->GetFloat());
 	const float interp_ratio = std::clamp<float>(cl_interp_ratio->GetFloat(), sv_min_interp_ratio->GetFloat(), sv_max_interp_ratio->GetFloat());
 
-	return std::clamp< float >(interp_ratio / update_rate, cl_interp->GetFloat(), 1.f);
+	return std::clamp<float>(interp_ratio / update_rate, cl_interp->GetFloat(), 1.f);
 }
 
 bool CLagCompensation::ValidRecord(LagRecord* record) {
-	static const auto sv_maxunlag = CVar->FindVar("sv_maxunlag");
-
 	if (!record || !record->player || record->shifting_tickbase || record->breaking_lag_comp)
 		return false;
 
@@ -162,7 +160,7 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	const float latency = nci->GetAvgLatency(FLOW_INCOMING) + nci->GetAvgLatency(FLOW_OUTGOING);
 
 	const float lerp_time = GetLerpTime();
-	const float delta_time = std::clamp(latency + lerp_time, 0.f, sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift) - record->m_flSimulationTime);
+	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift) - record->m_flSimulationTime);
 
 	if (fabs(delta_time) > 0.2f)
 		return false;
@@ -173,6 +171,36 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 		return false;
 
 	return true;
+
+	//if (record->shifting_tickbase || record->breaking_lag_comp)
+	//	return false;
+
+	//float correct = 0.0f;
+
+	//// Get true latency
+	//INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
+	//if (nci)
+	//{
+	//	// add network latency
+	//	correct += nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING);
+	//}
+
+	//// NOTE:  do these computations in float time, not ticks, to avoid big roundoff error accumulations in the math
+	//// add view interpolation latency see C_BaseEntity::GetInterpolationAmount()
+	//correct += GetLerpTime();
+
+	//// check bounds [0,sv_maxunlag]
+	//correct = std::clamp(correct, 0.0f, cvars.sv_maxunlag->GetFloat());
+
+	//// correct tick send by player 
+	//float flTargetTime = record->m_flSimulationTime;
+
+	//int tick_base = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift;
+
+	//// calculate difference between tick sent by player and our latency based tick
+	//float deltaTime = correct - (TICKS_TO_TIME(tick_base) - flTargetTime);
+
+	//return std::abs(deltaTime) < 0.2f;
 }
 
 void CLagCompensation::Reset() {

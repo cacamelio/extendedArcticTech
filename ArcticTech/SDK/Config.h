@@ -223,6 +223,7 @@ struct config_t {
             CMultiCombo* auto_buy;
             CCheckbox* filter_console;
             CCheckbox* clantag;
+            CCheckbox* ad_block;
         } miscellaneous;
 
         struct movement_t {

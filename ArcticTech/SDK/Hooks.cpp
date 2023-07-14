@@ -871,6 +871,20 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	return true;
 }
 
+bool __fastcall hkShouldDrawViewModel(void* thisptr, void* edx) {
+	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || config.visuals.effects.viewmodel_scope_alpha->get() == 0)
+		return oShouldDrawViewModel(thisptr, edx);
+
+	return true;
+}
+
+void __fastcall hkPerformScreenOverlay(void* viewrender, void* edx, int x, int y, int w, int h) {
+	if (config.misc.miscellaneous.ad_block->get())
+		return;
+
+	oPerformScreenOverlay(viewrender, edx, x, y, w, h);
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -937,6 +951,8 @@ void Hooks::Initialize() {
 	oSVCMsg_VoiceData = HookFunction<tSVCMsg_VoiceData>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 81 EC ? ? ? ? 53 56 8B F1 B9 ? ? ? ? 57 FF 50 34 8B 7D 08 85 C0 74 13 8B 47 08 40 50"), hkSVCMsg_VoiceData);
 	oDrawStaticProps = HookFunction<tDrawStaticProps>(Utils::PatternScan("engine.dll", "55 8B EC 56 57 8B F9 8B 0D ? ? ? ? 8B B1 ? ? ? ? 85 F6 74 16 6A 04 6A 00 68"), hkDrawStaticProps);
 	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 68 53 56 8B D9 C7 45 ? ? ? ? ? 57 8D 4D 98"), hkWriteUserCmdDeltaToBuffer);
+	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
+	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 
 	EventListner->Register();
 }
@@ -991,4 +1007,6 @@ void Hooks::End() {
 	RemoveHook(oSendNetMsg, hkSendNetMsg);
 	RemoveHook(oDrawStaticProps, hkDrawStaticProps);
 	RemoveHook(oWriteUserCmdDeltaToBuffer, hkWriteUserCmdDeltaToBuffer);
+	RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
+	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
 }

@@ -570,7 +570,7 @@ void CRagebot::Run() {
 			debug_data.damage = target.best_point.damage;
 			debug_data.target = target.player->GetName();
 
-			if (settings.auto_scope->get() && !Cheat.LocalPlayer->m_bIsScoped() && weapon_data->nWeaponType)
+			if (settings.auto_scope->get() && !Cheat.LocalPlayer->m_bIsScoped() && !Cheat.LocalPlayer->m_bResumeZoom() && weapon_data->nWeaponType == WEAPONTYPE_SNIPER)
 				ctx.cmd->buttons |= IN_ATTACK2;
 		}
 

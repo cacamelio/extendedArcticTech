@@ -240,6 +240,7 @@ void CConfig::Init() {
     add(config.misc.miscellaneous.auto_buy);
     add(config.misc.miscellaneous.filter_console);
     add(config.misc.miscellaneous.clantag);
+    add(config.misc.miscellaneous.ad_block);
     add(config.misc.movement.auto_jump);
     add(config.misc.movement.auto_strafe);
     add(config.misc.movement.compensate_throwable);

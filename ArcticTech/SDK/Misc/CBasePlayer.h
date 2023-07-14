@@ -283,6 +283,7 @@ public:
     NETVAR(m_vecViewOffset, Vector, "DT_BasePlayer", "m_vecViewOffset[0]")
     NETVAR(m_iTeamNum, int, "DT_BaseEntity", "m_iTeamNum")
     NETVAR(m_bIsScoped, bool, "DT_CSPlayer", "m_bIsScoped")
+    NETVAR(m_bResumeZoom, bool, "DT_CSPlayer", "m_bResumeZoom")
     NETVAR_O(m_MoveType, int, "DT_BaseEntity", "m_nRenderMode", 1)
     NETVAR(m_flDuckAmount, float, "DT_BasePlayer", "m_flDuckAmount")
     NETVAR(m_flDuckSpeed, float, "DT_BasePlayer", "m_flDuckSpeed")
