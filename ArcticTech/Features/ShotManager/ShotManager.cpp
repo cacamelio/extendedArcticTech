@@ -5,6 +5,7 @@
 #include "../../Utils/Console.h"
 
 #include "../RageBot/LagCompensation.h"
+#include "../Visuals/ESP.h"
 
 
 CShotManager* ShotManager = new CShotManager;
@@ -160,6 +161,12 @@ void CShotManager::OnNetUpdate() {
 			Console->ArcticTag();
 			if (shot->damage > 0) {
 				Console->ColorPrint(std::format("hit {}'s {}({}) for {}({}) ({} remaining) [mismatch: ", player->GetName(), GetDamagegroupName(shot->damagegroup), GetDamagegroupName(shot->wanted_damagegroup), shot->damage, shot->wanted_damage, player->m_iHealth()), Color(240, 240, 240));
+
+				if (config.visuals.esp.hitmarker->get())
+					ESP::AddHitmarker(shot->hit_point);
+
+				if (config.visuals.esp.damage_marker->get())
+					ESP::AddDamageMarker(shot->record->m_vecOrigin + Vector(0, 0, 80), shot->damage);
 
 				if (shot->wanted_damagegroup != shot->damagegroup) {
 					CGameTrace trace;

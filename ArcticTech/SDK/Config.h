@@ -127,6 +127,10 @@ struct config_t {
             CCheckbox* show_server_hitboxes;
             CCheckbox* shared_esp;
             CCheckbox* share_with_enemies;
+            CCheckbox* hitmarker;
+            CColorPicker* hitmarker_color;
+            CCheckbox* damage_marker;
+            CColorPicker* damage_marker_color;
         } esp;
 
         struct chams_t {

@@ -43,6 +43,11 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 			Resolver->OnHit(victim);
 
+			if (!skip_hurt) {
+				if (config.visuals.esp.damage_marker->get())
+					ESP::AddDamageMarker(victim->m_vecOrigin() + Vector(0, 0, 80), event->GetInt("dmg_health"));
+			}
+
 			if (config.misc.miscellaneous.logs->get(0) && !skip_hurt) {
 				Console->Log(std::format("hurt {}'s {} for {} damage ({} remaining)", victim->GetName(), GetHitgroupName(event->GetInt("hitgroup")), event->GetInt("dmg_health"), event->GetInt("health")));
 			}

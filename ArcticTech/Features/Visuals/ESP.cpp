@@ -1,5 +1,6 @@
 #include "ESP.h"
 
+#include <vector>
 #include <string>
 #include <algorithm>
 
@@ -404,5 +405,67 @@ void ESP::DrawGrenades() {
 				NadeWarning.Warning(ent, weapId);
 			}
 		}
+	}
+}
+
+struct DamageMarker_t {
+	Vector position;
+	float time = 0.f;
+	int damage = 0;
+};
+
+struct Hitmarker_t {
+	Vector position;
+	float time = 0.f;
+};
+
+static std::vector<DamageMarker_t> s_DamageMarkers;
+static std::vector<Hitmarker_t> s_Hitmarkers;
+
+void ESP::AddHitmarker(const Vector& position) {
+	s_Hitmarkers.emplace_back(Hitmarker_t{ position, GlobalVars->curtime });
+}
+
+void ESP::AddDamageMarker(const Vector& position, int damage) {
+	s_DamageMarkers.emplace_back(DamageMarker_t{ position, GlobalVars->curtime, damage });
+}
+
+void ESP::RenderMarkers() {
+	if (!Cheat.InGame)
+		return;
+
+	for (auto it = s_DamageMarkers.begin(); it != s_DamageMarkers.end();) {
+		if (GlobalVars->curtime - it->time > 1.5f) {
+			it = s_DamageMarkers.erase(it);
+			continue;
+		}
+
+		float timer = GlobalVars->curtime - it->time;
+		float alpha = std::clamp((1.5f - timer) * 2.f, 0.f, 1.f);
+
+		Vector world_pos = it->position + Vector(0, 0, timer * 30.f);
+
+		Render->Text(std::to_string(it->damage), Render->WorldToScreen(world_pos), config.visuals.esp.damage_marker_color->get().alpha_modulatef(alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
+
+		it++;
+	}
+
+	for (auto it = s_Hitmarkers.begin(); it != s_Hitmarkers.end();) {
+		if (GlobalVars->curtime - it->time > 3.f) {
+			it = s_Hitmarkers.erase(it);
+			continue;
+		}
+
+		float timer = GlobalVars->curtime - it->time;
+		float alpha = std::clamp(3.f - timer, 0.f, 1.f);
+
+		Vector2 pos = Render->WorldToScreen(it->position);
+
+		Render->Line(pos + Vector2(2, 2), pos + Vector2(5, 5), config.visuals.esp.hitmarker_color->get().alpha_modulatef(alpha));
+		Render->Line(pos - Vector2(2, 2), pos - Vector2(5, 5), config.visuals.esp.hitmarker_color->get().alpha_modulatef(alpha));
+		Render->Line(pos + Vector2(-2, 2), pos + Vector2(-5, 5), config.visuals.esp.hitmarker_color->get().alpha_modulatef(alpha));
+		Render->Line(pos + Vector2(2, -2), pos + Vector2(5, -5), config.visuals.esp.hitmarker_color->get().alpha_modulatef(alpha));
+
+		it++;
 	}
 }

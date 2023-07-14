@@ -61,4 +61,8 @@ namespace ESP {
 	void		DrawWeapon(ESPInfo_t info);
 
 	void		DrawGrenades();
+
+	void		AddHitmarker(const Vector& position);
+	void		AddDamageMarker(const Vector& postion, int damage);
+	void		RenderMarkers();
 }

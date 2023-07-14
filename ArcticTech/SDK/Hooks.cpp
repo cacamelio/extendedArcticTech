@@ -107,6 +107,7 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	ESP::Draw();
 	ESP::DrawGrenades();
+	ESP::RenderMarkers();
 	NadePrediction.Draw();
 	Menu->Draw();
 	AutoPeek->Draw();
@@ -452,13 +453,14 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		SkinChanger->AgentChanger();
 
 		break;
+	case FRAME_NET_UPDATE_START:
+		ShotManager->OnNetUpdate();
+		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
-		ShotManager->OnNetUpdate();
-
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->Run( false );

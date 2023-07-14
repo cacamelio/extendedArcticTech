@@ -36,7 +36,7 @@ void CMenu::Init() {
 		config.ragebot.aimbot.doubletap = AddCheckBox("RAGE", "Aimbot", "Double tap", true);
 		config.ragebot.aimbot.doubletap_key = AddKeyBind("RAGE", "Aimbot", "Double tap");
 		config.ragebot.aimbot.doubletap_speed = AddSlider("RAGE", "Aimbot", "Speed", 2, 15, 12, "tick");
-		config.ragebot.aimbot.defensive_doubletap = AddCheckBox("RAGE", "Aimbot", "Defensive doubletap");
+		config.ragebot.aimbot.defensive_doubletap = AddCheckBox("RAGE", "Aimbot", "Defensive doubletap", true);
 		config.ragebot.aimbot.force_teleport = AddKeyBind("RAGE", "Aimbot", "Force teleport");
 		config.ragebot.aimbot.force_body_aim = AddKeyBind("RAGE", "Aimbot", "Force body aim");
 		config.ragebot.aimbot.minimum_damage_override_key = AddKeyBind("RAGE", "Aimbot", "Minimum damage override");
@@ -132,6 +132,10 @@ void CMenu::Init() {
 		config.visuals.esp.show_server_hitboxes = AddCheckBox("VISUALS", "Player ESP", "Show sever hitboxes");
 		config.visuals.esp.shared_esp = AddCheckBox("VISUALS", "Player ESP", "Shared ESP");
 		config.visuals.esp.share_with_enemies = AddCheckBox("VISUALS", "Player ESP", "Share with enemies");
+		config.visuals.esp.hitmarker = AddCheckBox("VISUALS", "Player ESP", "Hitmarker");
+		config.visuals.esp.hitmarker_color = AddColorPicker("VISUALS", "Player ESP", "Hitmarker");
+		config.visuals.esp.damage_marker = AddCheckBox("VISUALS", "Player ESP", "Damage marker");
+		config.visuals.esp.damage_marker_color = AddColorPicker("VISUALS", "Player ESP", "Damage marker");
 	}
 
 	AddGroupBox("VISUALS", "Other ESP", 0.4f, 1);
