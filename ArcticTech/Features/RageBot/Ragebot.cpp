@@ -237,7 +237,7 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale, std
 	if (hitbox->flCapsuleRadius <= 0) // do not scan multipoints for feet
 		return;
 
-	matrix3x4_t boneMatrix = record->boneMatrix[hitbox->bone];
+	matrix3x4_t boneMatrix = record->aimMatrix[hitbox->bone];
 
 	Vector mins, maxs;
 	Math::VectorTransform(hitbox->bbmin, boneMatrix, &mins);
@@ -317,7 +317,7 @@ std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record, bool backtrack
 		if (!settings.auto_stop->get(1) && max_possible_damage < CalcMinDamage(record->player))
 			continue;
 
-		points.emplace_back(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->boneMatrix), hitbox }));
+		points.emplace_back(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->aimMatrix), hitbox }));
 
 		if (multipoints_enabled(hitbox))
 			GetMultipoints(record, hitbox, hitbox == HITBOX_HEAD ? settings.head_point_scale->get() * 0.01f : settings.body_point_scale->get() * 0.01f, points);
@@ -454,7 +454,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 		LagRecord* record = records[i];
 		std::vector<AimPoint_t> points = SelectPoints(record, i > 0);
 
-		LagCompensation->BacktrackEntity(record);
+		LagCompensation->BacktrackEntity(record, true);
 
 		for (const auto& point : points) {
 			if (config.ragebot.aimbot.show_aimpoints->get())
@@ -484,7 +484,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 		delete backup_record;
 		return result;
 	}
-	LagCompensation->BacktrackEntity(result.best_point.record);
+	LagCompensation->BacktrackEntity(result.best_point.record, true);
 
 	result.angle = Math::VectorAngles(result.best_point.point - eye_position);
 	result.hitchance = CalcHitchance(result.angle, target, HitboxToDamagegroup(result.best_point.hitbox));

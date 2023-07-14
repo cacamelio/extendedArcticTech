@@ -35,13 +35,15 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 	record->m_vecAbsAngles = player->GetAbsAngles();
 	record->flPoseParamaters = player->m_flPoseParameter();
 
-	if (!record->boneMatrixFilled)
+	if (!record->boneMatrixFilled) {
 		memcpy(record->boneMatrix, player->GetCachedBoneData().Base(), sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
+		record->boneMatrixFilled = true;
+	}
 
 	memcpy(record->animlayers, player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 }
 
-void CLagCompensation::BacktrackEntity(LagRecord* record) {
+void CLagCompensation::BacktrackEntity(LagRecord* record, bool use_aim_matrix) {
 	CBasePlayer* player = record->player;
 
 	float flSimulationTime = player->m_flSimulationTime();
@@ -61,8 +63,8 @@ void CLagCompensation::BacktrackEntity(LagRecord* record) {
 	player->SetAbsAngles(record->m_vecAbsAngles);
 	player->ForceBoneCache();
 
-	if (record->rollMatrixFilled && flSimulationTime != record->m_flSimulationTime > 0.002f)
-		memcpy(player->GetCachedBoneData().Base(), record->rollMatrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
+	if (use_aim_matrix)
+		memcpy(player->GetCachedBoneData().Base(), record->aimMatrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
 	else
 		memcpy(player->GetCachedBoneData().Base(), record->boneMatrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
 }

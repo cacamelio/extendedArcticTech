@@ -109,6 +109,7 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 	hook_info.setup_bones = true;
 
 	player->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
+	player->InvalidateBoneCache();
 
 	memcpy(player->GetAnimlayers(), animlayers, sizeof(AnimationLayer) * 13);
 
@@ -213,11 +214,13 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	Resolver->SetRollAngle(player, record->roll);
 
-	animstate->SetTickInterval();
-	player->UpdateClientSideAnimation();
+	if (!player->IsTeammate()) {
+		animstate->SetTickInterval();
+		player->UpdateClientSideAnimation();
 
-	BuildMatrix(player, record->rollMatrix, 128, BONE_USED_BY_HITBOX, record->animlayers);
-	record->rollMatrixFilled = true;
+		BuildMatrix(player, record->aimMatrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
+		record->aimMatrixFilled = true;
+	}
 
 	player->m_nOcclusionFrame() = nOcclusionFrame;
 	player->m_nOcclusionFlags() = nOcclusionMask;

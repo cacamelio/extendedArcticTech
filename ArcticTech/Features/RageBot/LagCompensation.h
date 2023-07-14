@@ -12,7 +12,7 @@ struct LagRecord {
 	CBasePlayer* player = nullptr;
 
 	matrix3x4_t boneMatrix[128];
-	matrix3x4_t rollMatrix[128];
+	matrix3x4_t aimMatrix[128];
 
 	AnimationLayer animlayers[13];
 
@@ -37,7 +37,7 @@ struct LagRecord {
 	bool shifting_tickbase = false;
 	bool breaking_lag_comp = false;
 	bool boneMatrixFilled = false;
-	bool rollMatrixFilled = false;
+	bool aimMatrixFilled = false;
 
 	std::array<float, 24> flPoseParamaters;
 
@@ -57,7 +57,7 @@ public:
 	LagRecord* BackupData(CBasePlayer* player);
 
 	void RecordDataIntoTrack(CBasePlayer* player, LagRecord* record);
-	void BacktrackEntity(LagRecord* record);
+	void BacktrackEntity(LagRecord* record, bool use_aim_matrix = false);
 	void OnNetUpdate();
 	void Reset();
 
