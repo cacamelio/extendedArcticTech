@@ -131,7 +131,7 @@ void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
 }
 
 void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
-	Vector eyePos = player->GetEyePosition();
+	Vector eyePos = player->m_vecOrigin() + Vector(0, 0, 64 - player->m_flDuckAmount() * 16.f);
 
 	Vector forward = (Cheat.LocalPlayer->m_vecOrigin() - player->m_vecOrigin()).Q_Normalized();
 
@@ -147,9 +147,6 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 
 	Vector negPos = eyePos - right * 16.f;
 	Vector posPos = eyePos + right * 16.f;
-
-	DebugOverlay->AddLineOverlay(eyePos, negPos, 255, 0, 0, 2, GlobalVars->interval_per_tick * 4);
-	DebugOverlay->AddLineOverlay(eyePos, posPos, 0, 255, 0, 2, GlobalVars->interval_per_tick * 4);
 
 	CTraceFilterWorldAndPropsOnly filter;
 	Ray_t rayNeg(negPos, Cheat.LocalPlayer->GetShootPosition());

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "../Misc/Prediction.h"
 #include "../RageBot/AutoWall.h"
+#include "../../Utils/Console.h"
 
 void CAntiAim::FakeLag() {
 	static ConVar* sv_maxusrcmdprocessticks = CVar->FindVar("sv_maxusrcmdprocessticks");
@@ -308,9 +309,9 @@ void CAntiAim::LegMovement() {
 }
 
 bool CAntiAim::IsPeeking() {
-	Vector velocity = Cheat.LocalPlayer->m_vecVelocity().Q_Normalized();
+	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	Vector move_factor = velocity * GlobalVars->interval_per_tick * 4;
+	Vector move_factor = velocity * GlobalVars->interval_per_tick * 5;
 
 	matrix3x4_t backup_matrix[128];
 	Cheat.LocalPlayer->CopyBones(backup_matrix);
@@ -339,8 +340,7 @@ bool CAntiAim::IsPeeking() {
 		Vector enemyShootPos = nearest->m_vecOrigin() + Vector(0, 0, 64 - nearest->m_flDuckAmount() * 16.f);
 
 		for (auto& point : scan_points) {
-			AutoWall->FireBullet(nearest, enemyShootPos, point, data);
-			if (data.damage >= 4.f) {
+			if (AutoWall->FireBullet(nearest, enemyShootPos, point, data, Cheat.LocalPlayer) && data.damage >= 4.f) {
 				peeked = true;
 				break;
 			}
@@ -349,6 +349,7 @@ bool CAntiAim::IsPeeking() {
 
 	Cheat.LocalPlayer->SetAbsOrigin(backup_abs_orgin);
 	Cheat.LocalPlayer->m_vecOrigin() = backup_origin;
+	memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), backup_matrix, sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
 
 	return peeked;
 }
