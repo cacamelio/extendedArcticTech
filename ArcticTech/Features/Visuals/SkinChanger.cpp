@@ -299,34 +299,31 @@ void CSkinChanger::AnimationUnHook( )
 	}
 }
 
+bool CSkinChanger::LoadModel( const char* thisModelName )
+{
+	const auto CustomModel = NetworkStringTableContainer->FindTable("modelprecache");
+
+	if ( CustomModel )
+	{
+		ModelInfoClient->GetModelIndex( thisModelName );
+		int MdlNum = CustomModel->AddString(false, thisModelName);
+
+		if ( MdlNum == NULL )
+			return false;
+	}
+	return true;
+}
+
+void CSkinChanger::InitCustomModels()
+{
+	LoadModel( "models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl" );
+	LoadModel( "models/player/custom_player/legacy/tm_jumpsuit_variantb.mdl" );
+	LoadModel( "models/player/custom_player/legacy/ctm_gign_varianta.mdl" );
+}
 
 void CSkinChanger::AgentChanger( ) {
-	static constexpr std::array models {
-		"models/player/custom_player/legacy/ctm_fbi_variantb.mdl",
-		"models/player/custom_player/legacy/ctm_fbi_variantf.mdl",
-		"models/player/custom_player/legacy/ctm_fbi_variantg.mdl",
-		"models/player/custom_player/legacy/ctm_fbi_varianth.mdl",
-		"models/player/custom_player/legacy/ctm_sas_variantf.mdl",
-		"models/player/custom_player/legacy/ctm_st6_variante.mdl",
-		"models/player/custom_player/legacy/ctm_st6_variantg.mdl",
-		"models/player/custom_player/legacy/ctm_st6_varianti.mdl",
-		"models/player/custom_player/legacy/ctm_st6_variantk.mdl",
-		"models/player/custom_player/legacy/ctm_st6_variantm.mdl",
-		"models/player/custom_player/legacy/tm_balkan_variantf.mdl",
-		"models/player/custom_player/legacy/tm_balkan_variantg.mdl",
-		"models/player/custom_player/legacy/tm_balkan_varianth.mdl",
-		"models/player/custom_player/legacy/tm_balkan_varianti.mdl",
-		"models/player/custom_player/legacy/tm_balkan_variantj.mdl",
-		"models/player/custom_player/legacy/tm_leet_variantf.mdl",
-		"models/player/custom_player/legacy/tm_leet_variantg.mdl",
-		"models/player/custom_player/legacy/tm_leet_varianth.mdl",
-		"models/player/custom_player/legacy/tm_leet_varianti.mdl",
-		"models/player/custom_player/legacy/tm_phoenix_variantf.mdl",
-		"models/player/custom_player/legacy/tm_phoenix_variantg.mdl",
-		"models/player/custom_player/legacy/tm_phoenix_varianth.mdl"
-	}; // TODO: fix this hardcode
-
 	static int originalIdx = 0;
+	InitCustomModels( );
 
 	if (!config.skins.override_agent->get()) {
 		if (Cheat.LocalPlayer && originalIdx) {
@@ -346,7 +343,15 @@ void CSkinChanger::AgentChanger( ) {
 	if ( !originalIdx )
 		originalIdx = pLocal->m_nModelIndex( );
 
-	pLocal->SetModelIndex(ModelInfoClient->GetModelIndex(models[config.skins.agent_model->get()]));
+	switch ( Cheat.LocalPlayer->m_iTeamNum() )
+	{
+		case 2:
+			pLocal->SetModelIndex( ModelInfoClient->GetModelIndex( models_t[ config.skins.agent_model_t->get( ) ] ) );
+			break;
+		case 3:
+			pLocal->SetModelIndex( ModelInfoClient->GetModelIndex( models_ct[ config.skins.agent_model_ct->get( ) ] ) );
+			break;
+	}
 }
 
 void CSkinChanger::Run( bool frame_end ) {
