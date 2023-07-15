@@ -232,8 +232,8 @@ struct  CCSGOPlayerAnimationState
         if (iLastUpdateFrame > GlobalVars->framecount - 1)
             iLastUpdateFrame = GlobalVars->framecount - 1;
 
-        if (flLastUpdateTime >= GlobalVars->curtime)
-            flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
+        //if (flLastUpdateTime >= GlobalVars->curtime)
+        //    flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
     }
 };
 
@@ -330,6 +330,8 @@ public:
     OFFSET(m_BoneAccessor, CBoneAccessor, 0x26a4)
     NETVAR(m_bIsWalking, bool, "DT_CSPlayer", "m_bIsWalking")
     NETVAR_O(m_iMostRecentModelBoneCounter, unsigned long, "DT_BaseAnimating", "m_nForceBone", 0x4)
+    PRED_DESC_MAP(m_nSkin, int, "m_nSkin")
+    PRED_DESC_MAP(m_nBody, int, "m_nBody")
 
     bool& m_bMaintainSequenceTransitions();
 

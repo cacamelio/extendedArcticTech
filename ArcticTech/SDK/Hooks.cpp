@@ -398,6 +398,7 @@ void __fastcall hkDoPostScreenEffects(IClientMode* thisptr, void* edx, CViewSetu
 	static tDoPostScreenEffects oDoPostScreenEffects = (tDoPostScreenEffects)Hooks::ClientModeVMT->GetOriginal(44);
 
 	Glow::Run();
+	Chams->RenderShotChams();
 
 	oDoPostScreenEffects(thisptr, edx, setup);
 }
@@ -812,7 +813,7 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 }
 
 bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !DoubleTap->ShouldBreakLC())
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !ctx.tickbase_shift || !DoubleTap->ShouldBreakLC())
 		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
 
 	if (from != -1)

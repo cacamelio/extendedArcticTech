@@ -200,6 +200,12 @@ void CMenu::Init() {
 		config.visuals.chams.enemy_type = AddComboBox("VISUALS", "Colored models", "Enemy type", { "Default", "Solid", "Glow", "Glow overlay"}, 0, true);
 		config.visuals.chams.enemy_second_color = AddColorPicker("VISUALS", "Colored models", "Enemy type");
 		config.visuals.chams.enemy_glow_thickness = AddSlider("VISUALS", "Colored models", "Enemy glow thickness", 0.1f, 9.f, 1.f, "", 0.1f);
+		config.visuals.chams.shot_chams = AddCheckBox("VISUALS", "Colored models", "Shot");
+		config.visuals.chams.shot_chams_color = AddColorPicker("VISUALS", "Colored models", "Shot", Color(100, 100, 100));
+		config.visuals.chams.shot_chams_type = AddComboBox("VISUALS", "Colored models", "Shot type", { "Default", "Solid", "Glow", "Glow overlay" }, 0, true);
+		config.visuals.chams.shot_chams_second_color = AddColorPicker("VISUALS", "Colored models", "Shot type");
+		config.visuals.chams.shot_chams_thickness = AddSlider("VISUALS", "Colored models", "Shot glow thickness", 0.1f, 9.f, 1.f, "", 0.1f);
+		config.visuals.chams.shot_chams_duration = AddSlider("VISUALS", "Colored models", "Shot chams duration", 1, 10, 4, "s");
 		config.visuals.chams.local_player = AddCheckBox("VISUALS", "Colored models", "Local player");
 		config.visuals.chams.local_player_color = AddColorPicker("VISUALS", "Colored models", "Local player", Color(100, 100, 100));
 		config.visuals.chams.local_player_type = AddComboBox("VISUALS", "Colored models", "Local type", { "Default", "Solid", "Glow", "Glow overlay" }, 0, true);

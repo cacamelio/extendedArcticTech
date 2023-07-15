@@ -142,6 +142,13 @@ struct config_t {
             CComboBox* enemy_type;
             CSlider* enemy_glow_thickness;
 
+            CCheckbox* shot_chams;
+            CColorPicker* shot_chams_color;
+            CComboBox* shot_chams_type;
+            CColorPicker* shot_chams_second_color;
+            CSlider* shot_chams_thickness;
+            CSlider* shot_chams_duration;
+
             CCheckbox* local_player;
             CColorPicker* local_player_color;
             CComboBox* local_player_type;

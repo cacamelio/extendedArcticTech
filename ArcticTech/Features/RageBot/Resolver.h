@@ -84,6 +84,7 @@ public:
 
 	void			DetectFreestand(CBasePlayer* player, LagRecord* record);
 
+	void			Apply(LagRecord* record, bool use_roll = true);
 	void			Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records);
 
 	void			OnMiss(CBasePlayer* player, LagRecord* record);

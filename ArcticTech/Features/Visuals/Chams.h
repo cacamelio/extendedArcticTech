@@ -2,7 +2,10 @@
 #include "../../SDK/Misc/Color.h"
 #include "../../SDK/Interfaces/IMaterialSystem.h"
 
+#include <vector>
+
 class IMaterial;
+struct LagRecord;
 
 struct ChamsMaterial {
 	bool enabled = false;
@@ -14,6 +17,15 @@ struct ChamsMaterial {
 	float glowThickness = 1;
 };
 
+struct ShotChams_t {
+	int ent_index;
+	ModelRenderInfo_t info;
+	DrawModelState_t state;
+	matrix3x4_t pBoneToWorld[128] = {};
+	float time;
+	matrix3x4_t model_to_world;
+};
+
 class CChams {
 	bool IsLocalPlayerAttachment(CBaseEntity* entity);
 
@@ -23,7 +35,9 @@ class CChams {
 	matrix3x4_t* _boneToWorld;
 
 	IMaterial* baseMaterials[3];
-	ChamsMaterial materials[4];
+	ChamsMaterial materials[5];
+
+	std::vector<ShotChams_t> shot_chams;
 public:
 	void LoadChams();
 	void UpdateSettings();
@@ -31,6 +45,9 @@ public:
 	void OverrideMaterial(int type, bool z, Color color, float glowThickness = 1);
 	bool OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const ModelRenderInfo_t& info, matrix3x4_t* pBoneToWorld);
 	void DrawModel(ChamsMaterial& material, float alpha = 1.f, matrix3x4_t* customBoneToWorld = nullptr);
+
+	void AddShotChams(LagRecord* record);
+	void RenderShotChams();
 };
 
 extern CChams* Chams;

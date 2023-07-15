@@ -204,6 +204,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 		animstate->SetTickInterval();
 		player->UpdateClientSideAnimation();
+
+		Resolver->Apply(record, false);
 	}
 
 	player->GetAnimlayers()[12].m_flWeight = 0;
@@ -212,11 +214,13 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	memcpy(record->boneMatrix, interpolate_data[idx].original_matrix, sizeof(matrix3x4_t) * 128);
 	record->boneMatrixFilled = true;
 
-	Resolver->SetRollAngle(player, record->roll);
+	Resolver->Apply(record);
 
 	if (!player->IsTeammate()) {
 		animstate->SetTickInterval();
 		player->UpdateClientSideAnimation();
+
+		Resolver->Apply(record);
 
 		BuildMatrix(player, record->aimMatrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
 		record->aimMatrixFilled = true;
