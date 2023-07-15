@@ -32,6 +32,7 @@ struct Ctx_t {
 	CUserCmd* cmd = nullptr;
 	bool send_packet = true;
 	bool is_peeking = false;
+	bool loaded_script = false;
 	int tickbase_shift = 0;
 	int shifted_last_tick = 0;
 	bool teleported_last_tick = false;

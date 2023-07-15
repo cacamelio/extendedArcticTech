@@ -16,6 +16,7 @@
 
 #include "../Utils/Utils.h"
 #include "../SDK/Config.h"
+#include "../Features/Lua/Bridge/Bridge.h"
 
 
 void CMenu::Init() {
@@ -360,7 +361,9 @@ void CMenu::Init() {
 
 	AddGroupBox("CONFIG", "Lua", 1, 1);
 	{
-
+		Config->lua_list = AddListBox( "CONFIG", "Lua", "lualist", {} );
+		Config->lua_button = AddButton( "CONFIG", "Lua", "Load" );
+		Config->lua_button_unload = AddButton( "CONFIG", "Lua", "Unload" );
 	}
 
 	AddGroupBox("LUA", "A", 1, 0);

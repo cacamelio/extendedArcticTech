@@ -195,6 +195,15 @@
     <ClCompile Include="SDK\Misc\UtlStringList.h">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Features\Lua\Bridge\Bridge.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\Lua\Protect\Protect.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Features\Lua\Hook\Hook.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\Utils.h">
@@ -482,8 +491,22 @@
     <ClInclude Include="SDK\Interfaces\IGameTypes.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="Features\Lua\Bridge\Bridge.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Lua\Protect\Protect.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Lua\Hook\Hook.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Lua\Sol.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="detours.lib" />
+    <Library Include="Features\Lua\Lib\lua51.lib" />
+    <Library Include="Features\Lua\Lib\luajit.lib" />
   </ItemGroup>
 </Project>

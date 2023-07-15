@@ -61,6 +61,16 @@ public:
     bool SendNetMsg(void* msg, bool bForceReliable, bool bVoice);
 };
 
+class InterfaceReg
+{
+private:
+    using InstantiateInterfaceFn = void* ( * )( );
+public:
+    InstantiateInterfaceFn m_CreateFn;
+    const char* m_pName;
+    InterfaceReg* m_pNext;
+};
+
 class CClientState
 {
 public:

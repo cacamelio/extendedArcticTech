@@ -263,8 +263,11 @@ class CConfig {
 
 public:
     CListBox* config_list;
+    CListBox* lua_list;
     CInputBox* config_name;
     CButton* load_button;
+    CButton* lua_button;
+    CButton* lua_button_unload;
     CButton* save_button;
     CButton* delete_button;
     CButton* import_button;
