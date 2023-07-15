@@ -10,6 +10,7 @@
 #include "../Features/Misc/AutoStrafe.h"
 #include "../Features/Visuals/ESP.h"
 #include "../Features/Visuals/Glow.h"
+#include "../Features/Lua/Bridge/Bridge.h"
 #include "../Features/Visuals/Chams.h"
 #include "../Features/Visuals/World.h"
 #include "../Features/Visuals/GrenadePrediction.h"

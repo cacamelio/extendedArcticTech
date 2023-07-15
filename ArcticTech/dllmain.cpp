@@ -11,6 +11,7 @@
 #include "Features/Visuals/Chams.h"
 #include "SDK/Globals.h"
 #include "Features/Visuals/SkinChanger.h"
+#include "Features/Lua/Bridge/Bridge.h"
 
 LONG __stdcall ExceptionHandler(_EXCEPTION_POINTERS* exceptionInfo) {
     std::string exceptionText;
@@ -45,6 +46,7 @@ void Initialize(HMODULE hModule) {
 
     Interfaces::Initialize();
     Hooks::Initialize();
+    Lua->Setup();
     SkinChanger->FixViewModelSequence( );
 
     while (!GetAsyncKeyState(VK_END)) {
