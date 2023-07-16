@@ -7,7 +7,17 @@ public:
 	unsigned char r, g, b, a;
 
 	Color() {
-		r = g = b = a = 0;
+		r = g = b = a = 255;
+	}
+
+	explicit Color(int _r) {
+		r = g = b = _r;
+		a = 255;
+	}
+
+	Color(int _r, int _g) {
+		r = g = b = _r;
+		a = _g;
 	}
 
 	Color(int _r, int _g, int _b) {
@@ -145,6 +155,13 @@ public:
 		*(int*)this = col32;
 	}
 
+	void as_fraction(float r_, float g_, float b_, float a_ = 255.f) {
+		r = int(r_ * 255.f + 0.5f);
+		g = int(g_ * 255.f + 0.5f);
+		b = int(b_ * 255.f + 0.5f);
+		a = int(a_ * 255.f + 0.5f);
+	}
+
 	int to_int32() const {
 		return *(int*)this;
 	}
@@ -164,5 +181,9 @@ public:
 
 	Color lerp(const Color& other, float perc) {
 		return Color(int(r + (other.r - r) * perc), int(g + (other.g - g) * perc), int(b + (other.b - b) * perc), int(a + (other.a - a) * perc));
+	}
+
+	Color clone() {
+		return Color(r, g, b, a);
 	}
 };

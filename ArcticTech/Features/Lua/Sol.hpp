@@ -6864,15 +6864,6 @@ namespace sol {
 		io,
 		// LuaJIT only
 		ffi,
-		base64,
-		easing,
-		antiaim_funcs,
-		clipboard,
-		http,
-		surface,
-		images,
-		vector,
-		websockets,
 		// LuaJIT only
 		jit,
 		// library for handling utf8: new to Lua

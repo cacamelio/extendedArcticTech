@@ -1,180 +1,320 @@
 #include "Bridge.h"
 
-void lua_panic( sol::optional <std::string> message )
+void LuaErrorHandler(sol::optional<std::string> message)
 {
-	if ( !message )
+	if (!message)
 		return;
 
-	auto log = "Lua error: " + message.value_or( "unknown" );
-	Console->ColorPrint( log, Color(255, 0, 0) );
+	Console->ArcticTag();
+	Console->ColorPrint(message.value_or("unknown"), Color(255, 0, 0) );
+	Console->Print("\n");
 }
-namespace client
+
+void ScriptLoadButton()
 {
-	void print( const char* msg, Color clr )
-	{
-		Console->ColorPrint( msg, clr );
+	Lua->LoadScript(Lua->GetScriptID(Config->lua_list->get()));
+}
+
+void ScriptUnloadButton()
+{
+	Lua->UnloadScript(Lua->GetScriptID(Config->lua_list->get()));
+}
+
+std::string GetCurrentScript(sol::this_state s) {
+	sol::state_view lua_state(s);
+	sol::table rs = lua_state["debug"]["getinfo"](2, ("S"));
+	std::string source = rs["source"];
+	std::string filename = std::filesystem::path(source.substr(1)).filename().string();
+
+	return filename;
+}
+
+namespace api {
+	void print(std::string msg) {
+		Console->Log(msg);
 	}
 
+	void print_raw(std::string msg, sol::optional<Color> color) {
+		Console->ColorPrint(msg, color.value_or(Color(255, 255, 255)));
+	}
 
+	namespace client {
+		void add_callback(sol::this_state state, std::string event_name, sol::protected_function func) {
+			const std::string script_name = GetCurrentScript(state);
+			const int script_id = Lua->GetScriptID(script_name);
+
+			if (event_name == "render")
+				Lua->hooks.registerHook(LUA_RENDER, script_id, func);
+			else if (event_name == "createmove")
+				Lua->hooks.registerHook(LUA_CREATEMOVE, script_id, func);
+			else if (event_name == "frame_stage")
+				Lua->hooks.registerHook(LUA_FRAMESTAGE, script_id, func);
+			else if (event_name == "game_events")
+				Lua->hooks.registerHook(LUA_GAMEEVENTS, script_id, func);
+			else if (event_name == "unload")
+				Lua->hooks.registerHook(LUA_UNLOAD, script_id, func);
+			else
+				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
+		}
+
+		void unload_script(sol::this_state state) {
+			Lua->UnloadScript(Lua->GetScriptID(GetCurrentScript(state)));
+		}
+
+		void reload_script(sol::this_state state) {
+			Lua->UnloadScript(Lua->GetScriptID(GetCurrentScript(state)));
+			Lua->LoadScript(Lua->GetScriptID(GetCurrentScript(state)));
+		}
+	}
+
+	namespace globals {
+		float get_curtime() {
+			return GlobalVars->curtime;
+		}
+
+		float get_realtime() {
+			return GlobalVars->realtime;
+		}
+
+		float get_frametime() {
+			return GlobalVars->frametime;
+		}
+
+		int get_framecount() {
+			return GlobalVars->framecount;
+		}
+
+		float get_absoluteframetime() {
+			return GlobalVars->absoluteframetime;
+		}
+
+		int get_max_clients() {
+			return GlobalVars->max_clients;
+		}
+
+		int get_tickcount() {
+			return GlobalVars->tickcount;
+		}
+
+		float get_interval_per_tick() {
+			return GlobalVars->interval_per_tick;
+		}
+
+		float get_interpolation_amount() {
+			return GlobalVars->interpolation_amount;
+		}
+	}
 }
 
+void CLua::Setup() {
+	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts");
 
-void on_load_script()
-{
-	Lua->load_script( Lua->get_script_id( Config->lua_list->get( ) ) );
-}
+	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
+	lua.open_libraries();
 
-void script_unload()
-{
-	Lua->unload_script( Lua->get_script_id( Config->lua_list->get( ) ) );
-}
-
-void CLua::Setup()
-{
-	lua = sol::state( sol::c_call<decltype( &lua_panic ), &lua_panic> );
-	sol::table client = lua.create_table();
-
-	lua.new_usertype <Color>("color", sol::constructors <Color( ), Color( int, int, int ), Color( int, int, int, int )>( ),
-		( std::string )"r", &Color::r,
-		( std::string )"g", &Color::g,
-		( std::string )"b", &Color::b,
-		( std::string )"a", &Color::a
+	lua.new_usertype<Color>("color", sol::call_constructor, sol::constructors<Color(), Color(int), Color(int, int), Color(int, int, int), Color(int, int, int, int)>(),
+		"r", &Color::r,
+		"g", &Color::g,
+		"b", &Color::b,
+		"a", &Color::a,
+		"as_int32", &Color::as_int32,
+		"as_fraction", &Color::as_fraction,
+		"alpha_modulate", &Color::alpha_modulate,
+		"alpha_modulatef", &Color::alpha_modulatef,
+		"clone", &Color::clone
 	);
 
-	
-	client[ "print" ] = client::print;
+	// _G
+	lua["print"] = api::print;
+	lua["print_raw"] = api::print_raw;
 
+	auto client = lua.create_table();
+	client["add_callback"] = api::client::add_callback;
+	client["unload_script"] = api::client::unload_script;
+	client["reload_script"] = api::client::reload_script;
 	lua["client"] = client;
 
-	refresh_scripts();
-	Config->lua_list->UpdateList(scripts_names);
-	Config->lua_button->set_callback(on_load_script);
-	Config->lua_button_unload->set_callback(script_unload);
+	lua["globals"] = lua.create_table_with(
+		"curtime", sol::readonly_property(api::globals::get_curtime),
+		"realtime", sol::readonly_property(api::globals::get_realtime),
+		"frametime", sol::readonly_property(api::globals::get_frametime),
+		"framecount", sol::readonly_property(api::globals::get_framecount),
+		"absoluteframetime", sol::readonly_property(api::globals::get_absoluteframetime),
+		"max_clients", sol::readonly_property(api::globals::get_max_clients)
+	);
+
+	RefreshScripts();
+	Config->lua_button->set_callback(ScriptLoadButton);
+	Config->lua_button_unload->set_callback(ScriptUnloadButton);
+	Config->lua_refresh->set_callback([]() { Lua->RefreshScripts(); });
 }
 
-
-int CLua::get_script_id( std::string name ) {
-	for ( int i = 0; i < this->scripts.size( ); i++ ) {
-		if ( this->scripts.at( i ) == name )
+int CLua::GetScriptID(std::string name) {
+	for (int i = 0; i < scripts.size(); i++) {
+		if (scripts[i].name == name || scripts[i].ui_name == name)
 			return i;
 	}
+
 	return -1;
 }
 
-std::string CLua::get_script_path( std::string name ) {
-	return this->get_script_path( this->get_script_id( name ) );
+std::string CLua::GetScriptPath(std::string name) {
+	return GetScriptPath(GetScriptID(name));
 }
 
-std::string CLua::get_script_path( int id ) {
-	if ( id == -1 )
+std::string CLua::GetScriptPath( int id ) {
+	if (id == -1)
 		return  "";
 
-	return this->pathes.at( id ).string( );
+	return scripts[id].path.string();
 }
 
-void CLua::load_script( int id )
-{
-	if ( id == -1 )
+void CLua::LoadScript( int id ) {
+	if (id == -1)
 		return;
 
-	if ( loaded.at( id ) ) //-V106
+	if (scripts[id].loaded)
 		return;
 
-	auto path = get_script_path( id );
+	const std::string path = GetScriptPath( id );
 
-	if ( path == "" )
+	if (path == "")
 		return;
 
-	auto error_load = false;
-	loaded.at( id ) = true;
-	lua.script_file( path,
-		[ &error_load ] ( lua_State*, sol::protected_function_result result )
-		{
-			if ( !result.valid( ) )
-			{
-				sol::error error = result;
-				auto log = "Lua error: " + ( std::string )error.what( );
-				error_load = true;
-			}
+	LuaScript_t& script = scripts[id];
 
-			return result;
+	script.loaded = true;
+	script.env = new sol::environment(lua, sol::create, lua.globals());
+
+	sol::environment& env = *script.env;
+
+	bool error_load = false;
+
+	auto load_result_func = [&error_load, script](lua_State* state, sol::protected_function_result result) {
+		if (!result.valid()) {
+			sol::error error = result;
+			Console->Error(error.what());
+			error_load = true;
 		}
-	);
 
-	if ( error_load | loaded.at( id ) == false )
+		return result;
+	};
+	
+	lua.script_file(path, env, load_result_func);
+
+	if (error_load)
 	{
-		loaded.at( id ) = false;
+		script.loaded = false;
+		delete script.env;
+		script.env = nullptr;
+
+		RefreshUI();
 		return;
 	}
-	ctx.loaded_script = true;
+
+	RefreshUI();
 }
 
-void CLua::unload_script( int id ) {
-	if ( id == -1 )
+void CLua::UnloadScript(int id) {
+	if (id == -1 )
 		return;
 
-	if ( !loaded.at( id ) )
+	LuaScript_t& script = scripts[id];
+
+	if (!script.loaded)
 		return;
 
-	if ( ctx.loaded_script )
-		for ( auto current :Lua->hooks.getHooks("on_unload") )
-			current.func( );
+	for (auto& current : hooks.getHooks(LUA_UNLOAD)) {
+		if (current.scriptId == id)
+			current.func();
+	}
 
-	ctx.loaded_script = false;
+	hooks.unregisterHooks(id);
+	script.loaded = false;
+	delete script.env;
+	script.env = nullptr;
 
-	hooks.unregisterHooks( id );
-	loaded.at( id ) = false;
+	RefreshUI();
 }
 
-void CLua::refresh_scripts( )
-{
-	auto oldLoaded = loaded;
-	auto oldScripts = scripts;
+void CLua::ReloadAll() {
+	hooks.removeAll();
 
-	loaded.clear( );
-	pathes.clear( );
-	scripts.clear( );
-	scripts_names.clear( );
+	for (int i = 0; i < scripts.size(); i++) {
+		LuaScript_t* script = &scripts[i];
 
-	std::vector<std::filesystem::path> pathes_to_scan = { "C:\\gs\\luas\\cloud","C:\\gs\\luas" };
-	for ( int l = 0; l < 2; l++ ) {
+		if (script->loaded) {
+			UnloadScript(i);
+			LoadScript(i);
+		}
+	}
+}
 
-		for ( auto& entry : std::filesystem::directory_iterator( pathes_to_scan.at( l ) ) )
+void CLua::UnloadAll() {
+	for (int i = 0; i < scripts.size(); i++) {
+		LuaScript_t* script = &scripts[i];
+
+		if (script->loaded) {
+			UnloadScript(i);
+		}
+	}
+}
+
+std::vector<std::string> CLua::GetUIList() {
+	std::vector<std::string> result;
+
+	for (auto& script : scripts) {
+		result.emplace_back(script.ui_name);
+	}
+
+	return result;
+}
+
+void CLua::RefreshScripts() {
+	auto old_scripts = scripts;
+
+	UnloadAll();
+	scripts.clear();
+
+	for (auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path().string() + "/at/scripts"))
+	{
+		if (entry.path().extension() == ".lua")
 		{
-			if ( entry.path( ).extension( ) == ( ".lua" ) || entry.path( ).extension( ) == ( ".luac" ) )
-			{
-				auto path = entry.path( );
-				auto filename = path.filename( ).string( );
+			LuaScript_t script;
 
-				auto didPut = false;
+			script.path = entry.path();
+			script.name = script.path.filename().string();
+			script.loaded = false;
 
+			bool was_loaded = false;
 
-
-				for ( auto i = 0; i < oldScripts.size( ); i++ )
-				{
-					if ( filename == oldScripts.at( i ) ) //-V106
-					{
-						loaded.push_back( oldLoaded.at( i ) ); //-V106
-						didPut = true;
-					}
-				}
-
-				if ( !didPut )
-					loaded.push_back( false );
-
-				pathes.push_back( path );
-				scripts.push_back( filename );
-
-				if ( l == 0 ) {
-					scripts_names.push_back( "*" + filename );
-				}
-				else {
-					scripts_names.push_back( filename );
+			for (auto& o_script : old_scripts) {
+				if (o_script.name == script.name && o_script.loaded) {
+					was_loaded = true;
+					break;
 				}
 			}
+
+			script.ui_name = was_loaded ? "* " + script.name : script.name;
+
+			scripts.emplace_back(script);
 		}
 	}
 
+	Config->lua_list->UpdateList(GetUIList());
+
+	for (auto script : old_scripts) {
+		if (script.loaded)
+			LoadScript(GetScriptID(script.name));
+	}
+}
+
+void CLua::RefreshUI() {
+	for (auto& script : scripts) {
+		script.ui_name = script.loaded ? "* " + script.name : script.name;
+	}
+
+	Config->lua_list->UpdateList(GetUIList());
 }
 
 CLua* Lua = new CLua;

@@ -1,24 +1,34 @@
 #include "Hook.h"
 
-void c_lua_hookManager::registerHook( std::string eventName, int scriptId, sol::protected_function func ) {
-	c_lua_hook hk = { scriptId, func };
+void CLuaHookManager::registerHook(ELuaCallbacks event, int scriptId, sol::protected_function func) {
+	LuaHook_t hk = { scriptId, func };
 
-	this->hooks[ eventName ].push_back( hk ); // return hook function
+	hooks[event].push_back(hk); // return hook function
 }
 
-void c_lua_hookManager::unregisterHooks( int scriptId ) {
-	for ( auto& ev : this->hooks ) {
-		int pos = 0;
+void CLuaHookManager::unregisterHooks(int scriptId) {
+	for (int i = 0; i < LUA_MAX_CALLBACKS; i++) {
+		auto& cbs = hooks[i];
 
-		for ( auto& hk : ev.second ) {
-			if ( hk.scriptId == scriptId )
-				ev.second.erase( ev.second.begin( ) + pos );
+		for (auto it = cbs.begin(); it != cbs.end();) {
+			if (it->scriptId == scriptId) {
+				it = cbs.erase(it);
+				continue;
+			}
 
-			pos++;
+			it++;
 		}
 	}
 }
 
-std::vector<c_lua_hook> c_lua_hookManager::getHooks( std::string eventName ) {
-	return this->hooks[ eventName ];
+std::vector<LuaHook_t> CLuaHookManager::getHooks(ELuaCallbacks eventName) {
+	return hooks[eventName];
+}
+
+void CLuaHookManager::removeAll() {
+	for (int i = 0; i < LUA_MAX_CALLBACKS; i++) {
+		auto& cbs = hooks[i];
+
+		cbs.clear();
+	}
 }

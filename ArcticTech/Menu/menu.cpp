@@ -370,6 +370,7 @@ void CMenu::Init() {
 		Config->lua_list = AddListBox( "CONFIG", "Lua", "lualist", {} );
 		Config->lua_button = AddButton( "CONFIG", "Lua", "Load" );
 		Config->lua_button_unload = AddButton( "CONFIG", "Lua", "Unload" );
+		Config->lua_refresh = AddButton("CONFIG", "Lua", "Refresh");
 	}
 
 	AddGroupBox("LUA", "A", 1, 0);

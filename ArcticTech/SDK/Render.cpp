@@ -507,8 +507,8 @@ void CRender::Circle3D(const Vector& center, float radius, Color color, bool fil
 }
 
 void CRender::Circle3DGradient(const Vector& center, float radius, Color color, bool reverse) {
-	const auto center_color = (reverse ? color.alpha_modulate(0) : color).d3d_color();
-	const auto out_color = (reverse ? color : color.alpha_modulate(0)).d3d_color();
+	const DWORD center_color = (reverse ? color.alpha_modulate(0) : color).d3d_color();
+	const DWORD out_color = (reverse ? color : color.alpha_modulate(0)).d3d_color();
 
 	const Vector2 center_scr = WorldToScreen(center);
 

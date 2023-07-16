@@ -269,12 +269,14 @@ class CConfig {
     };
 
 public:
-    CListBox* config_list;
     CListBox* lua_list;
-    CInputBox* config_name;
-    CButton* load_button;
     CButton* lua_button;
     CButton* lua_button_unload;
+    CButton* lua_refresh;
+
+    CListBox* config_list;
+    CInputBox* config_name;
+    CButton* load_button;
     CButton* save_button;
     CButton* delete_button;
     CButton* import_button;
@@ -282,6 +284,10 @@ public:
 
     void parse(nlohmann::json& cfg);
     nlohmann::json dump();
+
+    CConfig() {
+        std::filesystem::create_directory(std::filesystem::current_path().string() + "/at");
+    }
 
     std::vector<std::string> get_all_configs() {
         std::vector<std::string> result;
