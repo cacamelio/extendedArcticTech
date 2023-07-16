@@ -34,6 +34,10 @@ namespace api {
 		Console->Log(msg);
 	}
 
+	void error(std::string msg) {
+		Console->Error(msg);
+	}
+
 	void print_raw(std::string msg, sol::optional<Color> color) {
 		Console->ColorPrint(msg, color.value_or(Color(255, 255, 255)));
 	}
@@ -68,40 +72,36 @@ namespace api {
 	}
 
 	namespace globals {
-		float get_curtime() {
-			return GlobalVars->curtime;
+		bool is_connected() {
+			return EngineClient->IsConnected();
 		}
 
-		float get_realtime() {
-			return GlobalVars->realtime;
+		bool is_in_game() {
+			return EngineClient->IsInGame();
 		}
 
-		float get_frametime() {
-			return GlobalVars->frametime;
+		int choked_commands() {
+			return ClientState->m_nChokedCommands;
 		}
 
-		int get_framecount() {
-			return GlobalVars->framecount;
+		int commandack() {
+			return ClientState->m_nCommandAck;
 		}
 
-		float get_absoluteframetime() {
-			return GlobalVars->absoluteframetime;
+		int commandack_prev() {
+			return ClientState->m_nLastCommandAck;
 		}
 
-		int get_max_clients() {
-			return GlobalVars->max_clients;
+		int last_outgoing_command() {
+			return ClientState->m_nLastOutgoingCommand;
 		}
 
-		int get_tickcount() {
-			return GlobalVars->tickcount;
+		int server_tick() {
+			return ClientState->m_ClockDriftMgr.m_nServerTick;
 		}
 
-		float get_interval_per_tick() {
-			return GlobalVars->interval_per_tick;
-		}
-
-		float get_interpolation_amount() {
-			return GlobalVars->interpolation_amount;
+		int client_tick() {
+			return ClientState->m_ClockDriftMgr.m_nClientTick;
 		}
 	}
 }
@@ -110,7 +110,7 @@ void CLua::Setup() {
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts");
 
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
-	lua.open_libraries();
+	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::bit32, sol::lib::ffi, sol::lib::jit, sol::lib::io, sol::lib::utf8);
 
 	lua.new_usertype<Color>("color", sol::call_constructor, sol::constructors<Color(), Color(int), Color(int, int), Color(int, int, int), Color(int, int, int, int)>(),
 		"r", &Color::r,
@@ -121,11 +121,13 @@ void CLua::Setup() {
 		"as_fraction", &Color::as_fraction,
 		"alpha_modulate", &Color::alpha_modulate,
 		"alpha_modulatef", &Color::alpha_modulatef,
+		"lerp", &Color::lerp,
 		"clone", &Color::clone
 	);
 
 	// _G
 	lua["print"] = api::print;
+	lua["error"] = api::error;
 	lua["print_raw"] = api::print_raw;
 
 	auto client = lua.create_table();
@@ -134,14 +136,26 @@ void CLua::Setup() {
 	client["reload_script"] = api::client::reload_script;
 	lua["client"] = client;
 
-	lua["globals"] = lua.create_table_with(
-		"curtime", sol::readonly_property(api::globals::get_curtime),
-		"realtime", sol::readonly_property(api::globals::get_realtime),
-		"frametime", sol::readonly_property(api::globals::get_frametime),
-		"framecount", sol::readonly_property(api::globals::get_framecount),
-		"absoluteframetime", sol::readonly_property(api::globals::get_absoluteframetime),
-		"max_clients", sol::readonly_property(api::globals::get_max_clients)
+	lua.new_usertype<CGlobalVarsBase>("global_vars_t", sol::no_constructor,
+		"curtime", sol::readonly(&CGlobalVarsBase::curtime),
+		"realtime", sol::readonly(&CGlobalVarsBase::realtime),
+		"frametime", sol::readonly(&CGlobalVarsBase::frametime),
+		"framecount", sol::readonly(&CGlobalVarsBase::framecount),
+		"absoluteframetime", sol::readonly(&CGlobalVarsBase::absoluteframetime),
+		"tickcount", sol::readonly(&CGlobalVarsBase::tickcount),
+		"tickinterval", sol::readonly(&CGlobalVarsBase::interval_per_tick),
+		"max_players", sol::readonly(&CGlobalVarsBase::max_clients),
+		"is_connected", sol::readonly_property(&api::globals::is_connected),
+		"is_in_game", sol::readonly_property(&api::globals::is_in_game),
+		"choked_commands", sol::readonly_property(&api::globals::choked_commands),
+		"commandack", sol::readonly_property(&api::globals::commandack),
+		"commandack_prev", sol::readonly_property(&api::globals::commandack_prev),
+		"last_outgoing_command", sol::readonly_property(&api::globals::last_outgoing_command),
+		"server_tick", sol::readonly_property(&api::globals::server_tick),
+		"client_tick", sol::readonly_property(&api::globals::client_tick)
 	);
+
+	lua["globals"] = GlobalVars;
 
 	RefreshScripts();
 	Config->lua_button->set_callback(ScriptLoadButton);

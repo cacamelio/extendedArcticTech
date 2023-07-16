@@ -24568,64 +24568,6 @@ namespace sol {
 								lua_pop( L, 1 );
 							#endif // LuaJIT only
 								break;
-
-							case lib::base64:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/base64", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-								break;
-
-							case lib::antiaim_funcs:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/antiaim_funcs", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-								break;
-							case lib::easing:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/easing", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-								break;
-							case lib::vector:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "vector", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-								break;
-							case lib::clipboard:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/clipboard", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-								break;
-							case lib::http:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/http", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-								break;
-							case lib::surface:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/surface", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-							case lib::images:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/images", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-
-								break;
-							case lib::websockets:
-							#ifdef SOL_LUAJIT
-								luaL_requiref( L, "gamesense/websockets", luaopen_ffi, 1 );
-								lua_pop( L, 1 );
-							#endif // LuaJIT only
-
-								break;
-								break;
 							case lib::jit:
 							#ifdef SOL_LUAJIT
 								luaL_requiref( L, "jit", luaopen_jit, 0 );
