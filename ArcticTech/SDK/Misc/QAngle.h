@@ -10,6 +10,12 @@ struct QAngle {
 		roll = 0;
 	}
 
+	QAngle(float pitch_, float yaw_) {
+		pitch = pitch_;
+		yaw = yaw_;
+		roll = 0.f;
+	}
+
 	QAngle(float pitch_, float yaw_, float roll_) {
 		pitch = pitch_;
 		yaw = yaw_;

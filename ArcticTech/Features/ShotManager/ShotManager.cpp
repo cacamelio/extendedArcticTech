@@ -7,6 +7,8 @@
 #include "../RageBot/LagCompensation.h"
 #include "../Visuals/ESP.h"
 
+#include "../Lua/Bridge/Bridge.h"
+
 
 CShotManager* ShotManager = new CShotManager;
 
@@ -82,6 +84,7 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 				it->acked = true;
 				it->unregistered = true;
 				it->death = true;
+				it->miss_reason = "death";
 
 				Console->ArcticTag();
 				Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
@@ -119,6 +122,7 @@ void CShotManager::OnNetUpdate() {
 			if (GlobalVars->tickcount - it->shot_tick > max_register_delay) {
 				it->acked = true;
 				it->unregistered = true;
+				it->miss_reason = "unregistered";
 
 				Console->ArcticTag();
 				Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
@@ -151,6 +155,7 @@ void CShotManager::OnNetUpdate() {
 
 		if (shot->player_death) {
 			Console->Log("missed shot due to player death");
+			it->miss_reason = "player death";
 		}
 		else {
 			CBasePlayer* player = shot->record->player;
@@ -160,6 +165,7 @@ void CShotManager::OnNetUpdate() {
 
 			Console->ArcticTag();
 			if (shot->damage > 0) {
+				Resolver->OnHit(player, shot->record);
 				Console->ColorPrint(std::format("hit {}'s {}({}) for {}({}) ({} remaining) [mismatch: ", player->GetName(), GetDamagegroupName(shot->damagegroup), GetDamagegroupName(shot->wanted_damagegroup), shot->damage, shot->wanted_damage, player->m_iHealth()), Color(240, 240, 240));
 
 				if (config.visuals.esp.hitmarker->get())
@@ -174,17 +180,21 @@ void CShotManager::OnNetUpdate() {
 
 					if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
 						Console->ColorPrint("resolver", Color(200, 255, 0));
+						it->miss_reason = "resolver";
 					}
 					else {
 						if (HitboxToDamagegroup(trace.hitgroup) == shot->wanted_damagegroup) {
 							Console->ColorPrint("resolver", Color(200, 255, 0));
+							it->miss_reason = "resolver";
 						}
 						else {
 							if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f) {
 								Console->ColorPrint("pred. error", Color(255, 200, 0));
+								it->miss_reason = "prediction error";
 							}
 							else {
 								Console->ColorPrint("spread", Color(255, 200, 0));
+								it->miss_reason = "spread";
 							}
 						}
 					}
@@ -203,18 +213,22 @@ void CShotManager::OnNetUpdate() {
 
 				if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
 					if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f) {
+						it->miss_reason = "prediction error";
 						Console->ColorPrint("pred. error", Color(255, 200, 0));
 						Console->ColorPrint(std::format(" [diff: {:.4f}]\n", (shot->shoot_pos - shot->client_shoot_pos).Q_Length()), Color(240, 240, 240));
 					}
 					else {
+						it->miss_reason = "spread";
 						Console->ColorPrint("spread\n", Color(255, 200, 0));
 					}
 				}
 				else {
 					if ((shot->hit_point - shot->target_pos).LengthSqr() < 36.f) {
+						it->miss_reason = "damage rejection";
 						Console->ColorPrint("damage rejection\n", Color(255, 20, 20)); // correct naming: sin shluhi s gmom
 					}
 					else {
+						it->miss_reason = "resolver";
 						Console->ColorPrint("resolver\n", Color(200, 255, 0));
 
 						Resolver->OnMiss(player, shot->record);
@@ -224,6 +238,9 @@ void CShotManager::OnNetUpdate() {
 
 			LagCompensation->BacktrackEntity(backup_record);
 		}
+
+		for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
+			callback.func(shot);
 	}
 }
 
@@ -239,6 +256,9 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 	shot->record = record;
 	shot->wanted_damage = damage;
 	shot->wanted_damagegroup = damagegroup;
+
+	for (auto& callback : Lua->hooks.getHooks(LUA_AIM_SHOT))
+		callback.func(shot);
 }
 
 void CShotManager::Reset() {

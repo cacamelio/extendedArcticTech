@@ -146,6 +146,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	if (records.size() > 2)
 		prevRecord = &records.back();
 
+	record->player = player;
+
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;
 	auto backupFrametime = GlobalVars->frametime;
@@ -182,22 +184,15 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	player->GetAnimlayers()[12].m_flWeight = 0;
 
-	// fix in air legs
-	animstate->bOnGround = player->m_fFlags() & FL_ONGROUND;
-	if (!animstate->bOnGround) {
-		const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-		const float gravity = cvars.sv_gravity->GetFloat();
-		const float speed = player->m_flFallVelocity();
-		// speed = jumpImpulse - gravity * flDurationInAir
-		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
-	}
-
-	Resolver->SetRollAngle(player, 0.f);
-	
-	animstate->SetTickInterval();
-	player->UpdateClientSideAnimation();
-
-	CCSGOPlayerAnimationState originalAnimstate = *animstate;
+	//// fix in air legs
+	//animstate->bOnGround = player->m_fFlags() & FL_ONGROUND;
+	//if (!animstate->bOnGround) {
+	//	const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
+	//	const float gravity = cvars.sv_gravity->GetFloat();
+	//	const float speed = player->m_flFallVelocity();
+	//	// speed = jumpImpulse - gravity * flDurationInAir
+	//	animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
+	//}
 
 	if (!player->IsTeammate()) {
 		Resolver->Run(player, record, records);
@@ -207,19 +202,25 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 		Resolver->Apply(record, false);
 	}
+	else {
+		Resolver->SetRollAngle(player, 0.f);
+		animstate->SetTickInterval();
+		player->UpdateClientSideAnimation();
 
+	}
+
+	CCSGOPlayerAnimationState originalAnimstate = *animstate;
 	player->GetAnimlayers()[12].m_flWeight = 0;
 
 	BuildMatrix(player, interpolate_data[idx].original_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
 	memcpy(record->boneMatrix, interpolate_data[idx].original_matrix, sizeof(matrix3x4_t) * 128);
 	record->boneMatrixFilled = true;
 
-	Resolver->Apply(record);
-
 	if (!player->IsTeammate()) {
 		animstate->SetTickInterval();
 		player->UpdateClientSideAnimation();
 
+		animstate->flDurationInAir = originalAnimstate.flDurationInAir;
 		Resolver->Apply(record);
 
 		BuildMatrix(player, record->aimMatrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);

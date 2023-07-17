@@ -290,10 +290,10 @@ void CChams::AddShotChams(LagRecord* record) {
 	hit.info.pLightingOffset = nullptr;
 	hit.info.pLightingOrigin = nullptr;
 	hit.info.hitboxset = record->player->m_nHitboxSet();
-	hit.info.skin = (int)(uintptr_t(record->player) + m_nSkin);
-	hit.info.body = (int)(uintptr_t(record->player) + m_nBody);
-	hit.info.entity_index = record->player->EntIndex();
-	hit.info.instance = CallVFunction<ModelInstanceHandle_t(__thiscall*)(void*) >(renderable, 30u)(renderable);
+	hit.info.skin = m_nSkin;
+	hit.info.body = m_nBody;
+	hit.info.entity_index = -1;
+	hit.info.instance = CallVFunction<ModelInstanceHandle_t(__thiscall*)(void*)>(renderable, 30u)(renderable);
 	hit.info.flags = 0x1;
 
 	hit.info.pModelToWorld = &hit.model_to_world;
@@ -324,9 +324,8 @@ void CChams::RenderShotChams() {
 		_ctx = ctx;
 		_info = it->info;
 		_state = it->state;
-		_boneToWorld = it->pBoneToWorld;
 
-		DrawModel(materials[ClassOfEntity::Shot], alpha);
+		DrawModel(materials[ClassOfEntity::Shot], alpha, it->pBoneToWorld);
 
 		it++;
 	}

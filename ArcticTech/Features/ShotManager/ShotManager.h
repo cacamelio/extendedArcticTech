@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include "../../SDK/Misc/Vector.h"
 #include "../../SDK/Misc/QAngle.h"
@@ -41,6 +42,7 @@ struct RegisteredShot_t {
 	bool death = false;
 	bool player_death = false;
 	bool acked = false;
+	std::string_view miss_reason = "none";
 };
 
 class CShotManager {

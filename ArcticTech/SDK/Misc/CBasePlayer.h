@@ -232,8 +232,8 @@ struct  CCSGOPlayerAnimationState
         if (iLastUpdateFrame > GlobalVars->framecount - 1)
             iLastUpdateFrame = GlobalVars->framecount - 1;
 
-        //if (flLastUpdateTime >= GlobalVars->curtime)
-        //    flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
+        if (flLastUpdateTime >= GlobalVars->curtime)
+            flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
     }
 };
 

@@ -63,7 +63,7 @@ R_PlayerState CResolver::DetectPlayerState(CBasePlayer* player, AnimationLayer* 
 }
 
 R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<LagRecord>& records) {
-	if (records.size() < 6 || records.back().m_nChokedTicks < 1)
+	if (records.size() < 6)
 		return R_AntiAimType::NONE;
 
 	int jitteredRecords = 0;
@@ -195,6 +195,12 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 
 	record->roll = ResolveRollAnimation(player, prevRecord);
 
+	if (!record->m_nChokedTicks) {
+		record->resolver_data.side = 0;
+		record->resolver_data.resolver_type = ResolverType::NONE;
+		return;
+	}
+
 	record->resolver_data.player_state = DetectPlayerState(player, record->animlayers);
 	record->resolver_data.antiaim_type = DetectAntiAim(player, records);
 
@@ -247,7 +253,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	}
 
 	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
-	if (bf_data->missed_shots > 0 && record->resolver_data.antiaim_type != R_AntiAimType::JITTER && GlobalVars->curtime - bf_data->last_shot < 8.f) { // don't bruteforce if data is too old or player using jitter antiaim
+	if (bf_data->use && record->resolver_data.antiaim_type != R_AntiAimType::JITTER && GlobalVars->curtime - bf_data->last_shot < 2.f) { // don't bruteforce if data is too old or player using jitter antiaim
 		record->resolver_data.side = bf_data->current_side;
 		record->resolver_data.resolver_type = ResolverType::BRUTEFORCE;
 	}
@@ -260,17 +266,21 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 void CResolver::OnMiss(CBasePlayer* player, LagRecord* record) {
 	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
 
-	if (bf_data->missed_shots == 0) {
+	if (!bf_data->use) {
 		bf_data->current_side = record->resolver_data.side == 0 ? 1 : -record->resolver_data.side;
 	}
 	else {
 		bf_data->current_side = -bf_data->current_side;
 	}
 
-	bf_data->missed_shots++;
+	bf_data->use = true;
 	bf_data->last_shot = GlobalVars->curtime;
 }
 
-void CResolver::OnHit(CBasePlayer* player) {
-	brute_force_data[player->EntIndex()].reset();
+void CResolver::OnHit(CBasePlayer* player, LagRecord* record) {
+	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
+
+	bf_data->use = true;
+	bf_data->current_side = record->resolver_data.side;
+	bf_data->last_shot = GlobalVars->curtime;
 }

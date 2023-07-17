@@ -744,6 +744,32 @@ CListBox* CMenu::AddListBox(const std::string& tab, const std::string& groupbox,
 	return listbox;
 }
 
+IBaseElement* CMenu::FindElement(const std::string& tab, const std::string& groupbox, const std::string& name, ElementType type) {
+	CGroupBox* target = nullptr;
+	int tabId = get_tab_id(tab);
+
+	for (auto gb : group_boxes) {
+		if (gb->tabId == tabId && gb->name == groupbox) {
+			target = gb;
+			break;
+		}
+	}
+
+	if (!target)
+		return nullptr;
+
+	IBaseElement* item = nullptr;
+
+	for (auto element : target->elements) {
+		if (element->name == name && (element->GetItemType() == type || type == ANY)) {
+			item = element;
+			break;
+		}
+	}
+
+	return item;
+}
+
 void CGroupBox::Draw() {
 	Vector2 origin = Menu->menuPos + Vector2(90, 10) + pos;
 

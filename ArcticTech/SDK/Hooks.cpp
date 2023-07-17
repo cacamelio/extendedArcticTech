@@ -106,6 +106,9 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Render->UpdateViewMatrix(EngineClient->WorldToScreenMatrix());
 
+	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
+		callback.func();
+
 	ESP::Draw();
 	ESP::DrawGrenades();
 	ESP::RenderMarkers();
@@ -226,6 +229,10 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	EnginePrediction->Start(cmd);
 
+	for (auto& callback : Lua->hooks.getHooks(LUA_CREATEMOVE)) {
+		callback.func(cmd); // TODO: custom cmd
+	}
+
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
 
@@ -333,6 +340,9 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		Ragebot->CalcSpreadValues();
 		ShotManager->Reset();
 		Resolver->Reset();
+
+		for (auto& callback : Lua->hooks.getHooks(LUA_LEVELINIT))
+			callback.func();
 	}
 
 	return result;
@@ -964,6 +974,7 @@ void Hooks::End() {
 
 	EventListner->Unregister();
 	Ragebot->TerminateThreads();
+	Lua->UnloadAll();
 
 	DirectXDeviceVMT->UnHook(16);
 	SurfaceVMT->UnHook(67);

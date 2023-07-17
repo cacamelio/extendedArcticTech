@@ -154,55 +154,55 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	if (!record || !record->player || record->shifting_tickbase || record->breaking_lag_comp)
 		return false;
 
-	//auto nci = EngineClient->GetNetChannelInfo();
+	auto nci = EngineClient->GetNetChannelInfo();
 
-	//if (!nci)
-	//	return false;
-
-	//const float latency = nci->GetAvgLatency(FLOW_INCOMING) + nci->GetAvgLatency(FLOW_OUTGOING);
-
-	//const float lerp_time = GetLerpTime();
-	//const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift) - record->m_flSimulationTime);
-
-	//if (fabs(delta_time) > 0.2f)
-	//	return false;
-
-	///// omg v0lvo broke this check but i want to add it because i want to be like Soufiw
-	//const int dead_time = (int)((float)(TICKS_TO_TIME(GlobalVars->tickcount) + latency) - 0.2f);
-	//if (TIME_TO_TICKS(record->m_flSimulationTime + lerp_time) < dead_time)
-	//	return false;
-
-	//return true;
-
-	if (record->shifting_tickbase || record->breaking_lag_comp)
+	if (!nci)
 		return false;
 
-	float correct = 0.0f;
+	const float latency = nci->GetAvgLatency(FLOW_INCOMING) + nci->GetAvgLatency(FLOW_OUTGOING);
 
-	// Get true latency
-	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
-	if (nci)
-	{
-		// add network latency
-		correct += nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING);
-	}
+	const float lerp_time = GetLerpTime();
+	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift) - record->m_flSimulationTime);
 
-	// NOTE:  do these computations in float time, not ticks, to avoid big roundoff error accumulations in the math
-	// add view interpolation latency see C_BaseEntity::GetInterpolationAmount()
-	correct += GetLerpTime();
+	if (fabs(delta_time) > 0.2f)
+		return false;
 
-	// check bounds [0,sv_maxunlag]
-	correct = std::clamp(correct, 0.0f, cvars.sv_maxunlag->GetFloat());
+	/// omg v0lvo broke this check but i want to add it because i want to be like Soufiw
+	const int dead_time = (int)((float)(TICKS_TO_TIME(GlobalVars->tickcount) + latency) - 0.2f);
+	if (TIME_TO_TICKS(record->m_flSimulationTime + lerp_time) < dead_time)
+		return false;
 
-	// correct tick send by player 
-	float flTargetTime = record->m_flSimulationTime;
+	return true;
 
-	int tick_base = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift;
+	//if (record->shifting_tickbase || record->breaking_lag_comp)
+	//	return false;
 
-	// calculate difference between tick sent by player and our latency based tick
-	float deltaTime = correct - (TICKS_TO_TIME(tick_base) - flTargetTime);
+	//float correct = 0.0f;
 
-	return std::abs(deltaTime) < 0.2f;
+	//// Get true latency
+	//INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
+	//if (nci)
+	//{
+	//	// add network latency
+	//	correct += nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING);
+	//}
+
+	//// NOTE:  do these computations in float time, not ticks, to avoid big roundoff error accumulations in the math
+	//// add view interpolation latency see C_BaseEntity::GetInterpolationAmount()
+	//correct += GetLerpTime();
+
+	//// check bounds [0,sv_maxunlag]
+	//correct = std::clamp(correct, 0.0f, cvars.sv_maxunlag->GetFloat());
+
+	//// correct tick send by player 
+	//float flTargetTime = record->m_flSimulationTime;
+
+	//int tick_base = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift;
+
+	//// calculate difference between tick sent by player and our latency based tick
+	//float deltaTime = correct - (TICKS_TO_TIME(tick_base) - flTargetTime);
+
+	//return std::abs(deltaTime) < 0.2f;
 }
 
 void CLagCompensation::Reset() {
