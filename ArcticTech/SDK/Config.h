@@ -273,6 +273,7 @@ public:
     CButton* lua_button;
     CButton* lua_button_unload;
     CButton* lua_refresh;
+    CButton* lua_save;
 
     CListBox* config_list;
     CInputBox* config_name;

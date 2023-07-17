@@ -102,6 +102,7 @@ public:
 	CListBox*		AddListBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, bool filter = true);
 
 	IBaseElement*	FindElement(const std::string& tab, const std::string& groupbox, const std::string& name, ElementType type = ElementType::ANY);
+	void			RemoveElement(IBaseElement* element);
 };
 
 extern CMenu* Menu;

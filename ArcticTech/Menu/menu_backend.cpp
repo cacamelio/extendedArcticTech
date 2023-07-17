@@ -770,6 +770,24 @@ IBaseElement* CMenu::FindElement(const std::string& tab, const std::string& grou
 	return item;
 }
 
+void CMenu::RemoveElement(IBaseElement* element) {
+	for (auto gb : group_boxes) {
+		if (element->parent == gb) {
+			for (auto it = gb->elements.begin(); it != gb->elements.end();) {
+				if (element == *it) {
+					gb->elements.erase(it);
+					gb->Update();
+
+					delete element;
+					return;
+				}
+
+				it++;
+			}
+		}
+	}
+}
+
 void CGroupBox::Draw() {
 	Vector2 origin = Menu->menuPos + Vector2(90, 10) + pos;
 
