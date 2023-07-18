@@ -27,8 +27,6 @@ public:
 	void	Run();
 	void	HandleTeleport(CL_Move_t cl_move, float extra_samples);
 	void	DefensiveDoubletap();
-
-	void	IdealDefensiveTeleport( CUserCmd* cmd );
 };
 
 extern CDoubleTap* DoubleTap;

@@ -220,7 +220,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	ctx.is_peeking = AntiAim->IsPeeking();
 
 	DoubleTap->DefensiveDoubletap();
-	DoubleTap->IdealDefensiveTeleport(cmd);
 	AntiAim->SlowWalk();
 
 	QAngle storedAng = cmd->viewangles;
@@ -846,7 +845,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	from = -1;
 
-	// Вызвал тут CL_SendMove для брик лс(что бы через CL_SendMove можно было отправить фейк команды для их предикта)
+	// пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ CL_SendMove пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ(пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ CL_SendMove пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 	auto CL_SendMove = [ ] ( )
 	{
 		using CL_SendMove_t = void( __fastcall* )( void );
