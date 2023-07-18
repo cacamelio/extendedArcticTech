@@ -18,6 +18,7 @@ enum MaterialType {
 
 enum ClassOfEntity {
 	Enemy,
+	Shot,
 	LocalPlayer,
 	ViewModel,
 	Attachment,
@@ -81,6 +82,13 @@ void CChams::UpdateSettings() {
 	materials[ClassOfEntity::Enemy].invisibleColor = config.visuals.chams.enemy_invisible_color->get();
 	materials[ClassOfEntity::Enemy].secondaryColor = config.visuals.chams.enemy_second_color->get();
 	materials[ClassOfEntity::Enemy].glowThickness = config.visuals.chams.enemy_glow_thickness->get();
+
+	materials[ClassOfEntity::Shot].enabled = config.visuals.chams.shot_chams->get();
+	materials[ClassOfEntity::Shot].type = config.visuals.chams.shot_chams_type->get();
+	materials[ClassOfEntity::Shot].addZ = false;
+	materials[ClassOfEntity::Shot].primaryColor = config.visuals.chams.shot_chams_color->get();
+	materials[ClassOfEntity::Shot].secondaryColor = config.visuals.chams.shot_chams_second_color->get();
+	materials[ClassOfEntity::Shot].glowThickness = config.visuals.chams.shot_chams_thickness->get();
 
 	materials[ClassOfEntity::LocalPlayer].enabled = config.visuals.chams.local_player->get();
 	materials[ClassOfEntity::LocalPlayer].type = config.visuals.chams.local_player_type->get();
@@ -243,4 +251,82 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 	}
 
 	RenderView->SetBlend(1.f);
+}
+
+void CChams::AddShotChams(LagRecord* record) {
+	auto& hit = shot_chams.emplace_back();
+
+	std::memcpy(hit.pBoneToWorld, record->aimMatrix, 128 * sizeof(matrix3x4_t));
+	hit.time = GlobalVars->curtime;
+
+	static int m_nSkin = record->player->m_nSkin();
+	static int m_nBody = record->player->m_nBody();
+
+	hit.info.origin = record->m_vecOrigin;
+	hit.info.angles = record->m_vecAbsAngles;
+
+	auto renderable = record->player->GetClientUnknown()->GetClientRenderable();
+
+	if (!renderable)
+		return;
+
+	auto model = record->player->GetModel();
+
+	if (!model)
+		return;
+
+	auto hdr = *(studiohdr_t**)(record->player->GetStudioHdr());
+
+	if (!hdr)
+		return;
+
+	hit.state.m_pStudioHdr = hdr;
+	hit.state.m_pStudioHWData = MDLCache->GetHardwareData(model->studio);
+	hit.state.m_pRenderable = renderable;
+	hit.state.m_drawFlags = 0;
+
+	hit.info.pRenderable = renderable;
+	hit.info.pModel = model;
+	hit.info.pLightingOffset = nullptr;
+	hit.info.pLightingOrigin = nullptr;
+	hit.info.hitboxset = record->player->m_nHitboxSet();
+	hit.info.skin = m_nSkin;
+	hit.info.body = m_nBody;
+	hit.info.entity_index = -1;
+	hit.info.instance = CallVFunction<ModelInstanceHandle_t(__thiscall*)(void*)>(renderable, 30u)(renderable);
+	hit.info.flags = 0x1;
+
+	hit.info.pModelToWorld = &hit.model_to_world;
+	hit.state.m_pModelToWorld = &hit.model_to_world;
+
+	hit.model_to_world.AngleMatrix(hit.info.angles, hit.info.origin);
+}
+
+void CChams::RenderShotChams() {
+	if (!Cheat.InGame) {
+		shot_chams.clear();
+		return;
+	}
+
+	auto ctx = MaterialSystem->GetRenderContext();
+
+	if (!ctx)
+		return;
+
+	for (auto it = shot_chams.begin(); it != shot_chams.end();) {
+		if (GlobalVars->curtime - it->time > config.visuals.chams.shot_chams_duration->get()) {
+			it = shot_chams.erase(it);
+			continue;
+		}
+
+		float alpha = std::clamp((config.visuals.chams.shot_chams_duration->get() - (GlobalVars->curtime - it->time)) * 2.f, 0.f, 1.f);
+
+		_ctx = ctx;
+		_info = it->info;
+		_state = it->state;
+
+		DrawModel(materials[ClassOfEntity::Shot], alpha, it->pBoneToWorld);
+
+		it++;
+	}
 }

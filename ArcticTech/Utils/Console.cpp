@@ -22,3 +22,10 @@ void CGameConsole::Log(const std::string& msg) {
 	CVar->ConsoleColorPrintf(Color(240, 240, 240), msg.c_str());
 	CVar->ConsolePrintf("\n");
 }
+
+void CGameConsole::Error(const std::string& error) {
+	ArcticTag();
+
+	CVar->ConsoleColorPrintf(Color(255, 50, 50), error.c_str());
+	CVar->ConsolePrintf("\n");
+}

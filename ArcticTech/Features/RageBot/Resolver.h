@@ -48,12 +48,12 @@ struct ResolverData_t {
 };
 
 struct BruteForceData_t {
-	int missed_shots = 0;
+	bool use = false;
 	int current_side = -1;
 	float last_shot = 0.f;
 
 	void reset() {
-		missed_shots = 0;
+		use = false;
 		current_side = -1;
 		last_shot = 0.f;
 	}
@@ -84,10 +84,11 @@ public:
 
 	void			DetectFreestand(CBasePlayer* player, LagRecord* record);
 
+	void			Apply(LagRecord* record, bool use_roll = true);
 	void			Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records);
 
 	void			OnMiss(CBasePlayer* player, LagRecord* record);
-	void			OnHit(CBasePlayer* player);
+	void			OnHit(CBasePlayer* player, LagRecord* record);
 };
 
 extern CResolver* Resolver;

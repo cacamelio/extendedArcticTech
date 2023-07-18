@@ -41,8 +41,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			if (config.visuals.esp.hitsound->get())
 				EngineClient->ExecuteClientCmd("play buttons/arena_switch_press_02.wav");
 
-			Resolver->OnHit(victim);
-
 			if (!skip_hurt) {
 				if (config.visuals.esp.damage_marker->get())
 					ESP::AddDamageMarker(victim->m_vecOrigin() + Vector(0, 0, 80), event->GetInt("dmg_health"));
@@ -61,7 +59,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			ctx.reset();
 			DoubleTap->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
-			Resolver->Reset();
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));

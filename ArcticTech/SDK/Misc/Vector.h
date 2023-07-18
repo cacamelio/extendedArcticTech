@@ -1,6 +1,91 @@
 #pragma once
 #include <cmath>
 
+
+class Vector2 {
+public:
+	float x, y;
+
+	Vector2() {
+		x = 0;
+		y = 0;
+	}
+
+	Vector2(int _x, int _y) {
+		x = _x;
+		y = _y;
+	}
+
+	Vector2(float _x, float _y) {
+		x = (int)_x;
+		y = (int)_y;
+	}
+
+	Vector2(long _x, long _y) {
+		x = (int)_x;
+		y = (int)_y;
+	}
+
+	Vector2(float _x, int _y) {
+		x = _x;
+		y = _y;
+	}
+
+	Vector2(int _x, float _y) {
+		x = _x;
+		y = _y;
+	}
+
+	Vector2 operator+(const Vector2& o) const {
+		return Vector2(x + o.x, y + o.y);
+	}
+
+	Vector2 operator-(const Vector2& o) const {
+		return Vector2(x - o.x, y - o.y);
+	}
+
+	Vector2 operator*(const float o) const {
+		return Vector2(x * o, y * o);
+	}
+
+	Vector2 operator/(const float o) const {
+		return Vector2(x / o, y / o);
+	}
+
+	void operator+=(const Vector2& o) {
+		x += o.x;
+		y += o.y;
+	}
+
+	void operator-=(const Vector2& o) {
+		x -= o.x;
+		y -= o.y;
+	}
+
+	void operator*=(const Vector2& o) {
+		x *= o.x;
+		y *= o.y;
+	}
+
+	void operator/=(const Vector2& o) {
+		x /= o.x;
+		y /= o.y;
+	}
+
+	bool operator==(const Vector2& o) const {
+		return (x == o.x && y == o.y);
+	}
+
+	bool operator!=(const Vector2& o) const {
+		return (x != o.x || y != o.y);
+	}
+
+	bool Invalid() const {
+		return x == -1 && y == -1;
+	}
+};
+
+
 class Vector {
 public:
 	float x, y, z;
@@ -8,6 +93,12 @@ public:
 	Vector() {
 		x = 0;
 		y = 0;
+		z = 0;
+	}
+
+	Vector(float _x, float _y) {
+		x = _x;
+		y = _y;
 		z = 0;
 	}
 
@@ -158,88 +249,9 @@ public:
 	void Interpolate(const Vector& other, float frac) {
 		*this += (other - *this) * frac;
 	}
-};
 
-class Vector2 {
-public:
-	float x, y;
-
-	Vector2() {
-		x = 0;
-		y = 0;
-	}
-
-	Vector2(int _x, int _y) {
-		x = _x;
-		y = _y;
-	}
-
-	Vector2(float _x, float _y) {
-		x = (int)_x;
-		y = (int)_y;
-	}
-
-	Vector2(long _x, long _y) {
-		x = (int)_x;
-		y = (int)_y;
-	}
-
-	Vector2(float _x, int _y) {
-		x = _x;
-		y = _y;
-	}
-
-	Vector2(int _x, float _y) {
-		x = _x;
-		y = _y;
-	}
-
-	Vector2 operator+(const Vector2& o) const {
-		return Vector2(x + o.x, y + o.y);
-	}
-
-	Vector2 operator-(const Vector2& o) const {
-		return Vector2(x - o.x, y - o.y);
-	}
-
-	Vector2 operator*(const float o) const {
-		return Vector2(x * o, y * o);
-	}
-
-	Vector2 operator/(const float o) const {
-		return Vector2(x / o, y / o);
-	}
-
-	void operator+=(const Vector2& o) {
-		x += o.x;
-		y += o.y;
-	}
-
-	void operator-=(const Vector2& o) {
-		x -= o.x;
-		y -= o.y;
-	}
-
-	void operator*=(const Vector2& o) {
-		x *= o.x;
-		y *= o.y;
-	}
-
-	void operator/=(const Vector2& o) {
-		x /= o.x;
-		y /= o.y;
-	}
-
-	bool operator==(const Vector2& o) const {
-		return (x == o.x && y == o.y);
-	}
-
-	bool operator!=(const Vector2& o) const {
-		return (x != o.x || y != o.y);
-	}
-
-	bool Invalid() const {
-		return x == -1 && y == -1;
+	Vector2 to_vec2() const {
+		return Vector2(x, y);
 	}
 };
 

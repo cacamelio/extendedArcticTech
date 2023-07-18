@@ -1,5 +1,6 @@
 #pragma once
 #include "../SDK/Render.h"
+#include "../Features/Lua/Sol.hpp"
 
 class CGroupBox;
 
@@ -13,9 +14,17 @@ enum ElementType : int {
 	MULTICOMBO,
 	BUTTON,
 	INPUTBOX,
-	LISTBOX
+	LISTBOX,
+	ANY
 };
 
+class IBaseElement;
+
+struct UILuaCallback_t {
+	IBaseElement* ref;
+	int script_id;
+	sol::protected_function func;
+};
 typedef void(*t_menu_callback)();
 
 class IBaseElement
@@ -28,6 +37,7 @@ public:
 	int elementSize = 0;
 	bool visible = true;
 	t_menu_callback callback = nullptr;
+	std::vector<UILuaCallback_t> lua_callbacks;
 	IBaseElement* parentItem = nullptr;
 	bool unsafe = false;
 

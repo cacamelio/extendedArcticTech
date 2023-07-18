@@ -47,7 +47,7 @@ void Initialize(HMODULE hModule) {
     Interfaces::Initialize();
     Hooks::Initialize();
     Lua->Setup();
-    SkinChanger->FixViewModelSequence( );
+    SkinChanger->FixViewModelSequence();
 
     while (!GetAsyncKeyState(VK_END)) {
         Sleep(1000);

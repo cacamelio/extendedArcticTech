@@ -52,6 +52,8 @@ typedef bool(__fastcall* tWriteUserCmdDeltaToBuffer)(CInput*, void*, int, void*,
 typedef bool(__fastcall* tShouldDrawViewModel)(void*, void*);
 typedef void(__fastcall* tPerformScreenOverlay)(void*, void*, int, int, int, int);
 
+typedef void( __fastcall* tPerformScreenOverlay )( void*, void*, int, int, int, int );
+
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
 inline tPresent oPresent;

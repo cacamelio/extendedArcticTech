@@ -106,6 +106,9 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Render->UpdateViewMatrix(EngineClient->WorldToScreenMatrix());
 
+	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
+		callback.func();
+
 	ESP::Draw();
 	ESP::DrawGrenades();
 	ESP::RenderMarkers();
@@ -217,6 +220,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	ctx.is_peeking = AntiAim->IsPeeking();
 
 	DoubleTap->DefensiveDoubletap();
+	DoubleTap->IdealDefensiveTeleport(cmd);
 	AntiAim->SlowWalk();
 
 	QAngle storedAng = cmd->viewangles;
@@ -225,6 +229,10 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
 
 	EnginePrediction->Start(cmd);
+
+	for (auto& callback : Lua->hooks.getHooks(LUA_CREATEMOVE)) {
+		callback.func(cmd); // TODO: custom cmd
+	}
 
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
@@ -314,6 +322,11 @@ void* __fastcall hkAllocKeyValuesMemory(IKeyValuesSystem* thisptr, void* edx, in
 	return oAllocKeyValuesMemory(thisptr, edx, iSize);
 }
 
+char* __fastcall hk_get_halloween_mask_model_addon( void* ecx, void* edx )
+{
+	return ( char* )"models/player/holiday/facemasks/facemask_dallas.mdl";
+}
+
 bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count, const void* msg) {
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
@@ -333,6 +346,9 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		Ragebot->CalcSpreadValues();
 		ShotManager->Reset();
 		Resolver->Reset();
+
+		for (auto& callback : Lua->hooks.getHooks(LUA_LEVELINIT))
+			callback.func();
 	}
 
 	return result;
@@ -399,6 +415,7 @@ void __fastcall hkDoPostScreenEffects(IClientMode* thisptr, void* edx, CViewSetu
 	static tDoPostScreenEffects oDoPostScreenEffects = (tDoPostScreenEffects)Hooks::ClientModeVMT->GetOriginal(44);
 
 	Glow::Run();
+	Chams->RenderShotChams();
 
 	oDoPostScreenEffects(thisptr, edx, setup);
 }
@@ -813,7 +830,7 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 }
 
 bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !DoubleTap->ShouldBreakLC())
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !ctx.tickbase_shift || !DoubleTap->ShouldBreakLC())
 		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
 
 	if (from != -1)
@@ -828,6 +845,15 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	auto total_new_commands = 16;
 
 	from = -1;
+
+	// Вызвал тут CL_SendMove для брик лс(что бы через CL_SendMove можно было отправить фейк команды для их предикта)
+	auto CL_SendMove = [ ] ( )
+	{
+		using CL_SendMove_t = void( __fastcall* )( void );
+		static CL_SendMove_t CL_SendMoveF = ( CL_SendMove_t )Utils::PatternScan( "engine.dll", "55 8B EC A1 ? ? ? ? 81 EC ? ? ? ? B9 ? ? ? ? 53 8B 98" );
+
+		CL_SendMoveF( );
+	};
 
 	*p_new_commands = total_new_commands;
 	*p_backup_commands = 0;
@@ -963,6 +989,7 @@ void Hooks::End() {
 
 	EventListner->Unregister();
 	Ragebot->TerminateThreads();
+	Lua->UnloadAll();
 
 	DirectXDeviceVMT->UnHook(16);
 	SurfaceVMT->UnHook(67);

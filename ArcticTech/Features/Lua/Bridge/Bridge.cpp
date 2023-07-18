@@ -1,180 +1,828 @@
 #include "Bridge.h"
 
-void lua_panic( sol::optional <std::string> message )
+#include "../../ShotManager/ShotManager.h"
+#include "../../RageBot/LagCompensation.h"
+
+
+std::vector<UILuaCallback_t> g_ui_lua_callbacks;
+
+void LuaErrorHandler(sol::optional<std::string> message)
 {
-	if ( !message )
+	if (!message)
 		return;
 
-	auto log = "Lua error: " + message.value_or( "unknown" );
-	Console->ColorPrint( log, Color(255, 0, 0) );
+	Console->ArcticTag();
+	Console->ColorPrint(message.value_or("unknown"), Color(255, 0, 0) );
+	Console->Print("\n");
 }
-namespace client
+
+void ScriptLoadButton()
 {
-	void print( const char* msg, Color clr )
-	{
-		Console->ColorPrint( msg, clr );
+	Lua->LoadScript(Lua->GetScriptID(Config->lua_list->get()));
+}
+
+void ScriptUnloadButton()
+{
+	Lua->UnloadScript(Lua->GetScriptID(Config->lua_list->get()));
+}
+
+std::string GetCurrentScript(sol::this_state s) {
+	sol::state_view lua_state(s);
+	sol::table rs = lua_state["debug"]["getinfo"](2, ("S"));
+	std::string source = rs["source"];
+	std::string filename = std::filesystem::path(source.substr(1)).stem().string();
+
+	return filename;
+}
+
+namespace api {
+	void print(std::string msg) {
+		Console->Log(msg);
 	}
 
+	void error(std::string msg) {
+		Console->Error(msg);
+	}
 
+	void print_raw(std::string msg, sol::optional<Color> color) {
+		Console->ColorPrint(msg, color.value_or(Color(255, 255, 255)));
+	}
+
+	namespace client {
+		void add_callback(sol::this_state state, std::string event_name, sol::protected_function func) {
+			const std::string script_name = GetCurrentScript(state);
+			const int script_id = Lua->GetScriptID(script_name);
+
+			if (event_name == "render")
+				Lua->hooks.registerHook(LUA_RENDER, script_id, func);
+			else if (event_name == "createmove")
+				Lua->hooks.registerHook(LUA_CREATEMOVE, script_id, func);
+			else if (event_name == "level_init")
+				Lua->hooks.registerHook(LUA_LEVELINIT, script_id, func);
+			else if (event_name == "aim_shot")
+				Lua->hooks.registerHook(LUA_AIM_SHOT, script_id, func);
+			else if (event_name == "aim_ack")
+				Lua->hooks.registerHook(LUA_AIM_ACK, script_id, func);
+			else if (event_name == "frame_stage")
+				Lua->hooks.registerHook(LUA_FRAMESTAGE, script_id, func);
+			else if (event_name == "game_events")
+				Lua->hooks.registerHook(LUA_GAMEEVENTS, script_id, func);
+			else if (event_name == "unload")
+				Lua->hooks.registerHook(LUA_UNLOAD, script_id, func);
+			else
+				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
+		}
+
+		void unload_script(sol::this_state state) {
+			Lua->UnloadScript(Lua->GetScriptID(GetCurrentScript(state)));
+		}
+
+		void reload_script(sol::this_state state) {
+			Lua->UnloadScript(Lua->GetScriptID(GetCurrentScript(state)));
+			Lua->LoadScript(Lua->GetScriptID(GetCurrentScript(state)));
+		}
+	}
+
+	namespace globals {
+		bool is_connected() {
+			return EngineClient->IsConnected();
+		}
+
+		bool is_in_game() {
+			return EngineClient->IsInGame();
+		}
+
+		int choked_commands() {
+			return ClientState->m_nChokedCommands;
+		}
+
+		int commandack() {
+			return ClientState->m_nCommandAck;
+		}
+
+		int commandack_prev() {
+			return ClientState->m_nLastCommandAck;
+		}
+
+		int last_outgoing_command() {
+			return ClientState->m_nLastOutgoingCommand;
+		}
+
+		int server_tick() {
+			return ClientState->m_ClockDriftMgr.m_nServerTick;
+		}
+
+		int client_tick() {
+			return ClientState->m_ClockDriftMgr.m_nClientTick;
+		}
+
+		int delta_tick() {
+			return ClientState->m_nDeltaTick;
+		}
+
+		int clock_offset() {
+			return ClientState->m_ClockDriftMgr.m_iCurClockOffset;
+		}
+	}
+
+	namespace vector {
+		Vector closes_ray_point(Vector self, Vector start, Vector end) {
+			return EngineTrace->ClosestPoint(start, end, self);
+		}
+
+		float dist_to_ray(Vector self, Vector start, Vector end) {
+			return EngineTrace->DistanceToRay(start, end, self);
+		}
+
+		Vector lerp(Vector self, Vector other, float weight) {
+			return self + (other - self) * weight;
+		}
+
+		Vector to_screen(Vector self) {
+			Vector2 scr = Render->WorldToScreen(self);
+			return Vector(scr.x, scr.y);
+		}
+		
+		std::string tostring(Vector self) {
+			return std::format("vector({}, {}, {})", self.x, self.y, self.z);
+		}
+	}
+
+	namespace render {
+		Vector screen_size() {
+			return Vector(Cheat.ScreenSize.x, Cheat.ScreenSize.y);
+		}
+
+		D3DXFont* load_font(std::string name, int size, std::string flags) {
+			return Render->LoadFont(name, size, (flags.find("b") != std::string::npos) ? 600 : 400, (flags.find("a") != std::string::npos) ? CLEARTYPE_NATURAL_QUALITY : 0);
+		}
+
+		IDirect3DTexture9* load_image_from_memory(std::string mem, Vector size) {
+			return Render->LoadImageFromMemory(mem.data(), mem.size(), size.to_vec2());
+		}
+
+		void line(Vector start, Vector end, Color col) {
+			Render->Line(start.to_vec2(), end.to_vec2(), col);
+		}
+
+		void poly(Color col, sol::variadic_args vertecies) {
+			std::vector<Vector2> verts;
+			for (auto v : vertecies) {
+				Vector vec = v;
+				verts.emplace_back(Vector2(vec.x, vec.y));
+			}
+			Render->PolyFilled(verts, col);
+		}
+
+		void poly_line(Color col, sol::variadic_args vertecies) {
+			std::vector<Vector2> verts;
+			for (auto v : vertecies) {
+				Vector vec = v;
+				verts.emplace_back(Vector2(vec.x, vec.y));
+			}
+			Render->PolyLine(verts, col);
+		}
+
+		void rect(Vector start, Vector end, Color clr, sol::optional<int> rounding) {
+			Render->BoxFilled(start.to_vec2(), end.to_vec2(), clr, rounding.value_or(0));
+		}
+
+		void rect_outline(Vector start, Vector end, Color clr, sol::optional<int> rounding) {
+			Render->Box(start.to_vec2(), end.to_vec2(), clr, rounding.value_or(0));
+		}
+
+		void gradient(Vector start, Vector end, Color top_left, Color top_right, Color bottom_left, Color bottom_right) {
+			Render->GradientBox(start.to_vec2(), end.to_vec2(), top_left, top_right, bottom_left, bottom_right);
+		}
+
+		void circle(Vector center, Color clr, float radius, sol::optional<float> start_deg, sol::optional<float> pct) {
+			Render->CircleFilled(center.to_vec2(), radius, clr);
+		}
+
+		void circle_outline(Vector center, Color clr, float radius, sol::optional<float> start_deg, sol::optional<float> pct, sol::optional<int> thickness) {
+			Render->Circle(center.to_vec2(), radius, clr, -1, start_deg.value_or(0.f), start_deg.value_or(0.f) + pct.value_or(1.f) * 360.f);
+		}
+
+		void circle_gradient(Vector center, Color color_outer, Color color_inner, float radius) {
+			Render->GlowCircle2(center.to_vec2(), radius, color_inner, color_outer);
+		}
+
+		void circle_3d(Vector center, Color color, float radius) {
+			Render->Circle3D(center, radius, color, true);
+		}
+
+		void circle_3d_outline(Vector center, Color color, float radius) {
+			Render->Circle3D(center, radius, color, true);
+		}
+
+		void texture(IDirect3DTexture9* texture, Vector pos, std::optional<Color> col) {
+			Render->Image(texture, pos.to_vec2(), col.value_or(Color(255, 255, 255)));
+		}
+
+		void text(sol::this_state state, sol::object font, Vector position, Color color, std::string flags, std::string text) {
+			int flags_ = 0;
+			for (char c : flags) {
+				if (c == 'c')
+					flags_ |= TEXT_CENTERED;
+				else if (c == 'o')
+					flags_ |= TEXT_OUTLINED;
+				else if (c == 'd')
+					flags_ |= TEXT_DROPSHADOW;
+			}
+
+			D3DXFont* font_ = nullptr;
+
+			if (font.is<int>()) {
+				switch (font.as<int>()) {
+				case 1:
+					font_ = Verdana;
+					break;
+				case 2:
+					font_ = SmallFont;
+					break;
+				case 3:
+					font_ = VerdanaBold;
+					break;
+				case 4:
+					font_ = CalibriBold;
+					break;
+				default:
+					Console->Error(std::format("[{}] unknown font: {}", GetCurrentScript(state), font.as<int>()));
+					return;
+				}
+			}
+			else {
+				font_ = font.as<D3DXFont*>();
+
+				if (!font_) {
+					Console->Error(std::format("[{}] passed nil font", GetCurrentScript(state)));
+					return;
+				}
+			}
+
+			Render->Text(text, position.to_vec2(), color, font_, flags_);
+		}
+
+		Vector measure_text(sol::this_state state, sol::object font, std::string text) {
+			D3DXFont* font_ = nullptr;
+
+			if (font.is<int>()) {
+				switch (font.as<int>()) {
+				case 1:
+					font_ = Verdana;
+					break;
+				case 2:
+					font_ = SmallFont;
+					break;
+				case 3:
+					font_ = VerdanaBold;
+					break;
+				case 4:
+					font_ = CalibriBold;
+					break;
+				default:
+					Console->Error(std::format("[{}] unknown font: {}", GetCurrentScript(state), font.as<int>()));
+					return Vector();
+				}
+			}
+			else {
+				font_ = font.as<D3DXFont*>();
+
+				if (!font_) {
+					Console->Error(std::format("[{}] passed nil font", GetCurrentScript(state)));
+					return Vector();
+				}
+			}
+
+			Vector2 res = Render->CalcTextSize(text, font_);
+			return Vector(res.x, res.y);
+		}
+
+		void push_clip_rect(Vector start, Vector end) {
+			Render->PushClipRect(start.to_vec2(), end.to_vec2());
+		}
+
+		void pop_clip_rect() {
+			Render->PopClipRect();
+		}
+
+		void set_antialias(bool state) {
+			Render->SetAntiAliasing(state);
+		}
+	}
+
+	namespace utils {
+		void console_exec(std::string command) {
+			EngineClient->ExecuteClientCmd(command.c_str());
+		}
+
+		void* create_interface(std::string module_name, std::string interface_name) {
+			return Utils::CreateInterface(module_name.c_str(), interface_name.c_str());
+		}
+
+		void* pattern_scan(std::string module_name, std::string pattern, sol::optional<int> offset) {
+			return Utils::PatternScan(module_name.c_str(), pattern.c_str(), offset.value_or(0));
+		}
+	}
+
+	namespace ui {
+		IBaseElement* find_item(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<ElementType> type) {
+			ElementType etype = type.value_or(ElementType::ANY);
+
+			IBaseElement* found_item = Menu->FindElement(tab, groupbox, name, etype);
+
+			if (!found_item) {
+				Console->Error(std::format("[{}] cont find item: ({}, {}, {})", GetCurrentScript(state), tab, groupbox, name));
+				return nullptr;
+			}
+
+			return found_item;
+		}
+
+		sol::object element_get(sol::this_state state, IBaseElement* element, sol::optional<int> index) {
+			switch (element->GetItemType()) {
+			case CHECKBOX:
+				return sol::make_object(state, static_cast<CCheckbox*>(element)->get());
+			case COLORPCIKER:
+				return sol::make_object(state, static_cast<CColorPicker*>(element)->get());
+			case KEYBIND:
+				return sol::make_object(state, static_cast<CKeyBind*>(element)->get());
+			case SLIDER:
+				return sol::make_object(state, static_cast<CSlider*>(element)->get());
+			case COMBO:
+				return sol::make_object(state, static_cast<CComboBox*>(element)->get());
+			case MULTICOMBO:
+				return sol::make_object(state, static_cast<CMultiCombo*>(element)->get(index.value()));
+			case INPUTBOX:
+				return sol::make_object(state, static_cast<CInputBox*>(element)->get());
+			case LISTBOX:
+				return sol::make_object(state, static_cast<CListBox*>(element)->get());
+			}
+
+			Console->Error("trying to get unknown element");
+		}
+
+		void element_update_list(sol::this_state state, IBaseElement* element, std::vector<std::string> list) {
+			switch (element->GetItemType()) {
+			case COMBO:
+				return static_cast<CComboBox*>(element)->UpdateList(list);
+			case MULTICOMBO:
+				return static_cast<CMultiCombo*>(element)->UpdateList(list);
+			case LISTBOX:
+				return static_cast<CListBox*>(element)->UpdateList(list);
+			}
+
+			Console->Error("trying to update list of non listable element");
+		}
+
+		void element_set_callback(sol::this_state state, IBaseElement* element, sol::protected_function func) {
+			UILuaCallback_t cb(element, Lua->GetScriptID(GetCurrentScript(state)), func);
+			element->lua_callbacks.emplace_back(cb);
+			g_ui_lua_callbacks.emplace_back(cb); // track callback to easily remove them
+		}
+
+		void element_set_visible(IBaseElement* element, bool visible) {
+			element->set_visible(visible);
+		}
+
+		IBaseElement* new_checkbox(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> unsafe) {
+			IBaseElement* elem = Menu->AddCheckBox(tab, groupbox, name, unsafe.value_or(false));
+
+			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
+			script->ui_elements.emplace_back(elem);
+
+			return elem;
+		}
+	}
 }
 
+void CLua::Setup() {
+	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts");
 
-void on_load_script()
-{
-	Lua->load_script( Lua->get_script_id( Config->lua_list->get( ) ) );
-}
+	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
+	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::bit32, sol::lib::ffi, sol::lib::jit, sol::lib::io, sol::lib::utf8);
 
-void script_unload()
-{
-	Lua->unload_script( Lua->get_script_id( Config->lua_list->get( ) ) );
-}
+	// enums
+	lua.new_enum<EDamageGroup>("e_dmg_group", {
+		{"head", EDamageGroup::DAMAGEGROUP_HEAD},
+		{"chest", EDamageGroup::DAMAGEGROUP_CHEST},
+		{"stomach", EDamageGroup::DAMAGEGROUP_STOMACH},
+		{"arms", EDamageGroup::DAMAGEGROUP_ARM},
+		{"legs", EDamageGroup::DAMAGEGROUP_LEG},
+	});
 
-void CLua::Setup()
-{
-	lua = sol::state( sol::c_call<decltype( &lua_panic ), &lua_panic> );
-	sol::table client = lua.create_table();
+	lua.new_enum<ElementType>("e_ui_type", {
+		{"checkbox", ElementType::CHECKBOX},
+		{"label", ElementType::LABEL},
+		{"colorpicker", ElementType::COLORPCIKER},
+		{"keybind", ElementType::KEYBIND},
+		{"slider", ElementType::SLIDER},
+		{"combo", ElementType::COMBO},
+		{"multicombo", ElementType::MULTICOMBO},
+		{"button", ElementType::BUTTON},
+		{"input", ElementType::INPUTBOX},
+		{"list", ElementType::LISTBOX},
+		{"any", ElementType::ANY}
+	});
 
-	lua.new_usertype <Color>("color", sol::constructors <Color( ), Color( int, int, int ), Color( int, int, int, int )>( ),
-		( std::string )"r", &Color::r,
-		( std::string )"g", &Color::g,
-		( std::string )"b", &Color::b,
-		( std::string )"a", &Color::a
+	// usertypes
+	/*
+	lua.new_usertype<CCheckbox>("checkbox_t", sol::no_constructor,
+		"get", &CCheckbox::get,
+		"set_visible", &CCheckbox::set_visible,
+		"set_callback", &CCheckbox::set_callback
 	);
 
+	lua.new_usertype<CColorPicker>("colorpicker_t", sol::no_constructor,
+		"get", &CColorPicker::get,
+		"set_visible", &CColorPicker::set_visible,
+		"set_callback", &CColorPicker::set_callback
+	);
+
+	lua.new_usertype<CKeyBind>("keybind_t", sol::no_constructor,
+		"get", &CKeyBind::get,
+		"set_visible", &CKeyBind::set_visible,
+		"set_callback", &CKeyBind::set_callback
+	);
+
+	lua.new_usertype<CSlider>("slider_t", sol::no_constructor,
+		"get", &CSlider::get,
+		"set_visible", &CSlider::set_visible,
+		"set_callback", &CSlider::set_callback
+	);	
 	
-	client[ "print" ] = client::print;
+	lua.new_usertype<CComboBox>("combobox_t", sol::no_constructor,
+		"get", &CComboBox::get,
+		"set_visible", &CComboBox::set_visible,
+		"set_callback", &CComboBox::set_callback
+	);
 
-	lua["client"] = client;
+	lua.new_usertype<CMultiCombo>("multicombobox_t", sol::no_constructor,
+		"get", &CMultiCombo::get,
+		"set_visible", &CMultiCombo::set_visible,
+		"set_callback", &CMultiCombo::set_callback
+	);
 
-	refresh_scripts();
-	Config->lua_list->UpdateList(scripts_names);
-	Config->lua_button->set_callback(on_load_script);
-	Config->lua_button_unload->set_callback(script_unload);
+	lua.new_usertype<CButton>("button_t", sol::no_constructor,
+		"set_visible", &CButton::set_visible,
+		"set_callback", &CButton::set_callback
+	);
+
+	lua.new_usertype<CInputBox>("input_t", sol::no_constructor,
+		"get", &CInputBox::get,
+		"set_visible", &CInputBox::set_visible,
+		"set_callback", &CInputBox::set_callback
+	);
+
+	lua.new_usertype<CListBox>("listbox_t", sol::no_constructor,
+		"get", &CListBox::get,
+		"set_visible", &CListBox::set_visible,
+		"set_callback", &CListBox::set_callback,
+		"update_list", &CListBox::UpdateList
+	);
+	*/
+	lua.new_usertype<IBaseElement>("ui_element_t", sol::no_constructor, 
+		"set_callback", api::ui::element_set_callback,
+		"set_visible", api::ui::element_set_visible,
+		"get", api::ui::element_get,
+		"update_list", api::ui::element_update_list
+	);
+
+	lua.new_usertype<Color>("color", sol::call_constructor, sol::constructors<Color(), Color(int), Color(int, int), Color(int, int, int), Color(int, int, int, int)>(),
+		"r", &Color::r,
+		"g", &Color::g,
+		"b", &Color::b,
+		"a", &Color::a,
+		"as_int32", &Color::as_int32,
+		"as_fraction", &Color::as_fraction,
+		"alpha_modulate", &Color::alpha_modulate,
+		"alpha_modulatef", &Color::alpha_modulatef,
+		"lerp", &Color::lerp,
+		"clone", &Color::clone
+	);
+
+	lua.new_usertype<Vector>("vector", sol::call_constructor, sol::constructors<Vector(), Vector(float, float), Vector(float, float, float)>(),
+		"x", &Vector::x,
+		"y", &Vector::y,
+		"z", &Vector::z,
+		"__add", &Vector::operator+,
+		"__sub", &Vector::operator-,
+		"__mul", &Vector::operator*,
+		"__div", &Vector::operator/,
+		"__eq", &Vector::operator==,
+		"__len", &Vector::Q_Length,
+		"__tostring", &api::vector::tostring,
+		"length", &Vector::Q_Length,
+		"length_sqr", &Vector::LengthSqr,
+		"length2d", &Vector::Q_Length2D,
+		"length2d_sqr", &Vector::Length2DSqr,
+		"closest_ray_point", &api::vector::closes_ray_point,
+		"dist_to_ray", &api::vector::dist_to_ray,
+		"dot", &Vector::Dot,
+		"cross", &Vector::Cross,
+		"dist", &Vector::DistTo,
+		"lerp", &api::vector::lerp,
+		"to_screen", &api::vector::to_screen
+	);
+
+	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor, 
+		"ent_index", &CBasePlayer::EntIndex,
+		"get_name", &CBasePlayer::GetName
+	);
+
+	lua.new_usertype<LagRecord>("lag_record_t", sol::no_constructor,
+		"origin", &LagRecord::m_vecOrigin,
+		"player", &LagRecord::player
+	);
+
+	lua.new_usertype<QAngle>("qangle", sol::call_constructor, sol::constructors<QAngle(), QAngle(float, float), QAngle(float, float, float)>(), 
+		"pitch", &QAngle::pitch,
+		"yaw", &QAngle::yaw,
+		"roll", &QAngle::roll
+	);
+
+	lua.new_usertype<RegisteredShot_t>("shot_t", sol::no_constructor, 
+		"client_shoot_pos", &RegisteredShot_t::client_shoot_pos,
+		"vector_pos", &RegisteredShot_t::target_pos,
+		"client_angle", &RegisteredShot_t::client_angle,
+		"shot_tick", &RegisteredShot_t::shot_tick,
+		"wanted_damage", &RegisteredShot_t::wanted_damage,
+		"wanted_damagegroup", &RegisteredShot_t::wanted_damagegroup,
+		"hitchance", &RegisteredShot_t::hitchance,
+		"backtrack", &RegisteredShot_t::backtrack,
+		"record", &RegisteredShot_t::record,
+		"shoot_pos", &RegisteredShot_t::shoot_pos,
+		"end_pos", &RegisteredShot_t::end_pos,
+		"angle", &RegisteredShot_t::angle,
+		"ack_tick", &RegisteredShot_t::ack_tick,
+		"impacts", &RegisteredShot_t::impacts,
+		"damage", &RegisteredShot_t::damage,
+		"damagegroup", &RegisteredShot_t::damagegroup,
+		"hit_point", &RegisteredShot_t::hit_point,
+		"acked", &RegisteredShot_t::acked,
+		"miss_reason", &RegisteredShot_t::miss_reason
+	);
+
+	// _G
+	lua["print"] = api::print;
+	lua["error"] = api::error;
+	lua["print_raw"] = api::print_raw;
+
+	// client
+	lua.create_named_table("client",
+		"add_callback", api::client::add_callback,
+		"unload_script", api::client::unload_script,
+		"reload_script", api::client::reload_script
+	);
+
+	// ui
+	lua.create_named_table("ui",
+		"find", api::ui::find_item
+	);
+
+	// global vars
+	lua.new_usertype<CGlobalVarsBase>("global_vars_t", sol::no_constructor,
+		"curtime", sol::readonly(&CGlobalVarsBase::curtime),
+		"realtime", sol::readonly(&CGlobalVarsBase::realtime),
+		"frametime", sol::readonly(&CGlobalVarsBase::frametime),
+		"framecount", sol::readonly(&CGlobalVarsBase::framecount),
+		"tickcount", sol::readonly(&CGlobalVarsBase::tickcount),
+		"tickinterval", sol::readonly(&CGlobalVarsBase::interval_per_tick),
+		"max_players", sol::readonly(&CGlobalVarsBase::max_clients),
+		"is_connected", sol::readonly_property(&api::globals::is_connected),
+		"is_in_game", sol::readonly_property(&api::globals::is_in_game),
+		"choked_commands", sol::readonly_property(&api::globals::choked_commands),
+		"commandack", sol::readonly_property(&api::globals::commandack),
+		"commandack_prev", sol::readonly_property(&api::globals::commandack_prev),
+		"last_outgoing_command", sol::readonly_property(&api::globals::last_outgoing_command),
+		"server_tick", sol::readonly_property(&api::globals::server_tick),
+		"client_tick", sol::readonly_property(&api::globals::client_tick),
+		"delta_tick", sol::readonly_property(&api::globals::delta_tick),
+		"clock_offset", sol::readonly_property(&api::globals::clock_offset)
+	);
+	lua["globals"] = GlobalVars;
+
+	// render
+	lua.create_named_table("render",
+		"screen_size", api::render::screen_size,
+		"load_font", api::render::load_font,
+		"load_image_from_memory", api::render::load_image_from_memory,
+		"line", api::render::line,
+		"poly", api::render::poly,
+		"poly_line", api::render::poly_line,
+		"rect", api::render::rect,
+		"rect_outline", api::render::rect_outline,
+		"gradient", api::render::gradient,
+		"circle", api::render::circle,
+		"circle_outline", api::render::circle_outline,
+		"circle_3d", api::render::circle_3d,
+		"circle_3d_outline", api::render::circle_3d_outline,
+		"circle_gradient", api::render::circle_gradient,
+		"texture", api::render::texture,
+		"text", api::render::text,
+		"measure_text", api::render::measure_text,
+		"push_clip_rect", api::render::push_clip_rect,
+		"pop_clip_rect", api::render::pop_clip_rect,
+		"world_to_screen", api::vector::to_screen,
+		"set_antialias", api::render::set_antialias
+	);
+
+	// utils
+	lua.create_named_table("utils",
+		"console_exec", api::utils::console_exec,
+		"create_interface", api::utils::create_interface,
+		"pattern_scan", api::utils::pattern_scan
+	);
+
+	RefreshScripts();
+	Config->lua_button->set_callback(ScriptLoadButton);
+	Config->lua_button_unload->set_callback(ScriptUnloadButton);
+	Config->lua_refresh->set_callback([]() { Lua->RefreshScripts(); });
 }
 
-
-int CLua::get_script_id( std::string name ) {
-	for ( int i = 0; i < this->scripts.size( ); i++ ) {
-		if ( this->scripts.at( i ) == name )
+int CLua::GetScriptID(std::string name) {
+	for (int i = 0; i < scripts.size(); i++) {
+		if (scripts[i].name == name || scripts[i].ui_name == name)
 			return i;
 	}
+
 	return -1;
 }
 
-std::string CLua::get_script_path( std::string name ) {
-	return this->get_script_path( this->get_script_id( name ) );
+std::string CLua::GetScriptPath(std::string name) {
+	return GetScriptPath(GetScriptID(name));
 }
 
-std::string CLua::get_script_path( int id ) {
-	if ( id == -1 )
+std::string CLua::GetScriptPath( int id ) {
+	if (id == -1)
 		return  "";
 
-	return this->pathes.at( id ).string( );
+	return scripts[id].path.string();
 }
 
-void CLua::load_script( int id )
-{
-	if ( id == -1 )
+void CLua::LoadScript( int id ) {
+	if (id == -1)
 		return;
 
-	if ( loaded.at( id ) ) //-V106
+	if (scripts[id].loaded)
 		return;
 
-	auto path = get_script_path( id );
+	const std::string path = GetScriptPath( id );
 
-	if ( path == "" )
+	if (path == "")
 		return;
 
-	auto error_load = false;
-	loaded.at( id ) = true;
-	lua.script_file( path,
-		[ &error_load ] ( lua_State*, sol::protected_function_result result )
-		{
-			if ( !result.valid( ) )
-			{
-				sol::error error = result;
-				auto log = "Lua error: " + ( std::string )error.what( );
-				error_load = true;
-			}
+	LuaScript_t& script = scripts[id];
 
-			return result;
+	script.loaded = true;
+	script.env = new sol::environment(lua, sol::create, lua.globals());
+
+	sol::environment& env = *script.env;
+
+	bool error_load = false;
+
+	auto load_result_func = [&error_load, script](lua_State* state, sol::protected_function_result result) {
+		if (!result.valid()) {
+			sol::error error = result;
+			Console->Error(error.what());
+			error_load = true;
 		}
-	);
 
-	if ( error_load | loaded.at( id ) == false )
+		return result;
+	};
+	
+	lua.script_file(path, env, load_result_func);
+
+	if (error_load)
 	{
-		loaded.at( id ) = false;
+		script.loaded = false;
+		delete script.env;
+		script.env = nullptr;
+
+		RefreshUI();
 		return;
 	}
-	ctx.loaded_script = true;
+
+	RefreshUI();
 }
 
-void CLua::unload_script( int id ) {
-	if ( id == -1 )
+void CLua::UnloadScript(int id) {
+	if (id == -1 )
 		return;
 
-	if ( !loaded.at( id ) )
+	LuaScript_t& script = scripts[id];
+
+	if (!script.loaded)
 		return;
 
-	if ( ctx.loaded_script )
-		for ( auto current :Lua->hooks.getHooks("on_unload") )
-			current.func( );
+	for (auto& current : hooks.getHooks(LUA_UNLOAD)) {
+		if (current.scriptId == id)
+			current.func();
+	}
 
-	ctx.loaded_script = false;
+	for (auto cb = g_ui_lua_callbacks.begin(); cb != g_ui_lua_callbacks.end();) {
+		if (cb->script_id == id) {
+			for (auto it = cb->ref->lua_callbacks.begin(); it != cb->ref->lua_callbacks.end();) {
+				if (it->script_id == id) {
+					it = cb->ref->lua_callbacks.erase(it);
+					continue;
+				}
 
-	hooks.unregisterHooks( id );
-	loaded.at( id ) = false;
+				it++;
+			}
+
+			cb = g_ui_lua_callbacks.erase(cb);
+			continue;
+		}
+
+		cb++;
+	}
+
+	hooks.unregisterHooks(id);
+	script.loaded = false;
+	delete script.env;
+	script.env = nullptr;
+
+	RefreshUI();
 }
 
-void CLua::refresh_scripts( )
-{
-	auto oldLoaded = loaded;
-	auto oldScripts = scripts;
+void CLua::ReloadAll() {
+	hooks.removeAll();
 
-	loaded.clear( );
-	pathes.clear( );
-	scripts.clear( );
-	scripts_names.clear( );
+	for (int i = 0; i < scripts.size(); i++) {
+		LuaScript_t* script = &scripts[i];
 
-	std::vector<std::filesystem::path> pathes_to_scan = { "C:\\gs\\luas\\cloud","C:\\gs\\luas" };
-	for ( int l = 0; l < 2; l++ ) {
+		if (script->loaded) {
+			UnloadScript(i);
+			LoadScript(i);
+		}
+	}
+}
 
-		for ( auto& entry : std::filesystem::directory_iterator( pathes_to_scan.at( l ) ) )
+void CLua::UnloadAll() {
+	for (int i = 0; i < scripts.size(); i++) {
+		LuaScript_t* script = &scripts[i];
+
+		if (script->loaded) {
+			UnloadScript(i);
+		}
+	}
+}
+
+std::vector<std::string> CLua::GetUIList() {
+	std::vector<std::string> result;
+
+	for (auto& script : scripts) {
+		result.emplace_back(script.ui_name);
+	}
+
+	return result;
+}
+
+void CLua::RefreshScripts() {
+	auto old_scripts = scripts;
+
+	UnloadAll();
+	scripts.clear();
+
+	for (auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path().string() + "/at/scripts"))
+	{
+		if (entry.path().extension() == ".lua")
 		{
-			if ( entry.path( ).extension( ) == ( ".lua" ) || entry.path( ).extension( ) == ( ".luac" ) )
-			{
-				auto path = entry.path( );
-				auto filename = path.filename( ).string( );
+			LuaScript_t script;
 
-				auto didPut = false;
+			script.path = entry.path();
+			script.name = script.path.stem().string();
+			script.loaded = false;
 
+			bool was_loaded = false;
 
-
-				for ( auto i = 0; i < oldScripts.size( ); i++ )
-				{
-					if ( filename == oldScripts.at( i ) ) //-V106
-					{
-						loaded.push_back( oldLoaded.at( i ) ); //-V106
-						didPut = true;
-					}
-				}
-
-				if ( !didPut )
-					loaded.push_back( false );
-
-				pathes.push_back( path );
-				scripts.push_back( filename );
-
-				if ( l == 0 ) {
-					scripts_names.push_back( "*" + filename );
-				}
-				else {
-					scripts_names.push_back( filename );
+			for (auto& o_script : old_scripts) {
+				if (o_script.name == script.name && o_script.loaded) {
+					was_loaded = true;
+					break;
 				}
 			}
+			script.ui_name = was_loaded ? "* " + script.name : script.name;
+
+			scripts.emplace_back(script);
 		}
 	}
 
+	Config->lua_list->UpdateList(GetUIList());
+
+	for (auto script : old_scripts) {
+		if (script.loaded)
+			LoadScript(GetScriptID(script.name));
+	}
+}
+
+void CLua::RefreshUI() {
+	for (auto& script : scripts) {
+		script.ui_name = script.loaded ? "* " + script.name : script.name;
+	}
+
+	Config->lua_list->UpdateList(GetUIList());
 }
 
 CLua* Lua = new CLua;

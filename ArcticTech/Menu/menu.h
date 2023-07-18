@@ -100,6 +100,8 @@ public:
 	CButton*		AddButton(const std::string& tab, const std::string& groupbox, const std::string& name);
 	CInputBox*		AddInputBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool hidden = false);
 	CListBox*		AddListBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, bool filter = true);
+
+	IBaseElement*	FindElement(const std::string& tab, const std::string& groupbox, const std::string& name, ElementType type = ElementType::ANY);
 };
 
 extern CMenu* Menu;

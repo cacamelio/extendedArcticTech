@@ -135,4 +135,38 @@ void CDoubleTap::DefensiveDoubletap() {
 	}
 }
 
+void CDoubleTap::IdealDefensiveTeleport( CUserCmd* cmd )
+{
+	if ( !ctx.is_peeking )
+		return;
+
+	auto& velocity = Cheat.LocalPlayer->m_vecVelocity( );
+
+	if ( velocity.Length2D( ) > 20.0f )
+	{
+		Vector direction;
+		QAngle real_view;
+
+		Utils::VectorToAngle( velocity, direction );
+		EngineClient->GetViewAngles( &real_view );
+
+		direction.y = real_view.yaw - direction.y;
+
+		Vector forward;
+		Utils::VectorToAngle( direction, forward );
+
+		static auto cl_forwardspeed = CVar->FindVar("cl_forwardspeed");
+		static auto cl_sidespeed = CVar->FindVar("cl_sidespeed");
+
+		auto negative_forward_speed = -cl_forwardspeed->GetFloat( );
+		auto negative_side_speed = -cl_sidespeed->GetFloat( );
+
+		auto negative_forward_direction = forward * negative_forward_speed;
+		auto negative_side_direction = forward * negative_side_speed;
+
+		cmd->forwardmove = negative_forward_direction.x;
+		cmd->sidemove = negative_side_direction.y;
+	}
+}
+
 CDoubleTap* DoubleTap = new CDoubleTap;

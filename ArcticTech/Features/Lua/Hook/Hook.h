@@ -1,20 +1,33 @@
 #pragma once
+
 #include "../Sol.hpp"
 
 #include <map>
 
-struct c_lua_hook {
+struct LuaHook_t {
 	int scriptId;
 	sol::protected_function func;
 };
 
-class c_lua_hookManager {
-public:
-	void registerHook( std::string eventName, int scriptId, sol::protected_function func );
-	void unregisterHooks( int scriptId );
+enum ELuaCallbacks {
+	LUA_RENDER,
+	LUA_CREATEMOVE,
+	LUA_FRAMESTAGE,
+	LUA_LEVELINIT,
+	LUA_GAMEEVENTS,
+	LUA_AIM_SHOT,
+	LUA_AIM_ACK,
+	LUA_UNLOAD,
+	LUA_MAX_CALLBACKS
+};
 
-	std::vector<c_lua_hook> getHooks( std::string eventName );
+class CLuaHookManager {
+public:
+	void registerHook(ELuaCallbacks eventName, int scriptId, sol::protected_function func);
+	void unregisterHooks(int scriptId);
+	std::vector<LuaHook_t> getHooks(ELuaCallbacks callback);
+	void removeAll();
 
 private:
-	std::map<std::string, std::vector<c_lua_hook>> hooks;
+	std::vector<LuaHook_t> hooks[LUA_MAX_CALLBACKS];
 };

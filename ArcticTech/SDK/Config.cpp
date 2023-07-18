@@ -175,6 +175,12 @@ void CConfig::Init() {
     add(config.visuals.chams.enemy_invisible_color);
     add(config.visuals.chams.enemy_type);
     add(config.visuals.chams.enemy_glow_thickness);
+    add(config.visuals.chams.shot_chams);
+    add(config.visuals.chams.shot_chams_color);
+    add(config.visuals.chams.shot_chams_type);
+    add(config.visuals.chams.shot_chams_second_color);
+    add(config.visuals.chams.shot_chams_thickness);
+    add(config.visuals.chams.shot_chams_duration);
     add(config.visuals.chams.local_player);
     add(config.visuals.chams.local_player_color);
     add(config.visuals.chams.local_player_type);

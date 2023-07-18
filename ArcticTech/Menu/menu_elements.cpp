@@ -83,6 +83,9 @@ void CCheckbox::HandleClick(bool rmb) {
 		value = !value;
 		if (callback)
 			callback();
+
+		for (auto callback : lua_callbacks)
+			callback.func();
 	}
 }
 
@@ -234,12 +237,18 @@ void CColorPicker::DrawOverlay() {
 
 			if (callback)
 				callback();
+
+			for (auto callback : lua_callbacks)
+				callback.func();
 		} else if (holda) {
 			int offset = max(min(Render->GetMousePos().x - overlayPos.x - 4, 150), 0);
 			color.a = offset * 1.7f;
 
 			if (callback)
 				callback();
+
+			for (auto callback : lua_callbacks)
+				callback.func();
 		}
 		else if (holdvs) {
 			int offsetx = max(min(Render->GetMousePos().x - overlayPos.x - 4, 150), 0);
@@ -250,6 +259,9 @@ void CColorPicker::DrawOverlay() {
 
 			if (callback)
 				callback();
+
+			for (auto callback : lua_callbacks)
+				callback.func();
 		}
 
 		Render->BoxFilled(overlayPos + Vector2(160, 4 + (360 - h) * 0.415f), overlayPos + Vector2(173, 6 + (360 - h) * 0.415f), Color(255, 255, 255, 128));
@@ -309,6 +321,9 @@ void CKeyBind::HandleClick(bool rmb) {
 
 				if (callback)
 					callback();
+
+				for (auto callback : lua_callbacks)
+					callback.func();
 
 				break;
 			}
@@ -412,6 +427,9 @@ void CSlider::Draw() {
 
 		if (callback)
 			callback();
+
+		for (auto callback : lua_callbacks)
+			callback.func();
 	}
 	if (!GetAsyncKeyState(VK_LBUTTON)) {
 		dragging = false;
@@ -518,6 +536,9 @@ void CComboBox::HandleClick(bool rmb) {
 
 		if (callback)
 			callback();
+
+		for (auto callback : lua_callbacks)
+			callback.func();
 	}
 }
 
@@ -638,13 +659,16 @@ void CMultiCombo::HandleClick(bool rmb) {
 	}
 
 	if (opened) {
-		for (int i = 0; i < items.size(); i++) {
-			if (Render->InBounds(_absPos + Vector2(0, 21 + i * 20), _absPos + Vector2(200, 40 + i * 20), true)) {
-				values ^= 1 << i;
+		int i = (Render->GetMousePos().y - _absPos.y - 21) / 20;
 
-				if (callback)
-					callback();
-			}
+		if (i > 0 && i < items.size() && Render->InBounds(_absPos + Vector2(0, 21), _absPos + Vector2(200, int(21 + 20 * items.size())), true)) {
+			values ^= 1 << i;
+
+			if (callback)
+				callback();
+
+			for (auto callback : lua_callbacks)
+				callback.func();
 		}
 	}
 }
@@ -716,6 +740,9 @@ void CButton::HandleClick(bool rmb) {
 	if (Render->InBounds(_absPos, _absPos + Vector2(200, 25))) {
 		if (callback)
 			callback();
+
+		for (auto callback : lua_callbacks)
+			callback.func();
 	}
 }
 
@@ -761,6 +788,9 @@ void CInputBox::HandleInput(int key) {
 
 		if (callback)
 			callback();
+
+		for (auto callback : lua_callbacks)
+			callback.func();
 	}
 }
 
@@ -859,6 +889,9 @@ void CListBox::HandleClick(bool rmb) {
 
 		if (callback)
 			callback();
+
+		for (auto callback : lua_callbacks)
+			callback.func();
 	}
 
 	if (filtered.size() * 18 > 300 && Render->InBounds(_absPos + Vector2(194, 0), _absPos + Vector2(200, 300)))

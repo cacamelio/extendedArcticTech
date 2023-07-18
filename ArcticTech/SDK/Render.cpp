@@ -378,12 +378,17 @@ void CRender::BoxFilled(const Vector2& start, const Vector2& end, Color color, i
 
 void CRender::Box(const Vector2& start, const Vector2& end, Color color, int rounding) {
 	if (!rounding) {
-		std::vector<Vertex> vertex({
-			{start.x, end.y, color}, {start.x, start.y, color}, {end.x, start.y, color}, {end.x, end.y, color}
-		});
+		std::vector<Vertex> vertecies[4]{
+			{{start.x, start.y, color}, {end.x, start.y, color}, {end.x, start.y + 1, color}, {start.x, start.y + 1, color}},
+			{{start.x, end.y + 1, color}, {start.x + 1, start.y + 1, color}, {start.x + 1, end.y, color}, {start.x, end.y, color}},
+			{{start.x + 1, end.y, color}, {end.x, end.y, color}, {end.x, end.y - 1, color}, {start.x, end.y - 1, color}},
+			{{end.x - 1, start.y + 1, color}, {end.x - 1, end.y - 1, color}, {end.x, end.y - 1, color}, {end.x, start.y + 1, color}},
+		};
 
-		vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_LINESTRIP, 3, vertex)));
-
+		vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLESTRIP, 2, vertecies[0])));
+		vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLESTRIP, 2, vertecies[1])));
+		vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLESTRIP, 2, vertecies[2])));
+		vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLESTRIP, 2, vertecies[3])));
 		return;
 	}
 
@@ -501,14 +506,15 @@ void CRender::Circle3D(const Vector& center, float radius, Color color, bool fil
 	if (!endPoint.Invalid())
 		points.emplace_back(Vector2(endPoint.x, endPoint.y));
 
-	PolyLine(points, color);
-	color.a *= 0.3;
-	PolyFilled(points, color);
+	if (filled)
+		PolyFilled(points, color);
+	else
+		PolyLine(points, color);
 }
 
 void CRender::Circle3DGradient(const Vector& center, float radius, Color color, bool reverse) {
-	const auto center_color = (reverse ? color.alpha_modulate(0) : color).d3d_color();
-	const auto out_color = (reverse ? color : color.alpha_modulate(0)).d3d_color();
+	const DWORD center_color = (reverse ? color.alpha_modulate(0) : color).d3d_color();
+	const DWORD out_color = (reverse ? color : color.alpha_modulate(0)).d3d_color();
 
 	const Vector2 center_scr = WorldToScreen(center);
 
