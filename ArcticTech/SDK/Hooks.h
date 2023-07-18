@@ -53,6 +53,8 @@ typedef bool(__fastcall* tShouldDrawViewModel)(void*, void*);
 typedef void(__fastcall* tPerformScreenOverlay)(void*, void*, int, int, int, int);
 typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vector&, unsigned int*, int);
 
+typedef void( __fastcall* tPerformScreenOverlay )( void*, void*, int, int, int, int );
+
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
 inline tPresent oPresent;

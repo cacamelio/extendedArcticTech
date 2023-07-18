@@ -310,6 +310,7 @@ public:
     NETVAR(m_nNextThinkTick, int, "DT_BasePlayer", "m_nNextThinkTick")
     NETVAR(m_flCycle, float, "DT_BaseAnimating", "m_flCycle")
     NETVAR(m_bGunGameImmunity, bool, "DT_CSPlayer", "m_bGunGameImmunity")
+    NETVAR( m_iAddonBits, int, "DT_CSPlayer", "m_iAddonBits" )
     OFFSET(m_flFallVelocity, float, 0x58)
     OFFSET(m_nSimulationTick, int, 0x2AC)
     NETVAR_O(m_nFinalPredictedTick, int, "DT_CSPlayer", "m_nTickBase", 0x4)

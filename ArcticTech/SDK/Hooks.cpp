@@ -321,6 +321,11 @@ void* __fastcall hkAllocKeyValuesMemory(IKeyValuesSystem* thisptr, void* edx, in
 	return oAllocKeyValuesMemory(thisptr, edx, iSize);
 }
 
+char* __fastcall hk_get_halloween_mask_model_addon( void* ecx, void* edx )
+{
+	return ( char* )"models/player/holiday/facemasks/facemask_dallas.mdl";
+}
+
 bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count, const void* msg) {
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
@@ -842,6 +847,15 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	auto total_new_commands = 16;
 
 	from = -1;
+
+	// ������ ��� CL_SendMove ��� ���� ��(��� �� ����� CL_SendMove ����� ���� ��������� ���� ������� ��� �� ��������)
+	auto CL_SendMove = [ ] ( )
+	{
+		using CL_SendMove_t = void( __fastcall* )( void );
+		static CL_SendMove_t CL_SendMoveF = ( CL_SendMove_t )Utils::PatternScan( "engine.dll", "55 8B EC A1 ? ? ? ? 81 EC ? ? ? ? B9 ? ? ? ? 53 8B 98" );
+
+		CL_SendMoveF( );
+	};
 
 	*p_new_commands = total_new_commands;
 	*p_backup_commands = 0;
