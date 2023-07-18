@@ -12,7 +12,7 @@
 #include "../Visuals/Chams.h"
 
 void CRagebot::CalcSpreadValues() {
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 100; i++) {
 		Utils::RandomSeed(i);
 
 		float a = Utils::RandomFloat(0.f, 1.f);
@@ -620,7 +620,7 @@ void CRagebot::Run() {
 			best_target.player->GetName(), 
 			GetHitboxName(best_target.best_point.hitbox), 
 			static_cast<int>(best_target.best_point.damage), 
-			best_target.hitchance, 
+			static_cast<int>(best_target.hitchance * 100), 
 			TIME_TO_TICKS(best_target.player->m_flSimulationTime() - record->m_flSimulationTime),
 			record->resolver_data.side * best_target.player->GetMaxDesyncDelta(),
 			static_cast<int>(record->resolver_data.anim_accuracy * 100.f)

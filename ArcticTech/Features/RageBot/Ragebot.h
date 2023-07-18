@@ -56,7 +56,7 @@ private:
 		float dsin;
 	};
 
-	SpreadValues_t spread_values[50];
+	SpreadValues_t spread_values[100];
 
 	weapon_settings_t settings;
 	bool doubletap_stop = false;
