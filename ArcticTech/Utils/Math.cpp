@@ -117,3 +117,15 @@ Vector Math::VectorTransform(const Vector& in, const matrix3x4_t& matrix) {
 		in.Dot(matrix[2]) + matrix[2][3]
 	);
 }
+
+Vector Math::VectorRotate(const Vector& in1, const matrix3x4_t& in2)
+{
+	return Vector(in1.Dot(in2[0]), in1.Dot(in2[1]), in1.Dot(in2[2]));
+}
+//--------------------------------------------------------------------------------
+Vector Math::VectorRotate(const Vector& in1, const QAngle& in2)
+{
+	matrix3x4_t mat;
+	mat.AngleMatrix(in2);
+	return VectorRotate(in1, mat);
+}

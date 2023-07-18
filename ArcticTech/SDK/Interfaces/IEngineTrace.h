@@ -589,6 +589,13 @@ public:
         allsolid = other.allsolid;
         startsolid = other.startsolid;
     }
+
+    void Clear() {
+        memset(this, 0, sizeof(CGameTrace));
+        fraction = 1.f;
+        fractionleftsolid = 0;
+        surface = { "**empty**", 0 };
+    }
 };
 
 inline bool CGameTrace::DidHit() const
@@ -600,6 +607,8 @@ inline bool CGameTrace::IsVisible() const
 {
     return fraction > 0.97f;
 }
+
+class CBasePlayer;
 
 class IEngineTrace
 {
@@ -613,6 +622,7 @@ public:
 
     bool            ClipRayToHitboxes(const Ray_t& ray, unsigned int fMask, CBaseEntity* pEnt, CGameTrace* pTrace);
     bool            ClipRayToPlayer(const Ray_t& ray, unsigned int fMask, CBaseEntity* pEnt, CGameTrace* pTrace);
+    bool            RayIntersectPlayer(const Vector& start, const Vector& end, CBasePlayer* player, matrix3x4_t* hitbox, int filter_damagegroup = -1);
 
     CGameTrace      TraceRay(const Vector& start, const Vector& end, unsigned int fMask, CBaseEntity* pSkip = nullptr) {
         CGameTrace trace;
@@ -643,8 +653,6 @@ public:
     float           DistanceToRay(const Vector& start, const Vector& end, const Vector& point);
     // segment to segment distance
     float           SegmentToSegment(const Vector& s1, const Vector& s2, const Vector& k1, const Vector& k2);
-    // check if ray intersects cylinder
-    bool            IntersectsCylinder(const Vector& start, const Vector& end, const Vector& mins, const Vector& maxs, float radius);
-    // check if ray intersects capsule
-    bool            IntersectsCapsule(const Vector& start, const Vector& end, const Vector& mins, const Vector& maxs, float radius);
+
+    bool            IntersectBBHitbox(const Vector& start, const Vector& delta, const Vector& min, const Vector& max);
 };

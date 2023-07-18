@@ -601,6 +601,12 @@ namespace api {
 			return elem;
 		}
 	}
+
+	namespace entity {
+		CBasePlayer* get_local_player() {
+			return Cheat.LocalPlayer;
+		}
+	}
 }
 
 void CLua::Setup() {
@@ -733,14 +739,34 @@ void CLua::Setup() {
 		"to_screen", &api::vector::to_screen
 	);
 
+	lua.new_usertype<CBaseCombatWeapon>("weapon_t", sol::no_constructor,
+		"ent_index", &CBaseCombatWeapon::EntIndex,
+		"get_inaccuracy", &CBaseCombatWeapon::GetInaccuracy,
+		"get_spread", &CBaseCombatWeapon::GetSpread
+	);
+
 	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor, 
 		"ent_index", &CBasePlayer::EntIndex,
-		"get_name", &CBasePlayer::GetName
+		"get_name", &CBasePlayer::GetName,
+		"get_active_weapon", &CBasePlayer::GetActiveWeapon,
+		"get_abs_orgin", &CBasePlayer::GetAbsOrigin,
+		"get_abs_angles", &CBasePlayer::GetAbsAngles
 	);
 
 	lua.new_usertype<LagRecord>("lag_record_t", sol::no_constructor,
+		"player", &LagRecord::player,
 		"origin", &LagRecord::m_vecOrigin,
-		"player", &LagRecord::player
+		"velocity", &LagRecord::m_vecVelocity,
+		"mins", &LagRecord::m_vecMins,
+		"maxs", &LagRecord::m_vecMaxs,
+		"abs_angles", &LagRecord::m_vecAbsAngles,
+		"view_angles", &LagRecord::m_viewAngle,
+		"simulation_time", &LagRecord::m_flSimulationTime,
+		"duck_amount", &LagRecord::m_flDuckAmout,
+		"duck_speed", &LagRecord::m_flDuckSpeed,
+		"choked_ticks", &LagRecord::m_nChokedTicks,
+		"shifting_tickbase", &LagRecord::shifting_tickbase,
+		"breaking_lag_compensation", &LagRecord::breaking_lag_comp
 	);
 
 	lua.new_usertype<QAngle>("qangle", sol::call_constructor, sol::constructors<QAngle(), QAngle(float, float), QAngle(float, float, float)>(), 
@@ -781,6 +807,11 @@ void CLua::Setup() {
 		"add_callback", api::client::add_callback,
 		"unload_script", api::client::unload_script,
 		"reload_script", api::client::reload_script
+	);
+
+	// entity
+	lua.create_named_table("entity",
+		"get_local_player", api::entity::get_local_player
 	);
 
 	// ui

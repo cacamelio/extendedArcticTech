@@ -257,6 +257,9 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 		record->resolver_data.side = bf_data->current_side;
 		record->resolver_data.resolver_type = ResolverType::BRUTEFORCE;
 	}
+	else {
+		bf_data->use = false;
+	}
 
 	if (record->resolver_data.side != 0) {
 		player->GetAnimstate()->flGoalFeetYaw = Math::NormalizeYaw(player->m_angEyeAngles().yaw + (player->GetMaxDesyncDelta() * record->resolver_data.side));

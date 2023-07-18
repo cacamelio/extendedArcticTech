@@ -51,6 +51,7 @@ typedef void(__stdcall* tDrawStaticProps)(void*, void*, const void*, int, bool, 
 typedef bool(__fastcall* tWriteUserCmdDeltaToBuffer)(CInput*, void*, int, void*, int, int, bool);
 typedef bool(__fastcall* tShouldDrawViewModel)(void*, void*);
 typedef void(__fastcall* tPerformScreenOverlay)(void*, void*, int, int, int, int);
+typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vector&, unsigned int*, int);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -83,6 +84,7 @@ inline tDrawStaticProps oDrawStaticProps;
 inline tWriteUserCmdDeltaToBuffer oWriteUserCmdDeltaToBuffer;
 inline tShouldDrawViewModel oShouldDrawViewModel;
 inline tPerformScreenOverlay oPerformScreenOverlay;
+inline tListLeavesInBox oListLeavesInBox;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

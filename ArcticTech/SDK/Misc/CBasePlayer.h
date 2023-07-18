@@ -324,6 +324,7 @@ public:
     PRED_DESC_MAP(m_vecAbsVelocity, Vector, "m_vecAbsVelocity")
     OFFSET(m_bDormant, bool, 0xED)
     NETVAR_O(GetAnimstate, CCSGOPlayerAnimationState*, "DT_CSPlayer", "m_bIsScoped", -0x14)
+    NETVAR(deadflag, bool, "DT_BasePlayer", "deadflag")
     NETVAR_O(v_angle, QAngle, "DT_BasePlayer", "deadflag", 0x4)
     OFFSET(m_nOcclusionFlags, uint32_t, 0xA28)
     OFFSET(m_nOcclusionFrame, int, 0xA30)
@@ -395,7 +396,7 @@ public:
         reinterpret_cast <void(__thiscall*)(void*, int)> (m_uInvalidatePhysics)(this, flags);
     }
 
-
+    inline IClientRenderable* GetClientRenderable() { return reinterpret_cast<IClientRenderable*>((uintptr_t)this + 0x4); };
     std::string         GetName();
     bool                IsTeammate();
     float               GetMaxDesyncDelta();

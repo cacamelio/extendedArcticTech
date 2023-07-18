@@ -14,6 +14,7 @@ CEventListner* EventListner = new CEventListner;
 static std::vector<const char*> s_RgisterEvents = {
 	"player_hurt",
 	"player_death",
+	"player_spawned",
 	"bomb_planted",
 	"bomb_defused",
 	"bomb_begindefuse",
@@ -51,18 +52,21 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			}
 		}
 
-		if (victim && victim->m_bDormant())
+		if (victim && victim->m_bDormant()) {
 			ESPInfo[victim->EntIndex()].m_nHealth = event->GetInt("health");
+		}
 	}
 	else if (name == "player_death") {
-		if (EngineClient->GetPlayerForUserID(event->GetInt("userid")) == EngineClient->GetLocalPlayer()) {
+		int userid = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
+
+		if (userid == EngineClient->GetLocalPlayer()) {
 			ctx.reset();
 			DoubleTap->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
 		}
 
-		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
-		AnimationSystem->InvalidateInterpolation(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
+		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));
+		AnimationSystem->InvalidateInterpolation(userid);
 	}
 	else if (name == "round_start") {
 		LagCompensation->Reset();
@@ -98,6 +102,12 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 				}
 			}
 		}
+	}
+	else if (name == "player_spawned") {
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
+
+		if (player->m_bDormant())
+			ESPInfo[player->EntIndex()].m_nHealth = 100;
 	}
 }
 

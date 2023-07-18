@@ -203,7 +203,7 @@ public:
     void                SetAntiAliasing(bool value);
 
     void                BoxFilled(const Vector2& start, const Vector2& end, Color color, int rounding = 0);
-    void                Box(const Vector2& start, const Vector2& end, Color color, int rounding = 0);
+    void                Box(const Vector2& start, const Vector2& end, Color color, int rounding = 0, int thickness = 1);
     void                GradientBox(const Vector2& start, const Vector2& end, Color t_l, Color t_r, Color b_l, Color b_r);
     void                Line(const Vector2& start, const Vector2& end, Color color);
     void                PolyLine(std::vector<Vector2> points, Color color);

@@ -21,7 +21,7 @@ struct ShotChams_t {
 	int ent_index;
 	ModelRenderInfo_t info;
 	DrawModelState_t state;
-	matrix3x4_t pBoneToWorld[128] = {};
+	matrix3x4_t pBoneToWorld[128];
 	float time;
 	matrix3x4_t model_to_world;
 };

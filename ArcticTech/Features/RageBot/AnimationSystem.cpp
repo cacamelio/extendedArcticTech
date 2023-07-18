@@ -184,15 +184,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	player->GetAnimlayers()[12].m_flWeight = 0;
 
-	//// fix in air legs
-	//animstate->bOnGround = player->m_fFlags() & FL_ONGROUND;
-	//if (!animstate->bOnGround) {
-	//	const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-	//	const float gravity = cvars.sv_gravity->GetFloat();
-	//	const float speed = player->m_flFallVelocity();
-	//	// speed = jumpImpulse - gravity * flDurationInAir
-	//	animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
-	//}
+	float flDurationInAir = animstate->flDurationInAir;
 
 	if (!player->IsTeammate()) {
 		Resolver->Run(player, record, records);
@@ -206,8 +198,19 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		Resolver->SetRollAngle(player, 0.f);
 		animstate->SetTickInterval();
 		player->UpdateClientSideAnimation();
-
 	}
+
+	//// fix in air legs
+	//animstate->bOnGround = player->m_fFlags() & FL_ONGROUND;
+	//if (!animstate->bOnGround) {
+	//	const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
+	//	const float gravity = cvars.sv_gravity->GetFloat();
+	//	const float speed = player->m_flFallVelocity();
+	//	// speed = jumpImpulse - gravity * flDurationInAir
+	//	animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
+	//}
+
+	animstate->flDurationInAir = flDurationInAir;
 
 	CCSGOPlayerAnimationState originalAnimstate = *animstate;
 	player->GetAnimlayers()[12].m_flWeight = 0;

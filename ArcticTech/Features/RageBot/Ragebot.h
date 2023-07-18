@@ -129,7 +129,7 @@ private:
 public:
 	void				CalcSpreadValues();
 	void				AutoStop();
-	float				CalcHitchance(QAngle angles, CBasePlayer* target, int hitbox);
+	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);
 	float				CalcMinDamage(CBasePlayer* target);
 	weapon_settings_t	GetWeaponSettings(int weaponId);
 	bool				IsArmored(int hitbox);

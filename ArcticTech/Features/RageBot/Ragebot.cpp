@@ -104,16 +104,13 @@ void CRagebot::AutoStop() {
 	ctx.cmd->forwardmove = nigated_direction.x;
 }
 
-float CRagebot::CalcHitchance(QAngle angles, CBasePlayer* target, int damagegroup) {
+float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup) {
 	Vector forward, right, up;
 	Math::AngleVectors(angles, forward, right, up);
 
 	int hits = 0;
 
-	CGameTrace tr;
-	Ray_t ray;
-
-	for (int i = 0; i < 50; i++)
+	for (int i = 0; i < 100; i++)
 	{
 		SpreadValues_t& s_val = spread_values[i];
 
@@ -132,16 +129,13 @@ float CRagebot::CalcHitchance(QAngle angles, CBasePlayer* target, int damagegrou
 		Vector direction = forward + (right * (s_val.bcos * inaccuracy + s_val.dcos * spread)) + (up * (s_val.bsin * inaccuracy + s_val.dsin * spread));
 		direction.Q_Normalized();
 
-		ray.Init(eye_position, eye_position + (direction * 8192));
-
-		if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT | CONTENTS_GRATE, target, &tr))
+		if (!EngineTrace->RayIntersectPlayer(eye_position, eye_position + (direction * 8192.f), target->player, target->aimMatrix, damagegroup))
 			continue;
 
-		if (tr.hit_entity == target && HitgroupToDamagegroup(tr.hitgroup) == damagegroup)
-			hits++;
+		hits++;
 	}
 
-	return hits * 2.f;
+	return hits * 0.01f;
 }
 
 void CRagebot::FindTargets() {
@@ -163,7 +157,7 @@ void CRagebot::FindTargets() {
 bool CRagebot::CompareRecords(LagRecord* a, LagRecord* b) {
 	const Vector vec_diff = a->m_vecOrigin - b->m_vecOrigin;
 
-	if (vec_diff.LengthSqr() > 64)
+	if (vec_diff.LengthSqr() > 4.f)
 		return false;
 
 	QAngle angle_diff = a->m_viewAngle - b->m_viewAngle;
@@ -209,8 +203,7 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 	}
 
 	if (last_valid_record) {
-		if (!target_records.empty() && !CompareRecords(target_records.back(), last_valid_record))
-			target_records.emplace_back(last_valid_record);
+		target_records.emplace_back(last_valid_record);
 	}
 
 	if (target_records.empty()) {
@@ -485,10 +478,10 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 		delete backup_record;
 		return result;
 	}
-	LagCompensation->BacktrackEntity(result.best_point.record, true);
+	//LagCompensation->BacktrackEntity(result.best_point.record, true);
 
 	result.angle = Math::VectorAngles(result.best_point.point - eye_position);
-	result.hitchance = CalcHitchance(result.angle, target, HitboxToDamagegroup(result.best_point.hitbox));
+	result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
 
 	LagCompensation->BacktrackEntity(backup_record);
 	delete backup_record;
@@ -553,7 +546,7 @@ void CRagebot::Run() {
 
 	for (const auto& target : scanned_targets) {
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
-			if (target.hitchance > settings.hitchance->get()) {
+			if (target.hitchance > settings.hitchance->get() * 0.01f) {
 				best_target = target;
 				break;
 			}
@@ -562,7 +555,7 @@ void CRagebot::Run() {
 			}
 		}
 
-		if (target.hitchance > settings.hitchance->get() && target.best_point.damage > max(best_target.best_point.damage, target.minimum_damage))
+		if (target.hitchance > settings.hitchance->get() * 0.01f && target.best_point.damage > max(best_target.best_point.damage, target.minimum_damage))
 			best_target = target;
 
 		if (target.best_point.damage > target.minimum_damage) {

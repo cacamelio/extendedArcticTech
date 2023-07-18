@@ -125,15 +125,10 @@ void CRender::RenderDrawData() {
 
 			if (object.outlined)
 			{
-				device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
+				int alpha = (object.color & 0xFF000000) >> 24;
 
-				DWORD outlineColor = (object.color & 0xFF000000) | 0x000000; // Black outline color with the same alpha as the text color
-				char dummy[4];
-				*(DWORD*)dummy = outlineColor;
-				dummy[0] *= 0.3f;
-				outlineColor = *(DWORD*)dummy;
+				Color shadow_color(15, 15, 15, alpha * 0.75f);
+				DWORD outlineColor = shadow_color.d3d_color();
 
 				RECT outlineRect = { object.pRect.left - 1, object.pRect.top - 1, object.pRect.right - 1, object.pRect.bottom - 1 };
 
@@ -161,30 +156,17 @@ void CRender::RenderDrawData() {
 				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 
 				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
-
-				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-				device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			}
 			else if (object.dropshadow) {
-				device->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
+				int alpha = (object.color & 0xFF000000) >> 24;
 
-				DWORD outlineColor = (object.color & 0xFF000000) | 0x000000; // Black outline color with the same alpha as the text color
-				char dummy[4];
-				*(DWORD*)dummy = outlineColor;
-				dummy[0] *= 0.5f;
-				outlineColor = *(DWORD*)dummy;
+				Color shadow_color(15, 15, 15, alpha * 0.75f);
+				DWORD outlineColor = shadow_color.d3d_color();
 
 				RECT outlineRect = { object.pRect.left + 1, object.pRect.top + 1, object.pRect.right + 1, object.pRect.bottom + 1 };
 
 				font->DrawTextW(sprite, wide_text, &outlineRect, object.clipType, outlineColor);
 				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
-
-				device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-				device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			}
 			else {
 				font->DrawTextW(sprite, wide_text, const_cast<LPRECT>(&object.pRect), object.clipType, object.color);
@@ -376,7 +358,7 @@ void CRender::BoxFilled(const Vector2& start, const Vector2& end, Color color, i
 	}
 }
 
-void CRender::Box(const Vector2& start, const Vector2& end, Color color, int rounding) {
+void CRender::Box(const Vector2& start, const Vector2& end, Color color, int rounding, int thickness) {
 	if (!rounding) {
 		std::vector<Vertex> vertecies[4]{
 			{{start.x, start.y, color}, {end.x, start.y, color}, {end.x, start.y + 1, color}, {start.x, start.y + 1, color}},

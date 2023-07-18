@@ -408,8 +408,8 @@ void __fastcall hkPaintTraverse(IPanel* thisptr, void* edx, unsigned int panel, 
 void __fastcall hkDoPostScreenEffects(IClientMode* thisptr, void* edx, CViewSetup* setup) {
 	static tDoPostScreenEffects oDoPostScreenEffects = (tDoPostScreenEffects)Hooks::ClientModeVMT->GetOriginal(44);
 
-	Glow::Run();
 	Chams->RenderShotChams();
+	Glow::Run();
 
 	oDoPostScreenEffects(thisptr, edx, setup);
 }
@@ -428,6 +428,9 @@ void __fastcall hkDrawModelExecute(IVModelRender* thisptr, void* edx, void* ctx,
 	static tDrawModelExecute oDrawModelExecute = (tDrawModelExecute)Hooks::ModelRenderVMT->GetOriginal(21);
 
 	if (hook_info.in_draw_static_props)
+		return oDrawModelExecute(thisptr, ctx, state, pInfo, pCustomBoneToWorld);
+
+	if (StudioRender->IsForcedMaterialOverride())
 		return oDrawModelExecute(thisptr, ctx, state, pInfo, pCustomBoneToWorld);
 
 	if (Chams->OnDrawModelExecute(ctx, state, pInfo, pCustomBoneToWorld))
@@ -897,6 +900,34 @@ void __fastcall hkPerformScreenOverlay(void* viewrender, void* edx, int x, int y
 	oPerformScreenOverlay(viewrender, edx, x, y, w, h);
 }
 
+int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const Vector& maxs, unsigned int* list, int size) {
+	static void* insert_into_tree = Utils::PatternScan("client.dll", "56 52 FF 50 18", 0x5);
+
+	if (!config.visuals.chams.disable_model_occlusion->get() || _ReturnAddress() != insert_into_tree)
+		return oListLeavesInBox(ecx, edx, mins, maxs, list, size);
+
+	// get current renderable info from stack ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L1470 )
+	auto info = *(RenderableInfo_t**)((uintptr_t)_AddressOfReturnAddress() + 0x14);
+	if (!info || !info->m_pRenderable)
+		return oListLeavesInBox(ecx, edx, mins, maxs, list, size);
+
+	// check if disabling occulusion for players ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L1491 )
+	auto base_entity = info->m_pRenderable->GetIClientUnknown()->GetBaseEntity();
+	if (!base_entity || !base_entity->IsPlayer())
+		return oListLeavesInBox(ecx, edx, mins, maxs, list, size);
+
+	// fix render order, force translucent group ( https://www.unknowncheats.me/forum/2429206-post15.html )
+	// AddRenderablesToRenderLists: https://i.imgur.com/hcg0NB5.png ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L2473 )
+	info->m_Flags &= ~0x100;
+	info->m_bRenderInFastReflection |= 0xC0;
+
+	// extend world space bounds to maximum ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L707 )
+	static const Vector map_min = Vector(-16384.0f, -16384.0f, -16384.0f);
+	static const Vector map_max = Vector(16384.0f, 16384.0f, 16384.0f);
+	auto count = oListLeavesInBox(ecx, edx, map_min, map_max, list, size);
+	return count;
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -965,6 +996,7 @@ void Hooks::Initialize() {
 	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 68 53 56 8B D9 C7 45 ? ? ? ? ? 57 8D 4D 98"), hkWriteUserCmdDeltaToBuffer);
 	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
+	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
 
 	EventListner->Register();
 }
@@ -1006,6 +1038,7 @@ void Hooks::End() {
 	RemoveHook(oPhysicsSimulate, hkPhysicsSimulate);
 	RemoveHook(oClampBonesInBBox, hkClampBonesInBBox);
 	RemoveHook(oCalculateView, hkCalculateView);
+	RemoveHook(oSendNetMsg, hkSendNetMsg);
 	RemoveHook(oGetEyeAngles, hkGetEyeAngles);
 	RemoveHook(oRenderSmokeOverlay, hkRenderSmokeOverlay);
 	RemoveHook(oShouldInterpolate, hkShouldInterpolate);
@@ -1017,9 +1050,9 @@ void Hooks::End() {
 	RemoveHook(oSetSignonState, hkSetSignonState);
 	RemoveHook(oCreateNewParticleEffect, hkCreateNewParticleEffect_proxy);
 	RemoveHook(oSVCMsg_VoiceData, hkSVCMsg_VoiceData);
-	RemoveHook(oSendNetMsg, hkSendNetMsg);
 	RemoveHook(oDrawStaticProps, hkDrawStaticProps);
 	RemoveHook(oWriteUserCmdDeltaToBuffer, hkWriteUserCmdDeltaToBuffer);
 	RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
 	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
+	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
 }

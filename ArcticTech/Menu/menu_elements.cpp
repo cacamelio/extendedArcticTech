@@ -661,7 +661,7 @@ void CMultiCombo::HandleClick(bool rmb) {
 	if (opened) {
 		int i = (Render->GetMousePos().y - _absPos.y - 21) / 20;
 
-		if (i > 0 && i < items.size() && Render->InBounds(_absPos + Vector2(0, 21), _absPos + Vector2(200, int(21 + 20 * items.size())), true)) {
+		if (i >= 0 && i < items.size() && Render->InBounds(_absPos + Vector2(0, 21), _absPos + Vector2(200, int(21 + 20 * items.size())), true)) {
 			values ^= 1 << i;
 
 			if (callback)

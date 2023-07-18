@@ -60,6 +60,11 @@ typedef int VertexFormat_t;
 typedef int MaterialPropertyTypes_t;
 typedef unsigned long MDLHandle_t;
 
+enum
+{
+    MODEL_INSTANCE_INVALID = (ModelInstanceHandle_t)~0
+};
+
 class IClientRenderable;
 class IMaterial;
 class CStudioHdr;
@@ -95,13 +100,48 @@ struct studiohwdata_t;
 struct MaterialLightingState_t;
 struct ColorMeshInfo_t;
 
+enum
+{
+    RENDER_FLAGS_DISABLE_RENDERING = 0x01,
+    RENDER_FLAGS_HASCHANGED = 0x02,
+    RENDER_FLAGS_ALTERNATE_SORTING = 0x04,
+    RENDER_FLAGS_RENDER_WITH_VIEWMODELS = 0x08,
+    RENDER_FLAGS_BLOAT_BOUNDS = 0x10,
+    RENDER_FLAGS_BOUNDS_VALID = 0x20,
+    RENDER_FLAGS_BOUNDS_ALWAYS_RECOMPUTE = 0x40,
+    RENDER_FLAGS_IS_SPRITE = 0x80,
+    RENDER_FLAGS_FORCE_OPAQUE_PASS = 0x100,
+};
+
+struct RenderableInfo_t
+{
+    IClientRenderable* m_pRenderable;
+    void* m_pAlphaProperty;
+    int					m_EnumCount;				// Have I been added to a particular shadow yet?
+    int					m_nRenderFrame;
+    unsigned short		m_FirstShadow;				// The first shadow caster that cast on it
+    unsigned short		m_LeafList;					// What leafs is it in?
+    short				m_Area;						// -1 if the renderable spans multiple areas.
+    uint16_t				m_Flags;					// rendering flags
+    uint16_t				m_bRenderInFastReflection : 1;	// Should we render in the "fast" reflection?
+    uint16_t				m_bDisableShadowDepthRendering : 1;	// Should we not render into the shadow depth map?
+    uint16_t				m_bDisableCSMRendering : 1;			// Should we not render into the CSM?
+    uint16_t				m_bDisableShadowDepthCaching : 1;	// Should we not be cached in the shadow depth map?
+    uint16_t				m_nSplitscreenEnabled : 2;	// splitscreen rendering flags
+    uint16_t				m_nTranslucencyType : 2;	// RenderableTranslucencyType_t
+    uint16_t				m_nModelType : 8;			// RenderableModelType_t
+    Vector				m_vecBloatedAbsMins;		// Use this for tree insertion
+    Vector				m_vecBloatedAbsMaxs;
+    Vector				m_vecAbsMins;			// NOTE: These members are not threadsafe!!
+    Vector				m_vecAbsMaxs;			// They can be updated from any viewpoint (based on RENDER_FLAGS_BOUNDS_VALID)
+};
 
 struct DrawModelState_t
 {
-    void* m_pStudioHdr;
-    studiohwdata_t* m_pStudioHWData;
-    IClientRenderable* m_pRenderable;
-    const matrix3x4_t* m_pModelToWorld;
+    void* m_pStudioHdr = nullptr;
+    studiohwdata_t* m_pStudioHWData = nullptr;
+    IClientRenderable* m_pRenderable = nullptr;
+    const matrix3x4_t* m_pModelToWorld = nullptr;
     StudioDecalHandle_t     m_decals;
     int                     m_drawFlags;
     int                     m_lod;
@@ -109,10 +149,10 @@ struct DrawModelState_t
 
 struct StaticPropRenderInfo_t
 {
-    const matrix3x4_t* pModelToWorld;
-    const model_t* pModel;
-    IClientRenderable* pRenderable;
-    Vector* pLightingOrigin;
+    const matrix3x4_t* pModelToWorld = nullptr;
+    const model_t* pModel = nullptr;
+    IClientRenderable* pRenderable = nullptr;
+    Vector* pLightingOrigin = nullptr;
     short                   skin;
     ModelInstanceHandle_t   instance;
 };
@@ -122,11 +162,11 @@ struct ModelRenderInfo_t
     Vector                  origin;
     QAngle                  angles;
     char                    pad[4];
-    IClientRenderable* pRenderable;
-    const model_t* pModel;
-    const matrix3x4_t* pModelToWorld;
-    const matrix3x4_t* pLightingOffset;
-    const Vector* pLightingOrigin;
+    IClientRenderable* pRenderable = nullptr;
+    const model_t* pModel = nullptr;
+    const matrix3x4_t* pModelToWorld = nullptr;
+    const matrix3x4_t* pLightingOffset = nullptr;
+    const Vector* pLightingOrigin = nullptr;
     int                     flags;
     int                     entity_index;
     int                     skin;

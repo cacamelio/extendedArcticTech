@@ -33,6 +33,7 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 	record->m_vecMins = player->m_vecMins();
 	record->m_vecVelocity = player->m_vecVelocity();
 	record->m_vecAbsAngles = player->GetAbsAngles();
+	record->m_flLowerBodyYawTarget = player->m_flLowerBodyYawTarget();
 	record->flPoseParamaters = player->m_flPoseParameter();
 
 	if (!record->boneMatrixFilled) {
@@ -60,6 +61,7 @@ void CLagCompensation::BacktrackEntity(LagRecord* record, bool use_aim_matrix) {
 	player->m_vecMaxs() = record->m_vecMaxs;
 	player->m_vecVelocity() = record->m_vecVelocity;
 	player->m_flPoseParameter() = record->flPoseParamaters;
+	player->m_flLowerBodyYawTarget() = record->m_flLowerBodyYawTarget;
 	player->SetAbsAngles(record->m_vecAbsAngles);
 	player->ForceBoneCache();
 
@@ -95,8 +97,9 @@ void CLagCompensation::OnNetUpdate() {
 			AnimationSystem->UpdateAnimations(pl, new_record, records);
 			RecordDataIntoTrack(pl, new_record);
 
-			if (prev_record)
+			if (prev_record) {
 				new_record->breaking_lag_comp = (prev_record->m_vecOrigin - new_record->m_vecOrigin).LengthSqr() > 4096.f;
+			}
 
 			new_record->shifting_tickbase = max_simulation_time[i] > new_record->m_flSimulationTime;
 
@@ -159,7 +162,9 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	if (!nci)
 		return false;
 
-	const float latency = nci->GetAvgLatency(FLOW_INCOMING) + nci->GetAvgLatency(FLOW_OUTGOING);
+	const float latency = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
+
+	const int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(latency);
 
 	const float lerp_time = GetLerpTime();
 	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift) - record->m_flSimulationTime);
@@ -168,7 +173,7 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 		return false;
 
 	/// omg v0lvo broke this check but i want to add it because i want to be like Soufiw
-	const int dead_time = (int)((float)(TICKS_TO_TIME(GlobalVars->tickcount) + latency) - 0.2f);
+	const int dead_time = TIME_TO_TICKS((float)(TICKS_TO_TIME(server_tickcount) + latency) - 0.2f);
 	if (TIME_TO_TICKS(record->m_flSimulationTime + lerp_time) < dead_time)
 		return false;
 

@@ -29,6 +29,6 @@ namespace Math {
 	QAngle			VectorAngles(const Vector& vec);
 	void			VectorTransform(const Vector& in, const matrix3x4_t& matrix, Vector* out);
 	Vector			VectorTransform(const Vector& in, const matrix3x4_t& matrix);
-	void            VectorTransform(const Vector& in1, const matrix3x4_t& in2, Vector& out);
-
+	Vector			VectorRotate(const Vector& in, const matrix3x4_t& matrix);
+	Vector			VectorRotate(const Vector& in, const QAngle& rotate);
 }

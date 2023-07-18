@@ -127,9 +127,6 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	bool isArms = modelName.find("arms") != std::string::npos || modelName.find("sleeve") != std::string::npos;
 	bool isViewModel = modelName.starts_with("models/weapons/v") && !isArms;
 
-	if (ModelRender->IsForcedMaterialOverride() && !(isWeapon || isViewModel || isArms || (ent && ent->IsPlayer())))
-		return false;
-
 	ClassOfEntity entType;
 
 	if (ent == Cheat.LocalPlayer) {
@@ -265,7 +262,7 @@ void CChams::AddShotChams(LagRecord* record) {
 	hit.info.origin = record->m_vecOrigin;
 	hit.info.angles = record->m_vecAbsAngles;
 
-	auto renderable = record->player->GetClientUnknown()->GetClientRenderable();
+	auto renderable = record->player->GetClientRenderable();
 
 	if (!renderable)
 		return;
@@ -292,8 +289,8 @@ void CChams::AddShotChams(LagRecord* record) {
 	hit.info.hitboxset = record->player->m_nHitboxSet();
 	hit.info.skin = m_nSkin;
 	hit.info.body = m_nBody;
-	hit.info.entity_index = -1;
-	hit.info.instance = CallVFunction<ModelInstanceHandle_t(__thiscall*)(void*)>(renderable, 30u)(renderable);
+	hit.info.entity_index = record->player->EntIndex();
+	hit.info.instance = MODEL_INSTANCE_INVALID;
 	hit.info.flags = 0x1;
 
 	hit.info.pModelToWorld = &hit.model_to_world;
@@ -319,6 +316,12 @@ void CChams::RenderShotChams() {
 			continue;
 		}
 
+		if (!it->state.m_pModelToWorld || !it->state.m_pRenderable || !it->state.m_pStudioHdr || !it->state.m_pStudioHWData ||
+			!it->info.pRenderable || !it->info.pModelToWorld || !it->info.pModel) {
+			++it;
+			continue;
+		}
+
 		float alpha = std::clamp((config.visuals.chams.shot_chams_duration->get() - (GlobalVars->curtime - it->time)) * 2.f, 0.f, 1.f);
 
 		_ctx = ctx;
@@ -327,6 +330,6 @@ void CChams::RenderShotChams() {
 
 		DrawModel(materials[ClassOfEntity::Shot], alpha, it->pBoneToWorld);
 
-		it++;
+		++it;
 	}
 }

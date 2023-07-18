@@ -222,6 +222,9 @@ bool CBasePlayer::IsAlive() {
 	if (m_iTeamNum() != 2 && m_iTeamNum() != 3)
 		return false;
 
+	if (deadflag())
+		return false;
+
 	if (m_lifeState() != LIFE_ALIVE)
 		return false;
 

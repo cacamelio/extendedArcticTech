@@ -2,6 +2,7 @@
 
 #include "../../Utils/Utils.h"
 #include "../Misc/CBaseEntity.h"
+#include "../Misc/CBasePlayer.h"
 
 bool IEngineTrace::ClipRayToHitboxes(const Ray_t& ray, unsigned int fMask, CBaseEntity* pEnt, CGameTrace* pTrace) {
 	static auto _ClipRayToHitboxes = reinterpret_cast<bool(__thiscall*)(IEngineTrace*, const Ray_t&, unsigned int, ICollideable*, CGameTrace*)>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 68 56 57 6A 54 8D 45 98 6A 00 50"));
@@ -18,6 +19,60 @@ bool IEngineTrace::ClipRayToPlayer(const Ray_t& ray, unsigned int fMask, CBaseEn
 		return false;
 
 	return true;
+}
+
+bool IEngineTrace::RayIntersectPlayer(const Vector& start, const Vector& end, CBasePlayer* player, matrix3x4_t* bone_matrix, int filter_damagegroup) {
+	const auto model = player->GetClientRenderable()->GetModel();
+
+	if (!model)
+		return false;
+
+	auto hdr = ModelInfoClient->GetStudioModel(model);
+
+	if (!hdr)
+		return false;
+
+	auto set = hdr->GetHitboxSet(player->m_nHitboxSet());
+
+	if (!set)
+		return false;
+
+	for (int i = 0; i < set->numhitboxes; ++i) {
+		if (filter_damagegroup != -1 && HitboxToDamagegroup(i) != filter_damagegroup)
+			continue;
+
+		const auto box = set->GetHitbox(i);
+
+		if (!box)
+			continue;
+
+		float radius = box->flCapsuleRadius;
+		const auto is_capsule = radius != -1.f;
+		Vector min, max;
+
+		if (is_capsule) {
+			Math::VectorTransform(box->bbmin, bone_matrix[box->bone], &min);
+			Math::VectorTransform(box->bbmax, bone_matrix[box->bone], &max);
+
+			if (SegmentToSegment(start, end, min, max) <= radius)
+				return true;
+		}
+		else {
+			Math::VectorTransform(Math::VectorRotate(box->bbmin, box->angOffsetOrientation), bone_matrix[box->bone], &min);
+			Math::VectorTransform(Math::VectorRotate(box->bbmax, box->angOffsetOrientation), bone_matrix[box->bone], &max);
+
+			Vector delta;
+			Vector start_scaled;
+
+			Math::VectorTransform(start, bone_matrix[box->bone], &start_scaled);
+			delta = Math::VectorRotate((end - start).Q_Normalized() * 8192.f, bone_matrix[box->bone]);
+			if (IntersectBBHitbox(start_scaled, delta, min, max)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 Vector IEngineTrace::ClosestPoint(const Vector& start, const Vector& end, const Vector& point) {
@@ -113,51 +168,54 @@ float IEngineTrace::SegmentToSegment(const Vector& s1, const Vector& s2, const V
 	return dp.Length();
 }
 
-bool IEngineTrace::IntersectsCylinder(const Vector& start, const Vector& end, const Vector& mins, const Vector& maxs, float radius) {
-	const Vector rd = end - start;
+bool IEngineTrace::IntersectBBHitbox(const Vector& start, const Vector& delta, const Vector& min, const Vector& max) {
+	float d1, d2, f;
+	auto start_solid = true;
+	auto t1 = -1.0, t2 = 1.0;
 
-	const Vector ba = maxs - mins;
-	const Vector oc = start - mins;
+	const float _start[3] = { start.x, start.y, start.z };
+	const float _delta[3] = { delta.x, delta.y, delta.z };
+	const float mins[3] = { min.x, min.y, min.z };
+	const float maxs[3] = { max.x, max.y, max.z };
 
-	const float baba = ba.Dot(ba);
-	const float bard = ba.Dot(rd);
-	const float baoc = ba.Dot(oc);
+	for (auto i = 0; i < 6; ++i) {
+		if (i >= 3) {
+			const auto j = (i - 3);
 
-	const float k2 = baba - bard * bard;
-	const float k1 = baba * oc.Dot(rd) - baoc * bard;
-	const float k0 = baba * oc.Dot(oc) - baoc * baoc - radius * radius * baba;
+			d1 = _start[j] - maxs[j];
+			d2 = d1 + _delta[j];
+		}
+		else {
+			d1 = -_start[i] + mins[i];
+			d2 = d1 - _delta[i];
+		}
 
-	float h = k1 * k1 - k2 * k0;
-	if (h < 0.0f)
-		return false;
+		if (d1 > 0 && d2 > 0) {
+			start_solid = false;
+			return false;
+		}
 
-	h = std::sqrt(h);
-	float t = (-k1 - h) / k2;
-	// body
-	float y = baoc + t * bard;
-	if (y > 0.0 && y < baba)
-		return true;
-	// caps
-	t = (((y < 0.0f) ? 0.0f : baba) - baoc) / bard;
-	if (abs(k1 + k2 * t) < h) 
-	{
-		return true;
+		if (d1 <= 0 && d2 <= 0)
+			continue;
+
+		if (d1 > 0)
+			start_solid = false;
+
+		if (d1 > d2) {
+			f = d1;
+			if (f < 0)
+				f = 0;
+
+			f /= d1 - d2;
+			if (f > t1)
+				t1 = f;
+		}
+		else {
+			f = d1 / (d1 - d2);
+			if (f < t2)
+				t2 = f;
+		}
 	}
-	return false;
-}
 
-bool IEngineTrace::IntersectsCapsule(const Vector& start, const Vector& end, const Vector& mins, const Vector& maxs, float radius) {
-	const float dist_to_mins = DistanceToRay(start, end, mins);
-	const float dist_to_maxs = DistanceToRay(start, end, maxs);
-
-	if (dist_to_mins <= radius || dist_to_maxs <= radius)
-		return true;
-
-	const Vector capsule_dir = maxs - mins;
-	const float capuse_length = capsule_dir.Length();
-
-	if (dist_to_maxs > radius + capuse_length || dist_to_mins > radius + capuse_length)
-		return false;
-
-	return IntersectsCylinder(start, end, mins, maxs, radius);
+	return start_solid || (t1 < t2 && t1 >= 0.0f);
 }

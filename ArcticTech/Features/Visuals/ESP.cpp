@@ -137,6 +137,11 @@ void ESP::UpdatePlayer(int id) {
 		info.m_bBreakingLagComp = latestRecord->breaking_lag_comp;
 		info.m_nHealth = player->m_iHealth();
 	}
+	else {
+		if (info.m_nHealth == 0) {
+			info.m_bValid = false;
+		}
+	}
 
 	float playerHeight = player->m_vecMaxs().z;
 	Vector2 head = Render->WorldToScreen(info.m_vecOrigin + Vector(0, 0, playerHeight));
