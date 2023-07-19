@@ -17,7 +17,7 @@
 
 #include "../SDK/Interfaces.h"
 
-CMenu2* Menu2 = new CMenu2;
+CMenu* Menu = new CMenu;
 
 namespace pic {
     IDirect3DTexture9* logo = nullptr;
@@ -41,7 +41,7 @@ namespace font {
 
 static ImGuiIO* im_io;
 
-bool CMenu2::Setup() {
+void CMenu::Setup() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     im_io = &ImGui::GetIO();
@@ -58,12 +58,12 @@ bool CMenu2::Setup() {
 
     D3DDEVICE_CREATION_PARAMETERS creationParameters = { };
     if (FAILED(DirectXDevice->GetCreationParameters(&creationParameters)))
-        return false;
+        return;
 
     // store window pointer
     HWND hWindow = creationParameters.hFocusWindow;
     if (hWindow == nullptr)
-        return false;
+        return;
 
     ImGui_ImplWin32_Init(hWindow);
     ImGui_ImplDX9_Init(DirectXDevice);
@@ -78,10 +78,17 @@ bool CMenu2::Setup() {
     D3DXCreateTextureFromFileInMemory(DirectXDevice, configs, sizeof(configs), &pic::tab::configs);
     D3DXCreateTextureFromFileInMemory(DirectXDevice, scripts, sizeof(scripts), &pic::tab::scripts);
 
-    return true;
+    m_bIsInitialized = true;
 }
 
-void CMenu2::Render() {
+void CMenu::Release() {
+    ImGui_ImplDX9_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
+    ImGui::Shutdown();
+}
+
+void CMenu::Render() {
     ImGui_ImplDX9_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
@@ -116,10 +123,6 @@ void CMenu2::Render() {
             ImGui::GetBackgroundDrawList()->AddRectFilled(p + ImVec2(0, 0), p + ImVec2(c), ImGui::GetColorU32(c::background::bg), c::background::rounding);
 
             ImGui::GetWindowDrawList()->AddRectFilled(p + ImVec2(i), p + ImVec2(181, (c.y - i.y)), ImGui::GetColorU32(c::child::bg), c::child::rounding);
-
-            ImGui::GetWindowDrawList()->AddRectFilled(p + ImVec2((i.x * 2), (c.y - i.y * 4)), p + ImVec2(181 - i.x, (c.y - i.y * 2)), ImGui::GetColorU32(c::child::bg), c::child::rounding / 2);
-            ImGui::GetWindowDrawList()->AddImage(pic::user, p + ImVec2((i.x * 2) + 9, (c.y - i.y * 4) + 9), p + ImVec2((i.x * 2) + (28 + 9), (c.y - i.y * 4) + (28 + 9)), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255));
-
 
             ImGui::SetCursorPos(ImVec2(181 + i.x + (i.x / 2), i.y + (i.y / 2)));
 
@@ -264,6 +267,6 @@ void CMenu2::Render() {
 
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-void CMenu2::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-
+void CMenu::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 }

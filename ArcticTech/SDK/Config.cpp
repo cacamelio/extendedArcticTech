@@ -261,8 +261,8 @@ void CConfig::Init() {
     add(config.skins.agent_model_t);
     add(config.skins.agent_model_ct);
 
-    add(Menu->menu_color_picker);
-    add(Menu->menu_key_bind);
+    add(MenuOld->menu_color_picker);
+    add(MenuOld->menu_key_bind);
 
     load_button->set_callback(on_load);
     save_button->set_callback(on_save);
@@ -315,8 +315,8 @@ void CConfig::parse(nlohmann::json& cfg) {
     }
 
     try {
-        Menu->size = Vector2(static_cast<int>(cfg["menu_size"][0]), static_cast<int>(cfg["menu_size"][1]));
-        Menu->menuPos = Vector2(static_cast<int>(cfg["menu_pos"][0]), static_cast<int>(cfg["menu_pos"][1]));
+        MenuOld->size = Vector2(static_cast<int>(cfg["menu_size"][0]), static_cast<int>(cfg["menu_size"][1]));
+        MenuOld->menuPos = Vector2(static_cast<int>(cfg["menu_pos"][0]), static_cast<int>(cfg["menu_pos"][1]));
     }
     catch (nlohmann::json::exception& e) {
         Utils::Print("[arctictech] error when loading menu state\n");
@@ -361,8 +361,8 @@ nlohmann::json CConfig::dump() {
         }
     }
 
-    result["menu_size"] = { Menu->size.x, Menu->size.y };
-    result["menu_pos"] = { Menu->menuPos.x, Menu->menuPos.y };
+    result["menu_size"] = { MenuOld->size.x, MenuOld->size.y };
+    result["menu_pos"] = { MenuOld->menuPos.x, MenuOld->menuPos.y };
 
     return result;
 }

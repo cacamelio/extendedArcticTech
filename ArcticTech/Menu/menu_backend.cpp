@@ -1,7 +1,7 @@
 #include "menu.h"
 #include "../Utils/Utils.h"
 
-void CMenu::WndProc(UINT msg, WPARAM wParam) {
+void CMenuOld::WndProc(UINT msg, WPARAM wParam) {
 	if (!opened)
 		return;
 
@@ -168,7 +168,7 @@ void CMenu::WndProc(UINT msg, WPARAM wParam) {
 	}*/
 }
 
-void CMenu::Draw() {
+void CMenuOld::Draw() {
 	if (!initialized)
 		return;
 
@@ -203,7 +203,7 @@ void CMenu::Draw() {
 	if (menuPos.y < -110)
 		menuPos.y = -110;
 
-	Menu->menuColor = menu_color_picker->get();
+	MenuOld->menuColor = menu_color_picker->get();
 
 	Render->BoxFilled(menuPos, menuPos + size, Color(40, 40, 40));
 	Render->Box(menuPos + Vector2(1, 1), menuPos + size - Vector2(1, 1), Color(62, 62, 62));
@@ -227,20 +227,20 @@ void CMenu::Draw() {
 	}
 	Render->PopClipRect();
 
-	if (Menu->autoscaling && Menu->resizing) {
+	if (MenuOld->autoscaling && MenuOld->resizing) {
 		for (auto group : group_boxes) {
 			int columnOffset = 0;
 			CGroupBox* upperbox = nullptr;
 
-			for (auto groupbox : Menu->group_boxes) {
+			for (auto groupbox : MenuOld->group_boxes) {
 				if (groupbox->tabId == group->tabId && groupbox->column == group->column && groupbox != group && groupbox->pos.y < group->pos.y) {
 					columnOffset += groupbox->size.y + 20;
 					upperbox = groupbox;
 				}
 			}
 
-			group->size.x = (Menu->size.x - 158) / 2.f;
-			group->size.y = (Menu->size.y - 55) * group->scale - (upperbox ? 20 : 0);
+			group->size.x = (MenuOld->size.x - 158) / 2.f;
+			group->size.y = (MenuOld->size.y - 55) * group->scale - (upperbox ? 20 : 0);
 			group->pos.x = group->column == 0 ? 20 : 40 + group->size.x;
 			group->pos.y = 20 + columnOffset;
 		}
@@ -285,7 +285,7 @@ void CMenu::Draw() {
 		Render->Image(luaImg, menuPos + Vector2(23, 625), Color(255, 255, 255, activeTab == 7 ? 255 : 120));
 }
 
-CGroupBox* CMenu::AddGroupBox(const std::string& tab, const std::string& name, float scale, int column) {
+CGroupBox* CMenuOld::AddGroupBox(const std::string& tab, const std::string& name, float scale, int column) {
 	CGroupBox* groupBox = new CGroupBox;
 	int tabId = get_tab_id(tab);
 
@@ -347,7 +347,7 @@ void CGroupBox::Update() {
 	}
 }
 
-CCheckbox* CMenu::AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool unsafe) {
+CCheckbox* CMenuOld::AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool unsafe) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -382,7 +382,7 @@ CCheckbox* CMenu::AddCheckBox(const std::string& tab, const std::string& groupbo
 	return checkbox;
 }
 
-CLabel* CMenu::AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name) {
+CLabel* CMenuOld::AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -416,7 +416,7 @@ CLabel* CMenu::AddLabel(const std::string& tab, const std::string& groupbox, con
 	return label;
 }
 
-CColorPicker* CMenu::AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color defaultColor) {
+CColorPicker* CMenuOld::AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color defaultColor) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -463,7 +463,7 @@ CColorPicker* CMenu::AddColorPicker(const std::string& tab, const std::string& g
 	return colorpicker;
 }
 
-CKeyBind* CMenu::AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name, int defaultKey, int defaultType) {
+CKeyBind* CMenuOld::AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name, int defaultKey, int defaultType) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -515,7 +515,7 @@ CKeyBind* CMenu::AddKeyBind(const std::string& tab, const std::string& groupbox,
 	return keyBind;
 }
 
-CSlider* CMenu::AddSlider(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float def, const std::string& unit, float scale, bool hideName) {
+CSlider* CMenuOld::AddSlider(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float def, const std::string& unit, float scale, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -566,7 +566,7 @@ CSlider* CMenu::AddSlider(const std::string& tab, const std::string& groupbox, c
 	return slider;
 }
 
-CComboBox* CMenu::AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
+CComboBox* CMenuOld::AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -602,7 +602,7 @@ CComboBox* CMenu::AddComboBox(const std::string& tab, const std::string& groupbo
 	return comboBox;
 }
 
-CMultiCombo* CMenu::AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
+CMultiCombo* CMenuOld::AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -638,7 +638,7 @@ CMultiCombo* CMenu::AddMultiCombo(const std::string& tab, const std::string& gro
 	return comboBox;
 }
 
-CInputBox* CMenu::AddInputBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool hideName) {
+CInputBox* CMenuOld::AddInputBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -673,7 +673,7 @@ CInputBox* CMenu::AddInputBox(const std::string& tab, const std::string& groupbo
 	return inputBox;
 }
 
-CButton* CMenu::AddButton(const std::string& tab, const std::string& groupbox, const std::string& name) {
+CButton* CMenuOld::AddButton(const std::string& tab, const std::string& groupbox, const std::string& name) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -707,7 +707,7 @@ CButton* CMenu::AddButton(const std::string& tab, const std::string& groupbox, c
 	return button;
 }
 
-CListBox* CMenu::AddListBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, bool filter) {
+CListBox* CMenuOld::AddListBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, bool filter) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -744,7 +744,7 @@ CListBox* CMenu::AddListBox(const std::string& tab, const std::string& groupbox,
 	return listbox;
 }
 
-IBaseElement* CMenu::FindElement(const std::string& tab, const std::string& groupbox, const std::string& name, ElementType type) {
+IBaseElement* CMenuOld::FindElement(const std::string& tab, const std::string& groupbox, const std::string& name, ElementType type) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -770,7 +770,7 @@ IBaseElement* CMenu::FindElement(const std::string& tab, const std::string& grou
 	return item;
 }
 
-void CMenu::RemoveElement(IBaseElement* element) {
+void CMenuOld::RemoveElement(IBaseElement* element) {
 	for (auto gb : group_boxes) {
 		if (element->parent == gb) {
 			for (auto it = gb->elements.begin(); it != gb->elements.end();) {
@@ -789,27 +789,27 @@ void CMenu::RemoveElement(IBaseElement* element) {
 }
 
 void CGroupBox::Draw() {
-	Vector2 origin = Menu->menuPos + Vector2(90, 10) + pos;
+	Vector2 origin = MenuOld->menuPos + Vector2(90, 10) + pos;
 
 	Color colorRect(40, 40, 40);
 	Color colorText(210, 210, 210);
 
-	if ((Menu->transformingGroup && Menu->transformingGroup != this) || scrolling || !GetAsyncKeyState(VK_LBUTTON)) {
+	if ((MenuOld->transformingGroup && MenuOld->transformingGroup != this) || scrolling || !GetAsyncKeyState(VK_LBUTTON)) {
 		dragging = resizing = false;
 	}
 
 	if (dragging || resizing) {
-		Menu->autoscaling = false;
-		Menu->transformingGroup = this;
+		MenuOld->autoscaling = false;
+		MenuOld->transformingGroup = this;
 	}
 	else {
-		Menu->transformingGroup = nullptr;
+		MenuOld->transformingGroup = nullptr;
 	}
 
 	if (dragging)
-		colorText = Menu->menuColor;
+		colorText = MenuOld->menuColor;
 	else if (resizing)
-		colorRect = Menu->menuColor;
+		colorRect = MenuOld->menuColor;
 
 	bool canScroll = size.y < minsize;
 
@@ -862,7 +862,7 @@ void CGroupBox::Draw() {
 			scrollMouseOffset = Render->GetMousePos().y - (origin.y + relScrollOffset);
 		}
 
-		if (Menu->transformingGroup)
+		if (MenuOld->transformingGroup)
 			scrolling = false;
 
 		if (scrolling) {
@@ -894,7 +894,7 @@ void CGroupBox::Draw() {
 	Render->Text(name, origin + Vector2(15, -7), colorText, VerdanaBold);
 
 	if (dragging) {
-		Vector2 relpos = Render->GetMousePos() - (Menu->menuPos + Vector2(130, 10));
+		Vector2 relpos = Render->GetMousePos() - (MenuOld->menuPos + Vector2(130, 10));
 
 		pos = Vector2(int(relpos.x / 20) * 20, int(relpos.y / 20) * 20);
 
@@ -905,7 +905,7 @@ void CGroupBox::Draw() {
 	}
 
 	if (resizing) {
-		Vector2 relpos = Render->GetMousePos() - (Menu->menuPos + Vector2(90, 10));
+		Vector2 relpos = Render->GetMousePos() - (MenuOld->menuPos + Vector2(90, 10));
 
 		size = Vector2(int(relpos.x / 10) * 10, int(relpos.y / 10) * 10) - pos;
 
@@ -917,7 +917,7 @@ void CGroupBox::Draw() {
 }
 
 void CGroupBox::HandleClick() {
-	Vector2 origin = Menu->menuPos + Vector2(90, 10) + pos;
+	Vector2 origin = MenuOld->menuPos + Vector2(90, 10) + pos;
 
 	bool canScroll = size.y < minsize;
 
@@ -948,7 +948,7 @@ void CGroupBox::HandleClick() {
 }
 
 void CGroupBox::HandleScroll(bool up) {
-	Vector2 origin = Menu->menuPos + Vector2(90, 14) + pos;
+	Vector2 origin = MenuOld->menuPos + Vector2(90, 14) + pos;
 
 	bool canScroll = size.y < minsize;
 
@@ -961,4 +961,4 @@ void CGroupBox::HandleScroll(bool up) {
 	}
 }
 
-CMenu* Menu = new CMenu;
+CMenuOld* MenuOld = new CMenuOld;

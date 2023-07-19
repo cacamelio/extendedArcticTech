@@ -438,7 +438,7 @@ namespace api {
 		IBaseElement* find_item(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<ElementType> type) {
 			ElementType etype = type.value_or(ElementType::ANY);
 
-			IBaseElement* found_item = Menu->FindElement(tab, groupbox, name, etype);
+			IBaseElement* found_item = MenuOld->FindElement(tab, groupbox, name, etype);
 
 			if (!found_item) {
 				Console->Error(std::format("[{}] cont find item: ({}, {}, {})", GetCurrentScript(state), tab, groupbox, name));
@@ -495,7 +495,7 @@ namespace api {
 		}
 
 		IBaseElement* new_checkbox(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> unsafe) {
-			IBaseElement* elem = Menu->AddCheckBox(tab, groupbox, name, unsafe.value_or(false));
+			IBaseElement* elem = MenuOld->AddCheckBox(tab, groupbox, name, unsafe.value_or(false));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -504,7 +504,7 @@ namespace api {
 		}
 
 		IBaseElement* new_label(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
-			IBaseElement* elem = Menu->AddLabel(tab, groupbox, name);
+			IBaseElement* elem = MenuOld->AddLabel(tab, groupbox, name);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -513,7 +513,7 @@ namespace api {
 		}
 
 		IBaseElement* new_colorpicker(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<Color> default_color) {
-			IBaseElement* elem = Menu->AddColorPicker(tab, groupbox, name, default_color.value_or(Color()));
+			IBaseElement* elem = MenuOld->AddColorPicker(tab, groupbox, name, default_color.value_or(Color()));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -522,7 +522,7 @@ namespace api {
 		}
 
 		IBaseElement* new_keybind(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<int> default_key, sol::optional<int> default_type) {
-			IBaseElement* elem = Menu->AddKeyBind(tab, groupbox, name, default_key.value_or(-1), default_type.value_or(1));
+			IBaseElement* elem = MenuOld->AddKeyBind(tab, groupbox, name, default_key.value_or(-1), default_type.value_or(1));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -531,7 +531,7 @@ namespace api {
 		}
 
 		IBaseElement* new_slider(sol::this_state state, std::string tab, std::string groupbox, std::string name, float min_, float max_, float default_val, sol::optional<std::string> unit, sol::optional<float> scale, sol::optional<bool> hide_name) {
-			IBaseElement* elem = Menu->AddSlider(tab, groupbox, name, min_, max_, default_val, unit.value_or(""), scale.value_or(1.f), hide_name.value_or(false));
+			IBaseElement* elem = MenuOld->AddSlider(tab, groupbox, name, min_, max_, default_val, unit.value_or(""), scale.value_or(1.f), hide_name.value_or(false));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -545,7 +545,7 @@ namespace api {
 				std::string s = el;
 				vals.emplace_back(s);
 			}
-			IBaseElement* elem = Menu->AddComboBox(tab, groupbox, name, vals, default_value.value_or(0), hide_name.value_or(false));
+			IBaseElement* elem = MenuOld->AddComboBox(tab, groupbox, name, vals, default_value.value_or(0), hide_name.value_or(false));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -560,7 +560,7 @@ namespace api {
 				vals.emplace_back(s);
 			}
 
-			IBaseElement* elem = Menu->AddMultiCombo(tab, groupbox, name, vals, 0, hide_name.value_or(false));
+			IBaseElement* elem = MenuOld->AddMultiCombo(tab, groupbox, name, vals, 0, hide_name.value_or(false));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -569,7 +569,7 @@ namespace api {
 		}
 	
 		IBaseElement* new_button(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
-			IBaseElement* elem = Menu->AddButton(tab, groupbox, name);
+			IBaseElement* elem = MenuOld->AddButton(tab, groupbox, name);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -578,7 +578,7 @@ namespace api {
 		}
 
 		IBaseElement* new_input(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> hide_name) {
-			IBaseElement* elem = Menu->AddInputBox(tab, groupbox, name, hide_name.value_or(false));
+			IBaseElement* elem = MenuOld->AddInputBox(tab, groupbox, name, hide_name.value_or(false));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -593,7 +593,7 @@ namespace api {
 				vals.emplace_back(s);
 			}
 
-			IBaseElement* elem = Menu->AddListBox(tab, groupbox, name, vals, has_filter.value_or(true));
+			IBaseElement* elem = MenuOld->AddListBox(tab, groupbox, name, vals, has_filter.value_or(true));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->ui_elements.emplace_back(elem);
@@ -973,7 +973,7 @@ void CLua::UnloadScript(int id) {
 	}
 
 	for (auto element : script.ui_elements) {
-		Menu->RemoveElement(element);
+		MenuOld->RemoveElement(element);
 	}
 
 	script.ui_elements.clear();

@@ -45,9 +45,9 @@ void CCheckbox::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(90, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
-	Color colorActive = Menu->menuColor;
+	Color colorActive = MenuOld->menuColor;
 	Color colorDisabled = Color(77, 77, 77);
 
 	anim = interpolate(anim, value ? 1.f : 0.f, 10);
@@ -65,7 +65,7 @@ void CCheckbox::HandleClick(bool rmb) {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(90, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	Vector2 clipRect[2] = { 
 		parent->clipRect[0],
@@ -93,7 +93,7 @@ void CLabel::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(90, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 	Render->Text(name, _absPos + Vector2(20, -1), Color(200, 200, 200), Verdana);
 }
 
@@ -101,7 +101,7 @@ void CColorPicker::Draw() {
 	if (!parentItem->visible || !visible)
 		return;
 	 
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 	Vector2 parentPos = groupPos + parentItem->pos - Vector2(0, parent->scrollOffset);
 
 	Vector2 absPos(groupPos.x + parent->size.x - 36, parentPos.y);
@@ -118,7 +118,7 @@ void CColorPicker::HandleClick(bool rmb) {
 	if (!parentItem->visible)
 		return;
 
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 	Vector2 parentPos = groupPos + parentItem->pos - Vector2(0, parent->scrollOffset);
 
 	Vector2 absPos(groupPos.x + parent->size.x - 36, parentPos.y);
@@ -162,13 +162,13 @@ void CColorPicker::HandleClick(bool rmb) {
 
 		if (copyopened && !rmb) {
 			if (Render->InBounds(overlayPos, overlayPos + Vector2(100, 20), true)) {
-				Menu->copyColor = color;
+				MenuOld->copyColor = color;
 				copyopened = false;
 
 				Render->PopDeadZone();
 			}
 			else if (Render->InBounds(overlayPos + Vector2(0, 20), overlayPos + Vector2(100, 40), true)) {
-				color = Menu->copyColor;
+				color = MenuOld->copyColor;
 				copyopened = false;
 
 				Render->PopDeadZone();
@@ -283,8 +283,8 @@ void CColorPicker::DrawOverlay() {
 		if (hover != -1)
 			Render->BoxFilled(overlayPos + Vector2(0, hover * 20), overlayPos + Vector2(100, 20 + hover * 20), Color(20, 20, 20));
 
-		Render->Text("Copy", overlayPos + Vector2(10, 4), hover == 0 ? Menu->menuColor : Color(200, 200, 200), hover == 0 ? VerdanaBold : Verdana);
-		Render->Text("Paste", overlayPos + Vector2(10, 24), hover == 1 ? Menu->menuColor : Color(200, 200, 200), hover == 1 ? VerdanaBold : Verdana);
+		Render->Text("Copy", overlayPos + Vector2(10, 4), hover == 0 ? MenuOld->menuColor : Color(200, 200, 200), hover == 0 ? VerdanaBold : Verdana);
+		Render->Text("Paste", overlayPos + Vector2(10, 24), hover == 1 ? MenuOld->menuColor : Color(200, 200, 200), hover == 1 ? VerdanaBold : Verdana);
 	}
 }
 
@@ -292,7 +292,7 @@ void CKeyBind::Draw() {
 	if (!parentItem->visible)
 		return;
 
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 	Vector2 parentPos = groupPos + parentItem->pos - Vector2(0, parent->scrollOffset);
 
 	Vector2 absPos(groupPos.x + parent->size.x - 20, parentPos.y);
@@ -309,7 +309,7 @@ void CKeyBind::Draw() {
 }
 
 void CKeyBind::HandleClick(bool rmb) {
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 	Vector2 parentPos = groupPos + parentItem->pos - Vector2(0, parent->scrollOffset);
 
 	Vector2 absPos(groupPos.x + parent->size.x - 20, parentPos.y);
@@ -353,7 +353,7 @@ void CKeyBind::DrawOverlay() {
 	if (!parentItem->visible || !opened)
 		return;
 
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 	Vector2 parentPos = groupPos + parentItem->pos - Vector2(0, parent->scrollOffset);
 
 	Vector2 absPos(groupPos.x + parent->size.x - 125, parentPos.y + 15);
@@ -361,9 +361,9 @@ void CKeyBind::DrawOverlay() {
 	Render->BoxFilled(absPos, absPos + Vector2(100, 56), Color(35, 35, 35));
 	Render->Box(absPos, absPos + Vector2(100, 56), Color(12, 12, 12));
 
-	Render->Text("On hotkey", absPos + Vector2(10, 3), bindType == 0 ? Menu->menuColor : Color(200, 200, 200), Verdana);
-	Render->Text("Toggle", absPos + Vector2(10, 22), bindType == 1 ? Menu->menuColor : Color(200, 200, 200), Verdana);
-	Render->Text("Off hotkey", absPos + Vector2(10, 41), bindType == 2 ? Menu->menuColor : Color(200, 200, 200), Verdana);
+	Render->Text("On hotkey", absPos + Vector2(10, 3), bindType == 0 ? MenuOld->menuColor : Color(200, 200, 200), Verdana);
+	Render->Text("Toggle", absPos + Vector2(10, 22), bindType == 1 ? MenuOld->menuColor : Color(200, 200, 200), Verdana);
+	Render->Text("Off hotkey", absPos + Vector2(10, 41), bindType == 2 ? MenuOld->menuColor : Color(200, 200, 200), Verdana);
 }
 
 bool CKeyBind::get() {
@@ -409,7 +409,7 @@ void CSlider::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (!hideName)
 		Render->Text(name, _absPos, Color(200, 200, 200), Verdana);
@@ -438,7 +438,7 @@ void CSlider::Draw() {
 	int absValue = value / scale;
 	float fraction = (float)(absValue - absMin) / (float)(absMax - absMin);
 
-	Color clr1 = Menu->menuColor;
+	Color clr1 = MenuOld->menuColor;
 	Color clr2 = clr1 * 0.5f;
 
 	Render->GradientBox(_absPos + Vector2(0, 16), _absPos + Vector2(200 * fraction, 21), clr1, clr1, clr2, clr2);
@@ -462,7 +462,7 @@ void CSlider::HandleClick(bool rmb) {
 	if (!visible || rmb)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 29) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 29) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (hideName)
 		_absPos.y -= 15;
@@ -475,7 +475,7 @@ void CComboBox::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (!hideName)
 		Render->Text(name, _absPos, Color(200, 200, 200), Verdana);
@@ -502,8 +502,8 @@ void CComboBox::HandleClick(bool rmb) {
 	if (rmb)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 
 	if (!hideName)
 		_absPos.y += 15;
@@ -546,8 +546,8 @@ void CComboBox::DrawOverlay() {
 	if (!opened)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 
 	if (!hideName)
 		_absPos.y += 15;
@@ -569,7 +569,7 @@ void CComboBox::DrawOverlay() {
 		if (value == i)
 			font = VerdanaBold;
 
-		Render->Text(item, textPos, value == i ? Menu->menuColor : Color(200, 200, 200), font);
+		Render->Text(item, textPos, value == i ? MenuOld->menuColor : Color(200, 200, 200), font);
 	}
 }
 
@@ -577,7 +577,7 @@ void CMultiCombo::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (!hideName)
 		Render->Text(name, _absPos, Color(200, 200, 200), Verdana);
@@ -638,8 +638,8 @@ void CMultiCombo::HandleClick(bool rmb) {
 	if (rmb)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 14) + parent->pos;
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 
 	if (!hideName)
 		_absPos.y += 15;
@@ -677,8 +677,8 @@ void CMultiCombo::DrawOverlay() {
 	if (!opened)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 10) + parent->pos + pos - Vector2(0, parent->scrollOffset);
-	Vector2 groupPos = Menu->menuPos + Vector2(90, 10) + parent->pos;
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 10) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 10) + parent->pos;
 
 	if (!hideName)
 		_absPos.y += 15;
@@ -700,7 +700,7 @@ void CMultiCombo::DrawOverlay() {
 		if (values & (1 << i))
 			font = VerdanaBold;
 
-		Render->Text(item, textPos, values & (1 << i) ? Menu->menuColor : Color(200, 200, 200), font);
+		Render->Text(item, textPos, values & (1 << i) ? MenuOld->menuColor : Color(200, 200, 200), font);
 	}
 }
 
@@ -708,7 +708,7 @@ void CButton::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	Render->BoxFilled(_absPos, _absPos + Vector2(200, 25), Color(12, 12, 12));
 	Render->BoxFilled(_absPos + Vector2(1, 1), _absPos + Vector2(199, 24), Color(50, 50, 50));
@@ -735,7 +735,7 @@ void CButton::HandleClick(bool rmb) {
 	if (!visible || rmb)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (Render->InBounds(_absPos, _absPos + Vector2(200, 25))) {
 		if (callback)
@@ -750,7 +750,7 @@ void CInputBox::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (!hideName) {
 		Render->Text(name, _absPos, Color(200, 200, 200), Verdana, TEXT_DROPSHADOW);
@@ -764,7 +764,7 @@ void CInputBox::Draw() {
 	Color textColor(200, 200, 200);
 	
 	if (focused) {
-		textColor = Menu->menuColor;
+		textColor = MenuOld->menuColor;
 	}
 
 	Render->Text((input + '_'), _absPos + Vector2(5, 4), textColor, Verdana, TEXT_DROPSHADOW);
@@ -774,7 +774,7 @@ void CInputBox::HandleClick(bool rmb) {
 	if (!visible || rmb)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (!hideName)
 		_absPos.y += 15;
@@ -798,7 +798,7 @@ void CListBox::Draw() {
 	if (!visible)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	if (hasfilter) {
 		Render->BoxFilled(_absPos + Vector2(-1, -1), _absPos + Vector2(201, 321), Color(12, 12, 12));
@@ -809,7 +809,7 @@ void CListBox::Draw() {
 		Color textColor(200, 200, 200);
 
 		if (focused) {
-			textColor = Menu->menuColor;
+			textColor = MenuOld->menuColor;
 		}
 
 		Render->Text((filter + '_'), _absPos + Vector2(5, 4), textColor, Verdana, TEXT_DROPSHADOW);
@@ -829,7 +829,7 @@ void CListBox::Draw() {
 		D3DXFont* font = Verdana;
 
 		if (item == active) {
-			color = Menu->menuColor;
+			color = MenuOld->menuColor;
 			font = VerdanaBold;
 
 			Render->BoxFilled(_absPos + Vector2(0, 5 + offset * 18 - scroll_offset), _absPos + Vector2(200, 25 + offset * 18 - scroll_offset), Color(26, 26, 26));
@@ -873,7 +873,7 @@ void CListBox::HandleClick(bool rmb) {
 	if (!visible || rmb)
 		return;
 
-	Vector2 _absPos = Menu->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
+	Vector2 _absPos = MenuOld->menuPos + Vector2(110, 14) + parent->pos + pos - Vector2(0, parent->scrollOffset);
 
 	focused = Render->InBounds(_absPos, _absPos + Vector2(200, 20));
 	auto filtered = filtered_list();

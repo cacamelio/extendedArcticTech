@@ -29,7 +29,7 @@ public:
 	void Update();
 };
 
-class CMenu
+class CMenuOld
 {
 private:
 	bool opened = true;
@@ -105,4 +105,4 @@ public:
 	void			RemoveElement(IBaseElement* element);
 };
 
-extern CMenu* Menu;
+extern CMenuOld* MenuOld;

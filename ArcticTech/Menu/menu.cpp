@@ -19,7 +19,7 @@
 #include "../Features/Lua/Bridge/Bridge.h"
 
 
-void CMenu::Init() {
+void CMenuOld::Init() {
 	aimImg = Render->LoadImageFromMemory(aim_img, sizeof(aim_img), Vector2(50, 50));
 	visualsImg = Render->LoadImageFromMemory(visuals_image, sizeof(visuals_image), Vector2(50, 50));
 	backgroundTexture = Render->LoadImageFromMemory(skeetmenubg, sizeof(skeetmenubg), Vector2(2000, 2000));
