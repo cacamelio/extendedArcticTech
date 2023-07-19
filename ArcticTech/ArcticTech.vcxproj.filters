@@ -503,6 +503,9 @@
     <ClInclude Include="Features\Lua\Sol.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="Features\Visuals\WeaponIcons.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="detours.lib" />

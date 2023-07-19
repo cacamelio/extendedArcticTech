@@ -52,8 +52,7 @@ typedef bool(__fastcall* tWriteUserCmdDeltaToBuffer)(CInput*, void*, int, void*,
 typedef bool(__fastcall* tShouldDrawViewModel)(void*, void*);
 typedef void(__fastcall* tPerformScreenOverlay)(void*, void*, int, int, int, int);
 typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vector&, unsigned int*, int);
-
-typedef void( __fastcall* tPerformScreenOverlay )( void*, void*, int, int, int, int );
+typedef bool(__fastcall* tInPrediction)(IPrediction*, void*);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -87,6 +86,7 @@ inline tWriteUserCmdDeltaToBuffer oWriteUserCmdDeltaToBuffer;
 inline tShouldDrawViewModel oShouldDrawViewModel;
 inline tPerformScreenOverlay oPerformScreenOverlay;
 inline tListLeavesInBox oListLeavesInBox;
+inline tInPrediction oInPrediction;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

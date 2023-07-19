@@ -327,12 +327,10 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 	float player_sim_time = target.player->m_flSimulationTime();
 
 	for (const auto& point : target.points) {
-		float modified_damage = point.damage;
+		float modified_damage = point.damage - std::abs(point.record->m_flSimulationTime - player_sim_time) * 20.f;
 
 		if (point.multipoint)
 			modified_damage -= 1.5f;
-		if (std::abs(point.record->m_flSimulationTime - player_sim_time) > 0.05f)
-			modified_damage -= 6.f;
 
 		if (point.hitbox == HITBOX_HEAD && modified_damage > best_head_point.damage) 
 			best_head_point = point;

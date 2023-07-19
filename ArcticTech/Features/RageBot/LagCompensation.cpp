@@ -167,7 +167,7 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	const int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(latency);
 
 	const float lerp_time = GetLerpTime();
-	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift) - record->m_flSimulationTime);
+	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) - record->m_flSimulationTime);
 
 	if (fabs(delta_time) > 0.2f)
 		return false;

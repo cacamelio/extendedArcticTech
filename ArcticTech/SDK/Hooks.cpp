@@ -608,7 +608,7 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	for (auto i = ctx.shifted_commands.begin(); i != ctx.shifted_commands.end();) {
 		auto command = *i;
 
-		if (cmd->command_number - command > 64) {
+		if (cmd->command_number - command > 128) {
 			i = ctx.shifted_commands.erase(i);
 			continue;
 		}
@@ -635,7 +635,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 	auto& local_data = EnginePrediction->GetLocalData(c_ctx->command_number);
 
 	if (c_ctx->command_number == DoubleTap->charged_command + 1) {
-		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick + 1;
+		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick;
 
 		//EnginePrediction->RestoreNetvars(last_simulated_tick % 150);
 	}
@@ -832,7 +832,7 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 }
 
 bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !ctx.tickbase_shift || !DoubleTap->ShouldBreakLC())
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !DoubleTap->ShouldBreakLC())
 		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
 
 	if (from != -1)
@@ -942,6 +942,15 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 	return count;
 }
 
+bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
+	static auto setup_bones = Utils::PatternScan("client.dll", "84 C0 74 0A F3 0F 10 05 ? ? ? ? EB 05");
+
+	if (_ReturnAddress() == setup_bones)
+		return false;
+
+	return oInPrediction(ecx, edx);
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1011,6 +1020,7 @@ void Hooks::Initialize() {
 	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
+	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
 
 	EventListner->Register();
 }
@@ -1069,4 +1079,5 @@ void Hooks::End() {
 	RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
 	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
+	RemoveHook(oInPrediction, hkInPrediction);
 }

@@ -135,4 +135,14 @@ void CDoubleTap::DefensiveDoubletap() {
 	}
 }
 
+bool CDoubleTap::ShouldBreakLC() {
+	if (ctx.tickbase_shift == 0)
+		return false;
+
+	if (shifting_tickbase)
+		return false;
+
+	return peeking_ticks != 1; // disable break lc on peek
+}
+
 CDoubleTap* DoubleTap = new CDoubleTap;

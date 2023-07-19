@@ -226,6 +226,7 @@
     <ClInclude Include="Features\Lua\Sol.hpp" />
     <ClInclude Include="Features\Visuals\SkinChanger.h" />
     <ClInclude Include="Features\Visuals\Indicators.h" />
+    <ClInclude Include="Features\Visuals\WeaponIcons.h" />
     <ClInclude Include="SDK\Config.h" />
     <ClInclude Include="detours.h" />
     <ClInclude Include="Features\AntiAim\AntiAim.h" />

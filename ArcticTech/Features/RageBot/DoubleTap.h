@@ -18,7 +18,6 @@ public:
 	inline bool& IsShifting() { return shifting_tickbase; };
 	inline float LastTeleportTime() { return last_teleport_time; };
 	inline int& TargetTickbaseShift() { return target_tickbase_shift; };
-	inline int ShouldBreakLC() { return peeking_ticks > 0; };
 
 	bool	ShouldCharge();
 	int		MaxTickbaseShift();
@@ -27,6 +26,7 @@ public:
 	void	Run();
 	void	HandleTeleport(CL_Move_t cl_move, float extra_samples);
 	void	DefensiveDoubletap();
+	bool	ShouldBreakLC();
 };
 
 extern CDoubleTap* DoubleTap;
