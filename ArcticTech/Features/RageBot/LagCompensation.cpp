@@ -106,7 +106,7 @@ void CLagCompensation::OnNetUpdate() {
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 1.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;
 
-			if (config.visuals.esp.shared_esp->get() && nc) {
+			if (config.visuals.esp.shared_esp->get() && EngineClient->IsVoiceRecording() && nc) {
 				if (config.visuals.esp.share_with_enemies->get() || !pl->IsTeammate()) {
 					SharedESP_t msg;
 

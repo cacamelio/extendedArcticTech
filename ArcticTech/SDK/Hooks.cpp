@@ -6,6 +6,7 @@
 #include "Globals.h"
 #include <intrin.h>
 #include "../Utils/Console.h"
+#include "../UI/UI.h"
 
 #include "../Features/Misc/AutoStrafe.h"
 #include "../Features/Visuals/ESP.h"
@@ -43,7 +44,7 @@ inline void RemoveHook(void* original, void* detour) {
 
 LRESULT CALLBACK hkWndProc(HWND Hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
 	if (!Render->IsInitialized() || !Menu->initialized)
-		return CallWindowProc(oWndProc, Hwnd, Message, wParam, lParam);;
+		return CallWindowProc(oWndProc, Hwnd, Message, wParam, lParam);
 
 	if (Message == WM_KEYDOWN && !EngineClient->Con_IsVisible()) {
 		AntiAim->OnKeyPressed(wParam);
@@ -74,6 +75,7 @@ HRESULT __stdcall hkPresent(IDirect3DDevice9* thisptr, const RECT* src, const RE
 		Render->Init(thisptr);
 		Menu->Init();
 		Ragebot->CreateThreads();
+		Menu2->Setup();
 		return oPresent(thisptr, src, dest, window, dirtyRegion);
 	}
 
@@ -88,6 +90,7 @@ HRESULT __stdcall hkPresent(IDirect3DDevice9* thisptr, const RECT* src, const RE
 
 	if (thisptr->BeginScene() == D3D_OK) {
 		Render->RenderDrawData();
+		Menu2->Render();
 		thisptr->EndScene();
 	}
 
@@ -113,7 +116,7 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	ESP::DrawGrenades();
 	ESP::RenderMarkers();
 	NadePrediction.Draw();
-	Menu->Draw();
+	//Menu->Draw();
 	AutoPeek->Draw();
 	World->Crosshair();
 	if (config.ragebot.aimbot.show_debug_data->get())

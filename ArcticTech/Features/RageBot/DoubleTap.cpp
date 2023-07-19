@@ -136,11 +136,19 @@ void CDoubleTap::DefensiveDoubletap() {
 }
 
 bool CDoubleTap::ShouldBreakLC() {
+	if (!Cheat.LocalPlayer)
+		return false;
+
 	if (ctx.tickbase_shift == 0)
 		return false;
 
 	if (shifting_tickbase)
 		return false;
+
+	if (CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon()) {
+		if (weapon->IsGrenade())
+			return false; // nades detonate faster with break lc
+	}
 
 	return peeking_ticks != 1; // disable break lc on peek
 }
