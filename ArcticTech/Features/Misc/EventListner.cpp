@@ -106,7 +106,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	else if (name == "player_spawned") {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
 
-		if (player->m_bDormant())
+		if (player && player->m_bDormant())
 			ESPInfo[player->EntIndex()].m_nHealth = 100;
 	}
 }

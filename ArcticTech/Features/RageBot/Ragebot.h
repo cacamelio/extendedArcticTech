@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <queue>
 
-#define MAX_RAGEBOT_THREADS 8
+#define MAX_RAGEBOT_THREADS 4
 
 class CUserCmd;
 
@@ -71,10 +71,11 @@ private:
 	// multithreading part
 	bool remove_threads = false;
 	int inited_threads = 0;
+	int selected_targets = 0;
 	HANDLE threads[MAX_RAGEBOT_THREADS];
 	std::mutex scan_mutex{};
-	std::shared_mutex target_mutex{};
-	std::condition_variable_any scan_condition;
+	std::mutex target_mutex{};
+	std::condition_variable scan_condition;
 
 	std::vector<CBasePlayer*> targets;
 	std::vector<ScannedTarget_t> scanned_targets;

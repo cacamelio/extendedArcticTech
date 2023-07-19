@@ -601,7 +601,7 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
-	EnginePrediction->PatchAttackPacket(cmd, true);
+	//EnginePrediction->PatchAttackPacket(cmd, true);
 
 	player->m_flVelocityModifier() = backup_velocity_modifier;
 
@@ -620,7 +620,7 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 		++i;
 	}
 
-	EnginePrediction->PatchAttackPacket(cmd, false);
+	//EnginePrediction->PatchAttackPacket(cmd, false);
 
 	MoveHelper = moveHelper;
 }
@@ -878,7 +878,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
 
 	to_cmd.command_number++;
-	to_cmd.tick_count += 200;
+	to_cmd.tick_count += 192;
 
 	for (int i = new_commands; i <= total_new_commands; i++)
 	{

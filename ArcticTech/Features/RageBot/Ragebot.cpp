@@ -390,21 +390,21 @@ void CRagebot::ScanTargets() {
 		}
 	}
 	else {
-		const int targets_selected = targets.size();
-		scan_condition.notify_all();
+		selected_targets = targets.size();
+		scan_condition.notify_one();
 
 		{
-			std::shared_lock<std::shared_mutex> lock(target_mutex);
-			scan_condition.wait(lock, [&]() {return Ragebot->scanned_targets.size() == targets_selected; });
+			std::unique_lock<std::mutex> lock(target_mutex);
+			scan_condition.wait(lock, [this]() { return scanned_targets.size() == selected_targets; });
 		}
 	}
 }
 
 uintptr_t CRagebot::ThreadScan(int threadId) {
 	while (true) {
-		std::unique_lock<std::shared_mutex> scan_lock(Ragebot->target_mutex);
+		std::unique_lock<std::mutex> scan_lock(Ragebot->target_mutex);
 
-		Ragebot->scan_condition.wait(scan_lock, [&]() { return !Ragebot->targets.empty() || Ragebot->remove_threads; });
+		Ragebot->scan_condition.wait(scan_lock, []() { return !Ragebot->targets.empty() || Ragebot->remove_threads; });
 
 		if (Ragebot->remove_threads) {
 			break;
@@ -413,16 +413,17 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 		CBasePlayer* target = Ragebot->targets.back();
 		Ragebot->targets.pop_back();
 		scan_lock.unlock();
-
+		
 		Ragebot->scan_condition.notify_all();
 
 		ScannedTarget_t scan = Ragebot->ScanTarget(target);
-		{
-			std::unique_lock<std::mutex> lock(Ragebot->scan_mutex);
-			Ragebot->scanned_targets.emplace_back(scan);
-		}
 
-		Ragebot->scan_condition.notify_all();
+		std::unique_lock<std::mutex> lock(Ragebot->scan_mutex);
+		Ragebot->scanned_targets.push_back(scan);
+		lock.unlock();
+
+		if (Ragebot->scanned_targets.size() == Ragebot->selected_targets)
+			Ragebot->scan_condition.notify_one();
 	}
 
 	return 0;
