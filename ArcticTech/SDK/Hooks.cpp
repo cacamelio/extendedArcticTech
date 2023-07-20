@@ -879,6 +879,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
 
 	to_cmd.command_number++;
+	CL_SendMove();
 	to_cmd.tick_count += 192;
 
 	for (int i = new_commands; i <= total_new_commands; i++)
