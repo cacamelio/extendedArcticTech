@@ -1,7 +1,6 @@
 #include "Hooks.h"
 #include "../Utils/Utils.h"
 #include "../Utils/Hash.h"
-#include "../Menu/menu.h"
 #include "Config.h"
 #include "Globals.h"
 #include <intrin.h>
@@ -21,7 +20,6 @@
 #include "../Features/RageBot/LagCompensation.h"
 #include "../Features/RageBot/DoubleTap.h"
 #include "../Features/Misc/AutoPeek.h"
-#include "../Features/Misc/UI.h"
 #include "../Features/RageBot/Ragebot.h"
 #include "../Features/RageBot/AutoWall.h"
 #include "../Features/RageBot/Resolver.h"
@@ -111,15 +109,15 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
 		callback.func();
 
-	//ESP::Draw();
-	//ESP::DrawGrenades();
-	//ESP::RenderMarkers();
-	//NadePrediction.Draw();
-	//AutoPeek->Draw();
-	//World->Crosshair();
-	//if (config.ragebot.aimbot.show_debug_data->get())
-	//	Ragebot->DrawDebugData();
-	//Indicators->Draw();
+	ESP::Draw();
+	ESP::DrawGrenades();
+	ESP::RenderMarkers();
+	NadePrediction.Draw();
+	AutoPeek->Draw();
+	World->Crosshair();
+	if (config.ragebot.aimbot.show_debug_data->get())
+		Ragebot->DrawDebugData();
+	Indicators->Draw();
 
 	InputSystem->EnableInput(!Menu->IsOpened());
 
@@ -131,7 +129,7 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 void __fastcall hkLockCursor(ISurface* thisptr, void* edx) {
 	static tLockCursor oLockCursor = (tLockCursor)Hooks::SurfaceVMT->GetOriginal(67);
 
-	if (MenuOld->is_opened())
+	if (Menu->IsOpened())
 		return Surface->UnlockCursor();
 
 	oLockCursor(thisptr, edx);
@@ -370,9 +368,6 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setup) {
 	static tOverrideView oOverrideView = (tOverrideView)Hooks::ClientModeVMT->GetOriginal(18);
 
-	if (!MenuOld->initialized)
-		return oOverrideView(thisptr, edx, setup);
-
 	if (setup->fov == 90 || config.visuals.effects.removals->get(5)) {
 		setup->fov = config.visuals.effects.fov->get();
 	}
@@ -394,9 +389,6 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 void __fastcall hkPaintTraverse(IPanel* thisptr, void* edx, unsigned int panel, bool bForceRepaint, bool bForce) {
 	static tPaintTraverse oPaintTraverse = (tPaintTraverse)Hooks::PanelVMT->GetOriginal(41);
 	static unsigned int hud_zoom_panel = 0;
-
-	if (!MenuOld->initialized || !Render->IsInitialized())
-		return oPaintTraverse(thisptr, edx, panel, bForceRepaint, bForce);
 
 	if (!hud_zoom_panel) {
 		std::string panelName = VPanel->GetName(panel);
@@ -1051,7 +1043,7 @@ void Hooks::End() {
 	////ClientVMT->UnHook(40);
 	//KeyValuesVMT->UnHook(2);
 
-	//RemoveHook(oPresent, hkPresent);
+	RemoveHook(oPresent, hkPresent);
 	////RemoveHook(oReset, hkReset);
 	//RemoveHook(oUpdateClientSideAnimation, hkUpdateClientSideAnimation);
 	//RemoveHook(oDoExtraBoneProcessing, hkDoExtraBoneProcessing);

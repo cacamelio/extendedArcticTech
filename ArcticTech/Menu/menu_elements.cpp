@@ -41,7 +41,7 @@ void IBaseElement::set_visible(bool newVisible) {
 	parent->Update();
 }
 
-void CCheckbox::Draw() {
+void CCheckboxOld::Draw() {
 	if (!visible)
 		return;
 
@@ -61,7 +61,7 @@ void CCheckbox::Draw() {
 	Render->Text(name, _absPos + Vector2(20, -1), unsafe ? Color(164, 164, 120) : Color(200, 200, 200), Verdana);
 }
 
-void CCheckbox::HandleClick(bool rmb) {
+void CCheckboxOld::HandleClick(bool rmb) {
 	if (!visible)
 		return;
 
@@ -89,7 +89,7 @@ void CCheckbox::HandleClick(bool rmb) {
 	}
 }
 
-void CLabel::Draw() {
+void CLabelOld::Draw() {
 	if (!visible)
 		return;
 
@@ -97,7 +97,7 @@ void CLabel::Draw() {
 	Render->Text(name, _absPos + Vector2(20, -1), Color(200, 200, 200), Verdana);
 }
 
-void CColorPicker::Draw() {
+void CColorPickerOld::Draw() {
 	if (!parentItem->visible || !visible)
 		return;
 	 
@@ -114,7 +114,7 @@ void CColorPicker::Draw() {
 	Render->GradientBox(absPos + Vector2(1, 1), absPos + Vector2(15, 8), clr1, clr1, clr2, clr2);
 }
 
-void CColorPicker::HandleClick(bool rmb) {
+void CColorPickerOld::HandleClick(bool rmb) {
 	if (!parentItem->visible)
 		return;
 
@@ -177,7 +177,7 @@ void CColorPicker::HandleClick(bool rmb) {
 	}
 }
 
-void CColorPicker::DrawOverlay() {
+void CColorPickerOld::DrawOverlay() {
 	if (!parentItem->visible || !(opened || copyopened))
 		return;
 
@@ -288,7 +288,7 @@ void CColorPicker::DrawOverlay() {
 	}
 }
 
-void CKeyBind::Draw() {
+void CKeyBindOld::Draw() {
 	if (!parentItem->visible)
 		return;
 
@@ -308,7 +308,7 @@ void CKeyBind::Draw() {
 	Render->Text(text, absPos - Vector2(text_size, 0), bindState == 1 ? Color(200, 0, 0) : Color(120, 120, 120), SmallFont, TEXT_OUTLINED);
 }
 
-void CKeyBind::HandleClick(bool rmb) {
+void CKeyBindOld::HandleClick(bool rmb) {
 	Vector2 groupPos = MenuOld->menuPos + Vector2(90, 14) + parent->pos;
 	Vector2 parentPos = groupPos + parentItem->pos - Vector2(0, parent->scrollOffset);
 
@@ -349,7 +349,7 @@ void CKeyBind::HandleClick(bool rmb) {
 	}
 }
 
-void CKeyBind::DrawOverlay() {
+void CKeyBindOld::DrawOverlay() {
 	if (!parentItem->visible || !opened)
 		return;
 
@@ -366,7 +366,7 @@ void CKeyBind::DrawOverlay() {
 	Render->Text("Off hotkey", absPos + Vector2(10, 41), bindType == 2 ? MenuOld->menuColor : Color(200, 200, 200), Verdana);
 }
 
-bool CKeyBind::get() {
+bool CKeyBindOld::get() {
 	if (key == -1)
 		return false;
 
@@ -391,7 +391,7 @@ bool CKeyBind::get() {
 	}
 }
 
-void CKeyBind::HandleKeyPress(int vkKey) {
+void CKeyBindOld::HandleKeyPress(int vkKey) {
 	if (bindState != 1)
 		return;
 
@@ -405,7 +405,7 @@ void CKeyBind::HandleKeyPress(int vkKey) {
 	}
 }
 
-void CSlider::Draw() {
+void CSliderOld::Draw() {
 	if (!visible)
 		return;
 
@@ -458,7 +458,7 @@ void CSlider::Draw() {
 	}
 }
 
-void CSlider::HandleClick(bool rmb) {
+void CSliderOld::HandleClick(bool rmb) {
 	if (!visible || rmb)
 		return;
 
@@ -471,7 +471,7 @@ void CSlider::HandleClick(bool rmb) {
 		dragging = true;
 }
 
-void CComboBox::Draw() {
+void CComboBoxOld::Draw() {
 	if (!visible)
 		return;
 
@@ -498,7 +498,7 @@ void CComboBox::Draw() {
 	Render->PolyFilled(triangle, Color(160, 160, 160));
 }
 
-void CComboBox::HandleClick(bool rmb) {
+void CComboBoxOld::HandleClick(bool rmb) {
 	if (rmb)
 		return;
 
@@ -542,7 +542,7 @@ void CComboBox::HandleClick(bool rmb) {
 	}
 }
 
-void CComboBox::DrawOverlay() {
+void CComboBoxOld::DrawOverlay() {
 	if (!opened)
 		return;
 
@@ -573,7 +573,7 @@ void CComboBox::DrawOverlay() {
 	}
 }
 
-void CMultiCombo::Draw() {
+void CMultiComboOld::Draw() {
 	if (!visible)
 		return;
 
@@ -634,7 +634,7 @@ void CMultiCombo::Draw() {
 	Render->PolyFilled(triangle, Color(160, 160, 160));
 }
 
-void CMultiCombo::HandleClick(bool rmb) {
+void CMultiComboOld::HandleClick(bool rmb) {
 	if (rmb)
 		return;
 
@@ -673,7 +673,7 @@ void CMultiCombo::HandleClick(bool rmb) {
 	}
 }
 
-void CMultiCombo::DrawOverlay() {
+void CMultiComboOld::DrawOverlay() {
 	if (!opened)
 		return;
 
@@ -704,7 +704,7 @@ void CMultiCombo::DrawOverlay() {
 	}
 }
 
-void CButton::Draw() {
+void CButtonOld::Draw() {
 	if (!visible)
 		return;
 
@@ -731,7 +731,7 @@ void CButton::Draw() {
 	Render->Text(name, _absPos + Vector2(100, 6), Color(200, 200, 200), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
 }
 
-void CButton::HandleClick(bool rmb) {
+void CButtonOld::HandleClick(bool rmb) {
 	if (!visible || rmb)
 		return;
 
@@ -746,7 +746,7 @@ void CButton::HandleClick(bool rmb) {
 	}
 }
 
-void CInputBox::Draw() {
+void CInputBoxOld::Draw() {
 	if (!visible)
 		return;
 
@@ -770,7 +770,7 @@ void CInputBox::Draw() {
 	Render->Text((input + '_'), _absPos + Vector2(5, 4), textColor, Verdana, TEXT_DROPSHADOW);
 }
 
-void CInputBox::HandleClick(bool rmb) {
+void CInputBoxOld::HandleClick(bool rmb) {
 	if (!visible || rmb)
 		return;
 
@@ -782,7 +782,7 @@ void CInputBox::HandleClick(bool rmb) {
 	focused = Render->InBounds(_absPos, _absPos + Vector2(200, 20));
 }
 
-void CInputBox::HandleInput(int key) {
+void CInputBoxOld::HandleInput(int key) {
 	if (focused) {
 		Utils::HandleInput(input, key);
 

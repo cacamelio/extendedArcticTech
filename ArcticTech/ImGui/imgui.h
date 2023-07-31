@@ -522,7 +522,7 @@ namespace ImGui
     // - The BeginCombo()/EndCombo() api allows you to manage your contents and selection state however you want it, by creating e.g. Selectable() items.
     // - The old Combo() api are helpers over BeginCombo()/EndCombo() which are kept available for convenience purpose. This is analogous to how ListBox are created.
     IMGUI_API bool          BeginCombo(const char* label, const char* preview_value, float val, float width, bool multi = 0, ImGuiComboFlags flags = 0);
-    IMGUI_API void          MultiCombo(const char* label, bool variable[], const char* labels[], int count, float width);
+    IMGUI_API bool          MultiCombo(const char* label, bool variable[], const char* labels[], int count, float width);
     IMGUI_API void          EndCombo();
     IMGUI_API bool          Combo(const char* label, int* current_item, bool(*items_getter)(void*, int, const char**), void* data, int items_count, int popup_max_height_in_items = -1, float width = 180);
     IMGUI_API bool          Combo(const char* label, int* current_item, const char* const items[], int items_count, int height_in_items, float width);

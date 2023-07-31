@@ -277,27 +277,27 @@ void CConfig::parse(nlohmann::json& cfg) {
 
             switch (item.item->GetItemType()) {
             case CHECKBOX:
-                ((CCheckbox*)e)->value = val;
+                ((CCheckboxOld*)e)->value = val;
                 break;
             case COLORPCIKER:
-                ((CColorPicker*)e)->Set(val);
+                ((CColorPickerOld*)e)->Set(val);
                 break;
             case KEYBIND:
-                ((CKeyBind*)e)->bindType = val[0];
-                ((CKeyBind*)e)->bindState = val[1];
-                ((CKeyBind*)e)->key = val[2];
+                ((CKeyBindOld*)e)->bindType = val[0];
+                ((CKeyBindOld*)e)->bindState = val[1];
+                ((CKeyBindOld*)e)->key = val[2];
                 break;
             case SLIDER:
-                ((CSlider*)e)->value = val;
+                ((CSliderOld*)e)->value = val;
                 break;
             case COMBO:
-                ((CComboBox*)e)->value = val;
+                ((CComboBoxOld*)e)->value = val;
                 break;
             case MULTICOMBO:
-                ((CMultiCombo*)e)->values = val;
+                ((CMultiComboOld*)e)->values = val;
                 break;
             case INPUTBOX:
-                ((CInputBox*)e)->input = val;
+                ((CInputBoxOld*)e)->input = val;
                 break;
             case LISTBOX:
                 ((CListBox*)e)->active = val;
@@ -332,25 +332,25 @@ nlohmann::json CConfig::dump() {
 
         switch (e->GetItemType()) {
         case CHECKBOX:
-            result[name] = ((CCheckbox*)e)->value;
+            result[name] = ((CCheckboxOld*)e)->value;
             break;
         case COLORPCIKER:
-            result[name] = ((CColorPicker*)e)->get().to_int32();
+            result[name] = ((CColorPickerOld*)e)->get().to_int32();
             break;
         case KEYBIND:
-            result[name] = { ((CKeyBind*)e)->bindType, ((CKeyBind*)e)->bindState, ((CKeyBind*)e)->key };
+            result[name] = { ((CKeyBindOld*)e)->bindType, ((CKeyBindOld*)e)->bindState, ((CKeyBindOld*)e)->key };
             break;
         case SLIDER:
-            result[name] = ((CSlider*)e)->value;
+            result[name] = ((CSliderOld*)e)->value;
             break;
         case COMBO:
-            result[name] = ((CComboBox*)e)->value;
+            result[name] = ((CComboBoxOld*)e)->value;
             break;
         case MULTICOMBO:
-            result[name] = ((CMultiCombo*)e)->values;
+            result[name] = ((CMultiComboOld*)e)->values;
             break;
         case INPUTBOX:
-            result[name] = ((CInputBox*)e)->input;
+            result[name] = ((CInputBoxOld*)e)->input;
             break;
         case LISTBOX:
             result[name] = ((CListBox*)e)->active;

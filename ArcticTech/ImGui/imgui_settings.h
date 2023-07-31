@@ -2,13 +2,13 @@
 
 namespace c {
 
-	inline ImVec4 accent = ImColor(234, 88, 12, 255);
+	inline ImVec4 accent = ImColor(105, 163, 255, 255);
 
 	namespace background {
 
 		inline ImVec4 bg = ImColor(12, 10, 9, 240);
 
-		inline ImVec2 size = ImVec2(850, 650);
+		inline ImVec2 size = ImVec2(950, 750);
 		inline float rounding = 16.f;
 	}
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -163,26 +163,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Features\AntiAim\AntiAim.cpp" />
     <ClCompile Include="Features\Lua\Bridge\Bridge.cpp" />
     <ClCompile Include="Features\Lua\Hook\Hook.cpp" />
     <ClCompile Include="Features\Lua\Protect\Protect.cpp" />
-    <ClCompile Include="Features\Visuals\SkinChanger.cpp" />
-    <ClCompile Include="Features\Visuals\Indicators.cpp" />
-    <ClCompile Include="ImGui\backends\imgui_impl_dx9.cpp" />
-    <ClCompile Include="ImGui\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="ImGui\imgui.cpp" />
-    <ClCompile Include="ImGui\imgui_draw.cpp" />
-    <ClCompile Include="ImGui\imgui_tables.cpp" />
-    <ClCompile Include="ImGui\imgui_widgets.cpp" />
-    <ClCompile Include="SDK\Config.cpp" />
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="Features\AntiAim\AntiAim.cpp" />
     <ClCompile Include="Features\Misc\AutoPeek.cpp" />
     <ClCompile Include="Features\Misc\AutoStrafe.cpp" />
     <ClCompile Include="Features\Misc\EventListner.cpp" />
     <ClCompile Include="Features\Misc\Misc.cpp" />
     <ClCompile Include="Features\Misc\Prediction.cpp" />
-    <ClCompile Include="Features\Misc\UI.cpp" />
     <ClCompile Include="Features\RageBot\AnimationSystem.cpp" />
     <ClCompile Include="Features\RageBot\AutoWall.cpp" />
     <ClCompile Include="Features\RageBot\DoubleTap.cpp" />
@@ -194,11 +183,21 @@
     <ClCompile Include="Features\Visuals\ESP.cpp" />
     <ClCompile Include="Features\Visuals\Glow.cpp" />
     <ClCompile Include="Features\Visuals\GrenadePrediction.cpp" />
+    <ClCompile Include="Features\Visuals\Indicators.cpp" />
+    <ClCompile Include="Features\Visuals\SkinChanger.cpp" />
     <ClCompile Include="Features\Visuals\World.cpp" />
-    <ClCompile Include="SDK\Hooks.cpp" />
+    <ClCompile Include="ImGui\backends\imgui_impl_dx9.cpp" />
+    <ClCompile Include="ImGui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="ImGui\imgui.cpp" />
+    <ClCompile Include="ImGui\imgui_draw.cpp" />
+    <ClCompile Include="ImGui\imgui_tables.cpp" />
+    <ClCompile Include="ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Menu\menu.cpp" />
     <ClCompile Include="Menu\menu_backend.cpp" />
     <ClCompile Include="Menu\menu_elements.cpp" />
+    <ClCompile Include="SDK\Config.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="SDK\Hooks.cpp" />
     <ClCompile Include="SDK\Interfaces\CGlobalVarsBase.cpp" />
     <ClCompile Include="SDK\Interfaces\IClientEntityList.cpp" />
     <ClCompile Include="SDK\Interfaces\IEffects.cpp" />
@@ -214,6 +213,7 @@
     <ClCompile Include="SDK\Misc\UtlStringList.h" />
     <ClCompile Include="SDK\Misc\Vector.cpp" />
     <ClCompile Include="SDK\NetMessages.cpp" />
+    <ClCompile Include="UI\UI.cpp" />
     <ClCompile Include="UI\UI_backend.cpp" />
     <ClCompile Include="Utils\Animation.cpp" />
     <ClCompile Include="Utils\Console.cpp" />
@@ -225,32 +225,16 @@
     <ClCompile Include="Utils\VMTHook.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Features\AntiAim\AntiAim.h" />
     <ClInclude Include="Features\Lua\Bridge\Bridge.h" />
     <ClInclude Include="Features\Lua\Hook\Hook.h" />
     <ClInclude Include="Features\Lua\Protect\Protect.h" />
     <ClInclude Include="Features\Lua\Sol.hpp" />
-    <ClInclude Include="Features\Visuals\SkinChanger.h" />
-    <ClInclude Include="Features\Visuals\Indicators.h" />
-    <ClInclude Include="Features\Visuals\WeaponIcons.h" />
-    <ClInclude Include="ImGui\backends\imgui_impl_dx9.h" />
-    <ClInclude Include="ImGui\backends\imgui_impl_win32.h" />
-    <ClInclude Include="ImGui\freetype\ft2build.h" />
-    <ClInclude Include="ImGui\imconfig.h" />
-    <ClInclude Include="ImGui\imgui.h" />
-    <ClInclude Include="ImGui\imgui_internal.h" />
-    <ClInclude Include="ImGui\imgui_settings.h" />
-    <ClInclude Include="ImGui\imstb_rectpack.h" />
-    <ClInclude Include="ImGui\imstb_textedit.h" />
-    <ClInclude Include="ImGui\imstb_truetype.h" />
-    <ClInclude Include="SDK\Config.h" />
-    <ClInclude Include="detours.h" />
-    <ClInclude Include="Features\AntiAim\AntiAim.h" />
     <ClInclude Include="Features\Misc\AutoPeek.h" />
     <ClInclude Include="Features\Misc\AutoStrafe.h" />
     <ClInclude Include="Features\Misc\EventListner.h" />
     <ClInclude Include="Features\Misc\Misc.h" />
     <ClInclude Include="Features\Misc\Prediction.h" />
-    <ClInclude Include="Features\Misc\UI.h" />
     <ClInclude Include="Features\RageBot\AnimationSystem.h" />
     <ClInclude Include="Features\RageBot\AutoWall.h" />
     <ClInclude Include="Features\RageBot\DoubleTap.h" />
@@ -262,10 +246,25 @@
     <ClInclude Include="Features\Visuals\ESP.h" />
     <ClInclude Include="Features\Visuals\Glow.h" />
     <ClInclude Include="Features\Visuals\GrenadePrediction.h" />
+    <ClInclude Include="Features\Visuals\Indicators.h" />
+    <ClInclude Include="Features\Visuals\SkinChanger.h" />
+    <ClInclude Include="Features\Visuals\WeaponIcons.h" />
     <ClInclude Include="Features\Visuals\World.h" />
-    <ClInclude Include="SDK\Hooks.h" />
+    <ClInclude Include="ImGui\backends\imgui_impl_dx9.h" />
+    <ClInclude Include="ImGui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="ImGui\freetype\ft2build.h" />
+    <ClInclude Include="ImGui\imconfig.h" />
+    <ClInclude Include="ImGui\imgui.h" />
+    <ClInclude Include="ImGui\imgui_internal.h" />
+    <ClInclude Include="ImGui\imgui_settings.h" />
+    <ClInclude Include="ImGui\imstb_rectpack.h" />
+    <ClInclude Include="ImGui\imstb_textedit.h" />
+    <ClInclude Include="ImGui\imstb_truetype.h" />
+    <ClInclude Include="detours.h" />
     <ClInclude Include="Menu\menu.h" />
     <ClInclude Include="Menu\menu_elements.h" />
+    <ClInclude Include="SDK\Config.h" />
+    <ClInclude Include="SDK\Hooks.h" />
     <ClInclude Include="Resources\aim-img.h" />
     <ClInclude Include="Resources\antiaim-img.h" />
     <ClInclude Include="Resources\background.h" />
@@ -342,8 +341,6 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="detours.lib" />
-    <Library Include="Features\Lua\Lib\lua51.lib" />
-    <Library Include="Features\Lua\Lib\luajit.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

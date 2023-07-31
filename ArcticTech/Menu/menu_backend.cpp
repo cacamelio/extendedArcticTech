@@ -14,9 +14,9 @@ void CMenuOld::WndProc(UINT msg, WPARAM wParam) {
 
 			for (auto element : box->elements) {
 				if (element->GetItemType() == ElementType::KEYBIND)
-					((CKeyBind*)(element))->HandleKeyPress(wParam);
+					((CKeyBindOld*)(element))->HandleKeyPress(wParam);
 				if (element->GetItemType() == ElementType::INPUTBOX)
-					((CInputBox*)element)->HandleInput(wParam);
+					((CInputBoxOld*)element)->HandleInput(wParam);
 				if (element->GetItemType() == ElementType::LISTBOX)
 					((CListBox*)element)->HandleInput(wParam);
 			}
@@ -33,7 +33,7 @@ void CMenuOld::WndProc(UINT msg, WPARAM wParam) {
 
 			for (auto element : box->elements)
 				if (element->GetItemType() == ElementType::KEYBIND)
-					((CKeyBind*)(element))->HandleKeyPress(wParam);
+					((CKeyBindOld*)(element))->HandleKeyPress(wParam);
 		}
 
 		return;
@@ -84,7 +84,7 @@ void CMenuOld::WndProc(UINT msg, WPARAM wParam) {
 
 			for (auto element : box->elements)
 				if (element->GetItemType() == ElementType::KEYBIND)
-					((CKeyBind*)(element))->HandleKeyPress(VK_MBUTTON);
+					((CKeyBindOld*)(element))->HandleKeyPress(VK_MBUTTON);
 		}
 
 		return;
@@ -95,7 +95,7 @@ void CMenuOld::WndProc(UINT msg, WPARAM wParam) {
 
 			for (auto element : box->elements)
 				if (element->GetItemType() == ElementType::KEYBIND)
-					((CKeyBind*)(element))->HandleKeyPress(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2);
+					((CKeyBindOld*)(element))->HandleKeyPress(GET_XBUTTON_WPARAM(wParam) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2);
 		}
 
 		return;
@@ -252,16 +252,16 @@ void CMenuOld::Draw() {
 				switch (element->GetItemType())
 				{
 				case ElementType::COLORPCIKER:
-					((CColorPicker*)element)->DrawOverlay();
+					((CColorPickerOld*)element)->DrawOverlay();
 					break;
 				case ElementType::KEYBIND:
-					((CKeyBind*)element)->DrawOverlay();
+					((CKeyBindOld*)element)->DrawOverlay();
 					break;
 				case ElementType::COMBO:
-					((CComboBox*)element)->DrawOverlay();
+					((CComboBoxOld*)element)->DrawOverlay();
 					break;
 				case ElementType::MULTICOMBO:
-					((CMultiCombo*)element)->DrawOverlay();
+					((CMultiComboOld*)element)->DrawOverlay();
 				default:
 					break;
 				}
@@ -347,7 +347,7 @@ void CGroupBox::Update() {
 	}
 }
 
-CCheckbox* CMenuOld::AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool unsafe) {
+CCheckboxOld* CMenuOld::AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool unsafe) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -363,7 +363,7 @@ CCheckbox* CMenuOld::AddCheckBox(const std::string& tab, const std::string& grou
 
 	target->minsize += 18;
 
-	CCheckbox* checkbox = new CCheckbox;
+	CCheckboxOld* checkbox = new CCheckboxOld;
 
 	checkbox->parent = target;
 	checkbox->name = name;
@@ -382,7 +382,7 @@ CCheckbox* CMenuOld::AddCheckBox(const std::string& tab, const std::string& grou
 	return checkbox;
 }
 
-CLabel* CMenuOld::AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name) {
+CLabelOld* CMenuOld::AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -398,7 +398,7 @@ CLabel* CMenuOld::AddLabel(const std::string& tab, const std::string& groupbox, 
 
 	target->minsize += 18;
 
-	CLabel* label = new CLabel;
+	CLabelOld* label = new CLabelOld;
 
 	label->parent = target;
 	label->name = name;
@@ -416,7 +416,7 @@ CLabel* CMenuOld::AddLabel(const std::string& tab, const std::string& groupbox, 
 	return label;
 }
 
-CColorPicker* CMenuOld::AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color defaultColor) {
+CColorPickerOld* CMenuOld::AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color defaultColor) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -445,7 +445,7 @@ CColorPicker* CMenuOld::AddColorPicker(const std::string& tab, const std::string
 	if (parentItem->parentItem)
 		return nullptr;
 
-	CColorPicker* colorpicker = new CColorPicker;
+	CColorPickerOld* colorpicker = new CColorPickerOld;
 
 	colorpicker->parent = target;
 	colorpicker->name = name;
@@ -463,7 +463,7 @@ CColorPicker* CMenuOld::AddColorPicker(const std::string& tab, const std::string
 	return colorpicker;
 }
 
-CKeyBind* CMenuOld::AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name, int defaultKey, int defaultType) {
+CKeyBindOld* CMenuOld::AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name, int defaultKey, int defaultType) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -495,7 +495,7 @@ CKeyBind* CMenuOld::AddKeyBind(const std::string& tab, const std::string& groupb
 	if (parentItem->GetItemType() == ElementType::BUTTON)
 		return nullptr;
 
-	CKeyBind* keyBind = new CKeyBind;
+	CKeyBindOld* keyBind = new CKeyBindOld;
 
 	keyBind->parent = target;
 	keyBind->name = name;
@@ -515,7 +515,7 @@ CKeyBind* CMenuOld::AddKeyBind(const std::string& tab, const std::string& groupb
 	return keyBind;
 }
 
-CSlider* CMenuOld::AddSlider(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float def, const std::string& unit, float scale, bool hideName) {
+CSliderOld* CMenuOld::AddSlider(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float def, const std::string& unit, float scale, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -531,7 +531,7 @@ CSlider* CMenuOld::AddSlider(const std::string& tab, const std::string& groupbox
 
 	target->minsize += hideName ? 15 : 30;
 
-	CSlider* slider = new CSlider;
+	CSliderOld* slider = new CSliderOld;
 
 	scale = min(max(0.01f, scale), 100);
 
@@ -566,7 +566,7 @@ CSlider* CMenuOld::AddSlider(const std::string& tab, const std::string& groupbox
 	return slider;
 }
 
-CComboBox* CMenuOld::AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
+CComboBoxOld* CMenuOld::AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -582,7 +582,7 @@ CComboBox* CMenuOld::AddComboBox(const std::string& tab, const std::string& grou
 
 	target->minsize += !hideName ? 40 : 25;
 
-	CComboBox* comboBox = new CComboBox;
+	CComboBoxOld* comboBox = new CComboBoxOld;
 
 	comboBox->name = name;
 	comboBox->parent = target;
@@ -602,7 +602,7 @@ CComboBox* CMenuOld::AddComboBox(const std::string& tab, const std::string& grou
 	return comboBox;
 }
 
-CMultiCombo* CMenuOld::AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
+CMultiComboOld* CMenuOld::AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -618,7 +618,7 @@ CMultiCombo* CMenuOld::AddMultiCombo(const std::string& tab, const std::string& 
 
 	target->minsize += !hideName ? 40 : 25;
 
-	CMultiCombo* comboBox = new CMultiCombo;
+	CMultiComboOld* comboBox = new CMultiComboOld;
 
 	comboBox->name = name;
 	comboBox->parent = target;
@@ -638,7 +638,7 @@ CMultiCombo* CMenuOld::AddMultiCombo(const std::string& tab, const std::string& 
 	return comboBox;
 }
 
-CInputBox* CMenuOld::AddInputBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool hideName) {
+CInputBoxOld* CMenuOld::AddInputBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool hideName) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -654,7 +654,7 @@ CInputBox* CMenuOld::AddInputBox(const std::string& tab, const std::string& grou
 
 	target->minsize += !hideName ? 40 : 25;
 
-	CInputBox* inputBox = new CInputBox;
+	CInputBoxOld* inputBox = new CInputBoxOld;
 
 	inputBox->name = name;
 	inputBox->parent = target;
@@ -673,7 +673,7 @@ CInputBox* CMenuOld::AddInputBox(const std::string& tab, const std::string& grou
 	return inputBox;
 }
 
-CButton* CMenuOld::AddButton(const std::string& tab, const std::string& groupbox, const std::string& name) {
+CButtonOld* CMenuOld::AddButton(const std::string& tab, const std::string& groupbox, const std::string& name) {
 	CGroupBox* target = nullptr;
 	int tabId = get_tab_id(tab);
 
@@ -689,7 +689,7 @@ CButton* CMenuOld::AddButton(const std::string& tab, const std::string& groupbox
 
 	target->minsize += 33;
 
-	CButton* button = new CButton;
+	CButtonOld* button = new CButtonOld;
 
 	button->name = name;
 	button->parent = target;

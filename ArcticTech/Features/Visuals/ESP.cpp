@@ -11,7 +11,6 @@
 #include "GrenadePrediction.h"
 #include "../RageBot/LagCompensation.h"
 #include "../RageBot/AnimationSystem.h"
-#include "../Misc/UI.h"
 
 ESPInfo_t ESPInfo[64];
 GrenadeWarning NadeWarning;

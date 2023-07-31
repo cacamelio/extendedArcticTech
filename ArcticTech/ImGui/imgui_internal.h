@@ -3133,7 +3133,7 @@ namespace ImGui
     IMGUI_API int           DataTypeCompare(ImGuiDataType data_type, const void* arg_1, const void* arg_2);
     IMGUI_API bool          DataTypeClamp(ImGuiDataType data_type, void* p_data, const void* p_min, const void* p_max);
 
-    IMGUI_API void          TextField(const char* label, const char* hint, char* buf, int buf_size, ImGuiInputTextFlags flags = 0);
+    IMGUI_API bool          TextField(const char* label, const char* hint, char* buf, int buf_size, ImGuiInputTextFlags flags = 0);
 
     // InputText
     IMGUI_API bool          InputTextEx(const char* label, const char* hint, char* buf, int buf_size, const ImVec2& size_arg, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);

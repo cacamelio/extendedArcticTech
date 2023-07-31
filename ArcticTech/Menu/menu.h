@@ -68,8 +68,8 @@ private:
 	};
 public:
 	bool initialized = false;
-	CColorPicker* menu_color_picker;
-	CKeyBind* menu_key_bind;
+	CColorPickerOld* menu_color_picker;
+	CKeyBindOld* menu_key_bind;
 	std::vector<CGroupBox*> group_boxes;
 	Vector2 menuPos{ 200, 200 };
 	Vector2 size{ 760, 710 };
@@ -90,15 +90,15 @@ public:
 
 	void Draw();
 	CGroupBox*		AddGroupBox(const std::string& tab, const std::string& name, float scale, int column);
-	CCheckbox*		AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool unsafe = false);
-	CLabel*			AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name);
-	CColorPicker*	AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color defaultColor = Color(255, 255, 255));
-	CKeyBind*		AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name, int defaultKey = -1, int defaultType = 1);
-	CSlider*		AddSlider(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float def, const std::string& unit = "", float scale = 1.f, bool hideName = false);
-	CComboBox*		AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def = 0, bool hideName = false);
-	CMultiCombo*	AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def = 0, bool hideName = false);
-	CButton*		AddButton(const std::string& tab, const std::string& groupbox, const std::string& name);
-	CInputBox*		AddInputBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool hidden = false);
+	CCheckboxOld*		AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool unsafe = false);
+	CLabelOld*			AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name);
+	CColorPickerOld*	AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color defaultColor = Color(255, 255, 255));
+	CKeyBindOld*		AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name, int defaultKey = -1, int defaultType = 1);
+	CSliderOld*		AddSlider(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float def, const std::string& unit = "", float scale = 1.f, bool hideName = false);
+	CComboBoxOld*		AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def = 0, bool hideName = false);
+	CMultiComboOld*	AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, int def = 0, bool hideName = false);
+	CButtonOld*		AddButton(const std::string& tab, const std::string& groupbox, const std::string& name);
+	CInputBoxOld*		AddInputBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool hidden = false);
 	CListBox*		AddListBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<std::string> items, bool filter = true);
 
 	IBaseElement*	FindElement(const std::string& tab, const std::string& groupbox, const std::string& name, ElementType type = ElementType::ANY);

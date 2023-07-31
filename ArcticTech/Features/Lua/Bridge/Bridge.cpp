@@ -14,25 +14,25 @@ void LuaSaveConfig(LuaScript_t* script) {
 
 		switch (e->GetItemType()) {
 		case CHECKBOX:
-			result[name] = ((CCheckbox*)e)->value;
+			result[name] = ((CCheckboxOld*)e)->value;
 			break;
 		case COLORPCIKER:
-			result[name] = ((CColorPicker*)e)->get().to_int32();
+			result[name] = ((CColorPickerOld*)e)->get().to_int32();
 			break;
 		case KEYBIND:
-			result[name] = { ((CKeyBind*)e)->bindType, ((CKeyBind*)e)->bindState, ((CKeyBind*)e)->key };
+			result[name] = { ((CKeyBindOld*)e)->bindType, ((CKeyBindOld*)e)->bindState, ((CKeyBindOld*)e)->key };
 			break;
 		case SLIDER:
-			result[name] = ((CSlider*)e)->value;
+			result[name] = ((CSliderOld*)e)->value;
 			break;
 		case COMBO:
-			result[name] = ((CComboBox*)e)->value;
+			result[name] = ((CComboBoxOld*)e)->value;
 			break;
 		case MULTICOMBO:
-			result[name] = ((CMultiCombo*)e)->values;
+			result[name] = ((CMultiComboOld*)e)->values;
 			break;
 		case INPUTBOX:
-			result[name] = ((CInputBox*)e)->input;
+			result[name] = ((CInputBoxOld*)e)->input;
 			break;
 		case LISTBOX:
 			result[name] = ((CListBox*)e)->active;
@@ -67,27 +67,27 @@ void LuaLoadConfig(LuaScript_t* script) {
 
 			switch (e->GetItemType()) {
 			case CHECKBOX:
-				((CCheckbox*)e)->value = val;
+				((CCheckboxOld*)e)->value = val;
 				break;
 			case COLORPCIKER:
-				((CColorPicker*)e)->Set(val);
+				((CColorPickerOld*)e)->Set(val);
 				break;
 			case KEYBIND:
-				((CKeyBind*)e)->bindType = val[0];
-				((CKeyBind*)e)->bindState = val[1];
-				((CKeyBind*)e)->key = val[2];
+				((CKeyBindOld*)e)->bindType = val[0];
+				((CKeyBindOld*)e)->bindState = val[1];
+				((CKeyBindOld*)e)->key = val[2];
 				break;
 			case SLIDER:
-				((CSlider*)e)->value = val;
+				((CSliderOld*)e)->value = val;
 				break;
 			case COMBO:
-				((CComboBox*)e)->value = val;
+				((CComboBoxOld*)e)->value = val;
 				break;
 			case MULTICOMBO:
-				((CMultiCombo*)e)->values = val;
+				((CMultiComboOld*)e)->values = val;
 				break;
 			case INPUTBOX:
-				((CInputBox*)e)->input = val;
+				((CInputBoxOld*)e)->input = val;
 				break;
 			case LISTBOX:
 				((CListBox*)e)->active = val;
@@ -451,19 +451,19 @@ namespace api {
 		sol::object element_get(sol::this_state state, IBaseElement* element, sol::optional<int> index) {
 			switch (element->GetItemType()) {
 			case CHECKBOX:
-				return sol::make_object(state, static_cast<CCheckbox*>(element)->get());
+				return sol::make_object(state, static_cast<CCheckboxOld*>(element)->get());
 			case COLORPCIKER:
-				return sol::make_object(state, static_cast<CColorPicker*>(element)->get());
+				return sol::make_object(state, static_cast<CColorPickerOld*>(element)->get());
 			case KEYBIND:
-				return sol::make_object(state, static_cast<CKeyBind*>(element)->get());
+				return sol::make_object(state, static_cast<CKeyBindOld*>(element)->get());
 			case SLIDER:
-				return sol::make_object(state, static_cast<CSlider*>(element)->get());
+				return sol::make_object(state, static_cast<CSliderOld*>(element)->get());
 			case COMBO:
-				return sol::make_object(state, static_cast<CComboBox*>(element)->get());
+				return sol::make_object(state, static_cast<CComboBoxOld*>(element)->get());
 			case MULTICOMBO:
-				return sol::make_object(state, static_cast<CMultiCombo*>(element)->get(index.value()));
+				return sol::make_object(state, static_cast<CMultiComboOld*>(element)->get(index.value()));
 			case INPUTBOX:
-				return sol::make_object(state, static_cast<CInputBox*>(element)->get());
+				return sol::make_object(state, static_cast<CInputBoxOld*>(element)->get());
 			case LISTBOX:
 				return sol::make_object(state, static_cast<CListBox*>(element)->get());
 			}
@@ -474,9 +474,9 @@ namespace api {
 		void element_update_list(sol::this_state state, IBaseElement* element, std::vector<std::string> list) {
 			switch (element->GetItemType()) {
 			case COMBO:
-				return static_cast<CComboBox*>(element)->UpdateList(list);
+				return static_cast<CComboBoxOld*>(element)->UpdateList(list);
 			case MULTICOMBO:
-				return static_cast<CMultiCombo*>(element)->UpdateList(list);
+				return static_cast<CMultiComboOld*>(element)->UpdateList(list);
 			case LISTBOX:
 				return static_cast<CListBox*>(element)->UpdateList(list);
 			}

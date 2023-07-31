@@ -53,7 +53,7 @@ public:
 	};
 };
 
-class CKeyBind : public IBaseElement {
+class CKeyBindOld : public IBaseElement {
 public:
 	int bindType = 0;
 	int bindState = 0;
@@ -70,7 +70,7 @@ public:
 	void			HandleKeyPress(int vkKey);
 };
 
-class CCheckbox : public IBaseElement {
+class CCheckboxOld : public IBaseElement {
 public:
 	bool value = false;
 
@@ -81,18 +81,18 @@ public:
 		if (!parentItem || parentItem->GetItemType() == ElementType::COLORPCIKER)
 			return value;
 
-		return ((CKeyBind*)parentItem)->get() && value;
+		return ((CKeyBindOld*)parentItem)->get() && value;
 	}
 };
 
-class CLabel : public IBaseElement {
+class CLabelOld : public IBaseElement {
 public:
 	virtual ElementType    GetItemType() { return ElementType::LABEL; };
 	virtual void	Draw();
 	virtual void	HandleClick(bool rmb) {};
 };
 
-class CColorPicker : public IBaseElement {
+class CColorPickerOld : public IBaseElement {
 public:
 	Color color;
 	bool opened = false;
@@ -120,7 +120,7 @@ public:
 	};
 };
 
-class CSlider : public IBaseElement {
+class CSliderOld : public IBaseElement {
 public:
 	float value = 0;
 	float scale = 1.f;
@@ -139,7 +139,7 @@ public:
 	inline float			get() { return value; };
 };
 
-class CComboBox : public IBaseElement {
+class CComboBoxOld : public IBaseElement {
 public:
 	std::vector<std::string> items;
 	bool opened = false;
@@ -154,7 +154,7 @@ public:
 	void			UpdateList(std::vector<std::string> newItems) { items = newItems; };
 };
 
-class CMultiCombo : public IBaseElement {
+class CMultiComboOld : public IBaseElement {
 public:
 	std::vector<std::string> items;
 	bool opened = false;
@@ -169,14 +169,14 @@ public:
 	void			UpdateList(std::vector<std::string> newItems) { items = newItems; };
 };
 
-class CButton : public IBaseElement {
+class CButtonOld : public IBaseElement {
 public:
 	virtual ElementType    GetItemType() { return ElementType::BUTTON; };
 	virtual void	Draw();
 	virtual void	HandleClick(bool rmb);
 };
 
-class CInputBox : public IBaseElement {
+class CInputBoxOld : public IBaseElement {
 public:
 	std::string input;
 	bool focused = false;

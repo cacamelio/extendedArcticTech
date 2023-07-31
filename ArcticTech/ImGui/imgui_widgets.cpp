@@ -1607,7 +1607,9 @@ void ImGui::Keybindbox(const char* label, const char* hint, bool* v, int* key, i
 
     PushStyleColor(ImGuiCol_Text, GetColorU32(c::text::text));
 
-    PushFont(font::tab); ImGui::Text(hint); PopFont();
+    PushFont(font::tab); 
+    ImGui::Text(hint); 
+    PopFont();
 
     PopStyleColor();
 }
@@ -2158,7 +2160,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
 
     const float w = (flags & ImGuiComboFlags_NoPreview) ? arrow_size : width;
 
-    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(w, 35));
+    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(w, 35 + label_size.y + 4));
     const ImRect total_bb(bb.Min, bb.Max + ImVec2(label_size.x > 0.0f ? label_size.x : 0.0f, 0.0f));
     ItemSize(total_bb, style.FramePadding.y);
     if (!ItemAdd(total_bb, id, &bb)) return false;
@@ -2183,22 +2185,24 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
 
     const float value_x2 = ImMax(bb.Min.x, bb.Max.x - arrow_size);
 
-    GetWindowDrawList()->AddRectFilled(bb.Min, ImVec2(value_x2, bb.Max.y), GetColorU32(it_anim->second.background), c::combo::rounding, (flags & ImGuiComboFlags_NoArrowButton) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersLeft);
+    GetWindowDrawList()->AddText(bb.Min, GetColorU32(it_anim->second.text), label);
 
-    GetWindowDrawList()->AddRectFilled(ImVec2(value_x2, bb.Min.y), bb.Max, GetColorU32(it_anim->second.background), c::combo::rounding, (w <= arrow_size) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersRight);
+    GetWindowDrawList()->AddRectFilled(bb.Min + ImVec2(0, label_size.y + 4), ImVec2(value_x2, bb.Max.y), GetColorU32(it_anim->second.background), c::combo::rounding, (flags & ImGuiComboFlags_NoArrowButton) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersLeft);
+
+    GetWindowDrawList()->AddRectFilled(ImVec2(value_x2, bb.Min.y + label_size.y + 4), bb.Max, GetColorU32(it_anim->second.background), c::combo::rounding, (w <= arrow_size) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersRight);
 
     PushStyleColor(ImGuiCol_Text, GetColorU32(it_anim->second.text));
 
     ImRotateStart();
    // PushFont(fonts::ico);
-    RenderTextClipped(bb.Min + ImVec2(w - 21, 6), ImVec2(value_x2 + 20, bb.Max.y), "<", NULL, NULL);
+    RenderTextClipped(bb.Min + ImVec2(w - 21, 6 + label_size.y + 4), ImVec2(value_x2 + 20, bb.Max.y), "<", NULL, NULL);
    // PopFont();
     ImRotateEnd(1.57f * it_anim->second.arrow_roll);
 
-    RenderTextClipped(bb.Min + ImVec2(10, 7), ImVec2(value_x2, bb.Max.y), preview_value, NULL, NULL);
+    RenderTextClipped(bb.Min + ImVec2(10, 7 + label_size.y + 4), ImVec2(value_x2, bb.Max.y), preview_value, NULL, NULL);
     PopStyleColor();
 
-    if (!IsRectVisible(bb.Min, bb.Max + ImVec2(0, 2)))
+    if (!IsRectVisible(bb.Min + ImVec2(0, label_size.y + 4), bb.Max + ImVec2(0, 2)))
     {
         it_anim->second.opened_combo = false;
         it_anim->second.combo_size = 0.f;
@@ -2228,7 +2232,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
     return true;
 }
 
-void ImGui::MultiCombo(const char* label, bool variable[], const char* labels[], int count, float width)
+bool ImGui::MultiCombo(const char* label, bool variable[], const char* labels[], int count, float width)
 {
     ImGuiContext& g = *GImGui;
 
@@ -2247,17 +2251,19 @@ void ImGui::MultiCombo(const char* label, bool variable[], const char* labels[],
         }
     }
 
+    bool changed = false;
+
     if (ImGui::BeginCombo(label, preview.c_str(), count, width, 0, true)) // draw start
     {
         SetCursorPosY(GetCursorPosY() + GetStyle().ItemSpacing.y);
 
         for (auto i = 0; i < count; i++)
-            ImGui::Selectable(labels[i], &variable[i], ImGuiSelectableFlags_DontClosePopups);
+            changed = changed || ImGui::Selectable(labels[i], &variable[i], ImGuiSelectableFlags_DontClosePopups);
 
         End();
     }
 
-    preview = ("None"); // reset preview to use later
+    return changed;
 }
 
 
@@ -4477,10 +4483,10 @@ struct input_state {
     float slow;
 };
 
-void ImGui::TextField(const char* label, const char* hint, char* buf, int buf_size, ImGuiInputTextFlags flags)
+bool ImGui::TextField(const char* label, const char* hint, char* buf, int buf_size, ImGuiInputTextFlags flags)
 {
  
-    ImGui::InputTextEx(label, hint, buf, buf_size, ImVec2(ImGui::GetContentRegionMax().x - GetStyle().WindowPadding.x, 35), flags);
+    return ImGui::InputTextEx(label, hint, buf, buf_size, ImVec2(ImGui::GetContentRegionMax().x - GetStyle().WindowPadding.x, 35), flags);
 
 }
 
