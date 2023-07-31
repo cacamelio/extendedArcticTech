@@ -49,7 +49,7 @@ class CSkinChanger {
 	RecvVarProxy_t oRecvnModelIndex;
 public:
 	void LoadKnifeModels();
-	std::vector<std::string> GetUIKnifeModels();
+	std::vector<const char*> GetUIKnifeModels();
 	bool ApplyKnifeModel( CAttributableItem* weapon, const char* model );
 	static void SetViewModelSequence( const CRecvProxyData* pDataConst, void* pStruct, void* pOut );
 	static void Hooked_RecvProxy_Viewmodel( CRecvProxyData* pData, void* pStruct, void* pOut );

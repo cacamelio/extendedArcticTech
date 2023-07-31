@@ -11,11 +11,11 @@ void CSkinChanger::LoadKnifeModels() {
 	}
 }
 
-std::vector<std::string> CSkinChanger::GetUIKnifeModels() {
-	std::vector<std::string> result;
+std::vector<const char*> CSkinChanger::GetUIKnifeModels() {
+	std::vector<const char*> result;
 
 	for (auto& model : knife_models)
-		result.emplace_back(model.ui_name);
+		result.emplace_back(model.ui_name.c_str());
 
 	return result;
 }

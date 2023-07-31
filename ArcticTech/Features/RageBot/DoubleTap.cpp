@@ -104,7 +104,7 @@ int CDoubleTap::MaxTickbaseShift() {
 	CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
 
 	if (!activeWeapon)
-		return config.ragebot.aimbot.doubletap_speed->get();
+		return 13;
 
 	switch (activeWeapon->m_iItemDefinitionIndex()) {
 	case Tec9:
@@ -112,7 +112,7 @@ int CDoubleTap::MaxTickbaseShift() {
 	case Elite:
 		return 7;
 	default:
-		return config.ragebot.aimbot.doubletap_speed->get();
+		return 13;
 	}
 }
 

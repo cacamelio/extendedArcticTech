@@ -147,9 +147,6 @@ void CRagebot::FindTargets() {
 		if (!player || !player->IsAlive() || player->IsTeammate() || player->m_bDormant() || player->m_bGunGameImmunity())
 			continue;
 
-		if (config.ragebot.aimbot.low_fps_mitigations->get(0) && GlobalVars->frametime > 0.02f && (i + GlobalVars->tickcount % 2) % 2)
-			continue;
-
 		targets.emplace_back(player);
 	}
 }

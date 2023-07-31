@@ -506,50 +506,17 @@ static ImGuiKey ImGui_ImplWin32_VirtualKeyToImGuiKey(WPARAM wParam)
 // Copy this line into your .cpp file to forward declare the function.
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 #endif
+
+static bool                 g_WantUpdateHasGamepad = true;
+
 IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    if (ImGui::GetCurrentContext() == nullptr)
+    if (ImGui::GetCurrentContext() == NULL)
         return 0;
 
     ImGuiIO& io = ImGui::GetIO();
-    ImGui_ImplWin32_Data* bd = ImGui_ImplWin32_GetBackendData();
-
     switch (msg)
     {
-    case WM_MOUSEMOVE:
-    case WM_NCMOUSEMOVE:
-    {
-        // We need to call TrackMouseEvent in order to receive WM_MOUSELEAVE events
-        const int area = (msg == WM_MOUSEMOVE) ? 1 : 2;
-        bd->MouseHwnd = hwnd;
-        if (bd->MouseTrackedArea != area)
-        {
-            TRACKMOUSEEVENT tme_cancel = { sizeof(tme_cancel), TME_CANCEL, hwnd, 0 };
-            TRACKMOUSEEVENT tme_track = { sizeof(tme_track), (DWORD)((area == 2) ? (TME_LEAVE | TME_NONCLIENT) : TME_LEAVE), hwnd, 0 };
-            if (bd->MouseTrackedArea != 0)
-                ::TrackMouseEvent(&tme_cancel);
-            ::TrackMouseEvent(&tme_track);
-            bd->MouseTrackedArea = area;
-        }
-        POINT mouse_pos = { (LONG)GET_X_LPARAM(lParam), (LONG)GET_Y_LPARAM(lParam) };
-        if (msg == WM_NCMOUSEMOVE && ::ScreenToClient(hwnd, &mouse_pos) == FALSE) // WM_NCMOUSEMOVE are provided in absolute coordinates.
-            break;
-        io.AddMousePosEvent((float)mouse_pos.x, (float)mouse_pos.y);
-        break;
-    }
-    case WM_MOUSELEAVE:
-    case WM_NCMOUSELEAVE:
-    {
-        const int area = (msg == WM_MOUSELEAVE) ? 1 : 2;
-        if (bd->MouseTrackedArea == area)
-        {
-            if (bd->MouseHwnd == hwnd)
-                bd->MouseHwnd = nullptr;
-            bd->MouseTrackedArea = 0;
-            io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
-        }
-        break;
-    }
     case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
     case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
     case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK:
@@ -560,10 +527,9 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
         if (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONDBLCLK) { button = 1; }
         if (msg == WM_MBUTTONDOWN || msg == WM_MBUTTONDBLCLK) { button = 2; }
         if (msg == WM_XBUTTONDOWN || msg == WM_XBUTTONDBLCLK) { button = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4; }
-        if (bd->MouseButtonsDown == 0 && ::GetCapture() == nullptr)
+        if (!ImGui::IsAnyMouseDown() && ::GetCapture() == NULL)
             ::SetCapture(hwnd);
-        bd->MouseButtonsDown |= 1 << button;
-        io.AddMouseButtonEvent(button, true);
+        io.MouseDown[button] = true;
         return 0;
     }
     case WM_LBUTTONUP:
@@ -576,89 +542,39 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
         if (msg == WM_RBUTTONUP) { button = 1; }
         if (msg == WM_MBUTTONUP) { button = 2; }
         if (msg == WM_XBUTTONUP) { button = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4; }
-        bd->MouseButtonsDown &= ~(1 << button);
-        if (bd->MouseButtonsDown == 0 && ::GetCapture() == hwnd)
+        io.MouseDown[button] = false;
+        if (!ImGui::IsAnyMouseDown() && ::GetCapture() == hwnd)
             ::ReleaseCapture();
-        io.AddMouseButtonEvent(button, false);
         return 0;
     }
     case WM_MOUSEWHEEL:
-        io.AddMouseWheelEvent(0.0f, (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA);
+        io.MouseWheel += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
         return 0;
     case WM_MOUSEHWHEEL:
-        io.AddMouseWheelEvent(-(float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA, 0.0f);
+        io.MouseWheelH += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
         return 0;
     case WM_KEYDOWN:
-    case WM_KEYUP:
     case WM_SYSKEYDOWN:
-    case WM_SYSKEYUP:
-    {
-        const bool is_key_down = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
         if (wParam < 256)
-        {
-            // Submit modifiers
-            ImGui_ImplWin32_UpdateKeyModifiers();
-
-            // Obtain virtual key code
-            // (keypad enter doesn't have its own... VK_RETURN with KF_EXTENDED flag means keypad enter, see IM_VK_KEYPAD_ENTER definition for details, it is mapped to ImGuiKey_KeyPadEnter.)
-            int vk = (int)wParam;
-            if ((wParam == VK_RETURN) && (HIWORD(lParam) & KF_EXTENDED))
-                vk = IM_VK_KEYPAD_ENTER;
-
-            // Submit key event
-            const ImGuiKey key = ImGui_ImplWin32_VirtualKeyToImGuiKey(vk);
-            const int scancode = (int)LOBYTE(HIWORD(lParam));
-            if (key != ImGuiKey_None)
-                ImGui_ImplWin32_AddKeyEvent(key, is_key_down, vk, scancode);
-
-            // Submit individual left/right modifier events
-            if (vk == VK_SHIFT)
-            {
-                // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplWin32_ProcessKeyEventsWorkarounds()
-                if (IsVkDown(VK_LSHIFT) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode); }
-                if (IsVkDown(VK_RSHIFT) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode); }
-            }
-            else if (vk == VK_CONTROL)
-            {
-                if (IsVkDown(VK_LCONTROL) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode); }
-                if (IsVkDown(VK_RCONTROL) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode); }
-            }
-            else if (vk == VK_MENU)
-            {
-                if (IsVkDown(VK_LMENU) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
-                if (IsVkDown(VK_RMENU) == is_key_down) { ImGui_ImplWin32_AddKeyEvent(ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode); }
-            }
-        }
+            io.KeysDown[wParam] = 1;
         return 0;
-    }
-    case WM_SETFOCUS:
-    case WM_KILLFOCUS:
-        io.AddFocusEvent(msg == WM_SETFOCUS);
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        if (wParam < 256)
+            io.KeysDown[wParam] = 0;
         return 0;
     case WM_CHAR:
-        if (::IsWindowUnicode(hwnd))
-        {
-            // You can also use ToAscii()+GetKeyboardState() to retrieve characters.
-            if (wParam > 0 && wParam < 0x10000)
-                io.AddInputCharacterUTF16((unsigned short)wParam);
-        }
-        else
-        {
-            wchar_t wch = 0;
-            ::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (char*)&wParam, 1, &wch, 1);
-            io.AddInputCharacter(wch);
-        }
+        // You can also use ToAscii()+GetKeyboardState() to retrieve characters.
+        if (wParam > 0 && wParam < 0x10000)
+            io.AddInputCharacterUTF16((unsigned short)wParam);
         return 0;
     case WM_SETCURSOR:
-        // This is required to restore cursor when transitioning from e.g resize borders to client area.
         if (LOWORD(lParam) == HTCLIENT && ImGui_ImplWin32_UpdateMouseCursor())
             return 1;
         return 0;
     case WM_DEVICECHANGE:
-#ifndef IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
         if ((UINT)wParam == DBT_DEVNODES_CHANGED)
-            bd->WantUpdateHasGamepad = true;
-#endif
+            g_WantUpdateHasGamepad = true;
         return 0;
     }
     return 0;

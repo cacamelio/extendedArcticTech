@@ -49,8 +49,9 @@ LRESULT CALLBACK hkWndProc(HWND Hwnd, UINT Message, WPARAM wParam, LPARAM lParam
 
 		Cheat.KeyStates[wParam] = !Cheat.KeyStates[wParam];
 	}
-
-	Menu->WndProc(Hwnd, Message, wParam, lParam);
+	
+	if (Menu->IsOpened())
+		Menu->WndProc(Hwnd, Message, wParam, lParam);
 
 	return CallWindowProc(oWndProc, Hwnd, Message, wParam, lParam);
 }
@@ -262,7 +263,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	if (ctx.send_packet) {
 		Cheat.thirdpersonAngles = cmd->viewangles;
-		if (!config.antiaim.anti_aimbot_angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) > 5)
+		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) > 5)
 			AntiAim->jitter = !AntiAim->jitter;
 		ctx.should_update_local_anims = true;
 	}
@@ -425,9 +426,6 @@ bool __fastcall hkIsPaused(IVEngineClient* thisptr, void* edx) {
 void __fastcall hkDrawModelExecute(IVModelRender* thisptr, void* edx, void* ctx, const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld) {
 	static tDrawModelExecute oDrawModelExecute = (tDrawModelExecute)Hooks::ModelRenderVMT->GetOriginal(21);
 
-	if (hook_info.in_draw_static_props)
-		return oDrawModelExecute(thisptr, ctx, state, pInfo, pCustomBoneToWorld);
-
 	if (StudioRender->IsForcedMaterialOverride())
 		return oDrawModelExecute(thisptr, ctx, state, pInfo, pCustomBoneToWorld);
 
@@ -458,7 +456,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 
 		cvars.r_aspectratio->SetFloat(config.visuals.effects.aspect_ratio->get());
 		cvars.mat_postprocessing_enable->SetInt(!config.visuals.effects.removals->get(0));
-		cvars.cl_csm_shadows->SetInt(!config.visuals.effects.removals->get(2));
+		cvars.cl_csm_shadows->SetInt(config.visuals.effects.removals->get(2) ? 0 : 1);
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
@@ -871,7 +869,6 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
 
 	to_cmd.command_number++;
-	CL_SendMove();
 	to_cmd.tick_count += 192;
 
 	for (int i = new_commands; i <= total_new_commands; i++)
@@ -948,9 +945,9 @@ bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
-	//ESP::RegisterCallback();
-	//Chams->LoadChams();
-	//SkinChanger->LoadKnifeModels();
+	ESP::RegisterCallback();
+	Chams->LoadChams();
+	SkinChanger->LoadKnifeModels();
 
 	DirectXDeviceVMT = new VMT(DirectXDevice);
 	SurfaceVMT = new VMT(Surface);
@@ -970,109 +967,109 @@ void Hooks::Initialize() {
 	while (!Menu->IsInitialized())
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-	//DirectXDeviceVMT->Hook(16, hkReset);
-	//SurfaceVMT->Hook(67, hkLockCursor);
-	//ClientModeVMT->Hook(18, hkOverrideView);
-	//ClientModeVMT->Hook(44, hkDoPostScreenEffects);
-	//PanelVMT->Hook(41, hkPaintTraverse);
-	//EngineVMT->Hook(90, hkIsPaused);
-	//EngineVMT->Hook(93, hkIsHLTV);
-	//ModelRenderVMT->Hook(21, hkDrawModelExecute);
-	//ConVarVMT->Hook(13, hkGetBool);
-	//ClientVMT->Hook(37, hkFrameStageNotify);
-	//ClientVMT->Hook(11, hkHudUpdate);
-	//ClientVMT->Hook(22, hkCHLCCreateMove);
-	//ClientVMT->Hook(7, hkLevelShutdown);
-	//PredictionVMT->Hook(19, hkRunCommand);
-	//KeyValuesVMT->Hook(2, hkAllocKeyValuesMemory);
+	DirectXDeviceVMT->Hook(16, hkReset);
+	SurfaceVMT->Hook(67, hkLockCursor);
+	ClientModeVMT->Hook(18, hkOverrideView);
+	ClientModeVMT->Hook(44, hkDoPostScreenEffects);
+	PanelVMT->Hook(41, hkPaintTraverse);
+	EngineVMT->Hook(90, hkIsPaused);
+	EngineVMT->Hook(93, hkIsHLTV);
+	ModelRenderVMT->Hook(21, hkDrawModelExecute);
+	ConVarVMT->Hook(13, hkGetBool);
+	ClientVMT->Hook(37, hkFrameStageNotify);
+	ClientVMT->Hook(11, hkHudUpdate);
+	ClientVMT->Hook(22, hkCHLCCreateMove);
+	ClientVMT->Hook(7, hkLevelShutdown);
+	PredictionVMT->Hook(19, hkRunCommand);
+	KeyValuesVMT->Hook(2, hkAllocKeyValuesMemory);
 
-	//oUpdateClientSideAnimation = HookFunction<tUpdateClientSideAnimation>(Utils::PatternScan("client.dll", "55 8B EC 51 56 8B F1 80 BE ? ? ? ? ? 74"), hkUpdateClientSideAnimation);
-	//oDoExtraBoneProcessing = HookFunction<tDoExtraBoneProcessing>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 8B F1 57 89 74 24 1C"), hkDoExtraBoneProcessing);
-	//oShouldSkipAnimationFrame = HookFunction<tShouldSkipAnimationFrame>(Utils::PatternScan("client.dll", "57 8B F9 8B 07 8B 80 ? ? ? ? FF D0 84 C0 75 02"), hkShouldSkipAnimationFrame);
-	//oStandardBlendingRules = HookFunction<tStandardBlendingRules>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 8B 75 08 57 8B F9 85 F6"), hkStandardBlendingRules);
-	//oBuildTransformations = HookFunction<tBuildTransformations>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 81 ? ? ? ? ? 56 57 8B F9 8B"), hkBuildTransformations);
-	//oSetUpLean = HookFunction<tSetUpLean>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 83 EC 20 F3"), hkSetUpLean);
-	//oSetupBones = HookFunction<tSetupBones>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 57"), hkSetupBones);
-	//oCL_Move = HookFunction<tCL_Move>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 53 56 8A F9 F3 0F 11 45 ? 8B 4D 04"), hkCL_Move);
-	//oPhysicsSimulate = HookFunction<tPhysicsSimulate>(Utils::PatternScan("client.dll", "56 8B F1 8B 8E ? ? ? ? 83 F9 FF 74 23 0F B7 C1 C1 E0 04 05 ? ? ? ?"), hkPhysicsSimulate);
-	//oClampBonesInBBox = HookFunction<tClampBonesInBBox>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 70 56 57 8B F9 89 7C 24 38"), hkClampBonesInBBox);
-	//oCalculateView = HookFunction<tCalculateView>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 14 53 56 57 FF 75 18"), hkCalculateView);
-	//oSendNetMsg = HookFunction<tSendNetMsg>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 08 56 8B F1 8B 4D 04 E8 ? ? ? ? 8B 86 ? ? ? ? 85 C0 74 24 48 83 F8 02 77 2C 83 BE ? ? ? ? ? 8D 8E ? ? ? ? 74 06 32 C0 84 C0"), hkSendNetMsg);
-	//oGetEyeAngles = HookFunction<tGetEyeAngles>(Utils::PatternScan("client.dll", "56 8B F1 85 F6 74 32"), hkGetEyeAngles);
-	//oRenderSmokeOverlay = HookFunction<tRenderSmokeOverlay>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 30 80 7D 08 00"), hkRenderSmokeOverlay);
-	//oShouldInterpolate = HookFunction<tShouldInterpolate>(Utils::PatternScan("client.dll", "56 8B F1 E8 ? ? ? ? 3B F0"), hkShouldInterpolate);
-	//oPacketStart = HookFunction<tPacketStart>(Utils::PatternScan("engine.dll", "55 8B EC 8B 45 08 89 81 ? ? ? ? 8B 45 0C 89 81 ? ? ? ? 5D C2 08 00 CC CC CC CC CC CC CC 56"), hkPacketStart);
-	//oPacketEnd = HookFunction<tPacketEnd>(Utils::PatternScan("engine.dll", "56 8B F1 E8 ? ? ? ? 8B 8E ? ? ? ? 3B 8E ? ? ? ? 75 34"), hkPacketEnd);
-	////oFX_FireBullets = HookFunction<tFX_FireBullets>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 C0 F3 0F 10 45"), hkFX_FireBullets);
-	//oProcessMovement = HookFunction<tProcessMovement>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 C0 83 EC 38 A1 ? ? ? ?"), hkProcessMovement);
-	//oLogDirect = HookFunction<tLogDirect>(Utils::PatternScan("tier0.dll", "55 8B EC 83 E4 F8 8B 45 08 83 EC 14 53 56 8B F1 57 85 C0 0F 88 ? ? ? ?"), hkLogDirect);
-	//oSetSignonState = HookFunction<tSetSignonState>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 57 FF 75 10"), hkSetSignonState);
-	//oCreateNewParticleEffect = HookFunction<tCreateNewParticleEffect>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 0C 53 56 8B F2 89 75 F8 57"), hkCreateNewParticleEffect_proxy);
-	//oSVCMsg_VoiceData = HookFunction<tSVCMsg_VoiceData>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 81 EC ? ? ? ? 53 56 8B F1 B9 ? ? ? ? 57 FF 50 34 8B 7D 08 85 C0 74 13 8B 47 08 40 50"), hkSVCMsg_VoiceData);
+	oUpdateClientSideAnimation = HookFunction<tUpdateClientSideAnimation>(Utils::PatternScan("client.dll", "55 8B EC 51 56 8B F1 80 BE ? ? ? ? ? 74"), hkUpdateClientSideAnimation);
+	oDoExtraBoneProcessing = HookFunction<tDoExtraBoneProcessing>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 8B F1 57 89 74 24 1C"), hkDoExtraBoneProcessing);
+	oShouldSkipAnimationFrame = HookFunction<tShouldSkipAnimationFrame>(Utils::PatternScan("client.dll", "57 8B F9 8B 07 8B 80 ? ? ? ? FF D0 84 C0 75 02"), hkShouldSkipAnimationFrame);
+	oStandardBlendingRules = HookFunction<tStandardBlendingRules>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 8B 75 08 57 8B F9 85 F6"), hkStandardBlendingRules);
+	oBuildTransformations = HookFunction<tBuildTransformations>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 81 ? ? ? ? ? 56 57 8B F9 8B"), hkBuildTransformations);
+	oSetUpLean = HookFunction<tSetUpLean>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 83 EC 20 F3"), hkSetUpLean);
+	oSetupBones = HookFunction<tSetupBones>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 57"), hkSetupBones);
+	oCL_Move = HookFunction<tCL_Move>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 53 56 8A F9 F3 0F 11 45 ? 8B 4D 04"), hkCL_Move);
+	oPhysicsSimulate = HookFunction<tPhysicsSimulate>(Utils::PatternScan("client.dll", "56 8B F1 8B 8E ? ? ? ? 83 F9 FF 74 23 0F B7 C1 C1 E0 04 05 ? ? ? ?"), hkPhysicsSimulate);
+	oClampBonesInBBox = HookFunction<tClampBonesInBBox>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 70 56 57 8B F9 89 7C 24 38"), hkClampBonesInBBox);
+	oCalculateView = HookFunction<tCalculateView>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 14 53 56 57 FF 75 18"), hkCalculateView);
+	oSendNetMsg = HookFunction<tSendNetMsg>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 08 56 8B F1 8B 4D 04 E8 ? ? ? ? 8B 86 ? ? ? ? 85 C0 74 24 48 83 F8 02 77 2C 83 BE ? ? ? ? ? 8D 8E ? ? ? ? 74 06 32 C0 84 C0"), hkSendNetMsg);
+	oGetEyeAngles = HookFunction<tGetEyeAngles>(Utils::PatternScan("client.dll", "56 8B F1 85 F6 74 32"), hkGetEyeAngles);
+	oRenderSmokeOverlay = HookFunction<tRenderSmokeOverlay>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 30 80 7D 08 00"), hkRenderSmokeOverlay);
+	oShouldInterpolate = HookFunction<tShouldInterpolate>(Utils::PatternScan("client.dll", "56 8B F1 E8 ? ? ? ? 3B F0"), hkShouldInterpolate);
+	oPacketStart = HookFunction<tPacketStart>(Utils::PatternScan("engine.dll", "55 8B EC 8B 45 08 89 81 ? ? ? ? 8B 45 0C 89 81 ? ? ? ? 5D C2 08 00 CC CC CC CC CC CC CC 56"), hkPacketStart);
+	oPacketEnd = HookFunction<tPacketEnd>(Utils::PatternScan("engine.dll", "56 8B F1 E8 ? ? ? ? 8B 8E ? ? ? ? 3B 8E ? ? ? ? 75 34"), hkPacketEnd);
+	//oFX_FireBullets = HookFunction<tFX_FireBullets>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 C0 F3 0F 10 45"), hkFX_FireBullets);
+	oProcessMovement = HookFunction<tProcessMovement>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 C0 83 EC 38 A1 ? ? ? ?"), hkProcessMovement);
+	oLogDirect = HookFunction<tLogDirect>(Utils::PatternScan("tier0.dll", "55 8B EC 83 E4 F8 8B 45 08 83 EC 14 53 56 8B F1 57 85 C0 0F 88 ? ? ? ?"), hkLogDirect);
+	oSetSignonState = HookFunction<tSetSignonState>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 57 FF 75 10"), hkSetSignonState);
+	oCreateNewParticleEffect = HookFunction<tCreateNewParticleEffect>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 0C 53 56 8B F2 89 75 F8 57"), hkCreateNewParticleEffect_proxy);
+	oSVCMsg_VoiceData = HookFunction<tSVCMsg_VoiceData>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 81 EC ? ? ? ? 53 56 8B F1 B9 ? ? ? ? 57 FF 50 34 8B 7D 08 85 C0 74 13 8B 47 08 40 50"), hkSVCMsg_VoiceData);
 	//oDrawStaticProps = HookFunction<tDrawStaticProps>(Utils::PatternScan("engine.dll", "55 8B EC 56 57 8B F9 8B 0D ? ? ? ? 8B B1 ? ? ? ? 85 F6 74 16 6A 04 6A 00 68"), hkDrawStaticProps);
-	//oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 68 53 56 8B D9 C7 45 ? ? ? ? ? 57 8D 4D 98"), hkWriteUserCmdDeltaToBuffer);
-	//oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
-	//oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
-	//oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
-	//oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
+	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 68 53 56 8B D9 C7 45 ? ? ? ? ? 57 8D 4D 98"), hkWriteUserCmdDeltaToBuffer);
+	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
+	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
+	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
+	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
 
-	//EventListner->Register();
+	EventListner->Register();
 }
 
 void Hooks::End() {
 	SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)oWndProc);
 
-	//EventListner->Unregister();
+	EventListner->Unregister();
 	//Ragebot->TerminateThreads();
-	//Lua->UnloadAll();
+	Lua->UnloadAll();
 	Menu->Release();
 
-	//DirectXDeviceVMT->UnHook(16);
-	//SurfaceVMT->UnHook(67);
-	//ClientModeVMT->UnHook(18);
-	//ClientModeVMT->UnHook(44);
-	//PanelVMT->UnHook(41);
-	//EngineVMT->UnHook(90);
-	//EngineVMT->UnHook(93);
-	//ModelRenderVMT->UnHook(21);
-	//ConVarVMT->UnHook(13);
-	//ClientVMT->UnHook(37);
-	//ClientVMT->UnHook(11);
-	//ClientVMT->UnHook(22);
-	//ClientVMT->UnHook(7);
-	//PredictionVMT->UnHook(19);
-	////ClientVMT->UnHook(40);
-	//KeyValuesVMT->UnHook(2);
+	DirectXDeviceVMT->UnHook(16);
+	SurfaceVMT->UnHook(67);
+	ClientModeVMT->UnHook(18);
+	ClientModeVMT->UnHook(44);
+	PanelVMT->UnHook(41);
+	EngineVMT->UnHook(90);
+	EngineVMT->UnHook(93);
+	ModelRenderVMT->UnHook(21);
+	ConVarVMT->UnHook(13);
+	ClientVMT->UnHook(37);
+	ClientVMT->UnHook(11);
+	ClientVMT->UnHook(22);
+	ClientVMT->UnHook(7);
+	PredictionVMT->UnHook(19);
+	//ClientVMT->UnHook(40);
+	KeyValuesVMT->UnHook(2);
 
 	RemoveHook(oPresent, hkPresent);
-	////RemoveHook(oReset, hkReset);
-	//RemoveHook(oUpdateClientSideAnimation, hkUpdateClientSideAnimation);
-	//RemoveHook(oDoExtraBoneProcessing, hkDoExtraBoneProcessing);
-	//RemoveHook(oShouldSkipAnimationFrame, hkShouldSkipAnimationFrame);
-	//RemoveHook(oStandardBlendingRules, hkStandardBlendingRules);
-	//RemoveHook(oBuildTransformations, hkBuildTransformations);
-	//RemoveHook(oSetUpLean, hkSetUpLean);
-	//RemoveHook(oSetupBones, hkSetupBones);
-	//RemoveHook(oCL_Move, hkCL_Move);
-	//RemoveHook(oPhysicsSimulate, hkPhysicsSimulate);
-	//RemoveHook(oClampBonesInBBox, hkClampBonesInBBox);
-	//RemoveHook(oCalculateView, hkCalculateView);
-	//RemoveHook(oSendNetMsg, hkSendNetMsg);
-	//RemoveHook(oGetEyeAngles, hkGetEyeAngles);
-	//RemoveHook(oRenderSmokeOverlay, hkRenderSmokeOverlay);
-	//RemoveHook(oShouldInterpolate, hkShouldInterpolate);
-	//RemoveHook(oPacketStart, hkPacketStart);
-	//RemoveHook(oPacketEnd, hkPacketEnd);
-	////RemoveHook(oFX_FireBullets, hkFX_FireBullets);
-	//RemoveHook(oProcessMovement, hkProcessMovement);
-	//RemoveHook(oLogDirect, hkLogDirect);
-	//RemoveHook(oSetSignonState, hkSetSignonState);
-	//RemoveHook(oCreateNewParticleEffect, hkCreateNewParticleEffect_proxy);
-	//RemoveHook(oSVCMsg_VoiceData, hkSVCMsg_VoiceData);
+	//RemoveHook(oReset, hkReset);
+	RemoveHook(oUpdateClientSideAnimation, hkUpdateClientSideAnimation);
+	RemoveHook(oDoExtraBoneProcessing, hkDoExtraBoneProcessing);
+	RemoveHook(oShouldSkipAnimationFrame, hkShouldSkipAnimationFrame);
+	RemoveHook(oStandardBlendingRules, hkStandardBlendingRules);
+	RemoveHook(oBuildTransformations, hkBuildTransformations);
+	RemoveHook(oSetUpLean, hkSetUpLean);
+	RemoveHook(oSetupBones, hkSetupBones);
+	RemoveHook(oCL_Move, hkCL_Move);
+	RemoveHook(oPhysicsSimulate, hkPhysicsSimulate);
+	RemoveHook(oClampBonesInBBox, hkClampBonesInBBox);
+	RemoveHook(oCalculateView, hkCalculateView);
+	RemoveHook(oSendNetMsg, hkSendNetMsg);
+	RemoveHook(oGetEyeAngles, hkGetEyeAngles);
+	RemoveHook(oRenderSmokeOverlay, hkRenderSmokeOverlay);
+	RemoveHook(oShouldInterpolate, hkShouldInterpolate);
+	RemoveHook(oPacketStart, hkPacketStart);
+	RemoveHook(oPacketEnd, hkPacketEnd);
+	//RemoveHook(oFX_FireBullets, hkFX_FireBullets);
+	RemoveHook(oProcessMovement, hkProcessMovement);
+	RemoveHook(oLogDirect, hkLogDirect);
+	RemoveHook(oSetSignonState, hkSetSignonState);
+	RemoveHook(oCreateNewParticleEffect, hkCreateNewParticleEffect_proxy);
+	RemoveHook(oSVCMsg_VoiceData, hkSVCMsg_VoiceData);
 	//RemoveHook(oDrawStaticProps, hkDrawStaticProps);
-	//RemoveHook(oWriteUserCmdDeltaToBuffer, hkWriteUserCmdDeltaToBuffer);
-	//RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
-	//RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
-	//RemoveHook(oListLeavesInBox, hkListLeavesInBox);
-	//RemoveHook(oInPrediction, hkInPrediction);
+	RemoveHook(oWriteUserCmdDeltaToBuffer, hkWriteUserCmdDeltaToBuffer);
+	RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
+	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
+	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
+	RemoveHook(oInPrediction, hkInPrediction);
 }

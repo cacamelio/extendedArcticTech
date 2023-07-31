@@ -95,7 +95,7 @@ void CAntiAim::Angles() {
 	target = GetNearestTarget();
 
 	if (!(ctx.cmd->buttons & IN_USE)) {
-		switch (config.antiaim.anti_aimbot_angles.pitch->get()) {
+		switch (config.antiaim.angles.pitch->get()) {
 		case 0:
 			break;
 		case 1:
@@ -105,7 +105,7 @@ void CAntiAim::Angles() {
 
 		float originalYaw = ctx.cmd->viewangles.yaw;
 
-		switch (config.antiaim.anti_aimbot_angles.yaw->get()) {
+		switch (config.antiaim.angles.yaw->get()) {
 		case 0:
 			break;
 		case 1:
@@ -122,8 +122,8 @@ void CAntiAim::Angles() {
 
 		notModifiedYaw = ctx.cmd->viewangles.yaw;
 
-		if (config.antiaim.anti_aimbot_angles.yaw_jitter->get())
-			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.anti_aimbot_angles.modifier_value->get() : config.antiaim.anti_aimbot_angles.modifier_value->get();
+		if (config.antiaim.angles.yaw_jitter->get())
+			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.angles.modifier_value->get() : config.antiaim.angles.modifier_value->get();
 	}
 	else {
 		notModifiedYaw = ctx.cmd->viewangles.yaw;
@@ -133,15 +133,15 @@ void CAntiAim::Angles() {
 }
 
 void CAntiAim::Desync() {
-	if (!config.antiaim.anti_aimbot_angles.body_yaw->get() || DoubleTap->IsShifting())
+	if (!config.antiaim.angles.body_yaw->get() || DoubleTap->IsShifting())
 		return;
 
-	bool inverter = config.antiaim.anti_aimbot_angles.inverter->get();
+	bool inverter = config.antiaim.angles.inverter->get();
 
-	if (config.antiaim.anti_aimbot_angles.body_yaw_options->get(0))
+	if (config.antiaim.angles.body_yaw_options->get(0))
 		inverter = jitter;
 
-	if (config.antiaim.anti_aimbot_angles.body_yaw_options->get(3)) {
+	if (config.antiaim.angles.body_yaw_options->get(3)) {
 		int fs_side = DesyncFreestand();
 
 		if (fs_side != 0)
@@ -150,8 +150,8 @@ void CAntiAim::Desync() {
 
 	float desyncAngle = 0.f;
 
-	if (config.antiaim.anti_aimbot_angles.body_yaw_limit->get() < 58)
-		desyncAngle = inverter ? -config.antiaim.anti_aimbot_angles.body_yaw_limit->get() : config.antiaim.anti_aimbot_angles.body_yaw_limit->get();
+	if (config.antiaim.angles.body_yaw_limit->get() < 58)
+		desyncAngle = inverter ? -config.antiaim.angles.body_yaw_limit->get() : config.antiaim.angles.body_yaw_limit->get();
 	else
 		desyncAngle = inverter ? -120 : 120;
 
@@ -161,7 +161,7 @@ void CAntiAim::Desync() {
 		ctx.cmd->viewangles.yaw += desyncAngle;
 	}
 
-	if (config.antiaim.anti_aimbot_angles.body_yaw_options->get(2) && ctx.send_packet && (!ctx.tickbase_shift || ctx.cmd->buttons & IN_DUCK || config.antiaim.misc.slow_walk->get() || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 400.f))) {
+	if (config.antiaim.angles.body_yaw_options->get(2) && ctx.send_packet && (!ctx.tickbase_shift || ctx.cmd->buttons & IN_DUCK || config.antiaim.misc.slow_walk->get() || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 400.f))) {
 		ctx.cmd->viewangles.roll = desyncAngle < 0 ? 64: -64;
 	}
 
@@ -355,13 +355,13 @@ bool CAntiAim::IsPeeking() {
 }
 
 void CAntiAim::OnKeyPressed(WPARAM key) {
-	if (key == config.antiaim.anti_aimbot_angles.manual_left->key) {
+	if (key == config.antiaim.angles.manual_left->key) {
 		if (manualAngleState == 0 || manualAngleState == 2)
 			manualAngleState = 1;
 		else if (manualAngleState == 1)
 			manualAngleState = 0;
 	}
-	else if (key == config.antiaim.anti_aimbot_angles.manual_right->key) {
+	else if (key == config.antiaim.angles.manual_right->key) {
 		if (manualAngleState == 0 || manualAngleState == 1)
 			manualAngleState = 2;
 		else if (manualAngleState == 2)

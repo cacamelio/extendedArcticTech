@@ -192,9 +192,6 @@
     <ClCompile Include="ImGui\imgui_draw.cpp" />
     <ClCompile Include="ImGui\imgui_tables.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
-    <ClCompile Include="Menu\menu.cpp" />
-    <ClCompile Include="Menu\menu_backend.cpp" />
-    <ClCompile Include="Menu\menu_elements.cpp" />
     <ClCompile Include="SDK\Config.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="SDK\Hooks.cpp" />
@@ -261,8 +258,6 @@
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="detours.h" />
-    <ClInclude Include="Menu\menu.h" />
-    <ClInclude Include="Menu\menu_elements.h" />
     <ClInclude Include="SDK\Config.h" />
     <ClInclude Include="SDK\Hooks.h" />
     <ClInclude Include="Resources\aim-img.h" />

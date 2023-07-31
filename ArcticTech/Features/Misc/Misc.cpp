@@ -1,5 +1,6 @@
 #include "Misc.h"
 #include "../../Utils/Utils.h"
+#include "../../SDK/Interfaces.h"
 #include "../../SDK/Config.h"
 
 void Miscelleaneus::Clantag()

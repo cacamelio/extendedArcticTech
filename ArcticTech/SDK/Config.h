@@ -4,61 +4,59 @@
 #include <vector>
 #include <fstream>
 
-#include "../Menu/menu.h"
+#include "../UI/UI.h"
 #include "../Utils/json.hpp"
 
 struct weapon_settings_t {
     std::string weapon_name;
 
-    CMultiComboOld* hitboxes{ nullptr };
-    CMultiComboOld* multipoints{ nullptr };
-    CSliderOld* head_point_scale{ nullptr };
-    CSliderOld* body_point_scale{ nullptr };
-    CSliderOld* hitchance{ nullptr };
-    CSliderOld* minimum_damage{ nullptr };
-    CSliderOld* minimum_damage_override{ nullptr };
-    CMultiComboOld* auto_stop{ nullptr };
-    CCheckboxOld* auto_scope{ nullptr };
+    CMultiCombo* hitboxes{ nullptr };
+    CMultiCombo* multipoints{ nullptr };
+    CSliderInt* head_point_scale{ nullptr };
+    CSliderInt* body_point_scale{ nullptr };
+    CSliderInt* hitchance{ nullptr };
+    CSliderInt* minimum_damage{ nullptr };
+    CSliderInt* minimum_damage_override{ nullptr };
+    CMultiCombo* auto_stop{ nullptr };
+    CCheckBox* auto_scope{ nullptr };
 
     weapon_settings_t() {}
     weapon_settings_t(const std::string& name) : weapon_name(name) {}
 
-    inline void set_visible(bool visible) {
-        hitboxes->set_visible(visible);
-        multipoints->set_visible(visible);
-        head_point_scale->set_visible(visible);
-        body_point_scale->set_visible(visible);
-        hitchance->set_visible(visible);
-        minimum_damage->set_visible(visible);
-        minimum_damage_override->set_visible(visible);
-        auto_stop->set_visible(visible);
-        auto_scope->set_visible(visible);
+    inline void SetVisible(bool visible) {
+        hitboxes->SetVisible(visible);
+        multipoints->SetVisible(visible);
+        head_point_scale->SetVisible(visible);
+        body_point_scale->SetVisible(visible);
+        hitchance->SetVisible(visible);
+        minimum_damage->SetVisible(visible);
+        minimum_damage_override->SetVisible(visible);
+        auto_stop->SetVisible(visible);
+        auto_scope->SetVisible(visible);
     };
 };
 
 struct config_t {
     struct ragebot_t {
         struct aimbot_t {
-            CCheckboxOld* enabled;
-            CComboBoxOld* extrapolation;
-            CCheckboxOld* doubletap;
-            CKeyBindOld* doubletap_key;
-            CSliderOld* doubletap_speed;
-            CCheckboxOld* defensive_doubletap;
-            CKeyBindOld* force_teleport;
-            CKeyBindOld* force_body_aim;
-            CKeyBindOld* minimum_damage_override_key;
-            CCheckboxOld* peek_assist;
-            CColorPickerOld* peek_assist_color;
-            CKeyBindOld* peek_assist_keybind;
-            CMultiComboOld* low_fps_mitigations;
-            CCheckboxOld* show_aimpoints;
-            CSliderOld* resolver_treshold;
-            CCheckboxOld* show_debug_data;
-            CCheckboxOld* threads;
+            CCheckBox* enabled;
+            CComboBox* extrapolation;
+            CCheckBox* doubletap;
+            CKeyBind* doubletap_key;
+            CCheckBox* defensive_doubletap;
+            CKeyBind* force_teleport;
+            CKeyBind* force_body_aim;
+            CKeyBind* minimum_damage_override_key;
+            CCheckBox* peek_assist;
+            CColorPicker* peek_assist_color;
+            CKeyBind* peek_assist_keybind;
+            CCheckBox* show_aimpoints;
+            CSliderInt* resolver_treshold;
+            CCheckBox* show_debug_data;
+            CCheckBox* threads;
         } aimbot;
 
-        CComboBoxOld* selected_weapon;
+        CComboBox* selected_weapon;
 
         struct weapons_t {
             weapon_settings_t global{ "Global" };
@@ -72,216 +70,215 @@ struct config_t {
 
     struct antiaim_t {
         struct anti_aimbot_angles_t {
-            CComboBoxOld* pitch;
-            CComboBoxOld* yaw;
-            CCheckboxOld* yaw_jitter;
-            CSliderOld* modifier_value;
-            CKeyBindOld* manual_left;
-            CKeyBindOld* manual_right;
-            CCheckboxOld* body_yaw;
-            CMultiComboOld* body_yaw_options;
-            CSliderOld* body_yaw_limit;
-            CKeyBindOld* inverter;
-        } anti_aimbot_angles;
+            CComboBox* pitch;
+            CComboBox* yaw;
+            CCheckBox* yaw_jitter;
+            CSliderInt* modifier_value;
+            CKeyBind* manual_left;
+            CKeyBind* manual_right;
+            CCheckBox* body_yaw;
+            CMultiCombo* body_yaw_options;
+            CSliderInt* body_yaw_limit;
+            CKeyBind* inverter;
+        } angles;
 
         struct fakelag_t {
-            CCheckboxOld* enabled;
-            CSliderOld* limit;
-            CSliderOld* variability;
-            CMultiComboOld* triggers;
+            CCheckBox* enabled;
+            CSliderInt* limit;
+            CSliderInt* variability;
+            CMultiCombo* triggers;
         } fakelag;
 
         struct misc_t {
-            CKeyBindOld* fake_duck;
-            CKeyBindOld* slow_walk;
-            CComboBoxOld* slow_walk_type;
-            CSliderOld* custom_slow_walk;
-            CMultiComboOld* animations;
-            CComboBoxOld* leg_movement;
+            CKeyBind* fake_duck;
+            CKeyBind* slow_walk;
+            CComboBox* slow_walk_type;
+            CSliderInt* custom_slow_walk;
+            CMultiCombo* animations;
+            CComboBox* leg_movement;
         } misc;
     } antiaim;
 
     struct visuals_t {
         struct esp_t {
-            CCheckboxOld* enable;
-            CCheckboxOld* dormant;
-            CColorPickerOld* dormant_color;
-            CCheckboxOld* dynamic_box;
-            CCheckboxOld* bounding_box;
-            CColorPickerOld* box_color;
-            CCheckboxOld* health_bar;
-            CCheckboxOld* custom_health;
-            CColorPickerOld* custom_health_color;
-            CCheckboxOld* name;
-            CColorPickerOld* name_color;
-            CMultiComboOld* flags;
-            CCheckboxOld* weapon_text;
-            CColorPickerOld* weapon_text_color;
-            CCheckboxOld* weapon_icon;
-            CColorPickerOld* weapon_icon_color;
-            CCheckboxOld* ammo;
-            CColorPickerOld* ammo_color;
-            CCheckboxOld* glow;
-            CColorPickerOld* glow_color;
-            CCheckboxOld* hitsound;
-            CCheckboxOld* show_server_hitboxes;
-            CCheckboxOld* shared_esp;
-            CCheckboxOld* share_with_enemies;
-            CCheckboxOld* hitmarker;
-            CColorPickerOld* hitmarker_color;
-            CCheckboxOld* damage_marker;
-            CColorPickerOld* damage_marker_color;
+            CCheckBox* enable;
+            CCheckBox* dormant;
+            CColorPicker* dormant_color;
+            CCheckBox* bounding_box;
+            CColorPicker* box_color;
+            CCheckBox* health_bar;
+            CCheckBox* custom_health;
+            CColorPicker* custom_health_color;
+            CCheckBox* name;
+            CColorPicker* name_color;
+            CMultiCombo* flags;
+            CCheckBox* weapon_text;
+            CColorPicker* weapon_text_color;
+            CCheckBox* weapon_icon;
+            CColorPicker* weapon_icon_color;
+            CCheckBox* ammo;
+            CColorPicker* ammo_color;
+            CCheckBox* glow;
+            CColorPicker* glow_color;
+            CCheckBox* hitsound;
+            CCheckBox* show_server_hitboxes;
+            CCheckBox* shared_esp;
+            CCheckBox* share_with_enemies;
+            CCheckBox* hitmarker;
+            CColorPicker* hitmarker_color;
+            CCheckBox* damage_marker;
+            CColorPicker* damage_marker_color;
         } esp;
 
         struct chams_t {
-            CCheckboxOld* enemy;
-            CColorPickerOld* enemy_color;
-            CColorPickerOld* enemy_second_color;
-            CCheckboxOld* enemy_invisible;
-            CColorPickerOld* enemy_invisible_color;
-            CComboBoxOld* enemy_type;
-            CSliderOld* enemy_glow_thickness;
+            CCheckBox* enemy;
+            CColorPicker* enemy_color;
+            CColorPicker* enemy_second_color;
+            CCheckBox* enemy_invisible;
+            CColorPicker* enemy_invisible_color;
+            CComboBox* enemy_type;
+            CSliderFloat* enemy_glow_thickness;
 
-            CCheckboxOld* shot_chams;
-            CColorPickerOld* shot_chams_color;
-            CComboBoxOld* shot_chams_type;
-            CColorPickerOld* shot_chams_second_color;
-            CSliderOld* shot_chams_thickness;
-            CSliderOld* shot_chams_duration;
+            CCheckBox* shot_chams;
+            CColorPicker* shot_chams_color;
+            CComboBox* shot_chams_type;
+            CColorPicker* shot_chams_second_color;
+            CSliderFloat* shot_chams_thickness;
+            CSliderInt* shot_chams_duration;
 
-            CCheckboxOld* local_player;
-            CColorPickerOld* local_player_color;
-            CComboBoxOld* local_player_type;
-            CColorPickerOld* local_player_second_color;
-            CSliderOld* local_glow_thickness;
+            CCheckBox* local_player;
+            CColorPicker* local_player_color;
+            CComboBox* local_player_type;
+            CColorPicker* local_player_second_color;
+            CSliderFloat* local_glow_thickness;
 
-            CCheckboxOld* attachments;
-            CColorPickerOld* attachments_color;
-            CComboBoxOld* attachments_type;
-            CColorPickerOld* attachments_second_color;
-            CSliderOld* attachments_glow_thickness;
+            CCheckBox* attachments;
+            CColorPicker* attachments_color;
+            CComboBox* attachments_type;
+            CColorPicker* attachments_second_color;
+            CSliderFloat* attachments_glow_thickness;
 
-            CCheckboxOld* viewmodel;
-            CColorPickerOld* viewmodel_color;
-            CComboBoxOld* viewmodel_type;
-            CColorPickerOld* viewmodel_second_color;
-            CSliderOld* viewmodel_glow_thickness;
+            CCheckBox* viewmodel;
+            CColorPicker* viewmodel_color;
+            CComboBox* viewmodel_type;
+            CColorPicker* viewmodel_second_color;
+            CSliderFloat* viewmodel_glow_thickness;
 
-            CSliderOld* scope_blend;
-            CCheckboxOld* disable_model_occlusion;
+            CSliderInt* scope_blend;
+            CCheckBox* disable_model_occlusion;
         } chams;
 
         struct other_esp_t {
-            CCheckboxOld* radar;
-            CMultiComboOld* dropped_weapons;
-            CColorPickerOld* dropped_weapons_color;
-            CCheckboxOld* sniper_crosshair;
-            CCheckboxOld* penetration_crosshair;
-            CCheckboxOld* bomb;
-            CColorPickerOld* bomb_color;
-            CCheckboxOld* grenades;
-            CCheckboxOld* molotov_radius;
-            CColorPickerOld* molotov_radius_color;
-            CCheckboxOld* grenade_trajecotry;
-            CColorPickerOld* grenade_trajectory_color;
-            CColorPickerOld* grenade_trajectory_hit_color;
-            CCheckboxOld* grenade_proximity_warning;
-            CColorPickerOld* grenade_predict_color;
-            CMultiComboOld* particles;
-            CMultiComboOld* indicators;
+            CCheckBox* radar;
+            CMultiCombo* dropped_weapons;
+            CColorPicker* dropped_weapons_color;
+            CCheckBox* sniper_crosshair;
+            CCheckBox* penetration_crosshair;
+            CCheckBox* bomb;
+            CColorPicker* bomb_color;
+            CCheckBox* grenades;
+            CCheckBox* molotov_radius;
+            CColorPicker* molotov_radius_color;
+            CCheckBox* grenade_trajecotry;
+            CColorPicker* grenade_trajectory_color;
+            CColorPicker* grenade_trajectory_hit_color;
+            CCheckBox* grenade_proximity_warning;
+            CColorPicker* grenade_predict_color;
+            CMultiCombo* particles;
+            CMultiCombo* indicators;
         } other_esp;
 
         struct effects_t {
-            CSliderOld* fov;
-            CMultiComboOld* removals;
-            CCheckboxOld* world_color_enable;
-            CColorPickerOld* world_color;
-            CCheckboxOld* props_color_enable;
-            CColorPickerOld* props_color;
-            CCheckboxOld* thirdperson;
-            CKeyBindOld* thirdperson_bind;
-            CSliderOld* thirdperson_distance;
-            CSliderOld* aspect_ratio;
-            CCheckboxOld* client_impacts;
-            CColorPickerOld* client_impacts_color;
-            CCheckboxOld* server_impacts;
-            CColorPickerOld* server_impacts_color;
-            CSliderOld* impacts_duration;
-            CComboBoxOld* override_skybox;
-            CCheckboxOld* override_fog;
-            CColorPickerOld* fog_color;
-            CSliderOld* fog_start;
-            CSliderOld* fog_end;
-            CSliderOld* fog_density;
-            CCheckboxOld* preserve_killfeed;
-            CMultiComboOld* optimizations;
-            CCheckboxOld* custom_sun_direction;
-            CSliderOld* sun_pitch;
-            CSliderOld* sun_yaw;
-            CSliderOld* sun_distance;
-            CSliderOld* viewmodel_scope_alpha;
+            CSliderInt* fov;
+            CMultiCombo* removals;
+            CCheckBox* world_color_enable;
+            CColorPicker* world_color;
+            CCheckBox* props_color_enable;
+            CColorPicker* props_color;
+            CCheckBox* thirdperson;
+            CKeyBind* thirdperson_bind;
+            CSliderInt* thirdperson_distance;
+            CSliderFloat* aspect_ratio;
+            CCheckBox* client_impacts;
+            CColorPicker* client_impacts_color;
+            CCheckBox* server_impacts;
+            CColorPicker* server_impacts_color;
+            CSliderInt* impacts_duration;
+            CComboBox* override_skybox;
+            CCheckBox* override_fog;
+            CColorPicker* fog_color;
+            CSliderInt* fog_start;
+            CSliderInt* fog_end;
+            CSliderInt* fog_density;
+            CCheckBox* preserve_killfeed;
+            CMultiCombo* optimizations;
+            CCheckBox* custom_sun_direction;
+            CSliderInt* sun_pitch;
+            CSliderInt* sun_yaw;
+            CSliderInt* sun_distance;
+            CSliderInt* viewmodel_scope_alpha;
         } effects;
     } visuals;
 
     struct misc_t {
         struct miscellaneous_t {
-            CCheckboxOld* anti_untrusted;
-            CMultiComboOld* logs;
-            CMultiComboOld* auto_buy;
-            CCheckboxOld* filter_console;
-            CCheckboxOld* clantag;
-            CCheckboxOld* ad_block;
+            CCheckBox* anti_untrusted;
+            CMultiCombo* logs;
+            CMultiCombo* auto_buy;
+            CCheckBox* filter_console;
+            CCheckBox* clantag;
+            CCheckBox* ad_block;
         } miscellaneous;
 
         struct movement_t {
-            CCheckboxOld* auto_jump;
-            CCheckboxOld* auto_strafe;
-            CCheckboxOld* compensate_throwable;
-            CSliderOld* auto_strafe_smooth;
-            CCheckboxOld* edge_jump;
-            CKeyBindOld* edge_jump_key;
-            CCheckboxOld* infinity_duck;
-            CCheckboxOld* quick_stop;
+            CCheckBox* auto_jump;
+            CCheckBox* auto_strafe;
+            CCheckBox* compensate_throwable;
+            CSliderInt* auto_strafe_smooth;
+            CCheckBox* edge_jump;
+            CKeyBind* edge_jump_key;
+            CCheckBox* infinity_duck;
+            CCheckBox* quick_stop;
         } movement;
     } misc;
 
     struct skinchanger_t {
-        CCheckboxOld* override_knife;
-        CCheckboxOld* override_agent;
-        CComboBoxOld* knife_model;
-        CComboBoxOld* agent_model_ct;
-        CComboBoxOld* agent_model_t;
+        CCheckBox* override_knife;
+        CCheckBox* override_agent;
+        CComboBox* knife_model;
+        CComboBox* agent_model_ct;
+        CComboBox* agent_model_t;
     } skins;
 };
 
 extern config_t config;
 
 struct config_item_t {
-    IBaseElement* item;
+    IBaseWidget* item;
     std::string name;
 };
 
 class CConfig {
     std::vector<config_item_t> items;
 
-    inline void add(IBaseElement* item) { 
-        items.emplace_back(config_item_t{ item, item->parent->name + "_" + item->name + "_" + std::to_string(item->GetItemType()) });
+    inline void add(IBaseWidget* item) { 
+        items.emplace_back(config_item_t{ item, item->parent->name + "_" + item->name + "_" + std::to_string(static_cast<int>(item->GetType())) });
     };
 
 public:
-    CListBox* lua_list;
-    CButtonOld* lua_button;
-    CButtonOld* lua_button_unload;
-    CButtonOld* lua_refresh;
-    CButtonOld* lua_save;
+    CComboBox* lua_list;
+    CButton* lua_button;
+    CButton* lua_button_unload;
+    CButton* lua_refresh;
+    CButton* lua_save;
 
-    CListBox* config_list;
-    CInputBoxOld* config_name;
-    CButtonOld* load_button;
-    CButtonOld* save_button;
-    CButtonOld* delete_button;
-    CButtonOld* import_button;
-    CButtonOld* export_button;
+    CComboBox* config_list;
+    CInputBox* config_name;
+    CButton* load_button;
+    CButton* save_button;
+    CButton* delete_button;
+    CButton* import_button;
+    CButton* export_button;
 
     void parse(nlohmann::json& cfg);
     nlohmann::json dump();
@@ -290,12 +287,16 @@ public:
         std::filesystem::create_directory(std::filesystem::current_path().string() + "/at");
     }
 
-    std::vector<std::string> get_all_configs() {
-        std::vector<std::string> result;
+    std::vector<const char*> GetAllConfigs() {
+        std::vector<const char*> result;
 
         for (const auto& file : std::filesystem::directory_iterator(std::filesystem::current_path().string() + "/at"))
-            if (file.path().extension() == ".cfg")
-                result.push_back(file.path().stem().string());
+            if (file.path().extension() == ".cfg") {
+                std::string fname = file.path().stem().string();
+                char* cfg_name = new char[fname.size()];
+                std::strcpy(cfg_name, fname.c_str());
+                result.push_back(cfg_name);
+            }
 
         return result;
     }

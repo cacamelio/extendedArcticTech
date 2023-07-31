@@ -2199,6 +2199,9 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
    // PopFont();
     ImRotateEnd(1.57f * it_anim->second.arrow_roll);
 
+    if (!preview_value)
+        preview_value = "Empty";
+
     RenderTextClipped(bb.Min + ImVec2(10, 7 + label_size.y + 4), ImVec2(value_x2, bb.Max.y), preview_value, NULL, NULL);
     PopStyleColor();
 

@@ -13,7 +13,7 @@ void CAutoPeek::Draw() {
 	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !Cheat.InGame)
 		return;
 
-	bool state = (config.ragebot.aimbot.peek_assist_keybind->get() && config.ragebot.aimbot.peek_assist->get());
+	bool state = config.ragebot.aimbot.peek_assist->get();
 
 	if (prev_state != state) {
 		if (state) {

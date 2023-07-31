@@ -1,19 +1,21 @@
 #include "Config.h"
 
 #include "../Utils/Utils.h"
+#include "../Utils/Console.h"
 
 config_t config;
 CConfig* Config = new CConfig;
 
 // callbacks
 void on_config_list_changed() {
-    Config->config_name->input = Config->config_list->get();
+    std::string cfg_name = Config->config_list->get_name();
+    memcpy(Config->config_name->buf, cfg_name.c_str(), cfg_name.size() + 1);
 
-    Config->config_list->UpdateList(Config->get_all_configs());
+    Config->config_list->UpdateList(Config->GetAllConfigs());
 };
 
 void on_load() {
-    std::string name = Config->config_name->input;
+    std::string name = Config->config_name->get();
 
     if (name == "")
         return;
@@ -32,7 +34,7 @@ void on_load() {
 }
 
 void on_save() {
-    std::string name = Config->config_name->input;
+    std::string name = Config->config_name->get();
 
     if (name == "")
         return;
@@ -54,7 +56,6 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.extrapolation);
     add(config.ragebot.aimbot.doubletap);
     add(config.ragebot.aimbot.doubletap_key);
-    add(config.ragebot.aimbot.doubletap_speed);
     add(config.ragebot.aimbot.defensive_doubletap);
     add(config.ragebot.aimbot.force_teleport);
     add(config.ragebot.aimbot.force_body_aim);
@@ -62,7 +63,6 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.peek_assist);
     add(config.ragebot.aimbot.peek_assist_color);
     add(config.ragebot.aimbot.peek_assist_keybind);
-    add(config.ragebot.aimbot.low_fps_mitigations);
     add(config.ragebot.aimbot.show_aimpoints);
     add(config.ragebot.aimbot.resolver_treshold);
     add(config.ragebot.aimbot.show_debug_data);
@@ -121,16 +121,16 @@ void CConfig::Init() {
     add(config.ragebot.weapons.pistol.minimum_damage_override);
     add(config.ragebot.weapons.pistol.auto_stop);
     add(config.ragebot.weapons.pistol.auto_scope);
-    add(config.antiaim.anti_aimbot_angles.pitch);
-    add(config.antiaim.anti_aimbot_angles.yaw);
-    add(config.antiaim.anti_aimbot_angles.yaw_jitter);
-    add(config.antiaim.anti_aimbot_angles.modifier_value);
-    add(config.antiaim.anti_aimbot_angles.manual_left);
-    add(config.antiaim.anti_aimbot_angles.manual_right);
-    add(config.antiaim.anti_aimbot_angles.body_yaw);
-    add(config.antiaim.anti_aimbot_angles.body_yaw_options);
-    add(config.antiaim.anti_aimbot_angles.body_yaw_limit);
-    add(config.antiaim.anti_aimbot_angles.inverter);
+    add(config.antiaim.angles.pitch);
+    add(config.antiaim.angles.yaw);
+    add(config.antiaim.angles.yaw_jitter);
+    add(config.antiaim.angles.modifier_value);
+    add(config.antiaim.angles.manual_left);
+    add(config.antiaim.angles.manual_right);
+    add(config.antiaim.angles.body_yaw);
+    add(config.antiaim.angles.body_yaw_options);
+    add(config.antiaim.angles.body_yaw_limit);
+    add(config.antiaim.angles.inverter);
     add(config.antiaim.fakelag.enabled);
     add(config.antiaim.fakelag.limit);
     add(config.antiaim.fakelag.variability);
@@ -144,7 +144,6 @@ void CConfig::Init() {
     add(config.visuals.esp.enable);
     add(config.visuals.esp.dormant);
     add(config.visuals.esp.dormant_color);
-    add(config.visuals.esp.dynamic_box);
     add(config.visuals.esp.bounding_box);
     add(config.visuals.esp.box_color);
     add(config.visuals.esp.health_bar);
@@ -261,65 +260,63 @@ void CConfig::Init() {
     add(config.skins.agent_model_t);
     add(config.skins.agent_model_ct);
 
-    add(MenuOld->menu_color_picker);
-    add(MenuOld->menu_key_bind);
-
-    load_button->set_callback(on_load);
-    save_button->set_callback(on_save);
-    config_list->set_callback(on_config_list_changed);
+    load_button->SetCallback(on_load);
+    save_button->SetCallback(on_save);
+    config_list->SetCallback(on_config_list_changed);
 }
 
 void CConfig::parse(nlohmann::json& cfg) {
     for (auto& item : items) {
         try {
-            IBaseElement* e = item.item;
+            IBaseWidget* e = item.item;
             auto& val = cfg[item.name];
 
-            switch (item.item->GetItemType()) {
-            case CHECKBOX:
-                ((CCheckboxOld*)e)->value = val;
+            switch (item.item->GetType()) {
+            case WidgetType::Checkbox:
+                ((CCheckBox*)e)->value = val;
                 break;
-            case COLORPCIKER:
-                ((CColorPickerOld*)e)->Set(val);
+            case WidgetType::ColorPicker:
+                ((CColorPicker*)e)->value[0] = val[0];
+                ((CColorPicker*)e)->value[1] = val[1];
+                ((CColorPicker*)e)->value[2] = val[2];
+                ((CColorPicker*)e)->value[3] = val[3];
                 break;
-            case KEYBIND:
-                ((CKeyBindOld*)e)->bindType = val[0];
-                ((CKeyBindOld*)e)->bindState = val[1];
-                ((CKeyBindOld*)e)->key = val[2];
+            case WidgetType::KeyBind:
+                ((CKeyBind*)e)->mode = val[0];
+                ((CKeyBind*)e)->key = val[1];
                 break;
-            case SLIDER:
-                ((CSliderOld*)e)->value = val;
+            case WidgetType::SliderInt:
+                ((CSliderInt*)e)->value = val;
                 break;
-            case COMBO:
-                ((CComboBoxOld*)e)->value = val;
+            case WidgetType::SliderFloat:
+                ((CSliderFloat*)e)->value = val;
                 break;
-            case MULTICOMBO:
-                ((CMultiComboOld*)e)->values = val;
+            case WidgetType::Combo:
+                ((CComboBox*)e)->value = val;
                 break;
-            case INPUTBOX:
-                ((CInputBoxOld*)e)->input = val;
+            case WidgetType::MultiCombo:
+                for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
+                    ((CMultiCombo*)e)->value[i] = val[i];
                 break;
-            case LISTBOX:
-                ((CListBox*)e)->active = val;
+            case WidgetType::Input: {
+                ZeroMemory(((CInputBox*)e)->buf, 64);
+                std::string inp = val;
+                memcpy(((CInputBox*)e)->buf, inp.c_str(), inp.size());
                 break;
+            }
             default:
                 break;
             }
 
-            if (e->callback)
-                e->callback();
+            for (auto cb : e->callbacks)
+                cb();
+
+            for (auto lcb : e->lua_callbacks)
+                lcb.func();
         }
         catch (nlohmann::json::exception& e) {
-            Utils::Print("[arctictech] config load: item not found %s\n", item.name.c_str());
+            Console->Error("item not found: " + item.name);
         }
-    }
-
-    try {
-        MenuOld->size = Vector2(static_cast<int>(cfg["menu_size"][0]), static_cast<int>(cfg["menu_size"][1]));
-        MenuOld->menuPos = Vector2(static_cast<int>(cfg["menu_pos"][0]), static_cast<int>(cfg["menu_pos"][1]));
-    }
-    catch (nlohmann::json::exception& e) {
-        Utils::Print("[arctictech] error when loading menu state\n");
     }
 }
 
@@ -327,42 +324,40 @@ nlohmann::json CConfig::dump() {
     nlohmann::json result;
 
     for (const auto& item : items) {
-        IBaseElement* e = item.item;
+        IBaseWidget* e = item.item;
         std::string name = item.name;
 
-        switch (e->GetItemType()) {
-        case CHECKBOX:
-            result[name] = ((CCheckboxOld*)e)->value;
+        switch (e->GetType()) {
+        case WidgetType::Checkbox:
+            result[name] = ((CCheckBox*)e)->value;
             break;
-        case COLORPCIKER:
-            result[name] = ((CColorPickerOld*)e)->get().to_int32();
+        case WidgetType::ColorPicker:
+            result[name] = ((CColorPicker*)e)->value;
             break;
-        case KEYBIND:
-            result[name] = { ((CKeyBindOld*)e)->bindType, ((CKeyBindOld*)e)->bindState, ((CKeyBindOld*)e)->key };
+        case WidgetType::KeyBind:
+            result[name] = { ((CKeyBind*)e)->mode, ((CKeyBind*)e)->key };
             break;
-        case SLIDER:
-            result[name] = ((CSliderOld*)e)->value;
+        case WidgetType::SliderInt:
+            result[name] = ((CSliderInt*)e)->value;
             break;
-        case COMBO:
-            result[name] = ((CComboBoxOld*)e)->value;
+        case WidgetType::SliderFloat:
+            result[name] = ((CSliderFloat*)e)->value;
             break;
-        case MULTICOMBO:
-            result[name] = ((CMultiComboOld*)e)->values;
+        case WidgetType::Combo:
+            result[name] = ((CComboBox*)e)->value;
             break;
-        case INPUTBOX:
-            result[name] = ((CInputBoxOld*)e)->input;
+        case WidgetType::MultiCombo:
+            for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
+                result[name] = ((CMultiCombo*)e)->value[i];
             break;
-        case LISTBOX:
-            result[name] = ((CListBox*)e)->active;
+        case WidgetType::Input:
+            result[name] = std::string(((CInputBox*)e)->buf);
             break;
         default:
             // handle any unexpected values of ElementType here
             break;
         }
     }
-
-    result["menu_size"] = { MenuOld->size.x, MenuOld->size.y };
-    result["menu_pos"] = { MenuOld->menuPos.x, MenuOld->menuPos.y };
 
     return result;
 }

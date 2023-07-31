@@ -27,6 +27,7 @@ namespace pic {
         IDirect3DTexture9* visuals = nullptr;
         IDirect3DTexture9* misc = nullptr;
         IDirect3DTexture9* players = nullptr;
+        IDirect3DTexture9* skins = nullptr;
         IDirect3DTexture9* configs = nullptr;
         IDirect3DTexture9* scripts = nullptr;
     }
@@ -73,6 +74,7 @@ void CMenu::Setup() {
     D3DXCreateTextureFromFileInMemory(DirectXDevice, visuals, sizeof(visuals), &pic::tab::visuals);
     D3DXCreateTextureFromFileInMemory(DirectXDevice, misc, sizeof(misc), &pic::tab::misc);
     D3DXCreateTextureFromFileInMemory(DirectXDevice, players, sizeof(players), &pic::tab::players);
+    D3DXCreateTextureFromFileInMemory(DirectXDevice, skins, sizeof(skins), &pic::tab::skins);
     D3DXCreateTextureFromFileInMemory(DirectXDevice, configs, sizeof(configs), &pic::tab::configs);
     D3DXCreateTextureFromFileInMemory(DirectXDevice, scripts, sizeof(scripts), &pic::tab::scripts);
 
@@ -132,15 +134,15 @@ void CMenu::Render() {
             ImGui::GetWindowDrawList()->AddImage(pic::logo, window_pos + ImVec2(181 / 2 - 128 / 2 + item_spacing.x / 2, item_spacing.y - 16), window_pos + ImVec2(181 / 2 + 128 / 2 + item_spacing.x / 2, item_spacing.y - 16 + 128), ImVec2(0, 0), ImVec2(1, 1));
 
             static int tabs = 0;
-            const char* name_array[7] = { "Aimbot", "Anti aim", "Player", "Visuals", "Misc", "Configs", "Scripts" };
-            IDirect3DTexture9* pic_array[7] = { pic::tab::aimbot, pic::tab::antiaim, pic::tab::players, pic::tab::visuals, pic::tab::misc, pic::tab::configs, pic::tab::scripts };
-            ImVec2 pic_size[7] = { ImVec2(14, 14), ImVec2(14.74f, 14), ImVec2(13.4f, 14), ImVec2(14, 9.33f), ImVec2(14, 11.74f), ImVec2(8.75f, 14), ImVec2(15, 12) };
+            const char* name_array[8] = { "Aimbot", "Anti aim", "Player", "Visuals", "Misc", "Skins", "Configs", "Scripts" };
+            IDirect3DTexture9* pic_array[8] = { pic::tab::aimbot, pic::tab::antiaim, pic::tab::players, pic::tab::visuals, pic::tab::misc, pic::tab::skins, pic::tab::configs, pic::tab::scripts };
+            ImVec2 pic_size[8] = { ImVec2(14, 14), ImVec2(14.74f, 14), ImVec2(13.4f, 14), ImVec2(14, 9.33f), ImVec2(14, 11.74f), ImVec2(16, 16), ImVec2(8.75f, 14), ImVec2(15, 12)};
 
             ImGui::SetCursorPos(ImVec2((item_spacing.x * 2), (48 + (item_spacing.y * 3))));
 
             ImGui::BeginGroup();
             {
-                for (int i = 0; i < 7; i++)
+                for (int i = 0; i < 8; i++)
                     if (ImGui::Tab(i == tabs, pic_array[i], name_array[i], ImVec2(133 - ImGui::GetStyle().ItemSpacing.x, 44), pic_size[i]))
                         tabs = i;
             }
@@ -182,8 +184,11 @@ void CMenu::RecalculateGroupboxes() {
     const ImVec2 base_position((181 + m_ItemSpacing.x), (m_ItemSpacing.y * 2) + 58);
     const ImVec2 container_size(groupbox_width * 2 + m_ItemSpacing.x, m_WindowSize.y - base_position.y - m_ItemSpacing.y);
 
-    for (int i = 0; i < 7; i++) {
+    // size.x - (181 + (spacing.x + 24)))
+
+    for (int i = 0; i < 8; i++) {
         std::vector<CMenuGroupbox*>& groupboxes = m_Groupboxes[i];
+        const float gb_width = groupboxes.size() > 1 ? groupbox_width : (m_WindowSize.x - (181 + m_ItemSpacing.x + 24));
 
         float total_relative[2] = { 0.f, 0.f };
         int n_groupboxes[2] = { 0, 0 };
@@ -197,8 +202,8 @@ void CMenu::RecalculateGroupboxes() {
 
         for (auto gb : groupboxes) {
             gb->position.y = base_position.y + current_position[gb->column];
-            gb->position.x = base_position.x + (groupbox_width + m_ItemSpacing.x) * gb->column;
-            gb->size.x = groupbox_width;
+            gb->position.x = base_position.x + (gb_width + m_ItemSpacing.x) * gb->column;
+            gb->size.x = gb_width;
             gb->size.y = available_space[gb->column] * (gb->relative_size / total_relative[gb->column]);
 
             current_position[gb->column] += gb->size.y + m_ItemSpacing.y;
@@ -216,10 +221,12 @@ void CMenu::AddGroupBox(const std::string& tab, const std::string& groupbox, flo
         tab_id = 3;
     else if (tab == "Misc")
         tab_id = 4;
-    else if (tab == "Config")
+    else if (tab == "Skins")
         tab_id = 5;
-    else if (tab == "Scripts")
+    else if (tab == "Config")
         tab_id = 6;
+    else if (tab == "Scripts")
+        tab_id = 7;
 
     CMenuGroupbox* gb = new CMenuGroupbox;
 
@@ -260,12 +267,37 @@ void CMenuGroupbox::Render() {
     ImGui::EndGroup();
 }
 
+bool CKeyBind::get() {
+    if (key == 0)
+        return false;
+
+    if (mode == 2)
+        return true;
+
+    if (GetAsyncKeyState(key) & 0x8000) {
+        if (!pressed_once) {
+            pressed_once = true;
+            toggled = !toggled;
+        }
+    }
+    else {
+        pressed_once = false;
+    }
+
+    if (mode == 1) {
+        return toggled;
+    }
+    else {
+        return GetAsyncKeyState(key) & 0x8000;
+    }
+};
+
 void CCheckBox::Render() {
     if (ImGui::Checkbox(name.c_str(), &value)) {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 
     if (additional) {
@@ -279,7 +311,7 @@ void CSliderInt::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -288,7 +320,7 @@ void CSliderFloat::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -297,7 +329,7 @@ void CKeyBind::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -315,7 +347,7 @@ void CColorPicker::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -324,7 +356,7 @@ void CComboBox::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -333,7 +365,7 @@ void CMultiCombo::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -342,7 +374,7 @@ void CButton::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -351,7 +383,7 @@ void CInputBox::Render() {
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)
-            lcb();
+            lcb.func();
     }
 }
 
@@ -365,10 +397,12 @@ CMenuGroupbox* CMenu::FindGroupbox(const std::string& tab, const std::string& gr
         tab_id = 3;
     else if (tab == "Misc")
         tab_id = 4;
-    else if (tab == "Config")
+    else if (tab == "Skins")
         tab_id = 5;
-    else if (tab == "Scripts")
+    else if (tab == "Config")
         tab_id = 6;
+    else if (tab == "Scripts")
+        tab_id = 7;
 
     for (auto gb : m_Groupboxes[tab_id]) {
         if (gb->name == groupbox)
@@ -389,6 +423,17 @@ IBaseWidget* CMenu::FindItem(const std::string& tab, const std::string& groupbox
             return item;
 
     return nullptr;
+}
+
+void CMenu::RemoveItem(IBaseWidget* widget) {
+    for (auto it = widget->parent->widgets.begin(); it != widget->parent->widgets.end(); it++) {
+        if (*it = widget) {
+            widget->parent->widgets.erase(it);
+
+            delete widget;
+            return;
+        }
+    }
 }
 
 CCheckBox* CMenu::AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool init) {
@@ -518,6 +563,8 @@ CComboBox* CMenu::AddComboBox(const std::string& tab, const std::string& groupbo
     item->elements = items;
 
     gb->widgets.emplace_back(item);
+
+    return item;
 }
 
 CMultiCombo* CMenu::AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<const char*> items) {
@@ -532,6 +579,7 @@ CMultiCombo* CMenu::AddMultiCombo(const std::string& tab, const std::string& gro
     item->parent = gb;
     item->elements = items;
     item->value = new bool[items.size()];
+    ZeroMemory(item->value, items.size());
 
     gb->widgets.emplace_back(item);
 

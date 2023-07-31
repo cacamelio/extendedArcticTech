@@ -10,35 +10,36 @@ void LuaSaveConfig(LuaScript_t* script) {
 	nlohmann::json result;
 
 	for (auto e : script->ui_elements) {\
-		std::string name = e->parent->name + "_" + e->name + "_" + std::to_string(e->GetItemType());
+		std::string name = e->parent->name + "_" + e->name + "_" + std::to_string(static_cast<int>(e->GetType()));
 
-		switch (e->GetItemType()) {
-		case CHECKBOX:
-			result[name] = ((CCheckboxOld*)e)->value;
+		switch (e->GetType()) {
+		case WidgetType::Checkbox:
+			result[name] = ((CCheckBox*)e)->value;
 			break;
-		case COLORPCIKER:
-			result[name] = ((CColorPickerOld*)e)->get().to_int32();
+		case WidgetType::ColorPicker:
+			result[name] = ((CColorPicker*)e)->value;
 			break;
-		case KEYBIND:
-			result[name] = { ((CKeyBindOld*)e)->bindType, ((CKeyBindOld*)e)->bindState, ((CKeyBindOld*)e)->key };
+		case WidgetType::KeyBind:
+			result[name] = { ((CKeyBind*)e)->mode, ((CKeyBind*)e)->key };
 			break;
-		case SLIDER:
-			result[name] = ((CSliderOld*)e)->value;
+		case WidgetType::SliderInt:
+			result[name] = ((CSliderInt*)e)->value;
 			break;
-		case COMBO:
-			result[name] = ((CComboBoxOld*)e)->value;
+		case WidgetType::SliderFloat:
+			result[name] = ((CSliderFloat*)e)->value;
 			break;
-		case MULTICOMBO:
-			result[name] = ((CMultiComboOld*)e)->values;
+		case WidgetType::Combo:
+			result[name] = ((CComboBox*)e)->value;
 			break;
-		case INPUTBOX:
-			result[name] = ((CInputBoxOld*)e)->input;
+		case WidgetType::MultiCombo:
+			for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
+				result[name] = ((CMultiCombo*)e)->value[i];
 			break;
-		case LISTBOX:
-			result[name] = ((CListBox*)e)->active;
+		case WidgetType::Input:
+			result[name] = std::string(((CInputBox*)e)->buf);
 			break;
 		default:
-			// handle any unexpected values of ElementType here
+			// handle any unexpected values of WidgetType here
 			break;
 		}
 	}
@@ -63,47 +64,53 @@ void LuaLoadConfig(LuaScript_t* script) {
 
 	for (auto e : script->ui_elements) {
 		try {
-			auto& val = config_json[e->parent->name + "_" + e->name + "_" + std::to_string(e->GetItemType())];
+			auto& val = config_json[e->parent->name + "_" + e->name + "_" + std::to_string(static_cast<int>(e->GetType()))];
 
-			switch (e->GetItemType()) {
-			case CHECKBOX:
-				((CCheckboxOld*)e)->value = val;
+			switch (e->GetType()) {
+			case WidgetType::Checkbox:
+				((CCheckBox*)e)->value = val;
 				break;
-			case COLORPCIKER:
-				((CColorPickerOld*)e)->Set(val);
+			case WidgetType::ColorPicker:
+				((CColorPicker*)e)->value[0] = val[0];
+				((CColorPicker*)e)->value[1] = val[1];
+				((CColorPicker*)e)->value[2] = val[2];
+				((CColorPicker*)e)->value[3] = val[3];
 				break;
-			case KEYBIND:
-				((CKeyBindOld*)e)->bindType = val[0];
-				((CKeyBindOld*)e)->bindState = val[1];
-				((CKeyBindOld*)e)->key = val[2];
+			case WidgetType::KeyBind:
+				((CKeyBind*)e)->mode = val[0];
+				((CKeyBind*)e)->key = val[1];
 				break;
-			case SLIDER:
-				((CSliderOld*)e)->value = val;
+			case WidgetType::SliderInt:
+				((CSliderInt*)e)->value = val;
 				break;
-			case COMBO:
-				((CComboBoxOld*)e)->value = val;
+			case WidgetType::SliderFloat:
+				((CSliderFloat*)e)->value = val;
 				break;
-			case MULTICOMBO:
-				((CMultiComboOld*)e)->values = val;
+			case WidgetType::Combo:
+				((CComboBox*)e)->value = val;
 				break;
-			case INPUTBOX:
-				((CInputBoxOld*)e)->input = val;
+			case WidgetType::MultiCombo:
+				for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
+					((CMultiCombo*)e)->value[i] = val[i];
 				break;
-			case LISTBOX:
-				((CListBox*)e)->active = val;
+			case WidgetType::Input: {
+				ZeroMemory(((CInputBox*)e)->buf, 64);
+				std::string inp = val;
+				memcpy(((CInputBox*)e)->buf, inp.c_str(), inp.size());
 				break;
+			}
 			default:
 				break;
 			}
 
-			if (e->callback)
-				e->callback();
+			for (auto cb : e->callbacks)
+				cb();
 
-			for (auto cb : e->lua_callbacks)
-				cb.func();
+			for (auto lcb : e->lua_callbacks)
+				lcb.func();
 		}
 		catch (nlohmann::json::exception& ex) {
-			Console->Error("couldnt find cfg item: " + e->name);
+			Console->Error("could not find item: " + e->name);
 		}
 	}
 }
@@ -120,12 +127,12 @@ void LuaErrorHandler(sol::optional<std::string> message)
 
 void ScriptLoadButton()
 {
-	Lua->LoadScript(Lua->GetScriptID(Config->lua_list->get()));
+	Lua->LoadScript(Lua->GetScriptID(Config->lua_list->get_name()));
 }
 
 void ScriptUnloadButton()
 {
-	Lua->UnloadScript(Lua->GetScriptID(Config->lua_list->get()));
+	Lua->UnloadScript(Lua->GetScriptID(Config->lua_list->get_name()));
 }
 
 void ScriptSaveButton() {
@@ -278,7 +285,7 @@ namespace api {
 			std::vector<Vector2> verts;
 			for (auto v : vertecies) {
 				Vector vec = v;
-				verts.emplace_back(Vector2(vec.x, vec.y));
+				verts.push_back(Vector2(vec.x, vec.y));
 			}
 			Render->PolyFilled(verts, col);
 		}
@@ -287,7 +294,7 @@ namespace api {
 			std::vector<Vector2> verts;
 			for (auto v : vertecies) {
 				Vector vec = v;
-				verts.emplace_back(Vector2(vec.x, vec.y));
+				verts.push_back(Vector2(vec.x, vec.y));
 			}
 			Render->PolyLine(verts, col);
 		}
@@ -435,10 +442,10 @@ namespace api {
 	}
 
 	namespace ui {
-		IBaseElement* find_item(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<ElementType> type) {
-			ElementType etype = type.value_or(ElementType::ANY);
+		IBaseWidget* find_item(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<WidgetType> type) {
+			WidgetType etype = type.value_or(WidgetType::Any);
 
-			IBaseElement* found_item = MenuOld->FindElement(tab, groupbox, name, etype);
+			IBaseWidget* found_item = Menu->FindItem(tab, groupbox, name, etype);
 
 			if (!found_item) {
 				Console->Error(std::format("[{}] cont find item: ({}, {}, {})", GetCurrentScript(state), tab, groupbox, name));
@@ -448,155 +455,146 @@ namespace api {
 			return found_item;
 		}
 
-		sol::object element_get(sol::this_state state, IBaseElement* element, sol::optional<int> index) {
-			switch (element->GetItemType()) {
-			case CHECKBOX:
-				return sol::make_object(state, static_cast<CCheckboxOld*>(element)->get());
-			case COLORPCIKER:
-				return sol::make_object(state, static_cast<CColorPickerOld*>(element)->get());
-			case KEYBIND:
-				return sol::make_object(state, static_cast<CKeyBindOld*>(element)->get());
-			case SLIDER:
-				return sol::make_object(state, static_cast<CSliderOld*>(element)->get());
-			case COMBO:
-				return sol::make_object(state, static_cast<CComboBoxOld*>(element)->get());
-			case MULTICOMBO:
-				return sol::make_object(state, static_cast<CMultiComboOld*>(element)->get(index.value()));
-			case INPUTBOX:
-				return sol::make_object(state, static_cast<CInputBoxOld*>(element)->get());
-			case LISTBOX:
-				return sol::make_object(state, static_cast<CListBox*>(element)->get());
+		sol::object element_get(sol::this_state state, IBaseWidget* element, sol::optional<int> index) {
+			switch (element->GetType()) {
+			case WidgetType::Checkbox:
+				return sol::make_object(state, static_cast<CCheckBox*>(element)->get());
+			case WidgetType::ColorPicker:
+				return sol::make_object(state, static_cast<CColorPicker*>(element)->get());
+			case WidgetType::KeyBind:
+				return sol::make_object(state, static_cast<CKeyBind*>(element)->get());
+			case WidgetType::SliderInt:
+				return sol::make_object(state, static_cast<CSliderInt*>(element)->get());
+			case WidgetType::SliderFloat:
+				return sol::make_object(state, static_cast<CSliderFloat*>(element)->get());
+			case WidgetType::Combo:
+				return sol::make_object(state, static_cast<CComboBox*>(element)->get());
+			case WidgetType::MultiCombo:
+				return sol::make_object(state, static_cast<CMultiCombo*>(element)->get(index.value()));
+			case WidgetType::Input:
+				return sol::make_object(state, static_cast<CInputBox*>(element)->get());
 			}
 
 			Console->Error("trying to get unknown element");
 		}
 
-		void element_update_list(sol::this_state state, IBaseElement* element, std::vector<std::string> list) {
-			switch (element->GetItemType()) {
-			case COMBO:
-				return static_cast<CComboBoxOld*>(element)->UpdateList(list);
-			case MULTICOMBO:
-				return static_cast<CMultiComboOld*>(element)->UpdateList(list);
-			case LISTBOX:
-				return static_cast<CListBox*>(element)->UpdateList(list);
+		void element_update_list(sol::this_state state, IBaseWidget* element, std::vector<const char*> list) {
+			switch (element->GetType()) {
+			case WidgetType::Combo:
+				return static_cast<CComboBox*>(element)->UpdateList(list);
+			case WidgetType::MultiCombo:
+				return static_cast<CMultiCombo*>(element)->UpdateList(list);
 			}
 
 			Console->Error("trying to update list of non listable element");
 		}
 
-		void element_set_callback(sol::this_state state, IBaseElement* element, sol::protected_function func) {
+		void element_set_callback(sol::this_state state, IBaseWidget* element, sol::protected_function func) {
 			UILuaCallback_t cb(element, Lua->GetScriptID(GetCurrentScript(state)), func);
-			element->lua_callbacks.emplace_back(cb);
-			g_ui_lua_callbacks.emplace_back(cb); // track callback to easily remove them
+			element->lua_callbacks.push_back(cb);
+			g_ui_lua_callbacks.push_back(cb); // track callback to easily remove them
+		}
+		 
+		void element_set_visible(IBaseWidget* element, bool visible) {
+			element->SetVisible(visible);
 		}
 
-		void element_set_visible(IBaseElement* element, bool visible) {
-			element->set_visible(visible);
-		}
-
-		IBaseElement* new_checkbox(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> unsafe) {
-			IBaseElement* elem = MenuOld->AddCheckBox(tab, groupbox, name, unsafe.value_or(false));
+		IBaseWidget* new_checkbox(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> def) {
+			IBaseWidget* elem = Menu->AddCheckBox(tab, groupbox, name, def.value_or(false));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 
-		IBaseElement* new_label(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
-			IBaseElement* elem = MenuOld->AddLabel(tab, groupbox, name);
+		IBaseWidget* new_label(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
+			IBaseWidget* elem = Menu->AddLabel(tab, groupbox, name);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 
-		IBaseElement* new_colorpicker(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<Color> default_color) {
-			IBaseElement* elem = MenuOld->AddColorPicker(tab, groupbox, name, default_color.value_or(Color()));
+		IBaseWidget* new_colorpicker(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<Color> default_color) {
+			IBaseWidget* elem = Menu->AddColorPicker(tab, groupbox, name, default_color.value_or(Color()));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 
-		IBaseElement* new_keybind(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<int> default_key, sol::optional<int> default_type) {
-			IBaseElement* elem = MenuOld->AddKeyBind(tab, groupbox, name, default_key.value_or(-1), default_type.value_or(1));
+		IBaseWidget* new_keybind(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
+			IBaseWidget* elem = Menu->AddKeyBind(tab, groupbox, name);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 
-		IBaseElement* new_slider(sol::this_state state, std::string tab, std::string groupbox, std::string name, float min_, float max_, float default_val, sol::optional<std::string> unit, sol::optional<float> scale, sol::optional<bool> hide_name) {
-			IBaseElement* elem = MenuOld->AddSlider(tab, groupbox, name, min_, max_, default_val, unit.value_or(""), scale.value_or(1.f), hide_name.value_or(false));
+		IBaseWidget* new_slider_int(sol::this_state state, std::string tab, std::string groupbox, std::string name, int min_, int max_, int default_val, sol::optional<std::string> format) {
+			IBaseWidget* elem = Menu->AddSliderInt(tab, groupbox, name, min_, max_, default_val, format.value_or("%d"));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 
-		IBaseElement* new_combo(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<int> default_value, sol::optional<bool> hide_name, sol::variadic_args elements) {
-			std::vector<std::string> vals;
+		IBaseWidget* new_slider_float(sol::this_state state, std::string tab, std::string groupbox, std::string name, float min_, float max_, float default_val, sol::optional<std::string> format) {
+			IBaseWidget* elem = Menu->AddSliderFloat(tab, groupbox, name, min_, max_, default_val, format.value_or("%.2f"));
+
+			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
+			script->ui_elements.push_back(elem);
+
+			return elem;
+		}
+
+		IBaseWidget* new_combo(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::variadic_args elements) {
+			std::vector<const char*> vals;
 			for (auto el : elements) {
 				std::string s = el;
-				vals.emplace_back(s);
+				vals.push_back(s.c_str());
 			}
-			IBaseElement* elem = MenuOld->AddComboBox(tab, groupbox, name, vals, default_value.value_or(0), hide_name.value_or(false));
+			IBaseWidget* elem = Menu->AddComboBox(tab, groupbox, name, vals);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 
-		IBaseElement* new_multicombo(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> hide_name, sol::variadic_args elements) {
-			std::vector<std::string> vals;
+		IBaseWidget* new_multicombo(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::variadic_args elements) {
+			std::vector<const char*> vals;
 			for (auto el : elements) {
 				std::string s = el;
-				vals.emplace_back(s);
+				vals.push_back(s.c_str());
 			}
-
-			IBaseElement* elem = MenuOld->AddMultiCombo(tab, groupbox, name, vals, 0, hide_name.value_or(false));
+			IBaseWidget* elem = Menu->AddMultiCombo(tab, groupbox, name, vals);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 	
-		IBaseElement* new_button(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
-			IBaseElement* elem = MenuOld->AddButton(tab, groupbox, name);
+		IBaseWidget* new_button(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
+			IBaseWidget* elem = Menu->AddButton(tab, groupbox, name);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
 
-		IBaseElement* new_input(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> hide_name) {
-			IBaseElement* elem = MenuOld->AddInputBox(tab, groupbox, name, hide_name.value_or(false));
+		IBaseWidget* new_input(sol::this_state state, std::string tab, std::string groupbox, std::string name) {
+			IBaseWidget* elem = Menu->AddInput(tab, groupbox, name);
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
-
-			return elem;
-		}
-
-		IBaseElement* new_list(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<bool> has_filter, sol::variadic_args elements) {
-			std::vector<std::string> vals;
-			for (auto el : elements) {
-				std::string s = el;
-				vals.emplace_back(s);
-			}
-
-			IBaseElement* elem = MenuOld->AddListBox(tab, groupbox, name, vals, has_filter.value_or(true));
-
-			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
-			script->ui_elements.emplace_back(elem);
+			script->ui_elements.push_back(elem);
 
 			return elem;
 		}
@@ -625,77 +623,22 @@ void CLua::Setup() {
 		{"legs", EDamageGroup::DAMAGEGROUP_LEG},
 	});
 
-	lua.new_enum<ElementType>("e_ui_type", {
-		{"checkbox", ElementType::CHECKBOX},
-		{"label", ElementType::LABEL},
-		{"colorpicker", ElementType::COLORPCIKER},
-		{"keybind", ElementType::KEYBIND},
-		{"slider", ElementType::SLIDER},
-		{"combo", ElementType::COMBO},
-		{"multicombo", ElementType::MULTICOMBO},
-		{"button", ElementType::BUTTON},
-		{"input", ElementType::INPUTBOX},
-		{"list", ElementType::LISTBOX},
-		{"any", ElementType::ANY}
+	lua.new_enum<WidgetType>("e_ui_type", {
+		{"checkbox", WidgetType::Checkbox},
+		{"label", WidgetType::Label},
+		{"colorpicker", WidgetType::ColorPicker},
+		{"keybind", WidgetType::KeyBind},
+		{"sliderint", WidgetType::SliderInt},
+		{"sliderfloat", WidgetType::SliderFloat},
+		{"combo", WidgetType::Combo},
+		{"multicombo", WidgetType::MultiCombo},
+		{"button", WidgetType::Button},
+		{"input", WidgetType::Input},
+		{"any", WidgetType::Any}
 	});
 
 	// usertypes
-	/*
-	lua.new_usertype<CCheckbox>("checkbox_t", sol::no_constructor,
-		"get", &CCheckbox::get,
-		"set_visible", &CCheckbox::set_visible,
-		"set_callback", &CCheckbox::set_callback
-	);
-
-	lua.new_usertype<CColorPicker>("colorpicker_t", sol::no_constructor,
-		"get", &CColorPicker::get,
-		"set_visible", &CColorPicker::set_visible,
-		"set_callback", &CColorPicker::set_callback
-	);
-
-	lua.new_usertype<CKeyBind>("keybind_t", sol::no_constructor,
-		"get", &CKeyBind::get,
-		"set_visible", &CKeyBind::set_visible,
-		"set_callback", &CKeyBind::set_callback
-	);
-
-	lua.new_usertype<CSlider>("slider_t", sol::no_constructor,
-		"get", &CSlider::get,
-		"set_visible", &CSlider::set_visible,
-		"set_callback", &CSlider::set_callback
-	);	
-	
-	lua.new_usertype<CComboBox>("combobox_t", sol::no_constructor,
-		"get", &CComboBox::get,
-		"set_visible", &CComboBox::set_visible,
-		"set_callback", &CComboBox::set_callback
-	);
-
-	lua.new_usertype<CMultiCombo>("multicombobox_t", sol::no_constructor,
-		"get", &CMultiCombo::get,
-		"set_visible", &CMultiCombo::set_visible,
-		"set_callback", &CMultiCombo::set_callback
-	);
-
-	lua.new_usertype<CButton>("button_t", sol::no_constructor,
-		"set_visible", &CButton::set_visible,
-		"set_callback", &CButton::set_callback
-	);
-
-	lua.new_usertype<CInputBox>("input_t", sol::no_constructor,
-		"get", &CInputBox::get,
-		"set_visible", &CInputBox::set_visible,
-		"set_callback", &CInputBox::set_callback
-	);
-
-	lua.new_usertype<CListBox>("listbox_t", sol::no_constructor,
-		"get", &CListBox::get,
-		"set_visible", &CListBox::set_visible,
-		"set_callback", &CListBox::set_callback,
-		"update_list", &CListBox::UpdateList
-	);
-	*/
-	lua.new_usertype<IBaseElement>("ui_element_t", sol::no_constructor, 
+	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor, 
 		"set_callback", api::ui::element_set_callback,
 		"set_visible", api::ui::element_set_visible,
 		"get", api::ui::element_get,
@@ -821,12 +764,12 @@ void CLua::Setup() {
 		"new_label", api::ui::new_label,
 		"new_colorpicker", api::ui::new_colorpicker,
 		"new_keybind", api::ui::new_keybind,
-		"new_slider", api::ui::new_slider,
+		"new_slider_int", api::ui::new_slider_int,
+		"new_slider_float", api::ui::new_slider_float,
 		"new_combo", api::ui::new_combo,
 		"new_multicombo", api::ui::new_multicombo,
 		"new_button", api::ui::new_button,
-		"new_input", api::ui::new_input,
-		"new_list", api::ui::new_list
+		"new_input", api::ui::new_input
 	);
 
 	// global vars
@@ -884,10 +827,10 @@ void CLua::Setup() {
 	);
 
 	RefreshScripts();
-	Config->lua_button->set_callback(ScriptLoadButton);
-	Config->lua_button_unload->set_callback(ScriptUnloadButton);
-	Config->lua_save->set_callback(ScriptSaveButton);
-	Config->lua_refresh->set_callback([]() { Lua->RefreshScripts(); });
+	Config->lua_button->SetCallback(ScriptLoadButton);
+	Config->lua_button_unload->SetCallback(ScriptUnloadButton);
+	Config->lua_save->SetCallback(ScriptSaveButton);
+	Config->lua_refresh->SetCallback([]() { Lua->RefreshScripts(); });
 }
 
 int CLua::GetScriptID(std::string name) {
@@ -973,7 +916,7 @@ void CLua::UnloadScript(int id) {
 	}
 
 	for (auto element : script.ui_elements) {
-		MenuOld->RemoveElement(element);
+		Menu->RemoveItem(element);
 	}
 
 	script.ui_elements.clear();
@@ -1027,11 +970,11 @@ void CLua::UnloadAll() {
 	}
 }
 
-std::vector<std::string> CLua::GetUIList() {
-	std::vector<std::string> result;
+std::vector<const char*> CLua::GetUIList() {
+	std::vector<const char*> result;
 
 	for (auto& script : scripts) {
-		result.emplace_back(script.ui_name);
+		result.push_back(script.ui_name.c_str());
 	}
 
 	return result;
@@ -1064,7 +1007,7 @@ void CLua::RefreshScripts() {
 			}
 			script.ui_name = was_loaded ? "* " + script.name : script.name;
 
-			scripts.emplace_back(script);
+			scripts.push_back(script);
 		}
 	}
 

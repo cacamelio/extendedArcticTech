@@ -10,7 +10,13 @@
 #include "../SDK/Misc/Color.h"
 
 class CMenuGroupbox;
+class IBaseWidget;
 
+struct UILuaCallback_t {
+	IBaseWidget* ref;
+	int script_id;
+	sol::protected_function func;
+};
 typedef void(*tUiCallback)();
 
 enum class WidgetType {
@@ -33,10 +39,14 @@ public:
 	CMenuGroupbox* parent = nullptr;
 	IBaseWidget* additional = nullptr;
 	bool visible = true;
-	std::vector<sol::protected_function> lua_callbacks;
+	std::vector<UILuaCallback_t> lua_callbacks;
 	std::vector<tUiCallback> callbacks;
 
-	void SetCallback(tUiCallback callback) { callbacks.emplace_back(callback); };
+	void SetCallback(tUiCallback callback) { 
+		callbacks.emplace_back(callback);
+		if (this->GetType() != WidgetType::Button)
+			callback();
+	};
 	void SetVisible(bool visible_) { visible = visible_; };
 
 	virtual WidgetType GetType() = 0;
@@ -50,27 +60,7 @@ public:
 	int mode = 2;
 	bool toggled = false;
 
-	bool get() {
-		if (mode == 2 || key == 0)
-			return true;
-
-		if (GetAsyncKeyState(key) & 0x8000) {
-			if (!pressed_once) {
-				pressed_once = true;
-				toggled = !toggled;
-			}
-		}
-		else {
-			pressed_once = false;
-		}
-
-		if (mode == 1) {
-			return toggled;
-		}
-		else {
-			return GetAsyncKeyState(key) & 0x8000;
-		}
-	};
+	bool get();
 
 	virtual WidgetType GetType() { return WidgetType::KeyBind; };
 	virtual void Render();
@@ -143,7 +133,14 @@ public:
 	int value = 0;
 
 	int get() { return value; };
-	void UpdateList(const std::vector<const char*>& new_el) { elements = new_el; };
+	std::string get_name() { 
+		if (elements.size() == 0)
+			return "";
+		return elements[value];
+	};
+	void UpdateList(const std::vector<const char*>& new_el) { 
+		elements = new_el; 
+	};
 
 	virtual WidgetType GetType() { return WidgetType::Combo; };
 	virtual void Render();
@@ -155,7 +152,11 @@ public:
 	bool* value;
 
 	bool get(int i) { return value[i]; };
-	void UpdateList(const std::vector<const char*>& new_el) { elements = new_el; };
+	void UpdateList(const std::vector<const char*>& new_el) { 
+		elements = new_el;
+		delete[] value;
+		value = new bool[new_el.size()];
+	};
 
 	virtual WidgetType GetType() { return WidgetType::Combo; };
 	virtual void Render();
@@ -177,7 +178,7 @@ public:
 	char buf[64];
 	ImGuiInputTextFlags flags;
 
-	const std::string& get() { return buf; };
+	const std::string get() { return std::string(buf); };
 
 	virtual WidgetType GetType() { return WidgetType::Input; };
 	virtual void Render();
@@ -203,7 +204,7 @@ private:
 	ImVec2 m_WindowSize;
 	ImVec2 m_ItemSpacing;
 
-	std::vector<CMenuGroupbox*> m_Groupboxes[7];
+	std::vector<CMenuGroupbox*> m_Groupboxes[8];
 
 	void RecalculateGroupboxes();
 public:
@@ -230,6 +231,7 @@ public:
 
 	CMenuGroupbox*	FindGroupbox(const std::string& tab, const std::string& groupbox);
 	IBaseWidget*	FindItem(const std::string& tab, const std::string& groupbox, const std::string& name, WidgetType type = WidgetType::Any);
+	void			RemoveItem(IBaseWidget* item);
 };
 
 extern CMenu* Menu;
