@@ -72,12 +72,9 @@ HRESULT __stdcall hkPresent(IDirect3DDevice9* thisptr, const RECT* src, const RE
 
 	if (!Render->IsInitialized()) {
 		Render->Init(thisptr);
-		//Ragebot->CreateThreads();
 		Menu->Setup();
 		return oPresent(thisptr, src, dest, window, dirtyRegion);
 	}
-
-	// static auto movups_14a781e4 = Utils::PatternScan("client.dll", "0F 10 05 ? ? ? ? 8D 85 ? ? ? ? B9", 3);
 
 	Cheat.InGame = EngineClient->IsConnected() && EngineClient->IsInGame();
 
