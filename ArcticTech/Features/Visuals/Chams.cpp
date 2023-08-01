@@ -37,6 +37,7 @@ void CChams::LoadChams() {
 	created = true;
 	KeyValues* keyval_def = new KeyValues("VertexLitGeneric");
 	keyval_def->SetString("$basetexture", "vgui/white");
+	keyval_def->SetInt("$nofog", 1);
 	baseMaterials[MaterialType::Default] = MaterialSystem->CreateMaterial("arctic/default", keyval_def);
 	baseMaterials[MaterialType::Default]->IncrementReferenceCount();
 
@@ -55,6 +56,7 @@ void CChams::LoadChams() {
 	keyval_glow->SetInt("$model", 1);
 	keyval_glow->SetInt("$ignorez", 0);
 	keyval_glow->SetInt("$translucnet", 0);
+	keyval_glow->SetInt("$nofog", 1);
 	baseMaterials[MaterialType::Glow] = MaterialSystem->CreateMaterial("arctic/glow", keyval_glow);
 	baseMaterials[MaterialType::Glow]->IncrementReferenceCount();
 }
@@ -159,7 +161,7 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	if (!mat.enabled) {
 		if (Cheat.LocalPlayer && Cheat.LocalPlayer->m_bIsScoped())
 			if (entType == Attachment || entType == LocalPlayer)
-				RenderView->SetBlend(config.visuals.chams.scope_blend->get() * 0.01f);
+				RenderView->SetBlend(config.visuals.effects.scope_blend->get() * 0.01f);
 			else if (entType == ViewModel) {
 				RenderView->SetBlend(config.visuals.effects.viewmodel_scope_alpha->get() * 0.01f);
 		}
@@ -171,7 +173,7 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 
 	if (Cheat.LocalPlayer && Cheat.LocalPlayer->m_bIsScoped()) {
 		if (entType == Attachment || entType == LocalPlayer)
-			addAlpha = config.visuals.chams.scope_blend->get() * 0.01f;
+			addAlpha = config.visuals.effects.scope_blend->get() * 0.01f;
 		else if (entType == ViewModel)
 			addAlpha = config.visuals.effects.viewmodel_scope_alpha->get() * 0.01f;
 	}

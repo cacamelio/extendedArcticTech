@@ -17,6 +17,8 @@ struct LuaScript_t {
 	std::string ui_name; // added star if loaded
 	std::filesystem::path path;
 	sol::environment* env = nullptr;
+	std::vector<CMenuTab*> tabs;
+	std::vector<CMenuGroupbox*> groupboxes;
 	std::vector<IBaseWidget*> ui_elements;
 };
 

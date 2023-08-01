@@ -53,6 +53,7 @@ typedef bool(__fastcall* tShouldDrawViewModel)(void*, void*);
 typedef void(__fastcall* tPerformScreenOverlay)(void*, void*, int, int, int, int);
 typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vector&, unsigned int*, int);
 typedef bool(__fastcall* tInPrediction)(IPrediction*, void*);
+typedef void(__fastcall* tTraceBlood)(CGameTrace*, int);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -87,6 +88,7 @@ inline tShouldDrawViewModel oShouldDrawViewModel;
 inline tPerformScreenOverlay oPerformScreenOverlay;
 inline tListLeavesInBox oListLeavesInBox;
 inline tInPrediction oInPrediction;
+inline tTraceBlood oTraceBlood;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

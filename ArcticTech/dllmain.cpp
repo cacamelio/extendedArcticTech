@@ -13,6 +13,7 @@
 #include "Features/Visuals/SkinChanger.h"
 #include "Features/Lua/Bridge/Bridge.h"
 
+
 LONG __stdcall ExceptionHandler(_EXCEPTION_POINTERS* exceptionInfo) {
     std::string exceptionText;
 

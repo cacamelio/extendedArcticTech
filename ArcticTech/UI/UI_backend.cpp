@@ -17,22 +17,6 @@
 
 CMenu* Menu = new CMenu;
 
-namespace pic {
-    IDirect3DTexture9* logo = nullptr;
-    IDirect3DTexture9* user = nullptr;
-
-    namespace tab {
-        IDirect3DTexture9* aimbot = nullptr;
-        IDirect3DTexture9* antiaim = nullptr;
-        IDirect3DTexture9* visuals = nullptr;
-        IDirect3DTexture9* misc = nullptr;
-        IDirect3DTexture9* players = nullptr;
-        IDirect3DTexture9* skins = nullptr;
-        IDirect3DTexture9* configs = nullptr;
-        IDirect3DTexture9* scripts = nullptr;
-    }
-}
-
 namespace font {
     ImFont* general = nullptr;
     ImFont* tab = nullptr;
@@ -68,7 +52,6 @@ void CMenu::Setup() {
     ImGui_ImplDX9_Init(DirectXDevice);
 
     D3DXCreateTextureFromFileInMemory(DirectXDevice, ui_logo, sizeof(ui_logo), &pic::logo);
-
     D3DXCreateTextureFromFileInMemory(DirectXDevice, aimbot, sizeof(aimbot), &pic::tab::aimbot);
     D3DXCreateTextureFromFileInMemory(DirectXDevice, movement, sizeof(movement), &pic::tab::antiaim);
     D3DXCreateTextureFromFileInMemory(DirectXDevice, visuals, sizeof(visuals), &pic::tab::visuals);
@@ -142,9 +125,11 @@ void CMenu::Render() {
 
             ImGui::BeginGroup();
             {
-                for (int i = 0; i < 8; i++)
-                    if (ImGui::Tab(i == tabs, pic_array[i], name_array[i], ImVec2(133 - ImGui::GetStyle().ItemSpacing.x, 44), pic_size[i]))
+                for (int i = 0; i < m_Tabs.size(); i++) {
+                    CMenuTab* tab = m_Tabs[i];
+                    if (ImGui::Tab(i == tabs, tab->icon, tab->name.c_str(), ImVec2(133 - ImGui::GetStyle().ItemSpacing.x, 44), tab->icon_size))
                         tabs = i;
+                }
             }
             ImGui::EndGroup();
 
@@ -158,7 +143,7 @@ void CMenu::Render() {
 
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, tab_alpha * ImGui::GetStyle().Alpha);
 
-            for (auto group : m_Groupboxes[active_tab]) {
+            for (auto group : m_Tabs[active_tab]->groupboxes) {
                 group->Render();
             }
 
@@ -186,8 +171,8 @@ void CMenu::RecalculateGroupboxes() {
 
     // size.x - (181 + (spacing.x + 24)))
 
-    for (int i = 0; i < 8; i++) {
-        std::vector<CMenuGroupbox*>& groupboxes = m_Groupboxes[i];
+    for (auto tab : m_Tabs) {
+        std::vector<CMenuGroupbox*>& groupboxes = tab->groupboxes;
         const float gb_width = groupboxes.size() > 1 ? groupbox_width : (m_WindowSize.x - (181 + m_ItemSpacing.x + 24));
 
         float total_relative[2] = { 0.f, 0.f };
@@ -211,29 +196,30 @@ void CMenu::RecalculateGroupboxes() {
     }
 }
 
-void CMenu::AddGroupBox(const std::string& tab, const std::string& groupbox, float realtive_size, int column) {
-    int tab_id = 0;
-    if (tab == "Anti aim")
-        tab_id = 1;
-    else if (tab == "Player")
-        tab_id = 2;
-    else if (tab == "Visuals")
-        tab_id = 3;
-    else if (tab == "Misc")
-        tab_id = 4;
-    else if (tab == "Skins")
-        tab_id = 5;
-    else if (tab == "Config")
-        tab_id = 6;
-    else if (tab == "Scripts")
-        tab_id = 7;
+CMenuTab* CMenu::AddTab(const std::string& tab, IDirect3DTexture9* icon, ImVec2 icon_size) {
+    CMenuTab* result = new CMenuTab;
+
+    result->icon = icon;
+    result->icon_size = icon_size;
+    result->name = tab;
+
+    m_Tabs.push_back(result);
+
+    return result;
+}
+
+CMenuGroupbox* CMenu::AddGroupBox(const std::string& tab, const std::string& groupbox, float realtive_size, int column) {
+    CMenuTab* _tab = Menu->FindTab(tab);
+
+    if (!_tab)
+        return nullptr;
 
     CMenuGroupbox* gb = new CMenuGroupbox;
 
     if (column == -1) {
         int n_columns[2]{ 0, 0 };
 
-        for (auto gb : m_Groupboxes[tab_id]) {
+        for (auto gb : _tab->groupboxes) {
             n_columns[gb->column]++;
         }
 
@@ -244,10 +230,13 @@ void CMenu::AddGroupBox(const std::string& tab, const std::string& groupbox, flo
     }
 
     gb->name = groupbox;
+    gb->parent = _tab;
 
-    m_Groupboxes[tab_id].emplace_back(gb);
+    _tab->groupboxes.push_back(gb);
 
     RecalculateGroupboxes();
+
+    return gb;
 }
 
 void CMenuGroupbox::Render() {
@@ -387,24 +376,21 @@ void CInputBox::Render() {
     }
 }
 
-CMenuGroupbox* CMenu::FindGroupbox(const std::string& tab, const std::string& groupbox) {
-    int tab_id = 0;
-    if (tab == "Anti aim")
-        tab_id = 1;
-    else if (tab == "Player")
-        tab_id = 2;
-    else if (tab == "Visuals")
-        tab_id = 3;
-    else if (tab == "Misc")
-        tab_id = 4;
-    else if (tab == "Skins")
-        tab_id = 5;
-    else if (tab == "Config")
-        tab_id = 6;
-    else if (tab == "Scripts")
-        tab_id = 7;
+CMenuTab* CMenu::FindTab(const std::string& name) {
+    for (auto tab : m_Tabs)
+        if (tab->name == name)
+            return tab;
 
-    for (auto gb : m_Groupboxes[tab_id]) {
+    return nullptr;
+}
+
+CMenuGroupbox* CMenu::FindGroupbox(const std::string& tab, const std::string& groupbox) {
+    CMenuTab* _tab = FindTab(tab);
+
+    if (!_tab)
+        return nullptr;
+
+    for (auto gb : _tab->groupboxes) {
         if (gb->name == groupbox)
             return gb;
     }
@@ -426,9 +412,11 @@ IBaseWidget* CMenu::FindItem(const std::string& tab, const std::string& groupbox
 }
 
 void CMenu::RemoveItem(IBaseWidget* widget) {
-    for (auto it = widget->parent->widgets.begin(); it != widget->parent->widgets.end(); it++) {
-        if (*it = widget) {
-            widget->parent->widgets.erase(it);
+    CMenuGroupbox* gb = widget->parent;
+
+    for (auto it = gb->widgets.begin(); it != gb->widgets.end(); it++) {
+        if (*it == widget) {
+            gb->widgets.erase(it);
 
             delete widget;
             return;
@@ -436,108 +424,110 @@ void CMenu::RemoveItem(IBaseWidget* widget) {
     }
 }
 
-CCheckBox* CMenu::AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool init) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
+void CMenu::RemoveGroupBox(CMenuGroupbox* gb) {
+    for (auto it = gb->parent->groupboxes.begin(); it != gb->parent->groupboxes.end(); it++) {
+        if (*it == gb) {
+            gb->parent->groupboxes.erase(it);
 
-    if (!gb)
-        return nullptr;
+            delete gb;
+            return;
+        }
+    }
+}
 
+void CMenu::RemoveTab(CMenuTab* tab) {
+    for (auto it = m_Tabs.begin(); it != m_Tabs.end(); it++) {
+        if (*it == tab) {
+            m_Tabs.erase(it);
+
+            delete tab;
+            return;
+        }
+    }
+}
+
+CCheckBox* CMenuGroupbox::AddCheckBox(const std::string& name, bool init) {
     CCheckBox* item = new CCheckBox;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
     item->value = init;
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CSliderInt* CMenu::AddSliderInt(const std::string& tab, const std::string& groupbox, const std::string& name, int min, int max, int init, const std::string& format, ImGuiSliderFlags flags) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
-
-    if (!gb)
-        return nullptr;
-
+CSliderInt* CMenuGroupbox::AddSliderInt(const std::string& name, int min, int max, int init, const std::string& format, ImGuiSliderFlags flags) {
     CSliderInt* item = new CSliderInt;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
     item->min = min;
     item->max = max;
     item->value = init;
     item->format = format;
     item->flags = flags;
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CSliderFloat* CMenu::AddSliderFloat(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float init, const std::string& format, ImGuiSliderFlags flags) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
-
-    if (!gb)
-        return nullptr;
-
+CSliderFloat* CMenuGroupbox::AddSliderFloat(const std::string& name, float min, float max, float init, const std::string& format, ImGuiSliderFlags flags) {
     CSliderFloat* item = new CSliderFloat;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
     item->min = min;
     item->max = max;
     item->value = init;
     item->format = format;
     item->flags = flags;
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CKeyBind* CMenu::AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name) {
-    IBaseWidget* parent_item = FindItem(tab, groupbox, name);
+CKeyBind* CMenuGroupbox::AddKeyBind(const std::string& name) {
+    IBaseWidget* parent_item = Menu->FindItem(parent->name, this->name, name);
 
     if (!parent_item)
-        parent_item = AddLabel(tab, groupbox, name);
+        parent_item = AddLabel(name);
 
     CKeyBind* item = new CKeyBind;
 
     item->name = name;
-    item->parent = parent_item->parent;
+    item->parent = this;
     parent_item->additional = item;
 
-    item->parent->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CLabel* CMenu::AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
-
-    if (!gb)
-        return nullptr;
-
+CLabel* CMenuGroupbox::AddLabel(const std::string& name) {
     CLabel* item = new CLabel;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CColorPicker* CMenu::AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color init, bool has_alpha) {
-    IBaseWidget* parent_item = FindItem(tab, groupbox, name);
+CColorPicker* CMenuGroupbox::AddColorPicker(const std::string& name, Color init, bool has_alpha) {
+    IBaseWidget* parent_item = Menu->FindItem(parent->name, this->name, name);
 
     if (!parent_item)
-        parent_item = AddLabel(tab, groupbox, name);
+        parent_item = AddLabel(name);
 
     CColorPicker* item = new CColorPicker;
 
     item->name = name;
-    item->parent = parent_item->parent;
+    item->parent = this;
     parent_item->additional = item;
     item->value[0] = init.r / 255.f;
     item->value[1] = init.g / 255.f;
@@ -545,79 +535,57 @@ CColorPicker* CMenu::AddColorPicker(const std::string& tab, const std::string& g
     item->value[3] = init.a / 255.f;
     item->has_alpha = has_alpha;
 
-    item->parent->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CComboBox* CMenu::AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<const char*> items) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
-
-    if (!gb)
-        return nullptr;
-
+CComboBox* CMenuGroupbox::AddComboBox(const std::string& name, std::vector<const char*> items) {
     CComboBox* item = new CComboBox;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
     item->elements = items;
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CMultiCombo* CMenu::AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<const char*> items) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
-
-    if (!gb)
-        return nullptr;
-
+CMultiCombo* CMenuGroupbox::AddMultiCombo(const std::string& name, std::vector<const char*> items) {
     CMultiCombo* item = new CMultiCombo;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
     item->elements = items;
-    item->value = new bool[items.size()];
-    ZeroMemory(item->value, items.size());
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CButton* CMenu::AddButton(const std::string& tab, const std::string& groupbox, const std::string& name) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
-
-    if (!gb)
-        return nullptr;
-
+CButton* CMenuGroupbox::AddButton(const std::string& name) {
     CButton* item = new CButton;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }
 
-CInputBox* CMenu::AddInput(const std::string& tab, const std::string& groupbox, const std::string& name, const std::string& init, ImGuiInputTextFlags flags) {
-    CMenuGroupbox* gb = FindGroupbox(tab, groupbox);
-
-    if (!gb)
-        return nullptr;
-
+CInputBox* CMenuGroupbox::AddInput(const std::string& name, const std::string& init, ImGuiInputTextFlags flags) {
     CInputBox* item = new CInputBox;
 
     item->name = name;
-    item->parent = gb;
+    item->parent = this;
     item->flags = flags;
     
     ZeroMemory(item->buf, 64);
     std::memcpy(item->buf, init.c_str(), init.size());
 
-    gb->widgets.emplace_back(item);
+    widgets.push_back(item);
 
     return item;
 }

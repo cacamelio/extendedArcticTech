@@ -2160,7 +2160,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
 
     const float w = (flags & ImGuiComboFlags_NoPreview) ? arrow_size : width;
 
-    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(w, 35 + label_size.y + 4));
+    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(w, 35 + label_size.y + 8));
     const ImRect total_bb(bb.Min, bb.Max + ImVec2(label_size.x > 0.0f ? label_size.x : 0.0f, 0.0f));
     ItemSize(total_bb, style.FramePadding.y);
     if (!ItemAdd(total_bb, id, &bb)) return false;
@@ -2187,25 +2187,25 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
 
     GetWindowDrawList()->AddText(bb.Min, GetColorU32(it_anim->second.text), label);
 
-    GetWindowDrawList()->AddRectFilled(bb.Min + ImVec2(0, label_size.y + 4), ImVec2(value_x2, bb.Max.y), GetColorU32(it_anim->second.background), c::combo::rounding, (flags & ImGuiComboFlags_NoArrowButton) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersLeft);
+    GetWindowDrawList()->AddRectFilled(bb.Min + ImVec2(0, label_size.y + 8), ImVec2(value_x2, bb.Max.y), GetColorU32(it_anim->second.background), c::combo::rounding, (flags & ImGuiComboFlags_NoArrowButton) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersLeft);
 
-    GetWindowDrawList()->AddRectFilled(ImVec2(value_x2, bb.Min.y + label_size.y + 4), bb.Max, GetColorU32(it_anim->second.background), c::combo::rounding, (w <= arrow_size) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersRight);
+    GetWindowDrawList()->AddRectFilled(ImVec2(value_x2, bb.Min.y + label_size.y + 8), bb.Max, GetColorU32(it_anim->second.background), c::combo::rounding, (w <= arrow_size) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersRight);
 
     PushStyleColor(ImGuiCol_Text, GetColorU32(it_anim->second.text));
 
     ImRotateStart();
    // PushFont(fonts::ico);
-    RenderTextClipped(bb.Min + ImVec2(w - 21, 6 + label_size.y + 4), ImVec2(value_x2 + 20, bb.Max.y), "<", NULL, NULL);
+    RenderTextClipped(bb.Min + ImVec2(w - 21, 6 + label_size.y + 8), ImVec2(value_x2 + 20, bb.Max.y), "<", NULL, NULL);
    // PopFont();
     ImRotateEnd(1.57f * it_anim->second.arrow_roll);
 
     if (!preview_value)
         preview_value = "Empty";
 
-    RenderTextClipped(bb.Min + ImVec2(10, 7 + label_size.y + 4), ImVec2(value_x2, bb.Max.y), preview_value, NULL, NULL);
+    RenderTextClipped(bb.Min + ImVec2(10, 7 + label_size.y + 8), ImVec2(value_x2, bb.Max.y), preview_value, NULL, NULL);
     PopStyleColor();
 
-    if (!IsRectVisible(bb.Min + ImVec2(0, label_size.y + 4), bb.Max + ImVec2(0, 2)))
+    if (!IsRectVisible(bb.Min + ImVec2(0, label_size.y + 8), bb.Max + ImVec2(0, 2)))
     {
         it_anim->second.opened_combo = false;
         it_anim->second.combo_size = 0.f;

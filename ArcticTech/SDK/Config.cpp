@@ -195,7 +195,6 @@ void CConfig::Init() {
     add(config.visuals.chams.viewmodel_type);
     add(config.visuals.chams.viewmodel_second_color);
     add(config.visuals.chams.viewmodel_glow_thickness);
-    add(config.visuals.chams.scope_blend);
     add(config.visuals.chams.disable_model_occlusion);
     add(config.visuals.other_esp.radar);
     add(config.visuals.other_esp.dropped_weapons);
@@ -234,11 +233,11 @@ void CConfig::Init() {
     add(config.visuals.effects.fog_end);
     add(config.visuals.effects.fog_density);
     add(config.visuals.effects.preserve_killfeed);
-    add(config.visuals.effects.optimizations);
     add(config.visuals.effects.custom_sun_direction);
     add(config.visuals.effects.sun_pitch);
     add(config.visuals.effects.sun_yaw);
     add(config.visuals.effects.sun_distance);
+    add(config.visuals.effects.scope_blend);
     add(config.visuals.effects.viewmodel_scope_alpha);
     add(config.misc.miscellaneous.anti_untrusted);
     add(config.misc.miscellaneous.logs);
@@ -296,7 +295,7 @@ void CConfig::parse(nlohmann::json& cfg) {
                 break;
             case WidgetType::MultiCombo:
                 for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
-                    ((CMultiCombo*)e)->value[i] = val[i];
+                    ((CMultiCombo*)e)->value[i] = val & (1 << i);
                 break;
             case WidgetType::Input: {
                 ZeroMemory(((CInputBox*)e)->buf, 64);
@@ -346,10 +345,14 @@ nlohmann::json CConfig::dump() {
         case WidgetType::Combo:
             result[name] = ((CComboBox*)e)->value;
             break;
-        case WidgetType::MultiCombo:
+        case WidgetType::MultiCombo: {
+            int temp = 0;
             for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
-                result[name] = ((CMultiCombo*)e)->value[i];
+                if (((CMultiCombo*)e)->value[i])
+                    temp |= 1 << i;
+            result[name] = temp;
             break;
+        }
         case WidgetType::Input:
             result[name] = std::string(((CInputBox*)e)->buf);
             break;

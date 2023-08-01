@@ -45,7 +45,7 @@ LRESULT CALLBACK hkWndProc(HWND Hwnd, UINT Message, WPARAM wParam, LPARAM lParam
 		return CallWindowProc(oWndProc, Hwnd, Message, wParam, lParam);
 
 	if (Message == WM_KEYDOWN && !EngineClient->Con_IsVisible()) {
-		//AntiAim->OnKeyPressed(wParam);
+		AntiAim->OnKeyPressed(wParam);
 
 		Cheat.KeyStates[wParam] = !Cheat.KeyStates[wParam];
 	}
@@ -333,9 +333,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		World->Modulation();
 		World->SkyBox();
 		World->Fog();
-		World->RemoveBlood();
 		World->Smoke();
-		World->SunDirection();
 
 		static ConVar* cl_threaded_bone_setup = CVar->FindVar("cl_threaded_bone_setup");
 
@@ -360,7 +358,6 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 	ctx.reset();
 	LagCompensation->Reset();
 	AnimationSystem->ResetInterpolation();
-	World->SunDirection(true);
 	ShotManager->Reset();
 
 	oLevelShutdown(thisptr);
@@ -453,10 +450,11 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	case FRAME_RENDER_START:
 		AnimationSystem->RunInterpolation();
 		Chams->UpdateSettings();
+		World->SunDirection();
 
 		cvars.r_aspectratio->SetFloat(config.visuals.effects.aspect_ratio->get());
 		cvars.mat_postprocessing_enable->SetInt(!config.visuals.effects.removals->get(0));
-		cvars.cl_csm_shadows->SetInt(config.visuals.effects.removals->get(2) ? 0 : 1);
+		cvars.cl_csm_shadows->SetInt(!config.visuals.effects.removals->get(2));
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
@@ -627,7 +625,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 
 	if (c_ctx->command_number == DoubleTap->charged_command + 1) {
 		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick;
-
+		Console->Log("tickbase fixed: " + std::to_string(thisptr->m_nTickBase()));
 		//EnginePrediction->RestoreNetvars(last_simulated_tick % 150);
 	}
 
@@ -942,6 +940,13 @@ bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
 	return oInPrediction(ecx, edx);
 }
 
+void __fastcall hkTraceBlood(CGameTrace* trace, int bloodColor) {
+	if (config.visuals.effects.removals->get(6))
+		return;
+
+	oTraceBlood(trace, bloodColor);
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1012,6 +1017,7 @@ void Hooks::Initialize() {
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
 	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
+	oTraceBlood = HookFunction<tTraceBlood>(Utils::PatternScan("client.dll", "56 57 8B FA 8B F1 83 FF FF 0F 84 ? ? ? ? 85 FF"), hkTraceBlood);
 
 	EventListner->Register();
 }
@@ -1072,4 +1078,5 @@ void Hooks::End() {
 	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
 	RemoveHook(oInPrediction, hkInPrediction);
+	RemoveHook(oTraceBlood, hkTraceBlood);
 }

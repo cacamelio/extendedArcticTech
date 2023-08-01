@@ -149,22 +149,15 @@ public:
 class CMultiCombo : public IBaseWidget {
 public:
 	std::vector<const char*> elements;
-	bool* value;
+	bool value[32];
 
 	bool get(int i) { return value[i]; };
 	void UpdateList(const std::vector<const char*>& new_el) { 
 		elements = new_el;
-		delete[] value;
-		value = new bool[new_el.size()];
 	};
 
 	virtual WidgetType GetType() { return WidgetType::Combo; };
 	virtual void Render();
-
-	~CMultiCombo() {
-		if (value)
-			delete[] value;
-	}
 };
 
 class CButton : public IBaseWidget {
@@ -184,6 +177,7 @@ public:
 	virtual void Render();
 };
 
+struct CMenuTab;
 class CMenuGroupbox {
 public:
 	int column = 0;
@@ -191,11 +185,46 @@ public:
 	ImVec2 position;
 	ImVec2 size;
 
+	CMenuTab* parent;
 	std::string name;
 	std::vector<IBaseWidget*> widgets;
 
 	void Render();
+
+	CCheckBox*		AddCheckBox(const std::string& name, bool init = false);
+	CSliderInt*		AddSliderInt(const std::string& name, int min, int max, int init, const std::string& format = "%d", ImGuiSliderFlags flags = 0);
+	CSliderFloat*	AddSliderFloat(const std::string& name, float min, float max, float init, const std::string& format = "%.3f", ImGuiSliderFlags flags = 0);
+	CKeyBind*		AddKeyBind(const std::string& name);
+	CLabel*			AddLabel(const std::string& name);
+	CColorPicker*	AddColorPicker(const std::string& name, Color color = Color(), bool has_alpha = true);
+	CComboBox*		AddComboBox(const std::string& name, std::vector<const char*> items);
+	CMultiCombo*	AddMultiCombo(const std::string& name, std::vector<const char*> items);
+	CButton*		AddButton(const std::string& name);
+	CInputBox*		AddInput(const std::string& name, const std::string& init = "", ImGuiInputTextFlags flags = 0);
 };
+
+struct IDirect3DTexture9;
+struct CMenuTab {
+	IDirect3DTexture9* icon;
+	ImVec2 icon_size;
+	std::string name;
+	std::vector<CMenuGroupbox*> groupboxes;
+};
+
+namespace pic {
+	inline IDirect3DTexture9* logo = nullptr;
+
+	namespace tab {
+		inline IDirect3DTexture9* aimbot = nullptr;
+		inline IDirect3DTexture9* antiaim = nullptr;
+		inline IDirect3DTexture9* visuals = nullptr;
+		inline IDirect3DTexture9* misc = nullptr;
+		inline IDirect3DTexture9* players = nullptr;
+		inline IDirect3DTexture9* skins = nullptr;
+		inline IDirect3DTexture9* configs = nullptr;
+		inline IDirect3DTexture9* scripts = nullptr;
+	}
+}
 
 class CMenu {
 private:
@@ -204,7 +233,7 @@ private:
 	ImVec2 m_WindowSize;
 	ImVec2 m_ItemSpacing;
 
-	std::vector<CMenuGroupbox*> m_Groupboxes[8];
+	std::vector<CMenuTab*> m_Tabs;
 
 	void RecalculateGroupboxes();
 public:
@@ -217,21 +246,15 @@ public:
 	void			Render();
 	void			WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	void			AddGroupBox(const std::string& tab, const std::string& groupbox, float relative_size = 1.f, int column = -1);
-	CCheckBox*		AddCheckBox(const std::string& tab, const std::string& groupbox, const std::string& name, bool init = false);
-	CSliderInt*		AddSliderInt(const std::string& tab, const std::string& groupbox, const std::string& name, int min, int max, int init, const std::string& format = "%d", ImGuiSliderFlags flags = 0);
-	CSliderFloat*	AddSliderFloat(const std::string& tab, const std::string& groupbox, const std::string& name, float min, float max, float init, const std::string& format = "%.3f", ImGuiSliderFlags flags = 0);
-	CKeyBind*		AddKeyBind(const std::string& tab, const std::string& groupbox, const std::string& name);
-	CLabel*			AddLabel(const std::string& tab, const std::string& groupbox, const std::string& name);
-	CColorPicker*	AddColorPicker(const std::string& tab, const std::string& groupbox, const std::string& name, Color color = Color(), bool has_alpha = true);
-	CComboBox*		AddComboBox(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<const char*> items);
-	CMultiCombo*	AddMultiCombo(const std::string& tab, const std::string& groupbox, const std::string& name, std::vector<const char*> items);
-	CButton*		AddButton(const std::string& tab, const std::string& groupbox, const std::string& name);
-	CInputBox*		AddInput(const std::string& tab, const std::string& groupbox, const std::string& name, const std::string& init = "", ImGuiInputTextFlags flags = 0);
+	CMenuTab*		AddTab(const std::string& tab, IDirect3DTexture9* icon, ImVec2 icon_size);
+	CMenuGroupbox*	AddGroupBox(const std::string& tab, const std::string& groupbox, float relative_size = 1.f, int column = -1);
 
+	CMenuTab*		FindTab(const std::string& name);
 	CMenuGroupbox*	FindGroupbox(const std::string& tab, const std::string& groupbox);
 	IBaseWidget*	FindItem(const std::string& tab, const std::string& groupbox, const std::string& name, WidgetType type = WidgetType::Any);
 	void			RemoveItem(IBaseWidget* item);
+	void			RemoveGroupBox(CMenuGroupbox* gb);
+	void			RemoveTab(CMenuTab* tab);
 };
 
 extern CMenu* Menu;

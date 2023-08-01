@@ -5,6 +5,7 @@
 #include "../../Utils/Utils.h"
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/AutoWall.h"
+#include "../../Utils/Animation.h"
 
 void CWorld::Modulation() {
 	if (!Cheat.InGame)
@@ -182,73 +183,50 @@ void CWorld::Crosshair() {
 	Render->BoxFilled(Cheat.ScreenSize * 0.5f - Vector2(2, 0), Cheat.ScreenSize * 0.5f + Vector2(3, 1), crosshairColor);
 }
 
-void CWorld::RemoveBlood() {
-	if (!Cheat.InGame)
-		return;
-
-	static const char* bloodMaterials[] = {
-		"decals/blood8",
-		"decals/blood7",
-		"decals/blood6",
-		"decals/blood5",
-		"decals/blood4",
-		"decals/blood3",
-		"decals/blood2",
-		"decals/blood1",
-		//"decals/blood6_subrect",
-		//"decals/blood5_subrect",
-		//"decals/blood4_subrect",
-		//"decals/blood3_subrect",
-		//"decals/blood2_subrect",
-		//"decals/blood1_subrect",
-	};
-
-	for (const char* mat : bloodMaterials) {
-		IMaterial* material = MaterialSystem->FindMaterial(mat);
-
-		if (!material || material->IsErrorMaterial())
-			continue;
-
-		//material->IncrementReferenceCount();
-		//material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(6));
-	}
-}
-
-void CWorld::SunDirection(bool disable) {
-	static bool backupStored;
+void CWorld::SunDirection() {
+	static bool backupShouldReset;
 	static Vector backupDirection, backupEnvDirection;
-	static float backupDistance;
+	static float backupDistance = -1.f;
 
-	if (!Cheat.InGame || disable) {
-		backupStored = false;
+	if (!Cheat.InGame) {
+		backupShouldReset = false;
+		backupDistance = -1.f;
 		return;
 	}
 
-	for (int i = 0; i < EntityList->GetHighestEntityIndex(); i++) {
-		CBaseEntity* ent = EntityList->GetClientEntity(i);
+	static float lerp_sun_pitch = 0;
+	static float lerp_sun_yaw = 0;
 
-		if (!ent || ent->GetClientClass()->m_ClassID != C_CASCADE_LIGHT)
-			continue;
+	static auto cascade_light_ptr = *reinterpret_cast<CCascadeLight***>(Utils::PatternScan("client.dll", "A1 ? ? ? ? B9 ? ? ? ? 56 F3 0F 7E 80", 0x1));
+	static CCascadeLight* cascade_light_entity = *cascade_light_ptr;
 
-		CCascadeLight* light = reinterpret_cast<CCascadeLight*>(ent);
+	if (!cascade_light_entity) {
+		backupShouldReset = false;
+		backupDistance = -1.f;
+		return;
+	}
 
-		if (config.visuals.effects.custom_sun_direction->get()) {
-			backupDirection = light->m_shadowDirection();
-			backupEnvDirection = light->m_envLightShadowDirection();
-			backupDistance = light->m_flMaxShadowDist();
-
-			Vector newDirection = Math::AngleVectors(QAngle(config.visuals.effects.sun_pitch->get(), config.visuals.effects.sun_yaw->get(), 0));
-
-			light->m_envLightShadowDirection() = newDirection;
-			light->m_shadowDirection() = newDirection;
-			light->m_flMaxShadowDist() = config.visuals.effects.sun_distance->get();
-			backupStored = true;
+	if (config.visuals.effects.custom_sun_direction->get()) {
+		if (backupDistance == -1.f) {
+			backupDirection = cascade_light_entity->m_shadowDirection();
+			backupEnvDirection = cascade_light_entity->m_envLightShadowDirection();
+			backupDistance = cascade_light_entity->m_flMaxShadowDist();
 		}
-		else {
-			light->m_envLightShadowDirection() = backupEnvDirection;
-			light->m_shadowDirection() = backupDirection;
-			light->m_flMaxShadowDist() = backupDistance;
-		}
+
+		lerp_sun_pitch = interpolate(lerp_sun_pitch, config.visuals.effects.sun_pitch->get(), GlobalVars->frametime * 8);
+		lerp_sun_yaw = interpolate(lerp_sun_yaw, config.visuals.effects.sun_yaw->get(), GlobalVars->frametime * 8);
+
+		Vector newDirection = Math::AngleVectors(QAngle(lerp_sun_pitch, lerp_sun_yaw, 0));
+
+		cascade_light_entity->m_envLightShadowDirection() = newDirection;
+		cascade_light_entity->m_shadowDirection() = newDirection;
+		cascade_light_entity->m_flMaxShadowDist() = config.visuals.effects.sun_distance->get();
+		backupShouldReset = true;
+	}
+	else if (backupShouldReset) { 
+		cascade_light_entity->m_envLightShadowDirection() = backupEnvDirection;
+		cascade_light_entity->m_shadowDirection() = backupDirection;
+		cascade_light_entity->m_flMaxShadowDist() = backupDistance;
 	}
 }
 

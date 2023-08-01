@@ -5,57 +5,66 @@
 #include "../Features/Visuals/World.h"
 
 void CMenu::SetupUI() {
-	AddGroupBox("Aimbot", "Aimbot");
-	AddGroupBox("Aimbot", "Settings");
+	AddTab("Aimbot", pic::tab::aimbot, ImVec2(14, 14));
+	AddTab("Anti aim", pic::tab::antiaim, ImVec2(14.74f, 14));
+	AddTab("Player", pic::tab::players, ImVec2(8.75f, 14));
+	AddTab("Visuals", pic::tab::visuals, ImVec2(14, 9.33f));
+	AddTab("Misc", pic::tab::misc, ImVec2(14, 11.74f));
+	AddTab("Skins", pic::tab::skins, ImVec2(16, 16));
+	AddTab("Config", pic::tab::configs, ImVec2(13.4f, 14));
+	AddTab("Scripts", pic::tab::scripts, ImVec2(15, 12));
 
-	AddGroupBox("Anti aim", "Angles");
-	AddGroupBox("Anti aim", "Fake lag", 1.f, 1);
-	AddGroupBox("Anti aim", "Other", 1.f, 1);
+	auto aimbot = AddGroupBox("Aimbot", "Aimbot");
+	auto aim_settings = AddGroupBox("Aimbot", "Settings");
+	
+	auto aa_angles = AddGroupBox("Anti aim", "Angles");
+	auto fake_lag = AddGroupBox("Anti aim", "Fake lag", 1.f, 1);
+	auto aa_other = AddGroupBox("Anti aim", "Other", 1.f, 1);
 
-	AddGroupBox("Player", "ESP");
-	AddGroupBox("Player", "Chams");
+	auto player_esp = AddGroupBox("Player", "ESP");
+	auto chams = AddGroupBox("Player", "Chams");
 
-	AddGroupBox("Visuals", "Other ESP");
-	AddGroupBox("Visuals", "Effects");
+	auto other_esp = AddGroupBox("Visuals", "Other ESP");
+	auto effects = AddGroupBox("Visuals", "Effects");
 
-	AddGroupBox("Misc", "Miscellaneous");
-	AddGroupBox("Misc", "Movement");
+	auto misc = AddGroupBox("Misc", "Miscellaneous");
+	auto movement = AddGroupBox("Misc", "Movement");
 
-	AddGroupBox("Skins", "Skins");
-	AddGroupBox("Skins", "Models");
+	auto skins = AddGroupBox("Skins", "Skins"); 
+	auto models = AddGroupBox("Skins", "Models");
 
-	AddGroupBox("Config", "Config");
+	auto configs = AddGroupBox("Config", "Config");
 
-	AddGroupBox("Scripts", "Scripts");
+	auto scripts = AddGroupBox("Scripts", "Scripts");
 
-	config.ragebot.aimbot.enabled = AddCheckBox("Aimbot", "Aimbot", "Enabled");
-	config.ragebot.aimbot.extrapolation = AddComboBox("Aimbot", "Aimbot", "Extrapolation", { "Disable", "Enable", "Force" });
-	config.ragebot.aimbot.doubletap = AddCheckBox("Aimbot", "Aimbot", "Double Tap");
-	config.ragebot.aimbot.doubletap_key = AddKeyBind("Aimbot", "Aimbot", "Double Tap");
-	config.ragebot.aimbot.defensive_doubletap = AddCheckBox("Aimbot", "Aimbot", "Lag Peek");
-	config.ragebot.aimbot.force_teleport = AddKeyBind("Aimbot", "Aimbot", "Force Teleport");
-	config.ragebot.aimbot.force_body_aim = AddKeyBind("Aimbot", "Aimbot", "Force Body Aim");
-	config.ragebot.aimbot.minimum_damage_override_key = AddKeyBind("Aimbot", "Aimbot", "Min. damage override");
-	config.ragebot.aimbot.peek_assist = AddCheckBox("Aimbot", "Aimbot", "Peek Assist");
-	config.ragebot.aimbot.peek_assist_color = AddColorPicker("Aimbot", "Aimbot", "Peek Assist");
-	config.ragebot.aimbot.peek_assist_keybind = AddKeyBind("Aimbot", "Aimbot", "Peek Assist key");
-	config.ragebot.aimbot.show_aimpoints = AddCheckBox("Aimbot", "Aimbot", "Show aim points");
-	config.ragebot.aimbot.resolver_treshold = AddSliderInt("Aimbot", "Aimbot", "Resolver treshold", 0, 100, 50, "%.d%%");
-	config.ragebot.aimbot.show_debug_data = AddCheckBox("Aimbot", "Aimbot", "Show debug data");
-	config.ragebot.aimbot.threads = AddCheckBox("Aimbot", "Aimbot", "Multithread");
+	config.ragebot.aimbot.enabled = aimbot->AddCheckBox("Enabled");
+	config.ragebot.aimbot.extrapolation = aimbot->AddComboBox("Extrapolation", { "Disable", "Enable", "Force" });
+	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
+	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
+	config.ragebot.aimbot.defensive_doubletap = aimbot->AddCheckBox("Lag Peek");
+	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
+	config.ragebot.aimbot.force_body_aim = aimbot->AddKeyBind("Force Body Aim");
+	config.ragebot.aimbot.minimum_damage_override_key = aimbot->AddKeyBind("Min. damage override");
+	config.ragebot.aimbot.peek_assist = aimbot->AddCheckBox("Peek Assist");
+	config.ragebot.aimbot.peek_assist_color = aimbot->AddColorPicker("Peek Assist");
+	config.ragebot.aimbot.peek_assist_keybind = aimbot->AddKeyBind("Peek Assist key");
+	config.ragebot.aimbot.show_aimpoints = aimbot->AddCheckBox("Show aim points");
+	config.ragebot.aimbot.resolver_treshold = aimbot->AddSliderInt("Resolver treshold", 0, 100, 50, "%.d%%");
+	config.ragebot.aimbot.show_debug_data = aimbot->AddCheckBox("Show debug data");
+	config.ragebot.aimbot.threads = aimbot->AddCheckBox("Multithread");
 
-	config.ragebot.selected_weapon = AddComboBox("Aimbot", "Settings", "Current Weapon", { "Global", "AWP", "Autosniper", "Scout", "Deagle", "Pistol" });
+	config.ragebot.selected_weapon = aim_settings->AddComboBox("Current Weapon", { "Global", "AWP", "Autosniper", "Scout", "Deagle", "Pistol" });
 
-	auto setup_weapon_config = [this](weapon_settings_t& settings) {
-		settings.hitboxes = AddMultiCombo("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Hitbox"), { "Head", "Chest", "Stomach", "Arms", "Legs", "Feet" });
-		settings.multipoints = AddMultiCombo("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Multipoints"), { "Head", "Chest", "Stomach" });
-		settings.head_point_scale = AddSliderInt("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Head scale"), 0, 100, 50, "%");
-		settings.body_point_scale = AddSliderInt("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Body scale"), 0, 100, 50, "%");
-		settings.hitchance = AddSliderInt("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Hitchance"), 0, 100, 50, "%");
-		settings.minimum_damage = AddSliderInt("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Minimum damage"), 1, 130, 30);
-		settings.minimum_damage_override = AddSliderInt("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Minimum damage override"), 1, 130, 10);
-		settings.auto_stop = AddMultiCombo("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Full stop", "Early", "Move between shots" });
-		settings.auto_scope = AddCheckBox("Aimbot", "Settings", std::format("[{}] {}", settings.weapon_name, "Auto scope"));
+	auto setup_weapon_config = [this, aim_settings](weapon_settings_t& settings) {
+		settings.hitboxes = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Hitbox"), { "Head", "Chest", "Stomach", "Arms", "Legs", "Feet" });
+		settings.multipoints = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Multipoints"), { "Head", "Chest", "Stomach" });
+		settings.head_point_scale = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Head scale"), 0, 100, 50, "%d%%");
+		settings.body_point_scale = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Body scale"), 0, 100, 50, "%d%%");
+		settings.hitchance = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Hitchance"), 0, 100, 50, "%d%%");
+		settings.minimum_damage = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage"), 1, 130, 30);
+		settings.minimum_damage_override = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage override"), 1, 130, 10);
+		settings.auto_stop = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Full stop", "Early", "Move between shots" });
+		settings.auto_scope = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Auto scope"));
 	};
 
 	setup_weapon_config(config.ragebot.weapons.global);
@@ -65,156 +74,155 @@ void CMenu::SetupUI() {
 	setup_weapon_config(config.ragebot.weapons.deagle);
 	setup_weapon_config(config.ragebot.weapons.pistol);
 
-	config.antiaim.angles.pitch = AddComboBox("Anti aim", "Angles", "Pitch", { "Disabled", "Down" });
-	config.antiaim.angles.yaw = AddComboBox("Anti aim", "Angles", "Yaw", { "Forward", "Backward", "At target" });
-	config.antiaim.angles.yaw_jitter = AddCheckBox("Anti aim", "Angles", "Yaw jitter");
-	config.antiaim.angles.modifier_value = AddSliderInt("Anti aim", "Angles", "Modifier value", -180, 180, 0, "%d°");
-	config.antiaim.angles.manual_left = AddKeyBind("Anti aim", "Angles", "Manual left");
-	config.antiaim.angles.manual_right = AddKeyBind("Anti aim", "Angles", "Manual right");
-	config.antiaim.angles.body_yaw = AddCheckBox("Anti aim", "Angles", "Body yaw");
-	config.antiaim.angles.body_yaw_options = AddMultiCombo("Anti aim", "Angles", "Body yaw options", { "Jitter", "Random jitter", "Extended", "Freestand" });
-	config.antiaim.angles.body_yaw_limit = AddSliderInt("Anti aim", "Angles", "Limit", 0, 58, 58, "%d°");
-	config.antiaim.angles.inverter = AddKeyBind("Anti aim", "Angles", "Inverter");
+	config.antiaim.angles.pitch = aa_angles->AddComboBox("Pitch", { "Disabled", "Down" });
+	config.antiaim.angles.yaw = aa_angles->AddComboBox("Yaw", { "Forward", "Backward", "At target" });
+	config.antiaim.angles.yaw_jitter = aa_angles->AddCheckBox("Yaw jitter");
+	config.antiaim.angles.modifier_value = aa_angles->AddSliderInt("Modifier value", -180, 180, 0);
+	config.antiaim.angles.manual_left = aa_angles->AddKeyBind("Manual left");
+	config.antiaim.angles.manual_right = aa_angles->AddKeyBind("Manual right");
+	config.antiaim.angles.body_yaw = aa_angles->AddCheckBox("Body yaw");
+	config.antiaim.angles.body_yaw_options = aa_angles->AddMultiCombo("Body yaw options", { "Jitter", "Random jitter", "Extended", "Freestand" });
+	config.antiaim.angles.body_yaw_limit = aa_angles->AddSliderInt("Limit", 0, 58, 58);
+	config.antiaim.angles.inverter = aa_angles->AddKeyBind("Inverter");
 
-	config.antiaim.fakelag.enabled = AddCheckBox("Anti aim", "Fake lag", "Enabled");
-	config.antiaim.fakelag.limit = AddSliderInt("Anti aim", "Fake lag", "Limit", 1, 15, 13);
-	config.antiaim.fakelag.variability = AddSliderInt("Anti aim", "Fake lag", "Variabaility", 1, 14, 1);
-	config.antiaim.fakelag.triggers = AddMultiCombo("Anti aim", "Fake lag", "Triggers", { "Move", "Air", "Break LC", "Peek" });
+	config.antiaim.fakelag.enabled = fake_lag->AddCheckBox("Enabled");
+	config.antiaim.fakelag.limit = fake_lag->AddSliderInt("Limit", 1, 15, 13);
+	config.antiaim.fakelag.variability = fake_lag->AddSliderInt("Variabaility", 1, 14, 1);
+	config.antiaim.fakelag.triggers = fake_lag->AddMultiCombo("Triggers", { "Move", "Air", "Break LC", "Peek" });
 
-	config.antiaim.misc.fake_duck = AddKeyBind("Anti aim", "Other", "Fake duck");
-	config.antiaim.misc.slow_walk = AddKeyBind("Anti aim", "Other", "Slow walk");
-	config.antiaim.misc.slow_walk_type = AddComboBox("Anti aim", "Other", "Type", { "Force accuracy", "Custom" });
-	config.antiaim.misc.custom_slow_walk = AddSliderInt("Anti aim", "Other", "Custom speed", 0, 100, 50, "%d%");
-	config.antiaim.misc.animations = AddMultiCombo("Anti aim", "Other", "Animations", { "Lean", "Static legs in air", "Backward legs" });
-	config.antiaim.misc.leg_movement = AddComboBox("Anti aim", "Other", "Leg movement", { "Default", "Sliding", "Walking" });
+	config.antiaim.misc.fake_duck = aa_other->AddKeyBind("Fake duck");
+	config.antiaim.misc.slow_walk = aa_other->AddKeyBind("Slow walk");
+	config.antiaim.misc.slow_walk_type = aa_other->AddComboBox("Type", { "Force accuracy", "Custom" });
+	config.antiaim.misc.custom_slow_walk = aa_other->AddSliderInt("Custom speed", 0, 100, 50, "%d%%");
+	config.antiaim.misc.animations = aa_other->AddMultiCombo("Animations", { "Lean", "Static legs in air", "Backward legs" });
+	config.antiaim.misc.leg_movement = aa_other->AddComboBox("Leg movement", { "Default", "Sliding", "Walking" });
 
-	config.visuals.esp.enable = AddCheckBox("Player", "ESP", "Enable");
-	config.visuals.esp.dormant = AddCheckBox("Player", "ESP", "Dormant");
-	config.visuals.esp.dormant_color = AddColorPicker("Player", "ESP", "Dormant", Color(255, 255, 255, 200));
-	config.visuals.esp.bounding_box = AddCheckBox("Player", "ESP", "Bounding box");
-	config.visuals.esp.box_color = AddColorPicker("Player", "ESP", "Bounding box");
-	config.visuals.esp.health_bar = AddCheckBox("Player", "ESP", "Health bar");
-	config.visuals.esp.custom_health = AddCheckBox("Player", "ESP", "Custom health");
-	config.visuals.esp.custom_health_color = AddColorPicker("Player", "ESP", "Custom health");
-	config.visuals.esp.name = AddCheckBox("Player", "ESP", "Name");
-	config.visuals.esp.name_color = AddColorPicker("Player", "ESP", "Name");
-	config.visuals.esp.flags = AddMultiCombo("Player", "ESP", "Flags", { "Armor", "Zoom", "Fake duck", "Exploit", "Break LC", "Bomb", "Resolver" });
-	config.visuals.esp.weapon_text = AddCheckBox("Player", "ESP", "Weapon text");
-	config.visuals.esp.weapon_text_color = AddColorPicker("Player", "ESP", "Weapon text");
-	config.visuals.esp.weapon_icon = AddCheckBox("Player", "ESP", "Weapon icon");
-	config.visuals.esp.weapon_icon_color = AddColorPicker("Player", "ESP", "Weapon icon");
-	config.visuals.esp.ammo = AddCheckBox("Player", "ESP", "Ammo");
-	config.visuals.esp.ammo_color = AddColorPicker("Player", "ESP", "Ammo", Color(80, 140, 200));
-	config.visuals.esp.glow = AddCheckBox("Player", "ESP", "Glow");
-	config.visuals.esp.glow_color = AddColorPicker("Player", "ESP", "Glow", Color(180, 60, 120));
-	config.visuals.esp.hitsound = AddCheckBox("Player", "ESP", "Hit sound");
-	config.visuals.esp.show_server_hitboxes = AddCheckBox("Player", "ESP", "Show sever hitboxes");
-	config.visuals.esp.shared_esp = AddCheckBox("Player", "ESP", "Shared ESP");
-	config.visuals.esp.share_with_enemies = AddCheckBox("Player", "ESP", "Share with enemies");
-	config.visuals.esp.hitmarker = AddCheckBox("Player", "ESP", "Hitmarker");
-	config.visuals.esp.hitmarker_color = AddColorPicker("Player", "ESP", "Hitmarker");
-	config.visuals.esp.damage_marker = AddCheckBox("Player", "ESP", "Damage marker");
-	config.visuals.esp.damage_marker_color = AddColorPicker("Player", "ESP", "Damage marker");
+	config.visuals.esp.enable = player_esp->AddCheckBox("Enable");
+	config.visuals.esp.dormant = player_esp->AddCheckBox("Dormant");
+	config.visuals.esp.dormant_color = player_esp->AddColorPicker("Dormant", Color(255, 255, 255, 200));
+	config.visuals.esp.bounding_box = player_esp->AddCheckBox("Bounding box");
+	config.visuals.esp.box_color = player_esp->AddColorPicker("Bounding box");
+	config.visuals.esp.health_bar = player_esp->AddCheckBox("Health bar");
+	config.visuals.esp.custom_health = player_esp->AddCheckBox("Custom health");
+	config.visuals.esp.custom_health_color = player_esp->AddColorPicker("Custom health");
+	config.visuals.esp.name = player_esp->AddCheckBox("Name");
+	config.visuals.esp.name_color = player_esp->AddColorPicker("Name");
+	config.visuals.esp.flags = player_esp->AddMultiCombo("Flags", { "Armor", "Zoom", "Fake duck", "Exploit", "Break LC", "Bomb", "Resolver" });
+	config.visuals.esp.weapon_text = player_esp->AddCheckBox("Weapon text");
+	config.visuals.esp.weapon_text_color = player_esp->AddColorPicker("Weapon text");
+	config.visuals.esp.weapon_icon = player_esp->AddCheckBox("Weapon icon");
+	config.visuals.esp.weapon_icon_color = player_esp->AddColorPicker("Weapon icon");
+	config.visuals.esp.ammo = player_esp->AddCheckBox("Ammo");
+	config.visuals.esp.ammo_color = player_esp->AddColorPicker("Ammo", Color(80, 140, 200));
+	config.visuals.esp.glow = player_esp->AddCheckBox("Glow");
+	config.visuals.esp.glow_color = player_esp->AddColorPicker("Glow", Color(180, 60, 120));
+	config.visuals.esp.hitsound = player_esp->AddCheckBox("Hit sound");
+	config.visuals.esp.show_server_hitboxes = player_esp->AddCheckBox("Show sever hitboxes");
+	config.visuals.esp.shared_esp = player_esp->AddCheckBox("Shared ESP");
+	config.visuals.esp.share_with_enemies = player_esp->AddCheckBox("Share with enemies");
+	config.visuals.esp.hitmarker = player_esp->AddCheckBox("Hitmarker");
+	config.visuals.esp.hitmarker_color = player_esp->AddColorPicker("Hitmarker");
+	config.visuals.esp.damage_marker = player_esp->AddCheckBox("Damage marker");
+	config.visuals.esp.damage_marker_color = player_esp->AddColorPicker("Damage marker");
 
-	config.visuals.chams.enemy = AddCheckBox("Player", "Chams", "Player");
-	config.visuals.chams.enemy_invisible = AddCheckBox("Player", "Chams", "Player behind wall");
-	config.visuals.chams.enemy_color = AddColorPicker("Player", "Chams", "Player", Color(150, 190, 70));
-	config.visuals.chams.enemy_invisible_color = AddColorPicker("Player", "Chams", "Player behind wall", Color(60, 120, 160));
-	config.visuals.chams.enemy_type = AddComboBox("Player", "Chams", "Enemy type", { "Default", "Solid", "Glow", "Glow overlay" });
-	config.visuals.chams.enemy_second_color = AddColorPicker("Player", "Chams", "Enemy type");
-	config.visuals.chams.enemy_glow_thickness = AddSliderFloat("Player", "Chams", "Enemy glow thickness", 0.1f, 9.f, 1.f, "%.1f");
-	config.visuals.chams.shot_chams = AddCheckBox("Player", "Chams", "Shot");
-	config.visuals.chams.shot_chams_color = AddColorPicker("Player", "Chams", "Shot", Color(100, 100, 100));
-	config.visuals.chams.shot_chams_type = AddComboBox("Player", "Chams", "Shot type", { "Default", "Solid", "Glow", "Glow overlay" });
-	config.visuals.chams.shot_chams_second_color = AddColorPicker("Player", "Chams", "Shot type");
-	config.visuals.chams.shot_chams_thickness = AddSliderFloat("Player", "Chams", "Shot glow thickness", 0.1f, 9.f, 1.f, "%.1f");
-	config.visuals.chams.shot_chams_duration = AddSliderInt("Player", "Chams", "Shot chams duration", 1, 10, 4, "s");
-	config.visuals.chams.local_player = AddCheckBox("Player", "Chams", "Local player");
-	config.visuals.chams.local_player_color = AddColorPicker("Player", "Chams", "Local player", Color(100, 100, 100));
-	config.visuals.chams.local_player_type = AddComboBox("Player", "Chams", "Local type", { "Default", "Solid", "Glow", "Glow overlay" });
-	config.visuals.chams.local_player_second_color = AddColorPicker("Player", "Chams", "Local type");
-	config.visuals.chams.local_glow_thickness = AddSliderFloat("Player", "Chams", "Local glow thickness", 0.1f, 9.f, 1.f, "%.1f");
-	config.visuals.chams.attachments = AddCheckBox("Player", "Chams", "Attachments");
-	config.visuals.chams.attachments_color = AddColorPicker("Player", "Chams", "Attachments");
-	config.visuals.chams.attachments_type = AddComboBox("Player", "Chams", "Attachments type", { "Default", "Solid", "Glow", "Glow overlay" });
-	config.visuals.chams.attachments_second_color = AddColorPicker("Player", "Chams", "Attachments type");
-	config.visuals.chams.attachments_glow_thickness = AddSliderFloat("Player", "Chams", "Attachments glow thickness", 0.1f, 9.f, 1.f, "%.1f");
-	config.visuals.chams.viewmodel = AddCheckBox("Player", "Chams", "Viewmodel");
-	config.visuals.chams.viewmodel_color = AddColorPicker("Player", "Chams", "Viewmodel");
-	config.visuals.chams.viewmodel_type = AddComboBox("Player", "Chams", "Viewmodel type", { "Default", "Solid", "Glow", "Glow overlay" });
-	config.visuals.chams.viewmodel_second_color = AddColorPicker("Player", "Chams", "Viewmodel type");
-	config.visuals.chams.viewmodel_glow_thickness = AddSliderFloat("Player", "Chams", "Viewmodel glow thickness", 0.1f, 9.f, 1.f, "%.1f");
-	config.visuals.chams.scope_blend = AddSliderInt("Player", "Chams", "Scope blend", 0, 100, 100, "%d%%");
-	config.visuals.chams.disable_model_occlusion = AddCheckBox("Player", "Chams", "Disable model occlusion");
+	config.visuals.chams.enemy = chams->AddCheckBox("Player");
+	config.visuals.chams.enemy_invisible = chams->AddCheckBox("Player behind wall");
+	config.visuals.chams.enemy_color = chams->AddColorPicker("Player", Color(150, 190, 70));
+	config.visuals.chams.enemy_invisible_color = chams->AddColorPicker("Player behind wall", Color(60, 120, 160));
+	config.visuals.chams.enemy_second_color = chams->AddColorPicker("Enemy second color");
+	config.visuals.chams.enemy_type = chams->AddComboBox("Enemy type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.enemy_glow_thickness = chams->AddSliderFloat("Enemy glow thickness", 0.1f, 9.f, 1.f, "%.1f");
+	config.visuals.chams.shot_chams = chams->AddCheckBox("Shot");
+	config.visuals.chams.shot_chams_color = chams->AddColorPicker("Shot", Color(100, 100, 100));
+	config.visuals.chams.shot_chams_second_color = chams->AddColorPicker("Shot second color");
+	config.visuals.chams.shot_chams_type = chams->AddComboBox("Shot type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.shot_chams_thickness = chams->AddSliderFloat("Shot glow thickness", 0.1f, 9.f, 1.f, "%.1f");
+	config.visuals.chams.shot_chams_duration = chams->AddSliderInt("Shot chams duration", 1, 10, 4, "s");
+	config.visuals.chams.local_player = chams->AddCheckBox("Local player");
+	config.visuals.chams.local_player_color = chams->AddColorPicker("Local player", Color(100, 100, 100));
+	config.visuals.chams.local_player_second_color = chams->AddColorPicker("Local second color");
+	config.visuals.chams.local_player_type = chams->AddComboBox("Local type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.local_glow_thickness = chams->AddSliderFloat("Local glow thickness", 0.1f, 9.f, 1.f, "%.1f");
+	config.visuals.chams.attachments = chams->AddCheckBox("Attachments");
+	config.visuals.chams.attachments_color = chams->AddColorPicker("Attachments");
+	config.visuals.chams.attachments_second_color = chams->AddColorPicker("Attachments second color");
+	config.visuals.chams.attachments_type = chams->AddComboBox("Attachments type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.attachments_glow_thickness = chams->AddSliderFloat("Attachments glow thickness", 0.1f, 9.f, 1.f, "%.1f");
+	config.visuals.chams.viewmodel = chams->AddCheckBox("Viewmodel");
+	config.visuals.chams.viewmodel_color = chams->AddColorPicker("Viewmodel");
+	config.visuals.chams.viewmodel_second_color = chams->AddColorPicker("Viewmodel second color");
+	config.visuals.chams.viewmodel_type = chams->AddComboBox("Viewmodel type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.viewmodel_glow_thickness = chams->AddSliderFloat("Viewmodel glow thickness", 0.1f, 9.f, 1.f, "%.1f");
+	config.visuals.chams.disable_model_occlusion = chams->AddCheckBox("Disable model occlusion");
 
-	config.visuals.other_esp.radar = AddCheckBox("Visuals", "Other ESP", "Radar");
-	config.visuals.other_esp.dropped_weapons = AddMultiCombo("Visuals", "Other ESP", "Dropped weapons", { "Text", "Icon", "Glow" });
-	config.visuals.other_esp.dropped_weapons_color = AddColorPicker("Visuals", "Other ESP", "Dropped weapons");
-	config.visuals.other_esp.sniper_crosshair = AddCheckBox("Visuals", "Other ESP", "Sniper crosshair");
-	config.visuals.other_esp.penetration_crosshair = AddCheckBox("Visuals", "Other ESP", "Penetration crosshair");
-	config.visuals.other_esp.bomb = AddCheckBox("Visuals", "Other ESP", "Bomb");
-	config.visuals.other_esp.bomb_color = AddColorPicker("Visuals", "Other ESP", "Bomb", Color(150, 200, 60));
-	config.visuals.other_esp.grenades = AddCheckBox("Visuals", "Other ESP", "Grenades");
-	config.visuals.other_esp.molotov_radius = AddCheckBox("Visuals", "Other ESP", "Molotov radius");
-	config.visuals.other_esp.molotov_radius_color = AddColorPicker("Visuals", "Other ESP", "Molotov radius", Color(255, 0, 0));
-	config.visuals.other_esp.grenade_trajecotry = AddCheckBox("Visuals", "Other ESP", "Grenade trajectory");
-	config.visuals.other_esp.grenade_trajectory_color = AddColorPicker("Visuals", "Other ESP", "Grenade trajectory", Color(250, 60, 60));
-	config.visuals.other_esp.grenade_trajectory_hit_color = AddColorPicker("Visuals", "Other ESP", "Grenade trajectory (hit)", Color(150, 200, 60));
-	config.visuals.other_esp.grenade_proximity_warning = AddCheckBox("Visuals", "Other ESP", "Grenade proximity warning");
-	config.visuals.other_esp.grenade_predict_color = AddColorPicker("Visuals", "Other ESP", "Grenade predict color");
-	config.visuals.other_esp.particles = AddMultiCombo("Visuals", "Other ESP", "Particles", { "Molotov", "Smoke" });
-	config.visuals.other_esp.indicators = AddMultiCombo("Visuals", "Other ESP", "Indicators", { "Double tap", "Min. damage" });
+	config.visuals.other_esp.radar = other_esp->AddCheckBox("Radar");
+	config.visuals.other_esp.dropped_weapons = other_esp->AddMultiCombo("Dropped weapons", { "Text", "Icon", "Glow" });
+	config.visuals.other_esp.dropped_weapons_color = other_esp->AddColorPicker("Dropped weapons");
+	config.visuals.other_esp.sniper_crosshair = other_esp->AddCheckBox("Sniper crosshair");
+	config.visuals.other_esp.penetration_crosshair = other_esp->AddCheckBox("Penetration crosshair");
+	config.visuals.other_esp.bomb = other_esp->AddCheckBox("Bomb");
+	config.visuals.other_esp.bomb_color = other_esp->AddColorPicker("Bomb", Color(150, 200, 60));
+	config.visuals.other_esp.grenades = other_esp->AddCheckBox("Grenades");
+	config.visuals.other_esp.molotov_radius = other_esp->AddCheckBox("Molotov radius");
+	config.visuals.other_esp.molotov_radius_color = other_esp->AddColorPicker("Molotov radius", Color(255, 0, 0));
+	config.visuals.other_esp.grenade_trajecotry = other_esp->AddCheckBox("Grenade trajectory");
+	config.visuals.other_esp.grenade_trajectory_color = other_esp->AddColorPicker("Grenade trajectory", Color(250, 60, 60));
+	config.visuals.other_esp.grenade_trajectory_hit_color = other_esp->AddColorPicker("Grenade trajectory (hit)", Color(150, 200, 60));
+	config.visuals.other_esp.grenade_proximity_warning = other_esp->AddCheckBox("Grenade proximity warning");
+	config.visuals.other_esp.grenade_predict_color = other_esp->AddColorPicker("Grenade predict color");
+	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov", "Smoke" });
+	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Double tap", "Min. damage", "Body aim" });
 
-	config.visuals.effects.fov = AddSliderInt("Visuals", "Effects", "Field of view", 80, 130, 90);
-	config.visuals.effects.removals = AddMultiCombo("Visuals", "Effects", "Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites" });
-	config.visuals.effects.world_color_enable = AddCheckBox("Visuals", "Effects", "World color");
-	config.visuals.effects.world_color = AddColorPicker("Visuals", "Effects", "World color");
-	config.visuals.effects.props_color_enable = AddCheckBox("Visuals", "Effects", "Props color");
-	config.visuals.effects.props_color = AddColorPicker("Visuals", "Effects", "Props color");
-	config.visuals.effects.thirdperson = AddCheckBox("Visuals", "Effects", "Force thirdperson");
-	config.visuals.effects.thirdperson_bind = AddKeyBind("Visuals", "Effects", "Force thirdperson");
-	config.visuals.effects.thirdperson_distance = AddSliderInt("Visuals", "Effects", "Thirdperson distance", 25, 200, 100);
-	config.visuals.effects.aspect_ratio = AddSliderFloat("Visuals", "Effects", "Aspect ratio", 0, 2, 0, "%.2f");
-	config.visuals.effects.client_impacts = AddCheckBox("Visuals", "Effects", "Client impacts");
-	config.visuals.effects.client_impacts_color = AddColorPicker("Visuals", "Effects", "Client impacts", Color(255, 0, 0, 125));
-	config.visuals.effects.server_impacts = AddCheckBox("Visuals", "Effects", "Server impacts");
-	config.visuals.effects.server_impacts_color = AddColorPicker("Visuals", "Effects", "Server impacts", Color(0, 0, 255, 125));
-	config.visuals.effects.impacts_duration = AddSliderInt("Visuals", "Effects", "Duration", 1, 10, 4, "%ds");
-	config.visuals.effects.override_skybox = AddComboBox("Visuals", "Effects", "Override skybox", { "Disabled", "Night 1", "Night 2", "Night 3" });
-	config.visuals.effects.override_fog = AddCheckBox("Visuals", "Effects", "Override fog");
-	config.visuals.effects.fog_color = AddColorPicker("Visuals", "Effects", "Override fog");
-	config.visuals.effects.fog_start = AddSliderInt("Visuals", "Effects", "Fog start", 0, 1000, 200);
-	config.visuals.effects.fog_end = AddSliderInt("Visuals", "Effects", "Fog end", 0, 1000, 500);
-	config.visuals.effects.fog_density = AddSliderInt("Visuals", "Effects", "Fog density", 0, 100, 50);
-	config.visuals.effects.preserve_killfeed = AddCheckBox("Visuals", "Effects", "Preserve killfeed");
-	config.visuals.effects.optimizations = AddMultiCombo("Visuals", "Effects", "Additional removals", { "Teammates", "Ragdolls", "Decals" });
-	config.visuals.effects.custom_sun_direction = AddCheckBox("Visuals", "Effects", "Custom sun direction");
-	config.visuals.effects.sun_pitch = AddSliderInt("Visuals", "Effects", "Sun pitch", 0, 90, 0);
-	config.visuals.effects.sun_yaw = AddSliderInt("Visuals", "Effects", "Sun yaw", -180, 180, 0);
-	config.visuals.effects.sun_distance = AddSliderInt("Visuals", "Effects", "Sun distance", 0, 2000, 400);
-	config.visuals.effects.viewmodel_scope_alpha = AddSliderInt("Visuals", "Effects", "Viewmodel scope alpha", 0, 100, 0, "%d%%");
+	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
+	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites" });
+	config.visuals.effects.world_color_enable = effects->AddCheckBox("World color");
+	config.visuals.effects.world_color = effects->AddColorPicker("World color");
+	config.visuals.effects.props_color_enable = effects->AddCheckBox("Props color");
+	config.visuals.effects.props_color = effects->AddColorPicker("Props color");
+	config.visuals.effects.thirdperson = effects->AddCheckBox("Force thirdperson");
+	config.visuals.effects.thirdperson_bind = effects->AddKeyBind("Force thirdperson");
+	config.visuals.effects.thirdperson_distance = effects->AddSliderInt("Thirdperson distance", 25, 200, 100);
+	config.visuals.effects.aspect_ratio = effects->AddSliderFloat("Aspect ratio", 0, 2, 0, "%.2f");
+	config.visuals.effects.client_impacts = effects->AddCheckBox("Client impacts");
+	config.visuals.effects.client_impacts_color = effects->AddColorPicker("Client impacts", Color(255, 0, 0, 125));
+	config.visuals.effects.server_impacts = effects->AddCheckBox("Server impacts");
+	config.visuals.effects.server_impacts_color = effects->AddColorPicker("Server impacts", Color(0, 0, 255, 125));
+	config.visuals.effects.impacts_duration = effects->AddSliderInt("Duration", 1, 10, 4, "%ds");
+	config.visuals.effects.override_skybox = effects->AddComboBox("Override skybox", { "Disabled", "Night 1", "Night 2", "Night 3" });
+	config.visuals.effects.override_fog = effects->AddCheckBox("Override fog");
+	config.visuals.effects.fog_color = effects->AddColorPicker("Override fog");
+	config.visuals.effects.fog_start = effects->AddSliderInt("Fog start", 0, 1000, 200);
+	config.visuals.effects.fog_end = effects->AddSliderInt("Fog end", 0, 1000, 500);
+	config.visuals.effects.fog_density = effects->AddSliderInt("Fog density", 0, 100, 50);
+	config.visuals.effects.preserve_killfeed = effects->AddCheckBox("Preserve killfeed");
+	config.visuals.effects.custom_sun_direction = effects->AddCheckBox("Custom sun direction");
+	config.visuals.effects.sun_pitch = effects->AddSliderInt("Sun pitch", 0, 90, 0);
+	config.visuals.effects.sun_yaw = effects->AddSliderInt("Sun yaw", -180, 180, 0);
+	config.visuals.effects.sun_distance = effects->AddSliderInt("Sun distance", 0, 2000, 400);
+	config.visuals.effects.scope_blend = effects->AddSliderInt("Scope blend", 0, 100, 30, "%d%%");
+	config.visuals.effects.viewmodel_scope_alpha = effects->AddSliderInt("Viewmodel scope alpha", 0, 100, 0, "%d%%");
 
-	config.misc.miscellaneous.anti_untrusted = AddCheckBox("Misc", "Miscellaneous", "Anti untrusted");
-	config.misc.miscellaneous.logs = AddMultiCombo("Misc", "Miscellaneous", "Logs", { "Damage", "Aimbot", "Purchuases" });
-	config.misc.miscellaneous.auto_buy = AddMultiCombo("Misc", "Miscellaneous", "Auto buy", { "AWP", "Scout", "Autosniper", "Deagle / R8", "Five-Seven / Tec-9", "Taser", "Armor", "Smoke", "Molotov", "HeGrenade", "Flashbang", "Defuse kit" });
-	config.misc.miscellaneous.filter_console = AddCheckBox("Misc", "Miscellaneous", "Filter console");
-	config.misc.miscellaneous.clantag = AddCheckBox("Misc", "Miscellaneous", "Clantag");
-	config.misc.miscellaneous.ad_block = AddCheckBox("Misc", "Miscellaneous", "Ad block");
+	config.misc.miscellaneous.anti_untrusted = misc->AddCheckBox("Anti untrusted");
+	config.misc.miscellaneous.logs = misc->AddMultiCombo("Logs", { "Damage", "Aimbot", "Purchuases" });
+	config.misc.miscellaneous.auto_buy = misc->AddMultiCombo("Auto buy", { "AWP", "Scout", "Autosniper", "Deagle / R8", "Five-Seven / Tec-9", "Taser", "Armor", "Smoke", "Molotov", "HeGrenade", "Flashbang", "Defuse kit" });
+	config.misc.miscellaneous.filter_console = misc->AddCheckBox("Filter console");
+	config.misc.miscellaneous.clantag = misc->AddCheckBox("Clantag");
+	config.misc.miscellaneous.ad_block = misc->AddCheckBox("Ad block");
 
-	config.misc.movement.auto_jump = AddCheckBox("Misc", "Movement", "Auto jump");
-	config.misc.movement.auto_strafe = AddCheckBox("Misc", "Movement", "Auto strafe");
-	config.misc.movement.auto_strafe_smooth = AddSliderInt("Misc", "Movement", "Auto strafe smooth", 0, 100, 50, "%d%%");
-	config.misc.movement.compensate_throwable = AddCheckBox("Misc", "Movement", "Compensate throwable");
-	config.misc.movement.edge_jump = AddCheckBox("Misc", "Movement", "Edge jump");
-	config.misc.movement.edge_jump_key = AddKeyBind("Misc", "Movement", "Edge jump");
-	config.misc.movement.infinity_duck = AddCheckBox("Misc", "Movement", "Infinity duck");
-	config.misc.movement.quick_stop = AddCheckBox("Misc", "Movement", "Quick stop");
+	config.misc.movement.auto_jump = movement->AddCheckBox("Auto jump");
+	config.misc.movement.auto_strafe = movement->AddCheckBox("Auto strafe");
+	config.misc.movement.auto_strafe_smooth = movement->AddSliderInt("Auto strafe smooth", 0, 100, 50, "%d%%");
+	config.misc.movement.compensate_throwable = movement->AddCheckBox("Compensate throwable");
+	config.misc.movement.edge_jump = movement->AddCheckBox("Edge jump");
+	config.misc.movement.edge_jump_key = movement->AddKeyBind("Edge jump");
+	config.misc.movement.infinity_duck = movement->AddCheckBox("Infinity duck");
+	config.misc.movement.quick_stop = movement->AddCheckBox("Quick stop");
 
-	config.skins.override_knife = AddCheckBox("Skins", "Models", "Override knife");
-	config.skins.knife_model = AddComboBox("Skins", "Models", "Knife model", SkinChanger->GetUIKnifeModels());
+	config.skins.override_knife = models->AddCheckBox("Override knife");
+	config.skins.knife_model = models->AddComboBox("Knife model", SkinChanger->GetUIKnifeModels());
 
-	config.skins.override_agent = AddCheckBox("Skins", "Models", "Override agent");
-	config.skins.agent_model_t = AddComboBox("Skins", "Models", "Agent model T Side", {
+	config.skins.override_agent = models->AddCheckBox("Override agent");
+	config.skins.agent_model_t = models->AddComboBox("Agent model T Side", {
 		"Getaway Sally | The Professionals",
 		"Number K | The Professionals",
 		"Little Kev | The Professionals",
@@ -253,7 +261,7 @@ void CMenu::SetupUI() {
 		"Danger zone agent B",
 	});
 
-	config.skins.agent_model_ct = AddComboBox("Skins", "Models", "Agent model CT Side", {
+	config.skins.agent_model_ct = models->AddComboBox("Agent model CT Side", {
 		"Cmdr. Davida 'Goggles' Fernandez | SEAL Frogman",
 		"Cmdr. Frank 'Wet Sox' Baroud | SEAL Frogman",
 		"Lieutenant Rex Krikey | SEAL Frogman",
@@ -286,16 +294,16 @@ void CMenu::SetupUI() {
 		"GIGN A"
 	});
 
-	Config->config_list = AddComboBox("Config", "Config", "cfglist", {});
-	Config->config_name = AddInput("Config", "Config", "Config");
-	Config->load_button = AddButton("Config", "Config", "Load");
-	Config->save_button = AddButton("Config", "Config", "Save");
+	Config->config_list = configs->AddComboBox("cfglist", {});
+	Config->config_name = configs->AddInput("Config");
+	Config->load_button = configs->AddButton("Load");
+	Config->save_button = configs->AddButton("Save");
 
-	Config->lua_list = AddComboBox("Scripts", "Scripts", "lualist", {});
-	Config->lua_button = AddButton("Scripts", "Scripts", "Load");
-	Config->lua_button_unload = AddButton("Scripts", "Scripts", "Unload");
-	Config->lua_refresh = AddButton("Scripts", "Scripts", "Refresh");
-	Config->lua_save = AddButton("Scripts", "Scripts", "Save");
+	Config->lua_list = scripts->AddComboBox("lualist", {});
+	Config->lua_button = scripts->AddButton("Load");
+	Config->lua_button_unload = scripts->AddButton("Unload");
+	Config->lua_refresh = scripts->AddButton("Refresh");
+	Config->lua_save = scripts->AddButton("Save");
 
 	Config->Init();
 
@@ -339,7 +347,6 @@ void CMenu::SetupUI() {
 	config.visuals.effects.fog_end->SetCallback(world_fog_callback);
 
 	config.visuals.effects.removals->SetCallback([]() {
-		World->RemoveBlood();
 		World->Smoke();
 	});
 
@@ -351,11 +358,7 @@ void CMenu::SetupUI() {
 		World->SunDirection();
 	});
 
-	auto sun_update = []() {
-		World->SunDirection();
-	};
-
-	config.visuals.effects.sun_pitch->SetCallback(sun_update);
-	config.visuals.effects.sun_yaw->SetCallback(sun_update);
-	config.visuals.effects.sun_distance->SetCallback(sun_update);
+	config.visuals.esp.shared_esp->SetCallback([]() {
+		config.visuals.esp.share_with_enemies->SetVisible(config.visuals.esp.shared_esp->get());
+	});
 }

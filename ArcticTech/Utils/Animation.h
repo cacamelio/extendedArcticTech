@@ -1,6 +1,6 @@
 #pragma once
 
-#define interpolate(start, end, st) (start) + ((end) - (start)) * (st * 0.01)
+#define interpolate(start, end, st) ((start) + ((end) - (start)) * (st))
 
 class Animation {
 private:

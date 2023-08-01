@@ -164,7 +164,6 @@ struct config_t {
             CColorPicker* viewmodel_second_color;
             CSliderFloat* viewmodel_glow_thickness;
 
-            CSliderInt* scope_blend;
             CCheckBox* disable_model_occlusion;
         } chams;
 
@@ -211,11 +210,11 @@ struct config_t {
             CSliderInt* fog_end;
             CSliderInt* fog_density;
             CCheckBox* preserve_killfeed;
-            CMultiCombo* optimizations;
             CCheckBox* custom_sun_direction;
             CSliderInt* sun_pitch;
             CSliderInt* sun_yaw;
             CSliderInt* sun_distance;
+            CSliderInt* scope_blend;
             CSliderInt* viewmodel_scope_alpha;
         } effects;
     } visuals;

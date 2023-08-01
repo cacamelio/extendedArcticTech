@@ -11,8 +11,7 @@ public:
 	void ProcessCamera(CViewSetup* view_setup);
 	void Smoke();
 	void Crosshair();
-	void RemoveBlood();
-	void SunDirection(bool disable = false);
+	void SunDirection();
 };
 
 extern CWorld* World;
