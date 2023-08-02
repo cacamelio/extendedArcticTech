@@ -38,9 +38,11 @@ void CAnimationSystem::RestoreLocalAnims() {
 	Cheat.LocalPlayer->SetAbsAngles(QAngle(0, stored_local_anims.flGoalFeetYaw, 0));
 }
 
-void CAnimationSystem::OnCreateMove() {
-	static float old_sim_time = 0.f;
+void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
+	Utils::MatrixMove(mat, size, sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
+}
 
+void CAnimationSystem::OnCreateMove() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
 	if (AntiAim->desyncing)
@@ -56,16 +58,14 @@ void CAnimationSystem::OnCreateMove() {
 		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
 	}
 
-	animstate->iLastUpdateFrame = 0;
-	Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
-
-	if (AntiAim->desyncing)
-		animstate->flGoalFeetYaw = AntiAim->realAngle;
-
 	if (ctx.send_packet) {
-		old_sim_time = Cheat.LocalPlayer->m_flSimulationTime();
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
 		stored_local_anims.poseparams = Cheat.LocalPlayer->m_flPoseParameter();
+
+		animstate->iLastUpdateFrame = 0;
+		Cheat.LocalPlayer->UpdateClientSideAnimation();
+		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
+		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, local_animlayers);
 	}
 
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), local_animlayers, sizeof(AnimationLayer) * 13);
@@ -80,6 +80,9 @@ void CAnimationSystem::UpdateLocalAnimations() {
 
 	Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
 	Cheat.LocalPlayer->m_flPoseParameter() = stored_local_anims.poseparams;
+
+	memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), sent_matrix, sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
+	Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
 }
 
 void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {

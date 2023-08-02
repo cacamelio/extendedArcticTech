@@ -554,8 +554,19 @@ bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBone
 	if (!ent->IsPlayer() || !ent->IsAlive())
 		return oSetupBones(thisptr, edx, pBoneToWorld, maxBones, mask, curTime);
 
-	if (ent == Cheat.LocalPlayer)
-		return oSetupBones(thisptr, edx, pBoneToWorld, maxBones, mask, curTime);
+	if (ent == Cheat.LocalPlayer) {
+		memcpy(ent->GetCachedBoneData().Base(), AnimationSystem->GetLocalBoneMatrix(), ent->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
+		AnimationSystem->CorrectLocalMatrix(ent->GetCachedBoneData().Base(), ent->GetCachedBoneData().Count());
+
+		if (mask & BONE_USED_BY_ATTACHMENT)
+			Cheat.LocalPlayer->SetupBones_AttachmentHelper();
+
+		if (pBoneToWorld && maxBones != -1) {
+			ent->CopyBones(pBoneToWorld);
+		}
+
+		return true;
+	}
 
 	if (!hook_info.disable_interpolation && mask & BONE_USED_BY_ATTACHMENT) {
 		AnimationSystem->InterpolateModel(ent, ent->GetCachedBoneData().Base());

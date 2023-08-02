@@ -162,7 +162,6 @@ void CBasePlayer::UpdateClientSideAnimation() {
 	hook_info.update_csa = true;
 	CallVFunction<void(__thiscall*)(CBasePlayer*)>(this, 224)(this);
 	hook_info.update_csa = false;
-	m_bClientSideAnimation() = false;
 }
 
 void CBasePlayer::UpdateAnimationState(CCSGOPlayerAnimationState* state, const QAngle& angles, bool bForce) {

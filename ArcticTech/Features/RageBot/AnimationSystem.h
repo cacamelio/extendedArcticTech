@@ -33,8 +33,9 @@ class CAnimationSystem {
 	AnimationLayer local_animlayers[13];
 	interpolate_data_t interpolate_data[64];
 
+	matrix3x4_t sent_matrix[128];
 	QAngle local_abs_angles;
-
+	Vector sent_abs_origin;
 public:
 	void	FrameStageNotify(EClientFrameStage stage);
 	void	OnCreateMove();
@@ -42,6 +43,8 @@ public:
 
 	void	StoreLocalAnims();
 	void	RestoreLocalAnims();
+	matrix3x4_t* GetLocalBoneMatrix() { return sent_matrix; };
+	void	CorrectLocalMatrix(matrix3x4_t* mat, int size);
 
 	void	BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld, int maxBones, int mask, AnimationLayer* animlayers);
 	void	DisableInterpolationFlags(CBasePlayer* player);
