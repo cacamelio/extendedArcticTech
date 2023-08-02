@@ -250,6 +250,8 @@ public:
 		return reinterpret_cast< void* >( uintptr_t( this ) + 0x8 );
 	}
 
+
+	inline IClientRenderable* GetClientRenderable() { return reinterpret_cast<IClientRenderable*>((uintptr_t)this + 0x4); };
 	IClientNetworkable* GetClientNetworkable();
 	IClientUnknown* GetClientUnknown();
 	ICollideable* GetCollideable();

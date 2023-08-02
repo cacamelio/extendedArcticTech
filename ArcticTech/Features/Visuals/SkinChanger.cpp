@@ -43,8 +43,6 @@ bool CSkinChanger::ApplyKnifeModel( CAttributableItem* weapon, const char* model
 	return true;
 }
 
-// TODO: fix knife anim sequence
-
 void CSkinChanger::SetViewModelSequence( const CRecvProxyData* pDataConst, void* pStruct, void* pOut ) {
 	// Make the incoming data editable.
 	CRecvProxyData* pData = const_cast< CRecvProxyData* >( pDataConst );
@@ -199,11 +197,17 @@ void CSkinChanger::Hooked_RecvProxy_Viewmodel( CRecvProxyData* pData, void* pStr
 	if (SkinChanger->knife_models.empty())
 		return;
 
-	if ( Cheat.LocalPlayer && config.skins.override_knife->get() )
+	if ( Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && config.skins.override_knife->get() )
 	{
-		if ( Cheat.LocalPlayer->IsAlive( ) && ( pData->m_Value.m_Int == ModelInfoClient->GetModelIndex( SkinChanger->knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) ) ) )
-		{
-			pData->m_Value.m_Int = ModelInfoClient->GetModelIndex( SkinChanger->knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );
+		CBaseCombatWeapon* active_weapon = Cheat.LocalPlayer->GetActiveWeapon();
+
+		if (active_weapon) {
+			CCSWeaponData* weapon_info = active_weapon->GetWeaponInfo();
+
+			if (weapon_info && weapon_info->nWeaponType == WEAPONTYPE_KNIFE && active_weapon->m_iItemDefinitionIndex() != Taser)
+			{
+				pData->m_Value.m_Int = ModelInfoClient->GetModelIndex(SkinChanger->knife_models[config.skins.knife_model->get()].model_name.c_str());
+			}
 		}
 	}
 
@@ -358,22 +362,15 @@ void CSkinChanger::Run( bool frame_end ) {
 	if ( !Cheat.InGame || !Cheat.LocalPlayer || !config.skins.override_knife->get() )
 		return;
 
-	if ( frame_end )
-	{
+	auto my_weapons = Cheat.LocalPlayer->m_hMyWeapons( );
+	for ( size_t i = 0; my_weapons[ i ] != 0xFFFFFFFF; i++ ) {
+		auto weapon = reinterpret_cast< CAttributableItem* >( EntityList->GetClientEntityFromHandle( my_weapons[ i ] ) );
 
-	}
-	else
-	{
-		auto my_weapons = Cheat.LocalPlayer->m_hMyWeapons( );
-		for ( size_t i = 0; my_weapons[ i ] != 0xFFFFFFFF; i++ ) {
-			auto weapon = reinterpret_cast< CAttributableItem* >( EntityList->GetClientEntityFromHandle( my_weapons[ i ] ) );
+		if ( !weapon )
+			return;
 
-			if ( !weapon )
-				return;
-
-			if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
-				ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );
-			}
+		if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
+			ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );
 		}
 	}
 }

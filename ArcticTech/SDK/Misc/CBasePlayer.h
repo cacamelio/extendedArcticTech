@@ -397,7 +397,6 @@ public:
         reinterpret_cast <void(__thiscall*)(void*, int)> (m_uInvalidatePhysics)(this, flags);
     }
 
-    inline IClientRenderable* GetClientRenderable() { return reinterpret_cast<IClientRenderable*>((uintptr_t)this + 0x4); };
     std::string         GetName();
     bool                IsTeammate();
     float               GetMaxDesyncDelta();

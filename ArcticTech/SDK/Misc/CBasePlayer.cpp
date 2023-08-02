@@ -9,6 +9,9 @@ bool CBasePlayer::IsTeammate() {
 }
 
 Vector CBasePlayer::GetEyePosition() {
+	if (this != Cheat.LocalPlayer) {
+		return Vector(0, 0, 64 - (64 - 28) * m_flDuckAmount());
+	}
 	return m_vecOrigin() + m_vecViewOffset();
 }
 
@@ -332,13 +335,7 @@ void CBasePlayer::ModifyEyePosition(Vector& eye_position) {
 	if (!animstate->bHitGroundAnimation)
 		return;
 
-	static auto lookup_bone = reinterpret_cast <int(__thiscall*)(void*, const char*)>(Utils::PatternScan("client.dll", "55 8B EC 53 56 8B F1 57 83 BE ?? ?? ?? ?? ?? 75 14"));
-	auto head_bone = lookup_bone(this, "head_0");
-
-	if (head_bone == -1)
-		return;
-
-	auto head_position = GetBonePosition(head_bone);
+	auto head_position = GetHitboxCenter(HITBOX_HEAD);
 	head_position.z += 1.7f;
 
 	if (head_position.z >= eye_position.z)

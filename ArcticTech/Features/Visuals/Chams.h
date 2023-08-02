@@ -22,7 +22,7 @@ struct ShotChams_t {
 	ModelRenderInfo_t info;
 	DrawModelState_t state;
 	matrix3x4_t pBoneToWorld[128];
-	float time;
+	float end_time;
 	matrix3x4_t model_to_world;
 };
 
@@ -41,13 +41,12 @@ class CChams {
 public:
 	void LoadChams();
 	void UpdateSettings();
-	void ColorModulate(IMaterial* mat, Color color);
-	void OverrideMaterial(int type, bool z, Color color, float glowThickness = 1);
 	bool OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const ModelRenderInfo_t& info, matrix3x4_t* pBoneToWorld);
-	void DrawModel(ChamsMaterial& material, float alpha = 1.f, matrix3x4_t* customBoneToWorld = nullptr);
+	void DrawModel(ChamsMaterial& material, float alpha = 1.f, matrix3x4_t* customBoneToWorld = nullptr, bool ignorez = false);
 
 	void AddShotChams(LagRecord* record);
 	void RenderShotChams();
+	void RemoveShotChams(int id);
 };
 
 extern CChams* Chams;

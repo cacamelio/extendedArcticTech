@@ -80,6 +80,7 @@ struct config_t {
             CMultiCombo* body_yaw_options;
             CSliderInt* body_yaw_limit;
             CKeyBind* inverter;
+            CCheckBox* legacy_desync;
         } angles;
 
         struct fakelag_t {
@@ -145,6 +146,7 @@ struct config_t {
             CColorPicker* shot_chams_second_color;
             CSliderFloat* shot_chams_thickness;
             CSliderInt* shot_chams_duration;
+            CMultiCombo* shot_chams_options;
 
             CCheckBox* local_player;
             CColorPicker* local_player_color;

@@ -7,6 +7,7 @@
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/LagCompensation.h"
 #include "../Visuals/ESP.h"
+#include "../Visuals/Chams.h"
 #include "../ShotManager/ShotManager.h"
 
 CEventListner* EventListner = new CEventListner;
@@ -15,6 +16,7 @@ static std::vector<const char*> s_RgisterEvents = {
 	"player_hurt",
 	"player_death",
 	"player_spawned",
+	"player_disconnect",
 	"bomb_planted",
 	"bomb_defused",
 	"bomb_begindefuse",
@@ -63,6 +65,9 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			ctx.reset();
 			DoubleTap->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
+			config.ragebot.aimbot.peek_assist_keybind->set(false);
+			Cheat.LocalPlayer->m_iHealth() = 0;
+			Cheat.LocalPlayer->m_lifeState() = LIFE_DEAD;
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));
@@ -108,6 +113,9 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		if (player && player->m_bDormant())
 			ESPInfo[player->EntIndex()].m_nHealth = 100;
+	}
+	else if (name == "player_disconnect") {
+		Chams->RemoveShotChams(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
 	}
 }
 

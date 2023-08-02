@@ -2178,7 +2178,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
 
     if (hovered && g.IO.MouseClicked[0] || it_anim->second.opened_combo && g.IO.MouseClicked[0] && !it_anim->second.hovered) it_anim->second.opened_combo = !it_anim->second.opened_combo;
 
-    it_anim->second.combo_size = ImLerp(it_anim->second.combo_size, it_anim->second.opened_combo ? (40 * val) - 4 : 0.f, g.IO.DeltaTime * 12.f);
+    it_anim->second.combo_size = ImLerp(it_anim->second.combo_size, it_anim->second.opened_combo ? (40 * (ImMin(val, 5.f)) - 4) : 0.f, g.IO.DeltaTime * 12.f);
     it_anim->second.arrow_roll = ImLerp(it_anim->second.arrow_roll, it_anim->second.opened_combo ? -0.f : 2.f, g.IO.DeltaTime * 12.f);
     it_anim->second.background = ImLerp(it_anim->second.background, it_anim->second.opened_combo || hovered ? c::combo::i_bg_hov : c::combo::i_bg, g.IO.DeltaTime * 6.f);
     it_anim->second.text = ImLerp(it_anim->second.text, it_anim->second.opened_combo ? c::text::text_active : hovered ? c::text::text_hov : c::text::text, g.IO.DeltaTime * 6.f);
@@ -2217,7 +2217,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, float val, 
     ImGui::SetNextWindowPos(ImVec2(bb.Min.x + 2, bb.Max.y));
     ImGui::SetNextWindowSize(ImVec2(bb.GetWidth() - 3, it_anim->second.combo_size));
 
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing;
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing;
 
     PushStyleColor(ImGuiCol_WindowBg, c::combo::i_bg_selected);
     PushStyleVar(ImGuiStyleVar_WindowRounding, c::combo::rounding);

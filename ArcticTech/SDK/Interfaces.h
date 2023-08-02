@@ -29,6 +29,7 @@
 #include "Interfaces/IEngineSound.h"
 #include "Interfaces/IEffects.h"
 #include "Interfaces/NetworkStringTable.h"
+#include "Interfaces/ISteamHTTP.h"
 
 extern IClientEntityList* EntityList;
 extern IVEngineClient*	  EngineClient;
@@ -64,6 +65,7 @@ extern IKeyValuesSystem*  KeyValuesSystem;
 extern IEngineSound*	  EngineSound;
 extern IEffects*          Effects;
 extern INetworkStringTableContainer* NetworkStringTableContainer;
+extern ISteamHTTP*		  SteamHTTP;
 
 namespace Interfaces {
 	void Initialize();

@@ -103,17 +103,15 @@ void CDoubleTap::HandleTeleport(CL_Move_t cl_move, float extra_samples) {
 int CDoubleTap::MaxTickbaseShift() {
 	CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
 
-	if (!activeWeapon)
+	if (!activeWeapon || !activeWeapon->ShootingWeapon())
 		return 13;
 
-	switch (activeWeapon->m_iItemDefinitionIndex()) {
-	case Tec9:
-	case Fiveseven:
-	case Elite:
-		return 7;
-	default:
+	CCSWeaponData* weapon_data = activeWeapon->GetWeaponInfo();
+
+	if (!weapon_data)
 		return 13;
-	}
+
+	return min(weapon_data->flCycleTime / GlobalVars->interval_per_tick, 13);
 }
 
 void CDoubleTap::ForceTeleport() {

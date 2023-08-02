@@ -84,6 +84,7 @@ void CMenu::SetupUI() {
 	config.antiaim.angles.body_yaw_options = aa_angles->AddMultiCombo("Body yaw options", { "Jitter", "Random jitter", "Extended", "Freestand" });
 	config.antiaim.angles.body_yaw_limit = aa_angles->AddSliderInt("Limit", 0, 58, 58);
 	config.antiaim.angles.inverter = aa_angles->AddKeyBind("Inverter");
+	config.antiaim.angles.legacy_desync = aa_angles->AddCheckBox("Legacy Desync");
 
 	config.antiaim.fakelag.enabled = fake_lag->AddCheckBox("Enabled");
 	config.antiaim.fakelag.limit = fake_lag->AddSliderInt("Limit", 1, 15, 13);
@@ -138,6 +139,7 @@ void CMenu::SetupUI() {
 	config.visuals.chams.shot_chams_type = chams->AddComboBox("Shot type", { "Default", "Solid", "Glow", "Glow overlay" });
 	config.visuals.chams.shot_chams_thickness = chams->AddSliderFloat("Shot glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.shot_chams_duration = chams->AddSliderInt("Shot chams duration", 1, 10, 4, "s");
+	config.visuals.chams.shot_chams_options = chams->AddMultiCombo("Shot chams options", { "Behind walls", "Last shot only" });
 	config.visuals.chams.local_player = chams->AddCheckBox("Local player");
 	config.visuals.chams.local_player_color = chams->AddColorPicker("Local player", Color(100, 100, 100));
 	config.visuals.chams.local_player_second_color = chams->AddColorPicker("Local second color");

@@ -2,7 +2,7 @@
 
 #include "../../ShotManager/ShotManager.h"
 #include "../../RageBot/LagCompensation.h"
-
+#include "../../../SDK/Requests.h"
 
 std::vector<UILuaCallback_t> g_ui_lua_callbacks;
 
@@ -268,6 +268,10 @@ namespace api {
 	namespace render {
 		Vector screen_size() {
 			return Vector(Cheat.ScreenSize.x, Cheat.ScreenSize.y);
+		}
+
+		void add_font_from_memory(std::string mem) {
+			Render->AddFontFromMemory(mem.data(), mem.size());
 		}
 
 		D3DXFont* load_font(std::string name, int size, std::string flags) {
@@ -638,6 +642,27 @@ namespace api {
 			return Cheat.LocalPlayer;
 		}
 	}
+
+	namespace network {
+		std::string get(sol::this_state state, std::string url, sol::optional<sol::table> headers, sol::optional<sol::protected_function> callback) {
+			if (callback.has_value()) {
+				// will implement async request later
+			}
+			else {
+				std::vector<HttpHeader> _headers;
+				
+				if (headers.has_value()) {
+					auto val = headers.value();
+
+					for (auto& header : val) {
+						_headers.push_back(HttpHeader{ header.first.as<std::string>(), header.second.as<std::string>() });
+					}
+				}
+
+				return Requests->Create(k_EHTTPMethodGET, url, _headers);
+			}
+		}
+	}
 }
 
 void CLua::Setup() {
@@ -836,8 +861,10 @@ void CLua::Setup() {
 	// render
 	lua.create_named_table("render",
 		"screen_size", api::render::screen_size,
+		"add_font_from_memory", api::render::add_font_from_memory,
 		"load_font", api::render::load_font,
 		"load_image_from_memory", api::render::load_image_from_memory,
+		"measure_text", api::render::measure_text,
 		"line", api::render::line,
 		"poly", api::render::poly,
 		"poly_line", api::render::poly_line,
@@ -851,7 +878,6 @@ void CLua::Setup() {
 		"circle_gradient", api::render::circle_gradient,
 		"texture", api::render::texture,
 		"text", api::render::text,
-		"measure_text", api::render::measure_text,
 		"push_clip_rect", api::render::push_clip_rect,
 		"pop_clip_rect", api::render::pop_clip_rect,
 		"world_to_screen", api::vector::to_screen,
@@ -863,6 +889,11 @@ void CLua::Setup() {
 		"console_exec", api::utils::console_exec,
 		"create_interface", api::utils::create_interface,
 		"pattern_scan", api::utils::pattern_scan
+	);
+
+	// network
+	lua.create_named_table("network",
+		"get", api::network::get
 	);
 
 	RefreshScripts();

@@ -61,6 +61,7 @@ public:
 	bool toggled = false;
 
 	bool get();
+	void set(bool n) { toggled = n; }; // for toggle mode only
 
 	virtual WidgetType GetType() { return WidgetType::KeyBind; };
 	virtual void Render();
@@ -156,7 +157,7 @@ public:
 		elements = new_el;
 	};
 
-	virtual WidgetType GetType() { return WidgetType::Combo; };
+	virtual WidgetType GetType() { return WidgetType::MultiCombo; };
 	virtual void Render();
 };
 

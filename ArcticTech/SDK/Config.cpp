@@ -131,6 +131,7 @@ void CConfig::Init() {
     add(config.antiaim.angles.body_yaw_options);
     add(config.antiaim.angles.body_yaw_limit);
     add(config.antiaim.angles.inverter);
+    add(config.antiaim.angles.legacy_desync);
     add(config.antiaim.fakelag.enabled);
     add(config.antiaim.fakelag.limit);
     add(config.antiaim.fakelag.variability);
@@ -180,6 +181,7 @@ void CConfig::Init() {
     add(config.visuals.chams.shot_chams_second_color);
     add(config.visuals.chams.shot_chams_thickness);
     add(config.visuals.chams.shot_chams_duration);
+    add(config.visuals.chams.shot_chams_options);
     add(config.visuals.chams.local_player);
     add(config.visuals.chams.local_player_color);
     add(config.visuals.chams.local_player_type);

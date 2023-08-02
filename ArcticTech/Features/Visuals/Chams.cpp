@@ -183,7 +183,7 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	return true;
 }
 
-void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBoneToWorld) {
+void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBoneToWorld, bool ignorez) {
 	static auto drawModelExecute = (tDrawModelExecute)Hooks::ModelRenderVMT->GetOriginal(21);
 
 	if (!customBoneToWorld)
@@ -222,7 +222,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 	}
 
 	if (cham.type != MaterialType::GlowOverlay) {
-		baseMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, false);
+		baseMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, ignorez);
 		baseMat->ColorModulate(cham.primaryColor);
 		RenderView->SetBlend(cham.primaryColor.a / 255.f * alpha);
 
@@ -234,7 +234,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 	if (cham.type == MaterialType::Glow || cham.type == MaterialType::GlowOverlay) {
 		IMaterial* glowMat = baseMaterials[MaterialType::Glow];
 
-		glowMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, false);
+		glowMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, ignorez);
 
 		IMaterialVar* envmaptint = glowMat->FindVar("$envmaptint");
 		IMaterialVar* envmapfranselminmax = glowMat->FindVar("$envmapfresnelminmaxexp");
@@ -256,10 +256,7 @@ void CChams::AddShotChams(LagRecord* record) {
 	auto& hit = shot_chams.emplace_back();
 
 	std::memcpy(hit.pBoneToWorld, record->aimMatrix, 128 * sizeof(matrix3x4_t));
-	hit.time = GlobalVars->curtime;
-
-	static int m_nSkin = record->player->m_nSkin();
-	static int m_nBody = record->player->m_nBody();
+	hit.end_time = GlobalVars->curtime + config.visuals.chams.shot_chams_duration->get();
 
 	hit.info.origin = record->m_vecOrigin;
 	hit.info.angles = record->m_vecAbsAngles;
@@ -289,8 +286,8 @@ void CChams::AddShotChams(LagRecord* record) {
 	hit.info.pLightingOffset = nullptr;
 	hit.info.pLightingOrigin = nullptr;
 	hit.info.hitboxset = record->player->m_nHitboxSet();
-	hit.info.skin = m_nSkin;
-	hit.info.body = m_nBody;
+	hit.info.skin = record->player->m_nSkin();
+	hit.info.body = record->player->m_nBody();
 	hit.info.entity_index = record->player->EntIndex();
 	hit.info.instance = MODEL_INSTANCE_INVALID;
 	hit.info.flags = 0x1;
@@ -299,6 +296,14 @@ void CChams::AddShotChams(LagRecord* record) {
 	hit.state.m_pModelToWorld = &hit.model_to_world;
 
 	hit.model_to_world.AngleMatrix(hit.info.angles, hit.info.origin);
+
+	if (config.visuals.chams.shot_chams_options->get(1)) {
+		for (auto it = shot_chams.begin(); it != shot_chams.end(); it++) {
+			if (it->end_time != hit.end_time && GlobalVars->curtime < it->end_time) {
+				it->end_time = GlobalVars->curtime;
+			}
+		}
+	}
 }
 
 void CChams::RenderShotChams() {
@@ -313,10 +318,19 @@ void CChams::RenderShotChams() {
 		return;
 
 	for (auto it = shot_chams.begin(); it != shot_chams.end();) {
-		if (GlobalVars->curtime - it->time > config.visuals.chams.shot_chams_duration->get()) {
+		if (GlobalVars->curtime - it->end_time > 0.5f) {
 			it = shot_chams.erase(it);
 			continue;
 		}
+
+		CBaseEntity* ent = EntityList->GetClientEntity(it->ent_index);
+
+		if (!ent) {
+			it = shot_chams.erase(it);
+			continue;
+		}
+
+		it->info.pRenderable = it->state.m_pRenderable = ent->GetClientRenderable();
 
 		if (!it->state.m_pModelToWorld || !it->state.m_pRenderable || !it->state.m_pStudioHdr || !it->state.m_pStudioHWData ||
 			!it->info.pRenderable || !it->info.pModelToWorld || !it->info.pModel) {
@@ -324,14 +338,25 @@ void CChams::RenderShotChams() {
 			continue;
 		}
 
-		float alpha = std::clamp((config.visuals.chams.shot_chams_duration->get() - (GlobalVars->curtime - it->time)) * 2.f, 0.f, 1.f);
+		float alpha = 1.f - std::clamp((GlobalVars->curtime - it->end_time) * 2.f, 0.f, 1.f);
 
 		_ctx = ctx;
 		_info = it->info;
 		_state = it->state;
 
-		DrawModel(materials[ClassOfEntity::Shot], alpha, it->pBoneToWorld);
+		DrawModel(materials[ClassOfEntity::Shot], alpha, it->pBoneToWorld, config.visuals.chams.shot_chams_options->get(1));
 
 		++it;
+	}
+}
+
+void CChams::RemoveShotChams(int id) {
+	for (auto it = shot_chams.begin(); it != shot_chams.end();) {
+		if (it->ent_index == id) {
+			it = shot_chams.erase(it);
+			continue;
+		}
+
+		it++;
 	}
 }

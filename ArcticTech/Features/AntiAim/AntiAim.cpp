@@ -122,7 +122,7 @@ void CAntiAim::Angles() {
 
 		notModifiedYaw = ctx.cmd->viewangles.yaw;
 
-		if (config.antiaim.angles.yaw_jitter->get())
+		if (config.antiaim.angles.yaw_jitter->get() && !Cheat.LocalPlayer->m_bIsDefusing())
 			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.angles.modifier_value->get() : config.antiaim.angles.modifier_value->get();
 	}
 	else {
@@ -133,7 +133,7 @@ void CAntiAim::Angles() {
 }
 
 void CAntiAim::Desync() {
-	if (!config.antiaim.angles.body_yaw->get() || DoubleTap->IsShifting())
+	if (!config.antiaim.angles.body_yaw->get() || DoubleTap->IsShifting() || Cheat.LocalPlayer->m_bIsDefusing())
 		return;
 
 	bool inverter = config.antiaim.angles.inverter->get();
@@ -337,7 +337,7 @@ bool CAntiAim::IsPeeking() {
 	if (nearest) {
 		FireBulletData_t data;
 
-		Vector enemyShootPos = nearest->m_vecOrigin() + Vector(0, 0, 64 - nearest->m_flDuckAmount() * 16.f);
+		Vector enemyShootPos = nearest->GetShootPosition();
 
 		for (auto& point : scan_points) {
 			if (AutoWall->FireBullet(nearest, enemyShootPos, point, data, Cheat.LocalPlayer) && data.damage >= 4.f) {

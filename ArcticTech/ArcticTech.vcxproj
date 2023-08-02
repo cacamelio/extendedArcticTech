@@ -211,6 +211,7 @@
     <ClCompile Include="SDK\Misc\UtlStringList.h" />
     <ClCompile Include="SDK\Misc\Vector.cpp" />
     <ClCompile Include="SDK\NetMessages.cpp" />
+    <ClCompile Include="SDK\Requests.cpp" />
     <ClCompile Include="UI\UI.cpp" />
     <ClCompile Include="UI\UI_backend.cpp" />
     <ClCompile Include="Utils\Animation.cpp" />
@@ -276,6 +277,7 @@
     <ClInclude Include="Resources\visuals-img.h" />
     <ClInclude Include="SDK\Interfaces\IEffects.h" />
     <ClInclude Include="SDK\Interfaces\IGameTypes.h" />
+    <ClInclude Include="SDK\Interfaces\ISteamHTTP.h" />
     <ClInclude Include="SDK\Interfaces\NetworkStringTable.h" />
     <ClInclude Include="SDK\Interfaces.h" />
     <ClInclude Include="SDK\Interfaces\CCSPlayerResource.h" />
@@ -318,6 +320,7 @@
     <ClInclude Include="SDK\Misc\Vector.h" />
     <ClInclude Include="SDK\Interfaces\ViewRenderBeams.h" />
     <ClInclude Include="SDK\NetMessages.h" />
+    <ClInclude Include="SDK\Requests.h" />
     <ClInclude Include="UI\icons.h" />
     <ClInclude Include="UI\logo.h" />
     <ClInclude Include="UI\mulish_font.h" />

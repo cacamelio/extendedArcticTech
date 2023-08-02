@@ -460,6 +460,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
 
 		SkinChanger->AgentChanger();
+		SkinChanger->Run(true);
 
 		break;
 	case FRAME_NET_UPDATE_START:
@@ -475,7 +476,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		SkinChanger->Run( false );
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
-		//SkinChanger->Run( true );
 		break;
 	}
 
@@ -625,7 +625,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 
 	if (c_ctx->command_number == DoubleTap->charged_command + 1) {
 		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick;
-		Console->Log("tickbase fixed: " + std::to_string(thisptr->m_nTickBase()));
+		return;
 		//EnginePrediction->RestoreNetvars(last_simulated_tick % 150);
 	}
 
@@ -667,6 +667,9 @@ void __fastcall hkPacketEnd(CClientState* thisptr, void* edx) {
 }
 
 void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t* bones, int boneMask) {
+	if (config.antiaim.angles.legacy_desync->get())
+		return;
+
 	if (thisptr->m_fFlags() & FL_FROZEN) {
 		thisptr->m_vecMaxs().z = 72.f; // abobus fix
 
