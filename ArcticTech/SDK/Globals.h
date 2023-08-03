@@ -40,6 +40,10 @@ struct Ctx_t {
 	Vector local_velocity;
 	Vector last_local_velocity;
 	std::unordered_set<unsigned int> arctic_users;
+	bool update_nightmode = false;
+	bool update_remove_blood = false;
+	Vector local_sent_origin;
+	bool breaking_lag_compensation = false;
 
 	std::vector<int> shifted_commands;
 	std::vector<int> sented_commands;

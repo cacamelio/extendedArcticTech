@@ -131,6 +131,7 @@ public:
 	void				CalcSpreadValues();
 	void				AutoStop();
 	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);
+	float				FastHitchance(LagRecord* target, float inaccuracy = -1.f, int hitbox_radius = 5); // fast hitchance approximation base on inaccuracy angle and distance
 	float				CalcMinDamage(CBasePlayer* target);
 	weapon_settings_t	GetWeaponSettings(int weaponId);
 	bool				IsArmored(int hitbox);

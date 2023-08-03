@@ -10,7 +10,7 @@ bool CBasePlayer::IsTeammate() {
 
 Vector CBasePlayer::GetEyePosition() {
 	if (this != Cheat.LocalPlayer) {
-		return Vector(0, 0, 64 - (64 - 28) * m_flDuckAmount());
+		return m_vecOrigin() + Vector(0, 0, 64 - (64 - 28) * m_flDuckAmount());
 	}
 	return m_vecOrigin() + m_vecViewOffset();
 }

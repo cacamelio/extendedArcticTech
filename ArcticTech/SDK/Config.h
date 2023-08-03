@@ -43,7 +43,7 @@ struct config_t {
             CComboBox* extrapolation;
             CCheckBox* doubletap;
             CKeyBind* doubletap_key;
-            CCheckBox* defensive_doubletap;
+            CMultiCombo* doubletap_options;
             CKeyBind* force_teleport;
             CKeyBind* force_body_aim;
             CKeyBind* minimum_damage_override_key;

@@ -302,6 +302,7 @@ public:
     NETVAR(m_aimPunchAngleVel, QAngle, "DT_BasePlayer", "m_aimPunchAngleVel")
     NETVAR(m_flNextAttack, float, "DT_BaseCombatCharacter", "m_flNextAttack")
     NETVAR(m_flVelocityModifier, float, "DT_CSPlayer", "m_flVelocityModifier")
+    NETVAR(m_flFlashDuration, float, "DT_CSPlayer", "m_flFlashDuration")
     NETVAR(m_hObserverTarget, unsigned long, "DT_BasePlayer", "m_hObserverTarget")
     NETVAR(m_flLowerBodyYawTarget, float, "DT_CSPlayer", "m_flLowerBodyYawTarget")
     NETVAR(m_iObserverMode, int, "DT_BasePlayer", "m_iObserverMode")
@@ -334,6 +335,7 @@ public:
     NETVAR_O(m_iMostRecentModelBoneCounter, unsigned long, "DT_BaseAnimating", "m_nForceBone", 0x4)
     PRED_DESC_MAP(m_nSkin, int, "m_nSkin")
     PRED_DESC_MAP(m_nBody, int, "m_nBody")
+    NETVAR_O(m_surfaceFriction, float, "DT_BasePlayer", "m_flWaterJumpTime", 17)
 
     bool& m_bMaintainSequenceTransitions();
 

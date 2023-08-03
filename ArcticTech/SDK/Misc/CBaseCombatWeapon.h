@@ -56,7 +56,8 @@ public:
 	float flSpread[2];				// 0x0140
 	float flInaccuracyCrouch[2];	// 0x0148
 	float flInaccuracyStand[2];		// 0x0150
-	std::byte pad14[0x8];			// 0x0158
+    float _flInaccuracyUnknown;     // 0x0158
+    float flInaccuracyJumpInitial;// 0x015C
 	float flInaccuracyJump[2];		// 0x0160
 	float flInaccuracyLand[2];		// 0x0168
 	float flInaccuracyLadder[2];	// 0x0170

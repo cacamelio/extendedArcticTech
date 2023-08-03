@@ -41,7 +41,7 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.extrapolation = aimbot->AddComboBox("Extrapolation", { "Disable", "Enable", "Force" });
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
-	config.ragebot.aimbot.defensive_doubletap = aimbot->AddCheckBox("Lag Peek");
+	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek" });
 	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
 	config.ragebot.aimbot.force_body_aim = aimbot->AddKeyBind("Force Body Aim");
 	config.ragebot.aimbot.minimum_damage_override_key = aimbot->AddKeyBind("Min. damage override");
@@ -63,7 +63,7 @@ void CMenu::SetupUI() {
 		settings.hitchance = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Hitchance"), 0, 100, 50, "%d%%");
 		settings.minimum_damage = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage"), 1, 130, 30);
 		settings.minimum_damage_override = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage override"), 1, 130, 10);
-		settings.auto_stop = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Full stop", "Early", "Move between shots" });
+		settings.auto_stop = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Full stop", "Early", "Move between shots", "In Air" });
 		settings.auto_scope = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Auto scope"));
 	};
 
@@ -173,7 +173,7 @@ void CMenu::SetupUI() {
 	config.visuals.other_esp.grenade_proximity_warning = other_esp->AddCheckBox("Grenade proximity warning");
 	config.visuals.other_esp.grenade_predict_color = other_esp->AddColorPicker("Grenade predict color");
 	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov", "Smoke" });
-	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Double tap", "Min. damage", "Body aim" });
+	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Double tap", "Min. damage", "Body aim", "Lag Compensation" });
 
 	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
 	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites" });
@@ -322,7 +322,7 @@ void CMenu::SetupUI() {
 	});
 
 	auto world_modulation_callback = []() {
-		World->Modulation();
+		ctx.update_nightmode = true;
 	};
 
 	config.visuals.effects.world_color_enable->SetCallback(world_modulation_callback);
@@ -350,6 +350,7 @@ void CMenu::SetupUI() {
 
 	config.visuals.effects.removals->SetCallback([]() {
 		World->Smoke();
+		ctx.update_remove_blood = true;
 	});
 
 	config.visuals.effects.custom_sun_direction->SetCallback([]() {

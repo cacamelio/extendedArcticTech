@@ -57,6 +57,8 @@ void CAnimationSystem::OnCreateMove() {
 		const float speed = Cheat.LocalPlayer->m_flFallVelocity();
 		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
 	}
+	animstate->flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
+	animstate->flDuckingSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
 
 	if (ctx.send_packet) {
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);

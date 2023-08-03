@@ -122,11 +122,11 @@ void CDoubleTap::ForceTeleport() {
 
 
 void CDoubleTap::DefensiveDoubletap() {
-	if (ctx.is_peeking && config.ragebot.aimbot.defensive_doubletap->get()) {
-		peeking_ticks++;
+	if (peeking_ticks == 14)
+		peeking_ticks = 0;
 
-		if (peeking_ticks == 14)
-			peeking_ticks = 0;
+	if (ctx.is_peeking) {
+		peeking_ticks++;
 	}
 	else {
 		peeking_ticks = 0;
@@ -148,7 +148,23 @@ bool CDoubleTap::ShouldBreakLC() {
 			return false; // nades detonate faster with break lc
 	}
 
-	return peeking_ticks != 1; // disable break lc on peek
+	bool result = false;
+
+	if (config.ragebot.aimbot.doubletap_options->get(0)) {
+		result = true;
+	}
+
+	if (config.ragebot.aimbot.doubletap_options->get(1)) {
+		if (peeking_ticks > 0) {
+			result = peeking_ticks != 1;
+		}
+	}
+
+	return result;
+}
+
+bool CDoubleTap::IsDefensiveActive() {
+	return config.ragebot.aimbot.doubletap_options->get(1) && peeking_ticks > 1;
 }
 
 CDoubleTap* DoubleTap = new CDoubleTap;

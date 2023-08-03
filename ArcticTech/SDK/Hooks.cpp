@@ -263,6 +263,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) > 5)
 			AntiAim->jitter = !AntiAim->jitter;
 		ctx.should_update_local_anims = true;
+
+		ctx.breaking_lag_compensation = (ctx.local_sent_origin - Cheat.LocalPlayer->m_vecOrigin()).LengthSqr() > 4096;
+		ctx.local_sent_origin = Cheat.LocalPlayer->m_vecOrigin();
 	}
 
 	AnimationSystem->OnCreateMove();
@@ -327,7 +330,9 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
 	if (state == 6) { // SIGNONSTATE_FULL
-		World->Modulation();
+		ctx.update_nightmode = true;
+		ctx.update_remove_blood = true;
+
 		World->SkyBox();
 		World->Fog();
 		World->Smoke();
@@ -459,6 +464,20 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		SkinChanger->AgentChanger();
 		SkinChanger->Run(true);
 
+		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
+			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
+
+		break;
+	case FRAME_RENDER_END:
+		if (ctx.update_nightmode) {
+			World->Modulation();
+			ctx.update_nightmode = false;
+		}
+
+		if (ctx.update_remove_blood) {
+			World->RemoveBlood();
+			ctx.update_remove_blood = false;
+		}
 		break;
 	case FRAME_NET_UPDATE_START:
 		ShotManager->OnNetUpdate();
@@ -470,7 +489,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		}
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
-		SkinChanger->Run( false );
+		//SkinChanger->Run( false );
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
 		break;

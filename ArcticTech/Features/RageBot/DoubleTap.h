@@ -27,6 +27,7 @@ public:
 	void	HandleTeleport(CL_Move_t cl_move, float extra_samples);
 	void	DefensiveDoubletap();
 	bool	ShouldBreakLC();
+	bool	IsDefensiveActive();
 };
 
 extern CDoubleTap* DoubleTap;

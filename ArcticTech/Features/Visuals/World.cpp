@@ -141,6 +141,29 @@ void CWorld::Smoke() {
 	}
 }
 
+void CWorld::RemoveBlood() {
+	if (!Cheat.InGame)
+		return;
+
+	static const char* bloodMaterials[] = {
+		"decals/blood1.vmt",
+		"decals/blood2.vmt",
+		"decals/blood3.vmt",
+		"decals/blood4.vmt",
+		"decals/blood5.vmt",
+		"decals/blood6.vmt",
+		"decals/blood7.vmt",
+		"decals/blood8.vmt",
+	};
+
+	//for (const char* mat : bloodMaterials) {
+	//	IMaterial* material = MaterialSystem->FindMaterial(mat);
+
+	//	if (material && !material->IsErrorMaterial())
+	//		material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(3));
+	//}
+}
+
 void CWorld::Crosshair() {
 	cvars.weapon_debug_spread_show->SetInt((config.visuals.other_esp.sniper_crosshair->get() && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && !Cheat.LocalPlayer->m_bIsScoped()) ? 2 : 0);
 

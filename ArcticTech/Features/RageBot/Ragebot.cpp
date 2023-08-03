@@ -72,8 +72,6 @@ float CRagebot::CalcMinDamage(CBasePlayer* player) {
 }
 
 void CRagebot::AutoStop() {
-	if (!(Cheat.LocalPlayer->m_fFlags() & 0x1)) return;
-
 	Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 	QAngle direction = Math::VectorAngles(vec_speed);
 
@@ -83,7 +81,7 @@ void CRagebot::AutoStop() {
 		float cmd_speed = Math::Q_sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
 	
 		if (cmd_speed > target_speed) {
-			float factor = 40.f / target_speed;
+			float factor = cmd_speed / target_speed;
 			ctx.cmd->forwardmove *= factor;
 			ctx.cmd->sidemove *= factor;
 		}
@@ -98,10 +96,25 @@ void CRagebot::AutoStop() {
 	Vector forward;
 	Math::AngleVectors(direction, forward);
 
-	Vector nigated_direction = forward * -std::clamp(vec_speed.Q_Length2D(), 0.f, 450.f);
+	float wish_speed = std::clamp(vec_speed.Q_Length2D(), 0.f, 450.f);
+
+	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
+		static ConVar* sv_airaccelerate = CVar->FindVar("sv_airaccelerate");
+
+		wish_speed = std::clamp((vec_speed.Q_Length2D() * 0.9f) / (sv_airaccelerate->GetFloat() * GlobalVars->frametime), 0.f, 450.f);
+	}
+
+	Vector nigated_direction = forward * -wish_speed;
 
 	ctx.cmd->sidemove = nigated_direction.y;
 	ctx.cmd->forwardmove = nigated_direction.x;
+}
+
+float CRagebot::FastHitchance(LagRecord* target, float inaccuracy, int hitbox_radius) {
+	if (inaccuracy == -1.f)
+		inaccuracy = std::tan(EnginePrediction->WeaponInaccuracy());
+
+	return min(hitbox_radius / ((eye_position - (target->m_vecOrigin + Vector(0, 0, 32))).Q_Length() * inaccuracy), 1.f);
 }
 
 float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup) {
@@ -540,14 +553,40 @@ void CRagebot::Run() {
 	debug_data.hitchance = 0;
 	debug_data.target = "null";
 
+	bool local_on_ground = Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && EnginePrediction->m_fFlags & FL_ONGROUND;
+	int m_nWeaponMode = Cheat.LocalPlayer->m_bIsScoped() ? 1 : 0;
+	float min_jump_inaccuracy_tan = 0.f;
+
+	if (settings.auto_stop->get(3) && !local_on_ground) { // superior "dynamic autostop"
+	float flInaccuracyJumpInitial = weapon_data->_flInaccuracyUnknown;
+
+		float fSqrtMaxJumpSpeed = Math::Q_sqrt(cvars.sv_jump_impulse->GetFloat());
+		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.33f);
+
+		float flAirSpeedInaccuracy = Math::RemapVal(fSqrtVerticalSpeed,
+			fSqrtMaxJumpSpeed * 0.25f,
+			fSqrtMaxJumpSpeed,
+			0.0f,
+			flInaccuracyJumpInitial);
+
+		if (flAirSpeedInaccuracy < 0)
+			flAirSpeedInaccuracy = 0;
+		else if (flAirSpeedInaccuracy > (2.f * flInaccuracyJumpInitial))
+			flAirSpeedInaccuracy = 2.f * flInaccuracyJumpInitial;
+
+		min_jump_inaccuracy_tan = std::tan(weapon_data->flInaccuracyStand[m_nWeaponMode] + weapon_data->flInaccuracyJump[m_nWeaponMode] + flAirSpeedInaccuracy);
+	}
+
 	for (const auto& target : scanned_targets) {
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
-			if (target.hitchance > settings.hitchance->get() * 0.01f) {
+			if (target.hitchance > settings.hitchance->get() * 0.009f) {
 				best_target = target;
 				break;
 			}
 			else {
-				should_autostop = true;
+				if (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.009f)) {
+					should_autostop = true;
+				}
 			}
 		}
 
@@ -555,7 +594,9 @@ void CRagebot::Run() {
 			best_target = target;
 
 		if (target.best_point.damage > target.minimum_damage) {
-			should_autostop = true;
+			if (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.009f)) {
+				should_autostop = true;
+			}
 			debug_data.hitchance = target.hitchance;
 			debug_data.damage = target.best_point.damage;
 			debug_data.target = target.player->GetName();
@@ -565,8 +606,9 @@ void CRagebot::Run() {
 		}
 
 		if (target.best_point.damage > 15) {
-			if (settings.auto_stop->get(1))
+			if (settings.auto_stop->get(1) && (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.01f))) {
 				should_autostop = true;
+			}
 			DoubleTap->block_charge = true;
 		}
 	}
@@ -686,6 +728,11 @@ void CRagebot::Zeusbot() {
 
 				if (hitchance < 0.6f)
 					continue;
+
+				if (config.visuals.effects.client_impacts->get()) {
+					Color col = config.visuals.effects.client_impacts_color->get();
+					DebugOverlay->AddBoxOverlay(point, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
+				}
 
 				ctx.cmd->viewangles = angle;
 				ctx.cmd->buttons |= IN_ATTACK;
