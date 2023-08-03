@@ -59,8 +59,8 @@ public:
 	void InitCustomModels();
 	void AgentChanger( );
 	static constexpr std::array models_ct {
-			"models/player/custom_player/legacy/ctm_diver_varianta.mdl", // Cmdr. Davida 'Goggles' Fernandez | SEAL Frogman
-			"models/player/custom_player/legacy/ctm_diver_variantb.mdl", // Cmdr. Frank 'Wet Sox' Baroud | SEAL Frogman
+			"models/player/custom_player/legacy/ctm_diver_varianta.mdl", // Cmdr. Davida "Goggles" Fernandez | SEAL Frogman
+			"models/player/custom_player/legacy/ctm_diver_variantb.mdl", // Cmdr. Frank "Wet Sox" Baroud | SEAL Frogman
 			"models/player/custom_player/legacy/ctm_diver_variantc.mdl", // Lieutenant Rex Krikey | SEAL Frogman
 			"models/player/custom_player/legacy/ctm_fbi_varianth.mdl", // Michael Syfers | FBI Sniper
 			"models/player/custom_player/legacy/ctm_fbi_variantf.mdl", // Operator | FBI SWAT
@@ -68,7 +68,7 @@ public:
 			"models/player/custom_player/legacy/ctm_fbi_variantg.mdl", // Markus Delrow | FBI HRT
 			"models/player/custom_player/legacy/ctm_gendarmerie_varianta.mdl", // Sous-Lieutenant Medic | Gendarmerie Nationale
 			"models/player/custom_player/legacy/ctm_gendarmerie_variantb.mdl", // Chem-Haz Capitaine | Gendarmerie Nationale
-			"models/player/custom_player/legacy/ctm_gendarmerie_variantc.mdl", // Chef d'Escadron Rouchard | Gendarmerie Nationale
+			"models/player/custom_player/legacy/ctm_gendarmerie_variantc.mdl", // Chef d"Escadron Rouchard | Gendarmerie Nationale
 			"models/player/custom_player/legacy/ctm_gendarmerie_variantd.mdl", // Aspirant | Gendarmerie Nationale
 			"models/player/custom_player/legacy/ctm_gendarmerie_variante.mdl", // Officer Jacques Beltram | Gendarmerie Nationale
 			"models/player/custom_player/legacy/ctm_sas_variantg.mdl", // D Squadron Officer | NZSAS
@@ -76,20 +76,21 @@ public:
 			"models/player/custom_player/legacy/ctm_st6_variante.mdl", // Seal Team 6 Soldier | NSWC SEAL
 			"models/player/custom_player/legacy/ctm_st6_variantg.mdl", // Buckshot | NSWC SEAL
 			"models/player/custom_player/legacy/ctm_st6_varianti.mdl", // Lt. Commander Ricksaw | NSWC SEAL
-			"models/player/custom_player/legacy/ctm_st6_variantj.mdl", // 'Blueberries' Buckshot | NSWC SEAL
+			"models/player/custom_player/legacy/ctm_st6_variantj.mdl", // "Blueberries" Buckshot | NSWC SEAL
 			"models/player/custom_player/legacy/ctm_st6_variantk.mdl", // 3rd Commando Company | KSK
-			"models/player/custom_player/legacy/ctm_st6_variantl.mdl", // 'Two Times' McCoy | TACP Cavalry
-			"models/player/custom_player/legacy/ctm_st6_variantm.mdl", // 'Two Times' McCoy | USAF TACP
+			"models/player/custom_player/legacy/ctm_st6_variantl.mdl", // "Two Times" McCoy | TACP Cavalry
+			"models/player/custom_player/legacy/ctm_st6_variantm.mdl", // "Two Times" McCoy | USAF TACP
 			"models/player/custom_player/legacy/ctm_st6_variantn.mdl", // Primeiro Tenente | Brazilian 1st Battalion
-			"models/player/custom_player/legacy/ctm_swat_variante.mdl", // Cmdr. Mae 'Dead Cold' Jamison | SWAT
+			"models/player/custom_player/legacy/ctm_swat_variante.mdl", // Cmdr. Mae "Dead Cold" Jamison | SWAT
 			"models/player/custom_player/legacy/ctm_swat_variantf.mdl", // 1st Lieutenant Farlow | SWAT
-			"models/player/custom_player/legacy/ctm_swat_variantg.mdl", // John 'Van Healen' Kask | SWAT
+			"models/player/custom_player/legacy/ctm_swat_variantg.mdl", // John "Van Healen" Kask | SWAT
 			"models/player/custom_player/legacy/ctm_swat_varianth.mdl", // Bio-Haz Specialist | SWAT
 			"models/player/custom_player/legacy/ctm_swat_varianti.mdl", // Sergeant Bombson | SWAT
 			"models/player/custom_player/legacy/ctm_swat_variantj.mdl", // Chem-Haz Specialist | SWAT
-			"models/player/custom_player/legacy/ctm_swat_variantk.mdl", // Lieutenant 'Tree Hugger' Farlow | SWAT
+			"models/player/custom_player/legacy/ctm_swat_variantk.mdl", // Lieutenant "Tree Hugger" Farlow | SWAT
 			"models/player/custom_player/legacy/ctm_gign_varianta.mdl" // GIGN (a)
 	};
+
 
 	static constexpr std::array models_t {
 		"models/player/custom_player/legacy/tm_professional_varj.mdl", // Getaway Sally | The Professionals
@@ -116,10 +117,10 @@ public:
 			"models/player/custom_player/legacy/tm_jungle_raider_variante.mdl", // Vypa Sista of the Revolution | Guerrilla Warfare
 			"models/player/custom_player/legacy/tm_jungle_raider_variantd.mdl", // Col. Mangos Dabisi | Guerrilla Warfare
 			"models/player/custom_player/legacy/tm_jungle_raider_variantñ.mdl", // Arno The Overgrown | Guerrilla Warfare
-			"models/player/custom_player/legacy/tm_jungle_raider_variantb2.mdl", // 'Medium Rare' Crasswater | Guerrilla Warfare
+			"models/player/custom_player/legacy/tm_jungle_raider_variantb2.mdl", // "Medium Rare" Crasswater | Guerrilla Warfare
 			"models/player/custom_player/legacy/tm_jungle_raider_variantb.mdl", // Crasswater The Forgotten | Guerrilla Warfare
 			"models/player/custom_player/legacy/tm_jungle_raider_varianta.mdl", // Elite Trapper Solman | Guerrilla Warfare
-			"models/player/custom_player/legacy/tm_balkan_varianth.mdl", // 'The Doctor' Romanov | Sabre
+			"models/player/custom_player/legacy/tm_balkan_varianth.mdl", // "The Doctor" Romanov | Sabre
 			"models/player/custom_player/legacy/tm_balkan_variantj.mdl", // Blackwolf | Sabre
 			"models/player/custom_player/legacy/tm_balkan_varianti.mdl", // Maximus | Sabre
 			"models/player/custom_player/legacy/tm_balkan_variantf.mdl", // Dragomir | Sabre
@@ -128,6 +129,30 @@ public:
 			"models/player/custom_player/legacy/tm_balkan_variantl.mdl", // Dragomir | Sabre Footsoldier
 			"models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl", // Danger zone (a)
 			"models/player/custom_player/legacy/tm_jumpsuit_variantb.mdl" // Danger zone (b)
+	};
+
+	static constexpr std::array mask_models
+	{	"",
+		"models/player/holiday/facemasks/facemask_dallas.mdl",
+		"models/player/holiday/facemasks/facemask_battlemask.mdl",
+		"models/player/holiday/facemasks/evil_clown.mdl",
+		"models/player/holiday/facemasks/facemask_anaglyph.mdl",
+		"models/player/holiday/facemasks/facemask_boar.mdl",
+		"models/player/holiday/facemasks/facemask_bunny.mdl",
+		"models/player/holiday/facemasks/facemask_bunny_gold.mdl",
+		"models/player/holiday/facemasks/facemask_chains.mdl",
+		"models/player/holiday/facemasks/facemask_chicken.mdl",
+		"models/player/holiday/facemasks/facemask_devil_plastic.mdl",
+		"models/player/holiday/facemasks/facemask_hoxton.mdl",
+		"models/player/holiday/facemasks/facemask_pumpkin.mdl",
+		"models/player/holiday/facemasks/facemask_samurai.mdl",
+		"models/player/holiday/facemasks/facemask_sheep_bloody.mdl",
+		"models/player/holiday/facemasks/facemask_sheep_gold.mdl",
+		"models/player/holiday/facemasks/facemask_sheep_model.mdl",
+		"models/player/holiday/facemasks/facemask_skull.mdl",
+		"models/player/holiday/facemasks/facemask_template.mdl",
+		"models/player/holiday/facemasks/facemask_wolf.mdl",
+		"models/player/holiday/facemasks/porcelain_doll.mdl",
 	};
 
 	void Run( bool frame_end );

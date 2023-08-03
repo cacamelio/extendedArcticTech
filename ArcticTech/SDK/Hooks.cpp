@@ -133,6 +133,16 @@ void __fastcall hkLockCursor(ISurface* thisptr, void* edx) {
 	oLockCursor(thisptr, edx);
 }
 
+MDLHandle_t __fastcall hkFindMdl(void* ecx, void* edx, char* FilePath)
+{
+	static auto oFindMdlHook = (tFindMdlHook)Hooks::ModelCacheVMT->GetOriginal(10);
+
+	if (strstr(FilePath, "facemask_battlemask.mdl"))
+		sprintf(FilePath, "models/player/holiday/facemasks/facemask_dallas.mdl");
+
+	return oFindMdlHook(ecx, edx, FilePath);
+}
+
 void __stdcall CreateMove(int sequence_number, float sample_frametime, bool active, bool& bSendPacket) {
 	static auto oCHLCCreateMove = (tCHLCCreateMove)Hooks::ClientVMT->GetOriginal(22);
 
@@ -180,6 +190,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	}
 
 	Miscelleaneus::AutoStrafe();
+
 
 	if (DoubleTap->IsShifting()) {
 		if (ClientState->m_nDeltaTick > 0)
@@ -464,6 +475,11 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		SkinChanger->AgentChanger();
 		SkinChanger->Run(true);
 
+		
+		if (config.skins.mask_changer->get() && Cheat.LocalPlayer->IsAlive() && Cheat.InGame) {
+			Cheat.LocalPlayer->m_iAddonBits() |= 0x10000 | 0x00800;
+		}
+
 		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
 			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
 
@@ -487,9 +503,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
-		break;
-	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
-		//SkinChanger->Run( false );
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
 		break;
@@ -993,6 +1006,7 @@ void Hooks::Initialize() {
 	ConVarVMT = new VMT(cvars.sv_cheats);
 	ClientVMT = new VMT(Client);
 	PredictionVMT = new VMT(Prediction);
+	ModelCacheVMT = new VMT(MDLCache);
 	KeyValuesVMT = new VMT(KeyValuesSystem);
 
 	// vmt hooking for directx doesnt work for some reason
@@ -1014,6 +1028,7 @@ void Hooks::Initialize() {
 	ClientVMT->Hook(37, hkFrameStageNotify);
 	ClientVMT->Hook(11, hkHudUpdate);
 	ClientVMT->Hook(22, hkCHLCCreateMove);
+	ModelCacheVMT->Hook(10 ,hkFindMdl);
 	ClientVMT->Hook(7, hkLevelShutdown);
 	PredictionVMT->Hook(19, hkRunCommand);
 	KeyValuesVMT->Hook(2, hkAllocKeyValuesMemory);
@@ -1076,6 +1091,7 @@ void Hooks::End() {
 	PredictionVMT->UnHook(19);
 	//ClientVMT->UnHook(40);
 	KeyValuesVMT->UnHook(2);
+	ModelCacheVMT->UnHook(10);
 
 	RemoveHook(oPresent, hkPresent);
 	//RemoveHook(oReset, hkReset);
