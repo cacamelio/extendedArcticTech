@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 struct inputdata_t;
 typedef enum _fieldtypes {
 	FIELD_VOID = 0,			// No type or value
@@ -91,7 +93,15 @@ struct datamap_t {
 	int                    m_packed_size;
 };
 
+
+class RecvProp;
+struct LuaProp_t {
+	RecvProp* prop;
+	int offset = 0;
+};
+
 namespace NetVars {
+	LuaProp_t FindProp(RecvTable* table, std::string netvar);
 	int	GetNetVar(const char* table, const char* netvar);
 	int GetNetVar(RecvTable* table, const char* netvar);
 	int FindInDataMap(datamap_t* map, const char* netvar);

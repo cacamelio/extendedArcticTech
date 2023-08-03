@@ -64,9 +64,9 @@ void CAnimationSystem::OnCreateMove() {
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
 		stored_local_anims.poseparams = Cheat.LocalPlayer->m_flPoseParameter();
 
-		animstate->iLastUpdateFrame = 0;
 		Cheat.LocalPlayer->UpdateClientSideAnimation();
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
+
 		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, local_animlayers);
 	}
 
@@ -83,8 +83,8 @@ void CAnimationSystem::UpdateLocalAnimations() {
 	Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
 	Cheat.LocalPlayer->m_flPoseParameter() = stored_local_anims.poseparams;
 
-	memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), sent_matrix, sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
-	Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
+	//memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), sent_matrix, sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
+	//Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
 }
 
 void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {

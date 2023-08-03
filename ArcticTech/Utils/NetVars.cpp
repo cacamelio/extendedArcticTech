@@ -1,6 +1,27 @@
 #include "NetVars.h"
 #include "../SDK/Globals.h"
 
+LuaProp_t NetVars::FindProp(RecvTable* table, std::string prop_name) {
+	for (int i = 0; i < table->m_nProps; i++) {
+		RecvProp* prop = &table->m_pProps[i];
+
+		if (prop->m_pVarName == prop_name)
+			return LuaProp_t(prop, prop->m_Offset);
+
+		if (prop->m_pDataTable) {
+			int offset = prop->m_Offset;
+			RecvTable* recvp = prop->m_pDataTable;
+
+			auto tmp = FindProp(recvp, prop_name);
+
+			if (tmp.offset)
+				return LuaProp_t(tmp.prop, offset + tmp.offset);
+		}
+	}
+
+	return LuaProp_t(nullptr, 0);
+}
+
 int NetVars::GetNetVar(const char* table, const char* netvar) {
 	ClientClass* start = Client->GetAllClasses();
 	ClientClass* current = start;

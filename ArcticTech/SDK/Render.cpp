@@ -1,7 +1,6 @@
 #include "Render.h"
 #include "Globals.h"
 #include "../Utils/Utils.h"
-#include "../Resources/Fonts.h"
 
 #include "../Resources/inferno.h"
 #include "../Resources/molotov.h"
@@ -38,8 +37,6 @@ void CRender::Init(IDirect3DDevice9* dev) {
 	device->GetViewport(&vp);
 	Cheat.ScreenSize.x = vp.Width;
 	Cheat.ScreenSize.y = vp.Height;
-
-	AddFontFromMemory(FontFiles::MuseoSansCyrl, sizeof(FontFiles::MuseoSansCyrl));
 
 	Verdana = LoadFont("Verdana", 12, 400, CLEARTYPE_NATURAL_QUALITY);
 	SmallFont = LoadFont("Small Fonts", 8, 400, 0);

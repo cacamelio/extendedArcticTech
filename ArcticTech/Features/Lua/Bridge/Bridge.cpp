@@ -639,7 +639,74 @@ namespace api {
 
 	namespace entity {
 		CBasePlayer* get_local_player() {
-			return Cheat.LocalPlayer;
+			return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetLocalPlayer()));
+		}
+
+		sol::object get_prop(sol::this_state state, CBaseEntity* ent, std::string prop_name) {
+			auto prop = NetVars::FindProp(ent->GetClientClass()->m_pRecvTable, prop_name);
+
+			if (prop.offset == 0)
+				return sol::nil;
+
+			switch (prop.prop->m_RecvType)
+			{
+			case DPT_Int:
+				return sol::make_object(state, *reinterpret_cast<int*>((uintptr_t)ent + prop.offset));
+			case DPT_Float:
+				return sol::make_object(state, *reinterpret_cast<float*>((uintptr_t)ent + prop.offset));
+			case DPT_Vector:
+			case DPT_VectorXY:
+				return sol::make_object(state, *reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset));
+			case DPT_String:
+				return sol::make_object(state, reinterpret_cast<char*>((uintptr_t)ent + prop.offset));
+			case DPT_Array: {
+				auto array_prop = prop.prop->m_pArrayProp[0];
+
+				switch (array_prop.m_RecvType)
+				{
+				case DPT_Int:
+					return sol::make_object(state, reinterpret_cast<int*>((uintptr_t)ent + prop.offset));
+				case DPT_Float:
+					return sol::make_object(state, reinterpret_cast<float*>((uintptr_t)ent + prop.offset));
+				case DPT_Vector:
+				case DPT_VectorXY:
+					return sol::make_object(state, reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset));
+				case DPT_String:
+					return sol::make_object(state, reinterpret_cast<char**>((uintptr_t)ent + prop.offset));
+				}
+			}
+			default:
+				break;
+			}
+
+			return sol::nil;
+		}
+
+		Vector obb_maxs(sol::this_state state, CBaseEntity* ent) {
+			auto collidable = ent->GetCollideable();
+
+			if (!collidable)
+				return Vector();
+
+			return collidable->OBBMaxs();
+		}
+
+		Vector obb_mins(sol::this_state state, CBaseEntity* ent) {
+			auto collidable = ent->GetCollideable();
+
+			if (!collidable)
+				return Vector();
+
+			return collidable->OBBMins();
+		}
+
+		Vector collision_origin(sol::this_state state, CBaseEntity* ent) {
+			auto collidable = ent->GetCollideable();
+
+			if (!collidable)
+				return Vector();
+
+			return collidable->GetCollisionOrigin();
 		}
 	}
 
@@ -740,18 +807,34 @@ void CLua::Setup() {
 		"to_screen", &api::vector::to_screen
 	);
 
+	lua.new_usertype<CBaseEntity>("entity_t", sol::no_constructor,
+		"ent_index", &CBaseEntity::EntIndex,
+		"obb_maxs", api::entity::obb_maxs,
+		"obb_mins", api::entity::obb_mins,
+		"collision_origin", api::entity::collision_origin,
+		"__index", api::entity::get_prop
+	);
+
 	lua.new_usertype<CBaseCombatWeapon>("weapon_t", sol::no_constructor,
 		"ent_index", &CBaseCombatWeapon::EntIndex,
 		"get_inaccuracy", &CBaseCombatWeapon::GetInaccuracy,
-		"get_spread", &CBaseCombatWeapon::GetSpread
+		"get_spread", &CBaseCombatWeapon::GetSpread,
+		"obb_maxs", api::entity::obb_maxs,
+		"obb_mins", api::entity::obb_mins,
+		"collision_origin", api::entity::collision_origin,
+		"__index", api::entity::get_prop
 	);
 
 	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor, 
 		"ent_index", &CBasePlayer::EntIndex,
 		"get_name", &CBasePlayer::GetName,
 		"get_active_weapon", &CBasePlayer::GetActiveWeapon,
-		"get_abs_orgin", &CBasePlayer::GetAbsOrigin,
-		"get_abs_angles", &CBasePlayer::GetAbsAngles
+		"get_abs_origin", &CBasePlayer::GetAbsOrigin,
+		"get_abs_angles", &CBasePlayer::GetAbsAngles,
+		"obb_maxs", api::entity::obb_maxs,
+		"obb_mins", api::entity::obb_mins,
+		"collision_origin", api::entity::collision_origin,
+		"__index", api::entity::get_prop
 	);
 
 	lua.new_usertype<LagRecord>("lag_record_t", sol::no_constructor,

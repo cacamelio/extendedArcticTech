@@ -146,6 +146,12 @@ void CWorld::RemoveBlood() {
 		return;
 
 	static const char* bloodMaterials[] = {
+		"decals/blood1_subrect.vmt",
+		"decals/blood2_subrect.vmt",
+		"decals/blood3_subrect.vmt",
+		"decals/blood4_subrect.vmt",
+		"decals/blood5_subrect.vmt",
+		"decals/blood6_subrect.vmt",
 		"decals/blood1.vmt",
 		"decals/blood2.vmt",
 		"decals/blood3.vmt",
@@ -156,12 +162,14 @@ void CWorld::RemoveBlood() {
 		"decals/blood8.vmt",
 	};
 
-	//for (const char* mat : bloodMaterials) {
-	//	IMaterial* material = MaterialSystem->FindMaterial(mat);
+	for (const char* mat : bloodMaterials) {
+		IMaterial* material = MaterialSystem->FindMaterial(mat);
 
-	//	if (material && !material->IsErrorMaterial())
-	//		material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(3));
-	//}
+		if (material && !material->IsErrorMaterial()) {
+			material->IncrementReferenceCount();
+			material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(3));
+		}
+	}
 }
 
 void CWorld::Crosshair() {
