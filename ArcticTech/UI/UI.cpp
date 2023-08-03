@@ -223,6 +223,31 @@ void CMenu::SetupUI() {
 	config.skins.override_knife = models->AddCheckBox("Override knife");
 	config.skins.knife_model = models->AddComboBox("Knife model", SkinChanger->GetUIKnifeModels());
 
+	config.skins.mask_changer = models->AddCheckBox("Enable mask changer");
+	config.skins.mask_changer_models = models->AddComboBox("Mask models", {
+		"None",
+		"Dallas",
+		"Battle Mask",
+		"Evil Clown",
+		"Anaglyph",
+		"Boar",
+		"Bunny",
+		"Bunny Gold",
+		"Chains",
+		"Chicken",
+		"Devil Plastic",
+		"Hoxton",
+		"Pumpkin",
+		"Samurai",
+		"Sheep Bloody",
+		"Sheep Gold",
+		"Sheep Model",
+		"Skull",
+		"Template",
+		"Wolf",
+		"Doll",
+	});
+
 	config.skins.override_agent = models->AddCheckBox("Override agent");
 	config.skins.agent_model_t = models->AddComboBox("Agent model T Side", {
 		"Getaway Sally | The Professionals",

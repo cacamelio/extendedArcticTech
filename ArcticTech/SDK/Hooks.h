@@ -32,6 +32,7 @@ typedef bool(__fastcall* tSetupBones)(CBaseEntity*, void*, matrix3x4_t*, int, in
 typedef void(__cdecl* tCL_Move)(float, bool);
 typedef void(__fastcall* tHudUpdate)(IBaseClientDLL*, void*, bool);
 typedef void(__thiscall* tCHLCCreateMove)(IBaseClientDLL*, int, float, bool);
+typedef MDLHandle_t(__fastcall* tFindMdlHook)(void* ecx, void* edx, char* FilePath);
 typedef void(__fastcall* tPhysicsSimulate)(CBasePlayer*, void*);
 typedef void(__fastcall* tClampBonesInBBox)(CBasePlayer*, void*, matrix3x4_t*, int);
 typedef void(__fastcall* tCalculateView)(CBasePlayer*, void*, Vector&, QAngle&, float&, float&, float&);
@@ -100,6 +101,7 @@ namespace Hooks {
 	inline VMT* ConVarVMT;
 	inline VMT* ClientVMT;
 	inline VMT* PredictionVMT;
+	inline VMT* ModelCacheVMT;
 	inline VMT* KeyValuesVMT;
 
 	void Initialize();
