@@ -14,10 +14,14 @@ public:
 	bool block_charge = false;
 	int charged_command = 0;
 	int charged_tickbase = 0;
+	bool defensive_this_tick = false;
+	bool allow_defensive = false;
 
 	inline bool& IsShifting() { return shifting_tickbase; };
 	inline float LastTeleportTime() { return last_teleport_time; };
 	inline int& TargetTickbaseShift() { return target_tickbase_shift; };
+	inline bool& DefenseiveThisTick() { return defensive_this_tick; };
+	inline bool& AllowDefensive() { return allow_defensive; };
 
 	bool	ShouldCharge();
 	int		MaxTickbaseShift();

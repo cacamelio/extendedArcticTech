@@ -140,7 +140,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	else if (name == "player_spawned") {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
 
-		if (player && player->m_bDormant())
+		if (player)
 			ESPInfo[player->EntIndex()].m_nHealth = 100;
 	}
 	else if (name == "player_disconnect") {

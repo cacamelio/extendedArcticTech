@@ -311,6 +311,9 @@ void CAntiAim::LegMovement() {
 bool CAntiAim::IsPeeking() {
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
+	if (velocity.LengthSqr() < 64.f)
+		return false;
+
 	Vector move_factor = velocity.Q_Normalized() * 21.f;
 
 	matrix3x4_t backup_matrix[128];

@@ -894,6 +894,18 @@ void CLua::Setup() {
 		"button", api::ui::button
 	);
 
+	lua.new_usertype<CUserCmd_lua>("user_cmd_t", sol::no_constructor,
+		"command_number", &CUserCmd_lua::command_number,
+		"tickcount", &CUserCmd_lua::tickcount,
+		"move", &CUserCmd_lua::move,
+		"viewangles", &CUserCmd_lua::viewangles,
+		"buttons", &CUserCmd_lua::buttons,
+		"random_seed", &CUserCmd_lua::random_seed,
+		"hasbeenpredicted", &CUserCmd_lua::hasbeenpredicted,
+		"override_defensive", &CUserCmd_lua::override_defensive,
+		"allow_defensive", &CUserCmd_lua::allow_defensive
+	);
+
 	// _G
 	lua["print"] = api::print;
 	lua["error"] = api::error;

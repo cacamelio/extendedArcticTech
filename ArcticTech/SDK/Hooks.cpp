@@ -153,6 +153,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	Miscelleaneus::Clantag();
 
+	DoubleTap->DefenseiveThisTick() = false;
+
 	if (!cmd || !cmd->command_number || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return;
 
@@ -227,7 +229,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	ctx.is_peeking = AntiAim->IsPeeking();
 
-	DoubleTap->DefensiveDoubletap();
+	if (ctx.is_peeking && config.ragebot.aimbot.doubletap_options->get(1))
+		DoubleTap->DefenseiveThisTick() = true;
+
 	AntiAim->SlowWalk();
 
 	QAngle storedAng = cmd->viewangles;
@@ -237,8 +241,23 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	EnginePrediction->Start(cmd);
 
+	CUserCmd_lua lua_cmd;
+	lua_cmd.command_number = cmd->command_number;
+	lua_cmd.hasbeenpredicted = cmd->hasbeenpredicted;
+	lua_cmd.move = Vector(cmd->sidemove, cmd->forwardmove, cmd->upmove);
+	lua_cmd.viewangles = cmd->viewangles;
+	lua_cmd.random_seed = cmd->random_seed;
+	lua_cmd.buttons = cmd->buttons;
+
 	for (auto& callback : Lua->hooks.getHooks(LUA_CREATEMOVE)) {
-		callback.func(cmd); // TODO: custom cmd
+		callback.func(&lua_cmd);
+	}
+
+	cmd->buttons = lua_cmd.buttons;
+	DoubleTap->AllowDefensive() = lua_cmd.allow_defensive;
+
+	if (lua_cmd.override_defensive) {
+		DoubleTap->DefenseiveThisTick() = lua_cmd.override_defensive.as<bool>();
 	}
 
 	ctx.last_local_velocity = ctx.local_velocity;
@@ -282,6 +301,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AnimationSystem->OnCreateMove();
 
 	EnginePrediction->End();
+
+	DoubleTap->DefensiveDoubletap();
 
 	// createmove
 

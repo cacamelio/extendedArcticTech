@@ -52,7 +52,8 @@ void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
 
 	char flags = esp.m_flags;
 
-	auto& esp_info = ESPInfo[esp.m_iPlayer];
+	auto& esp_info = ESPInfo[EngineClient->GetPlayerForUserID(esp.m_iPlayer)];
+
 	esp_info.m_vecOrigin = esp.m_vecOrigin;
 	esp_info.m_iActiveWeapon = esp.m_ActiveWeapon;
 	esp_info.m_bIsScoped = flags & Shared_Scoped;

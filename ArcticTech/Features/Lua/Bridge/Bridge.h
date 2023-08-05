@@ -22,6 +22,21 @@ struct LuaScript_t {
 	std::vector<IBaseWidget*> ui_elements;
 };
 
+struct CUserCmd_lua {
+	int command_number = 0;
+	int tickcount = 0;
+	Vector move;
+	QAngle viewangles;
+
+	int buttons = 0;
+
+	int random_seed = false;
+	bool hasbeenpredicted = false;
+
+	sol::object override_defensive = sol::nil;
+	bool allow_defensive = true;
+};
+
 class CLua
 {
 public:

@@ -130,11 +130,8 @@ void CDoubleTap::DefensiveDoubletap() {
 	if (defensive_ticks == 14)
 		defensive_ticks = 0;
 
-	if (ctx.is_peeking) {
+	if (defensive_this_tick || defensive_ticks != 0)
 		defensive_ticks++;
-	} else {
-		defensive_ticks = 0;
-	}
 }
 
 bool CDoubleTap::ShouldBreakLC() {
@@ -148,7 +145,7 @@ bool CDoubleTap::ShouldBreakLC() {
 		return false;
 
 	if (CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon()) {
-		if (weapon->IsGrenade())
+		if (weapon->IsGrenade() && reinterpret_cast<CBaseGrenade*>(weapon)->m_flThrowTime() > 0.f)
 			return false; // nades detonate faster with break lc
 	}
 
@@ -158,9 +155,9 @@ bool CDoubleTap::ShouldBreakLC() {
 		result = true;
 	}
 
-	if (config.ragebot.aimbot.doubletap_options->get(1)) {
+	if (config.ragebot.aimbot.doubletap_options->get(1) && allow_defensive) {
 		if (defensive_ticks > 0) {
-			result = defensive_ticks != 1;
+			result = defensive_ticks > 2;
 		}
 	}
 
@@ -168,7 +165,7 @@ bool CDoubleTap::ShouldBreakLC() {
 }
 
 bool CDoubleTap::IsDefensiveActive() {
-	return config.ragebot.aimbot.doubletap_options->get(1) && defensive_ticks > 1;
+	return config.ragebot.aimbot.doubletap_options->get(1) && defensive_ticks > 2;
 }
 
 CDoubleTap* DoubleTap = new CDoubleTap;

@@ -101,16 +101,19 @@ void CLagCompensation::OnNetUpdate() {
 				new_record->breaking_lag_comp = (prev_record->m_vecOrigin - new_record->m_vecOrigin).LengthSqr() > 4096.f;
 			}
 
-			new_record->shifting_tickbase = max_simulation_time[i] > new_record->m_flSimulationTime;
+			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
 
-			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 1.f)
+			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;
 
-			if (config.visuals.esp.shared_esp->get() && EngineClient->IsVoiceRecording() && nc) {
+			if (config.visuals.esp.shared_esp->get() && nc) {
 				if (config.visuals.esp.share_with_enemies->get() || !pl->IsTeammate()) {
 					SharedESP_t msg;
 
-					msg.m_iPlayer = i;
+					player_info_t pinfo;
+					EngineClient->GetPlayerInfo(i, &pinfo);
+
+					msg.m_iPlayer = pinfo.userId;
 					
 					if (pl->m_bIsScoped())
 						msg.m_flags |= Shared_Scoped;
@@ -173,8 +176,8 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 		return false;
 
 	/// omg v0lvo broke this check but i want to add it because i want to be like Soufiw
-	const int dead_time = TIME_TO_TICKS((float)(TICKS_TO_TIME(server_tickcount) + latency) - 0.2f);
-	if (TIME_TO_TICKS(record->m_flSimulationTime + lerp_time) < dead_time)
+	const float dead_time = (float)(TICKS_TO_TIME(server_tickcount) + latency) - 0.2f;
+	if (record->m_flSimulationTime + lerp_time < dead_time)
 		return false;
 
 	return true;

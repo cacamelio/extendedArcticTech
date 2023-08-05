@@ -212,7 +212,7 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 		}
 	}
 
-	if (last_valid_record) {
+	if (last_valid_record && CompareRecords(last_valid_record, &records.back())) {
 		target_records.emplace_back(last_valid_record);
 	}
 
@@ -220,8 +220,7 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 		// TODO: should be extrapolation here
 
 		LagRecord* mostRecentRecord = &records.back();
-		if (!mostRecentRecord->shifting_tickbase)
-			target_records.emplace_back(mostRecentRecord);
+		target_records.emplace_back(mostRecentRecord);
 	}
 
 	return target_records;

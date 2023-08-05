@@ -54,17 +54,17 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	for (auto handler : m_voiceDataCallbacks)
 		handler(msg);
 
+	if (msg.xuid_low != NET_ARCTIC_CODE)
+		return false;
+
 #ifdef DEBUG_PRINT_VOICEDATA
 	if (msg.voice_data->size() == 0) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(msg.client + 1));
 
 		if (player)
 			Console->Log(std::format("recieved msg from {} [format: {}] [xuid_low: {}] [xuid_high: {}] [seq: {}] [sect: {}] [uso: {}]", player->GetName(), msg.format, msg.xuid_low, msg.xuid_high, msg.sequence_bytes, msg.section_number, msg.uncompressed_sample_offset));
-	}
+}
 #endif
-
-	if (msg.xuid_low != NET_ARCTIC_CODE)
-		return false;
 
 	player_info_t info;
 	EngineClient->GetPlayerInfo(msg.client + 1, &info);
