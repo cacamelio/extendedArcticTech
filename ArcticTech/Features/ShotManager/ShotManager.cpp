@@ -179,13 +179,13 @@ void CShotManager::OnNetUpdate() {
 					Ray_t ray(shot->shoot_pos, shot->shoot_pos + direction * 8192);
 
 					if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
-						Console->ColorPrint("resolver", Color(200, 255, 0));
-						it->miss_reason = "resolver";
+						Console->ColorPrint("correction", Color(200, 255, 0));
+						it->miss_reason = "correction";
 					}
 					else {
 						if (HitboxToDamagegroup(trace.hitgroup) == shot->wanted_damagegroup) {
-							Console->ColorPrint("resolver", Color(200, 255, 0));
-							it->miss_reason = "resolver";
+							Console->ColorPrint("correction", Color(200, 255, 0));
+							it->miss_reason = "correction";
 						}
 						else {
 							if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f) {
@@ -228,8 +228,8 @@ void CShotManager::OnNetUpdate() {
 						Console->ColorPrint("damage rejection\n", Color(255, 20, 20)); // correct naming: sin shluhi s gmom
 					}
 					else {
-						it->miss_reason = "resolver";
-						Console->ColorPrint("resolver\n", Color(200, 255, 0));
+						it->miss_reason = "correction";
+						Console->ColorPrint("correction\n", Color(200, 255, 0));
 
 						Resolver->OnMiss(player, shot->record);
 					}

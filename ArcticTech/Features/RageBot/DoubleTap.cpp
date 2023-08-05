@@ -75,7 +75,7 @@ void CDoubleTap::Run() {
 	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
 
 	if (target_tickbase_shift < max_tickbase_charge) {
-		if (!(weapon->IsGrenade() || GlobalVars->realtime - last_teleport_time < 0.4f || GetAsyncKeyState(VK_LBUTTON) & 0x8000 || block_charge || !ctx.send_packet)) {
+		if (!(weapon->IsGrenade() || GlobalVars->realtime - last_teleport_time < 0.3f || GetAsyncKeyState(VK_LBUTTON) & 0x8000 || block_charge || !ctx.send_packet)) {
 			target_tickbase_shift = max_tickbase_charge;
 			Cheat.tickbaseshift = max_tickbase_charge;
 			charged_command = ctx.cmd->command_number;
@@ -101,17 +101,22 @@ void CDoubleTap::HandleTeleport(CL_Move_t cl_move, float extra_samples) {
 }
 
 int CDoubleTap::MaxTickbaseShift() {
-	CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
+	return 13;
 
-	if (!activeWeapon || !activeWeapon->ShootingWeapon())
-		return 13;
 
-	CCSWeaponData* weapon_data = activeWeapon->GetWeaponInfo();
+	// fuck this shit 13 always on
 
-	if (!weapon_data)
-		return 13;
+	//CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
 
-	return min(weapon_data->flCycleTime / GlobalVars->interval_per_tick, 13);
+	//if (!activeWeapon || !activeWeapon->ShootingWeapon())
+	//	return 13;
+
+	//CCSWeaponData* weapon_data = activeWeapon->GetWeaponInfo();
+
+	//if (!weapon_data)
+	//	return 13;
+
+	//return min(weapon_data->flCycleTime / GlobalVars->interval_per_tick, 13);
 }
 
 void CDoubleTap::ForceTeleport() {
@@ -122,14 +127,13 @@ void CDoubleTap::ForceTeleport() {
 
 
 void CDoubleTap::DefensiveDoubletap() {
-	if (peeking_ticks == 14)
-		peeking_ticks = 0;
+	if (defensive_ticks == 14)
+		defensive_ticks = 0;
 
 	if (ctx.is_peeking) {
-		peeking_ticks++;
-	}
-	else {
-		peeking_ticks = 0;
+		defensive_ticks++;
+	} else {
+		defensive_ticks = 0;
 	}
 }
 
@@ -155,8 +159,8 @@ bool CDoubleTap::ShouldBreakLC() {
 	}
 
 	if (config.ragebot.aimbot.doubletap_options->get(1)) {
-		if (peeking_ticks > 0) {
-			result = peeking_ticks != 1;
+		if (defensive_ticks > 0) {
+			result = defensive_ticks != 1;
 		}
 	}
 
@@ -164,7 +168,7 @@ bool CDoubleTap::ShouldBreakLC() {
 }
 
 bool CDoubleTap::IsDefensiveActive() {
-	return config.ragebot.aimbot.doubletap_options->get(1) && peeking_ticks > 1;
+	return config.ragebot.aimbot.doubletap_options->get(1) && defensive_ticks > 1;
 }
 
 CDoubleTap* DoubleTap = new CDoubleTap;

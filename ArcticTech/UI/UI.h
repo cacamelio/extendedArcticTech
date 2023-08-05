@@ -245,7 +245,7 @@ public:
 	void			SetupUI();
 	void			Release();
 	void			Render();
-	void			WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	LRESULT			WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	CMenuTab*		AddTab(const std::string& tab, IDirect3DTexture9* icon, ImVec2 icon_size);
 	CMenuGroupbox*	AddGroupBox(const std::string& tab, const std::string& groupbox, float relative_size = 1.f, int column = -1);

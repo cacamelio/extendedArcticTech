@@ -285,6 +285,14 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	// createmove
 
+	ctx.lc_exploit_prev = ctx.lc_exploit;
+	ctx.lc_exploit = DoubleTap->ShouldBreakLC();
+
+	if (ctx.lc_exploit && !ctx.lc_exploit_prev)
+		ctx.lc_exploit_charge = cmd->command_number;
+	else if (!ctx.lc_exploit && ctx.lc_exploit_prev)
+		ctx.lc_exploit_shift = cmd->command_number;
+
 	Utils::FixMovement(cmd, storedAng);
 
 	AntiAim->LegMovement();
@@ -634,20 +642,33 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 	player->m_flVelocityModifier() = backup_velocity_modifier;
 
+	bool shifted_this_tick = false;
 	for (auto i = ctx.shifted_commands.begin(); i != ctx.shifted_commands.end();) {
 		auto command = *i;
 
-		if (cmd->command_number - command > 128) {
+		if (cmd->command_number - command > 64) {
 			i = ctx.shifted_commands.erase(i);
 			continue;
 		}
 
 		if (command == cmd->command_number) {
-			player->m_nTickBase() = backup_tickbase;
+			shifted_this_tick = true;
+
+			if (!ctx.lc_exploit)
+				player->m_nTickBase() = backup_tickbase;
 		}
 
 		++i;
 	}
+
+	if (shifted_this_tick)
+		return;
+
+	// ghetto lc exploit tickbase fix
+	if (ctx.lc_exploit_charge == cmd->command_number)
+		player->m_nTickBase() -= 14;
+	else if (ctx.lc_exploit_shift == cmd->command_number)
+		player->m_nTickBase() += 14;
 
 	//EnginePrediction->PatchAttackPacket(cmd, false);
 
@@ -664,8 +685,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 	auto& local_data = EnginePrediction->GetLocalData(c_ctx->command_number);
 
 	if (c_ctx->command_number == DoubleTap->charged_command + 1) {
-		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick;
-		return;
+		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick + 1;
 		//EnginePrediction->RestoreNetvars(last_simulated_tick % 150);
 	}
 

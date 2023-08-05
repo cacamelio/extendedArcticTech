@@ -336,6 +336,7 @@ public:
     PRED_DESC_MAP(m_nSkin, int, "m_nSkin")
     PRED_DESC_MAP(m_nBody, int, "m_nBody")
     NETVAR_O(m_surfaceFriction, float, "DT_BasePlayer", "m_flWaterJumpTime", 17)
+    NETVAR(m_iAccount, int, "DT_CSPlayer", "m_iAccount")
 
     bool& m_bMaintainSequenceTransitions();
 

@@ -195,7 +195,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 
 	record->roll = ResolveRollAnimation(player, prevRecord);
 
-	if (!record->m_nChokedTicks) {
+	if (!record->m_nChokedTicks || player->m_bIsDefusing()) {
 		record->resolver_data.side = 0;
 		record->resolver_data.resolver_type = ResolverType::NONE;
 		return;
@@ -207,9 +207,9 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	SetupResolverLayers(player, record);
 
 	record->resolver_data.resolver_type = ResolverType::NONE;
-	record->resolver_data.delta_center = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[0][6].m_flPlaybackRate) * 100.f;
-	record->resolver_data.delta_positive = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[1][6].m_flPlaybackRate) * 100.f;
-	record->resolver_data.delta_negative = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[2][6].m_flPlaybackRate) * 100.f;
+	record->resolver_data.delta_center = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[0][6].m_flPlaybackRate) * 1000.f;
+	record->resolver_data.delta_positive = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[1][6].m_flPlaybackRate) * 1000.f;
+	record->resolver_data.delta_negative = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[2][6].m_flPlaybackRate) * 1000.f;
 
 	float flLastDelta = 1.f;
 	float flMaxDelta = max(max(record->resolver_data.delta_center, record->resolver_data.delta_negative), record->resolver_data.delta_positive);
@@ -273,7 +273,7 @@ void CResolver::OnMiss(CBasePlayer* player, LagRecord* record) {
 		bf_data->current_side = record->resolver_data.side == 0 ? 1 : -record->resolver_data.side;
 	}
 	else {
-		bf_data->current_side = -bf_data->current_side;
+		bf_data->current_side = bf_data->current_side == 0 ? 1 : -bf_data->current_side;
 	}
 
 	bf_data->use = true;

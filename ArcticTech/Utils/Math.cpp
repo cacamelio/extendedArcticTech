@@ -104,6 +104,17 @@ QAngle Math::VectorAngles(const Vector& vec) {
 	return result;
 }
 
+QAngle Math::VectorAngles_p(const Vector& vec) {
+	QAngle result;
+
+	float hyp2d = std::sqrtf(vec.x * vec.x + vec.y * vec.y);
+
+	result.pitch = -std::atanf(vec.z / hyp2d) * 57.295779513082f;
+	result.yaw = std::atan2f(vec.y, vec.x) * 57.295779513082f;
+
+	return result;
+}
+
 void Math::VectorTransform(const Vector& in, const matrix3x4_t& matrix, Vector* out) {
 	out->x = in.Dot(matrix[0]) + matrix[0][3];
 	out->y = in.Dot(matrix[1]) + matrix[1][3];

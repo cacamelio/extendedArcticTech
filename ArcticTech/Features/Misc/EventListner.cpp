@@ -76,6 +76,35 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	else if (name == "round_start") {
 		LagCompensation->Reset();
 		Cheat.freezetime = true;
+
+		std::string buy_command = "";
+		if (config.misc.miscellaneous.auto_buy->get(0))
+			buy_command += "buy awp; ";
+		if (config.misc.miscellaneous.auto_buy->get(1))
+			buy_command += "buy ssg08; ";
+		if (config.misc.miscellaneous.auto_buy->get(2))
+			buy_command += "buy scar20; buy g3sg1; ";
+		if (config.misc.miscellaneous.auto_buy->get(3))
+			buy_command += "buy deagle; buy revolver; ";
+		if (config.misc.miscellaneous.auto_buy->get(4))
+			buy_command += "buy fn57; buy tec9; ";
+		if (config.misc.miscellaneous.auto_buy->get(5))
+			buy_command += "buy taser; ";
+		if (config.misc.miscellaneous.auto_buy->get(6))
+			buy_command += "buy vesthelm; ";
+		if (config.misc.miscellaneous.auto_buy->get(7))
+			buy_command += "buy smokegrenade; ";
+		if (config.misc.miscellaneous.auto_buy->get(8))
+			buy_command += "buy molotov; buy incgrenade; ";
+		if (config.misc.miscellaneous.auto_buy->get(9))
+			buy_command += "buy hegrenade; ";
+		if (config.misc.miscellaneous.auto_buy->get(10))
+			buy_command += "buy flashbang; ";
+		if (config.misc.miscellaneous.auto_buy->get(11))
+			buy_command += "buy defuser; ";
+
+		if (!buy_command.empty() && Cheat.LocalPlayer && Cheat.LocalPlayer->m_iAccount() >= 1000)
+			EngineClient->ExecuteClientCmd(buy_command.c_str());
 	}
 	else if (name == "round_freeze_end") {
 		Cheat.freezetime = false;

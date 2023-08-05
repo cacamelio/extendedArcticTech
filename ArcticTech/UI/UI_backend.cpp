@@ -160,8 +160,8 @@ void CMenu::Render() {
 
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-void CMenu::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
+LRESULT CMenu::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    return ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 }
 
 void CMenu::RecalculateGroupboxes() {

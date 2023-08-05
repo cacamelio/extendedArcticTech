@@ -33,6 +33,7 @@ namespace Math {
 	void			AngleVectors(const QAngle& angles, Vector& forward);
 	Vector			AngleVectors(const QAngle& angles);
 	QAngle			VectorAngles(const Vector& vec);
+	QAngle			VectorAngles_p(const Vector& vec);
 	void			VectorTransform(const Vector& in, const matrix3x4_t& matrix, Vector* out);
 	Vector			VectorTransform(const Vector& in, const matrix3x4_t& matrix);
 	Vector			VectorRotate(const Vector& in, const matrix3x4_t& matrix);

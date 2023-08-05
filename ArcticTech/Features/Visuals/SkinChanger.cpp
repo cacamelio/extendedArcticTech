@@ -38,7 +38,9 @@ bool CSkinChanger::ApplyKnifeModel( CAttributableItem* weapon, const char* model
 	int model_index = ModelInfoClient->GetModelIndex(model);
 
 	viewmodel->SetModelIndex(model_index);
-	world_model_weapon->SetModelIndex(model_index + 1);
+
+	if (world_model_weapon)
+		world_model_weapon->SetModelIndex(model_index + 1);
 
 	return true;
 }

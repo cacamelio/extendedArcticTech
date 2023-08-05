@@ -81,7 +81,7 @@ void CRagebot::AutoStop() {
 		float cmd_speed = Math::Q_sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
 	
 		if (cmd_speed > target_speed) {
-			float factor = cmd_speed / target_speed;
+			float factor = target_speed / cmd_speed;
 			ctx.cmd->forwardmove *= factor;
 			ctx.cmd->sidemove *= factor;
 		}
@@ -101,7 +101,7 @@ void CRagebot::AutoStop() {
 	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 		static ConVar* sv_airaccelerate = CVar->FindVar("sv_airaccelerate");
 
-		wish_speed = std::clamp((vec_speed.Q_Length2D() * 0.9f) / (sv_airaccelerate->GetFloat() * GlobalVars->frametime), 0.f, 450.f);
+		wish_speed = std::clamp((vec_speed.Q_Length2D() * 0.93f) / (sv_airaccelerate->GetFloat() * GlobalVars->frametime), 0.f, 450.f);
 	}
 
 	Vector nigated_direction = forward * -wish_speed;
@@ -489,7 +489,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 	}
 	//LagCompensation->BacktrackEntity(result.best_point.record, true);
 
-	result.angle = Math::VectorAngles(result.best_point.point - eye_position);
+	result.angle = Math::VectorAngles_p(result.best_point.point - eye_position);
 	result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
 
 	LagCompensation->BacktrackEntity(backup_record);
@@ -561,7 +561,7 @@ void CRagebot::Run() {
 	float flInaccuracyJumpInitial = weapon_data->_flInaccuracyUnknown;
 
 		float fSqrtMaxJumpSpeed = Math::Q_sqrt(cvars.sv_jump_impulse->GetFloat());
-		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.33f);
+		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.3f);
 
 		float flAirSpeedInaccuracy = Math::RemapVal(fSqrtVerticalSpeed,
 			fSqrtMaxJumpSpeed * 0.25f,

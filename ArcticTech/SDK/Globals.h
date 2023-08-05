@@ -45,6 +45,11 @@ struct Ctx_t {
 	Vector local_sent_origin;
 	bool breaking_lag_compensation = false;
 
+	bool lc_exploit = false; // for tickbase correction
+	bool lc_exploit_prev = false;
+	int lc_exploit_charge = 0;
+	int lc_exploit_shift = 0;
+
 	std::vector<int> shifted_commands;
 	std::vector<int> sented_commands;
 
@@ -54,6 +59,8 @@ struct Ctx_t {
 		tickbase_shift = 0;
 		local_velocity = Vector();
 		last_local_velocity = Vector();
+		lc_exploit = lc_exploit_prev = false;
+		breaking_lag_compensation = false;
 	}
 };
 

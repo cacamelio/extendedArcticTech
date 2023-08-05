@@ -52,19 +52,31 @@ void CAnimationSystem::OnCreateMove() {
 
 	animstate->bOnGround = Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND;
 	if (!animstate->bOnGround) {
-		const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-		const float gravity = cvars.sv_gravity->GetFloat();
-		const float speed = Cheat.LocalPlayer->m_flFallVelocity();
-		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
+		if (!config.antiaim.misc.animations->get(1)) {
+			const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
+			const float gravity = cvars.sv_gravity->GetFloat();
+			const float speed = Cheat.LocalPlayer->m_flFallVelocity();
+
+			animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
+		}
+		else {
+			animstate->flDurationInAir = 2.f;
+		}
 	}
 	animstate->flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
 	animstate->flDuckingSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
 
 	if (ctx.send_packet) {
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
+
+		Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
 		stored_local_anims.poseparams = Cheat.LocalPlayer->m_flPoseParameter();
 
 		Cheat.LocalPlayer->UpdateClientSideAnimation();
+
+		if (config.antiaim.misc.animations->get(2))
+			Cheat.LocalPlayer->m_flPoseParameter()[0] = 1.f;
+
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
 		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, local_animlayers);
@@ -80,8 +92,8 @@ void CAnimationSystem::UpdateLocalAnimations() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 	animstate->iLastUpdateFrame = GlobalVars->framecount;
 
-	Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
-	Cheat.LocalPlayer->m_flPoseParameter() = stored_local_anims.poseparams;
+	//Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
+	//Cheat.LocalPlayer->m_flPoseParameter() = stored_local_anims.poseparams;
 
 	//memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), sent_matrix, sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
 	//Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
