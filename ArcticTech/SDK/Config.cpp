@@ -67,6 +67,9 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.resolver_treshold);
     add(config.ragebot.aimbot.show_debug_data);
     add(config.ragebot.aimbot.threads);
+    add(config.ragebot.aimbot.roll_resolver);
+    add(config.ragebot.aimbot.roll_resolver_key);
+    add(config.ragebot.aimbot.roll_angle);
     add(config.ragebot.weapons.global.hitboxes);
     add(config.ragebot.weapons.global.multipoints);
     add(config.ragebot.weapons.global.head_point_scale);

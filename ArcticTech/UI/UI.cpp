@@ -52,6 +52,9 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.resolver_treshold = aimbot->AddSliderInt("Resolver treshold", 0, 100, 50, "%.d%%");
 	config.ragebot.aimbot.show_debug_data = aimbot->AddCheckBox("Show debug data");
 	config.ragebot.aimbot.threads = aimbot->AddCheckBox("Multithread");
+	config.ragebot.aimbot.roll_resolver = aimbot->AddCheckBox("Roll Resolver");
+	config.ragebot.aimbot.roll_resolver_key = aimbot->AddKeyBind("Roll Resolver");
+	config.ragebot.aimbot.roll_angle = aimbot->AddSliderInt("Roll Angle", -90, 90, 0);
 
 	config.ragebot.selected_weapon = aim_settings->AddComboBox("Current Weapon", { "Global", "AWP", "Autosniper", "Scout", "Deagle", "Pistol" });
 
@@ -173,7 +176,7 @@ void CMenu::SetupUI() {
 	config.visuals.other_esp.grenade_proximity_warning = other_esp->AddCheckBox("Grenade proximity warning");
 	config.visuals.other_esp.grenade_predict_color = other_esp->AddColorPicker("Grenade predict color");
 	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov", "Smoke" });
-	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Double tap", "Min. damage", "Body aim", "Lag Compensation" });
+	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Double tap", "Min. damage", "Body aim", "Lag Compensation", "Roll Resolver"});
 
 	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
 	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites" });

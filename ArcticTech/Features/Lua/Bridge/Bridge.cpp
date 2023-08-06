@@ -115,6 +115,88 @@ void LuaLoadConfig(LuaScript_t* script) {
 	}
 }
 
+nlohmann::json luaTableToJson(sol::table table) {
+	nlohmann::json result;
+
+	for (const auto& pair : table) {
+		if (pair.second.is<sol::table>()) {
+			if (pair.first.is<int>())
+				result[pair.first.as<int>()] = luaTableToJson(pair.second.as<sol::table>());
+			else
+				result[pair.first.as<std::string>()] = luaTableToJson(pair.second.as<sol::table>());
+		} else {
+			if (pair.first.is<int>())
+				result[pair.first.as<int>()] = pair.second.as<std::string>();
+			else
+				result[pair.first.as<std::string>()] = pair.second.as<std::string>();
+		}
+	}
+
+	return result;
+}
+
+sol::table jsonToLuaTable(nlohmann::json json);
+
+sol::table jsonToLuaArray(nlohmann::json json) {
+	sol::table tmp;
+	int index = 1;
+	for (const auto& element : json) {
+		if (element.is_null()) {
+			tmp[index++] = sol::nil;
+		}
+		else if (element.is_boolean()) {
+			tmp[index++] = element.get<bool>();
+		}
+		else if (element.is_number()) {
+			tmp[index++] = element.get<double>();
+		}
+		else if (element.is_string()) {
+			tmp[index++] = element.get<std::string>();
+		}
+		else if (element.is_object()) {
+			tmp[index++] = jsonToLuaTable(element);
+		}
+		else if (element.is_array()) {
+			tmp[index++] = jsonToLuaArray(element);
+		}
+	}
+
+	return tmp;
+}
+
+sol::table jsonToLuaTable(nlohmann::json json) {
+	sol::table result;
+
+	if (json.is_array())
+		return jsonToLuaArray(json);
+
+	for (auto& pair : json.items()) {
+		auto& key = pair.key();
+		auto& value = pair.value();
+
+		if (value.is_object()) {
+			result[pair.key()] = jsonToLuaTable(value.get<nlohmann::json>());
+		}
+		else if (value.is_array()) {
+			result[pair.key()] = jsonToLuaArray(value);
+		}
+		else if (value.is_null()) {
+			result[key] = sol::nil;
+		}
+		else if (value.is_boolean()) {
+			result[key] = value.get<bool>();
+		}
+		else if (value.is_number()) {
+			result[key] = value.get<double>();
+		}
+		else if (value.is_string()) {
+			result[key] = value.get<std::string>();
+		}
+	}
+
+	return result;
+}
+
 std::string GetCurrentScript(sol::this_state s) {
 	sol::state_view lua_state(s);
 	sol::table rs = lua_state["debug"]["getinfo"](2, ("S"));
@@ -124,15 +206,13 @@ std::string GetCurrentScript(sol::this_state s) {
 	return filename;
 }
 
-void LuaErrorHandler(sol::this_state state, sol::optional<std::string> message) {
+void LuaErrorHandler(sol::optional<std::string> message) {
 	if (!message)
 		return;
 
 	Console->ArcticTag();
-	Console->ColorPrint(message.value_or("unknown"), Color(255, 0, 0) );
+	Console->ColorPrint(message.value_or("unknown"), Color(255, 0, 0));
 	Console->Print("\n");
-
-	Lua->UnloadScript(Lua->GetScriptID(GetCurrentScript(state)));
 }
 
 void ScriptLoadButton()
@@ -241,6 +321,52 @@ namespace api {
 			return ClientState->m_ClockDriftMgr.m_iCurClockOffset;
 		}
 	}
+
+	namespace common {
+		std::string get_map_shortname() {
+			return EngineClient->GetLevelNameShort();
+		}
+	}
+
+	namespace files {
+		std::string read(std::string path, sol::optional<bool> relative) {
+			std::string file_path = relative.value_or(true) ? std::filesystem::current_path().string() + path : path;
+
+			if (!std::filesystem::exists(file_path)) {
+				Console->Error(std::format("files.read: file {} doesn't exists!", file_path));
+				return "";
+			}
+
+			std::ifstream file(file_path);
+
+			std::string result;
+			file >> result;
+
+			return result;
+		}
+
+		void write(std::string path, std::string data, sol::optional<bool> relative) {
+			std::string file_path = relative.value_or(true) ? std::filesystem::current_path().string() + path : path;
+
+			std::fstream file(file_path);
+
+			file << data;
+		}
+	}
+
+	namespace json {
+		std::string stringify(sol::table table) {
+			nlohmann::json json = luaTableToJson(table);
+
+			return json.dump();
+		}
+
+		sol::table parse(std::string data) {
+			nlohmann::json json = nlohmann::json::parse(data);
+
+			return jsonToLuaTable(json);
+		}
+	} 
 
 	namespace vector {
 		Vector closes_ray_point(Vector self, Vector start, Vector end) {
@@ -443,6 +569,14 @@ namespace api {
 
 		void* pattern_scan(std::string module_name, std::string pattern, sol::optional<int> offset) {
 			return Utils::PatternScan(module_name.c_str(), pattern.c_str(), offset.value_or(0));
+		}
+
+		CGameTrace trace_line(Vector start, Vector end, int mask, CBaseEntity* skip_entity) {
+			return EngineTrace->TraceRay(start, end, mask, skip_entity);
+		}
+
+		CGameTrace trace_hull(Vector start, Vector end, Vector mins, Vector maxs, int mask, CBaseEntity* skip) {
+			return EngineTrace->TraceHull(start, end, mins, maxs, mask, skip);
 		}
 	}
 
@@ -817,6 +951,7 @@ void CLua::Setup() {
 
 	lua.new_usertype<CBaseCombatWeapon>("weapon_t", sol::no_constructor,
 		"ent_index", &CBaseCombatWeapon::EntIndex,
+		"weapon_index", &CBaseCombatWeapon::m_iItemDefinitionIndex,
 		"get_inaccuracy", &CBaseCombatWeapon::GetInaccuracy,
 		"get_spread", &CBaseCombatWeapon::GetSpread,
 		"obb_maxs", api::entity::obb_maxs,
@@ -906,6 +1041,16 @@ void CLua::Setup() {
 		"allow_defensive", &CUserCmd_lua::allow_defensive
 	);
 
+	lua.new_usertype<CGameTrace>("trace_t", sol::no_constructor,
+		"startpos", &CGameTrace::startpos,
+		"endpos", &CGameTrace::endpos,
+		"fraction", &CGameTrace::fraction,
+		"allsolid", &CGameTrace::allsolid,
+		"startsolid", &CGameTrace::startsolid,
+		"hit_entity", &CGameTrace::hit_entity,
+		"hitgroup", &CGameTrace::hitgroup
+	);
+
 	// _G
 	lua["print"] = api::print;
 	lua["error"] = api::error;
@@ -979,11 +1124,27 @@ void CLua::Setup() {
 		"set_antialias", api::render::set_antialias
 	);
 
+	lua.create_named_table("common",
+		"get_map_shortname", api::common::get_map_shortname
+	);
+
+	lua.create_named_table("files",
+		"read", api::files::read,
+		"write", api::files::write
+	);
+
+	lua.create_named_table("json", 
+		"stringify", api::json::stringify,
+		"parse", api::json::parse
+	);
+
 	// utils
 	lua.create_named_table("utils",
 		"console_exec", api::utils::console_exec,
 		"create_interface", api::utils::create_interface,
-		"pattern_scan", api::utils::pattern_scan
+		"pattern_scan", api::utils::pattern_scan,
+		"trace_line", api::utils::trace_line,
+		"trace_hull", api::utils::trace_hull
 	);
 
 	// network

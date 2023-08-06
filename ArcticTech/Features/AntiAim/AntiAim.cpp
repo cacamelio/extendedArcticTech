@@ -138,7 +138,7 @@ void CAntiAim::Desync() {
 
 	bool inverter = config.antiaim.angles.inverter->get();
 
-	if (config.antiaim.angles.body_yaw_options->get(0))
+	if (config.antiaim.angles.body_yaw_options->get(0) && !(ctx.cmd->buttons & IN_USE))
 		inverter = jitter;
 
 	if (config.antiaim.angles.body_yaw_options->get(3)) {

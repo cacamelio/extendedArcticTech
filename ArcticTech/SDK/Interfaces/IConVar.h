@@ -54,6 +54,7 @@ typedef void(*FnChangeCallback_t)(ConVar* var, const char* pOldValue, float flOl
 
 
 class ConVar {
+	void* vftable;
 public:
 	virtual void null0() = 0;
 	virtual void null1() = 0;

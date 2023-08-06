@@ -82,3 +82,14 @@ void CBaseEntity::SetAbsOrigin(Vector origin) {
 
 	setAbsAngles(this, origin);
 }
+
+void CBaseEntity::SetCollisionBounds(Vector mins, Vector maxs) {
+	static auto setCollisionBounds = reinterpret_cast<void(__thiscall*)(ICollideable*, const Vector&, const Vector&)>(Utils::PatternScan("client.dll", "53 8B DC 83 EC 08 83 E4 F8 83 C4 04 55 8B 6B 04 89 6C 24 04 8B EC 83 EC 18 56 57 8B 7B"));
+
+	auto collidable = GetCollideable();
+
+	if (!collidable)
+		return;
+
+	setCollisionBounds(collidable, mins, maxs);
+}

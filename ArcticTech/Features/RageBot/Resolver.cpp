@@ -27,7 +27,7 @@ float CResolver::ResolveRollAnimation(CBasePlayer* player, const LagRecord* prev
 	int plIdx = player->EntIndex();
 
 	float eyeYaw = player->m_angEyeAngles().yaw;
-	if (!prevRecord) {
+	if (!prevRecord || config.antiaim.angles.legacy_desync->get()) {
 		return 0.f;
 	}
 
@@ -109,7 +109,7 @@ void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
 	animstate->SetTickInterval();
 	animstate->flGoalFeetYaw = Math::AngleNormalize(eyeYaw);
 
-	player->UpdateClientSideAnimation();
+	player->UpdateClientSideAnimation(); // probably should use animstate->Update();
 	memcpy(record->resolver_data.animlayers[0], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 	*animstate = originalAnimstate;
 
@@ -263,6 +263,13 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 
 	if (record->resolver_data.side != 0) {
 		player->GetAnimstate()->flGoalFeetYaw = Math::NormalizeYaw(player->m_angEyeAngles().yaw + (player->GetMaxDesyncDelta() * record->resolver_data.side));
+	}
+
+	if (config.ragebot.aimbot.roll_resolver->get()) {
+		if (record->resolver_data.side != 0)
+			record->roll = config.ragebot.aimbot.roll_angle->get() * record->resolver_data.side;
+		else
+			record->roll = config.ragebot.aimbot.roll_angle->get();
 	}
 }
 

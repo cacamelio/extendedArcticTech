@@ -54,6 +54,9 @@ struct config_t {
             CSliderInt* resolver_treshold;
             CCheckBox* show_debug_data;
             CCheckBox* threads;
+            CCheckBox* roll_resolver;
+            CKeyBind* roll_resolver_key;
+            CSliderInt* roll_angle;
         } aimbot;
 
         CComboBox* selected_weapon;

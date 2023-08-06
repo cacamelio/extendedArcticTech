@@ -276,6 +276,8 @@ public:
 
 	void SetAbsOrigin(Vector origin);
 	void SetAbsAngles(QAngle angles);
+
+	void SetCollisionBounds(Vector mins, Vector maxs);
 };
 
 class CBaseViewModel : public CBaseEntity {

@@ -79,6 +79,7 @@ void CAnimationSystem::OnCreateMove() {
 
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
+		Cheat.LocalPlayer->SetCollisionBounds(Cheat.LocalPlayer->m_vecMins(), Cheat.LocalPlayer->m_vecMaxs());
 		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, local_animlayers);
 	}
 

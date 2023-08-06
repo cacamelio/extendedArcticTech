@@ -30,21 +30,25 @@ void CIndicators::Draw() {
 
 	cursor_position = Vector2(5, Cheat.ScreenSize.y * 0.75f);
 
+	if (config.visuals.other_esp.indicators->get(4) && config.ragebot.aimbot.roll_resolver->get()) {
+		AddIndicator("RR", Color(240));
+	}
+
 	if (config.visuals.other_esp.indicators->get(3)) {
 		if (ctx.tickbase_shift == 0 && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 			AddIndicator("LC", ctx.breaking_lag_compensation ? Color(30, 220, 30) : Color(220, 30, 30));
 		}
 		else if (ctx.tickbase_shift > 0 && ctx.tickbase_shift == DoubleTap->TargetTickbaseShift() && config.ragebot.aimbot.doubletap_options->get(0)) {
-			AddIndicator("LC", DoubleTap->IsDefensiveActive() ? Color(30, 220, 30) : Color(240, 240, 240));
+			AddIndicator("LC", DoubleTap->IsDefensiveActive() ? Color(30, 220, 30) : Color(240));
 		}
 	}
 
 	if (config.ragebot.aimbot.force_body_aim->get() && config.visuals.other_esp.indicators->get(2))
-		AddIndicator("BODY", Color(240, 240, 240));
+		AddIndicator("BODY", Color(240));
 
 	if (config.ragebot.aimbot.minimum_damage_override_key->get() && config.visuals.other_esp.indicators->get(1))
-		AddIndicator("DMG", Color(240, 240, 240));
+		AddIndicator("DMG", Color(240));
 
 	if (config.ragebot.aimbot.doubletap->get() && config.visuals.other_esp.indicators->get(0))
-		AddIndicator("DT", Color(220, 30, 30).lerp(Color(240, 240, 240), DoubleTap->TargetTickbaseShift() > 0 ? float(ctx.tickbase_shift) / float(DoubleTap->TargetTickbaseShift()) : 0));
+		AddIndicator("DT", Color(220, 30, 30).lerp(Color(240), DoubleTap->TargetTickbaseShift() > 0 ? float(ctx.tickbase_shift) / float(DoubleTap->TargetTickbaseShift()) : 0));
 }
