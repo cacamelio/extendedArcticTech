@@ -33,8 +33,6 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 	record->m_vecMins = player->m_vecMins();
 	record->m_vecVelocity = player->m_vecVelocity();
 	record->m_vecAbsAngles = player->GetAbsAngles();
-	record->m_flLowerBodyYawTarget = player->m_flLowerBodyYawTarget();
-	record->flPoseParamaters = player->m_flPoseParameter();
 
 	if (!record->boneMatrixFilled) {
 		memcpy(record->boneMatrix, player->GetCachedBoneData().Base(), sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
@@ -60,8 +58,6 @@ void CLagCompensation::BacktrackEntity(LagRecord* record, bool use_aim_matrix) {
 	player->m_vecMins() = record->m_vecMins;
 	player->m_vecMaxs() = record->m_vecMaxs;
 	player->m_vecVelocity() = record->m_vecVelocity;
-	player->m_flPoseParameter() = record->flPoseParamaters;
-	player->m_flLowerBodyYawTarget() = record->m_flLowerBodyYawTarget;
 	player->SetAbsAngles(record->m_vecAbsAngles);
 	player->ForceBoneCache();
 
@@ -90,23 +86,24 @@ void CLagCompensation::OnNetUpdate() {
 			LagRecord* new_record = &records.emplace_back();
 
 			new_record->prev_record = prev_record;
-
 			new_record->m_nChokedTicks = GlobalVars->tickcount - last_update_tick[i] - 1;
+			new_record->m_flSimulationTime = pl->m_flSimulationTime();
+
+			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
+			new_record->exploiting = (ClientState->m_ClockDriftMgr.m_nServerTick - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
+
+			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
+				max_simulation_time[i] = new_record->m_flSimulationTime;
+
 			last_update_tick[i] = GlobalVars->tickcount;
 
 			AnimationSystem->UpdateAnimations(pl, new_record, records);
 			RecordDataIntoTrack(pl, new_record);
 
-			if (prev_record) {
+			if (prev_record)
 				new_record->breaking_lag_comp = (prev_record->m_vecOrigin - new_record->m_vecOrigin).LengthSqr() > 4096.f;
-			}
 
-			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-
-			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
-				max_simulation_time[i] = new_record->m_flSimulationTime;
-
-			if (config.visuals.esp.shared_esp->get() && nc) {
+			if (config.visuals.esp.shared_esp->get() && !EngineClient->IsVoiceRecording() && nc) {
 				if (config.visuals.esp.share_with_enemies->get() || !pl->IsTeammate()) {
 					SharedESP_t msg;
 
@@ -130,7 +127,7 @@ void CLagCompensation::OnNetUpdate() {
 					NetMessages->SendNetMessage((SharedVoiceData_t*)&msg);
 				}
 			}
-			while (records.size() > TIME_TO_TICKS(1)) {
+			while (records.size() > TIME_TO_TICKS(0.6f)) {
 				records.pop_front();
 			}
 		}
@@ -213,11 +210,18 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	//return std::abs(deltaTime) < 0.2f;
 }
 
-void CLagCompensation::Reset() {
-	for (int i = 0; i < lag_records.size(); i++) {
-		lag_records[i].clear();
-		max_simulation_time[i] = 0.f;
-		last_update_tick[i] = 0;
+void CLagCompensation::Reset(int index) {
+	if (index != -1) {
+		lag_records[index].clear();
+		max_simulation_time[index] = 0.f;
+		last_update_tick[index] = 0;
+	}
+	else {
+		for (int i = 0; i < lag_records.size(); i++) {
+			lag_records[i].clear();
+			max_simulation_time[i] = 0.f;
+			last_update_tick[i] = 0;
+		}
 	}
 }
 

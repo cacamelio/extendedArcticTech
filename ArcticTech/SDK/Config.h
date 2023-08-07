@@ -51,7 +51,6 @@ struct config_t {
             CColorPicker* peek_assist_color;
             CKeyBind* peek_assist_keybind;
             CCheckBox* show_aimpoints;
-            CSliderInt* resolver_treshold;
             CCheckBox* show_debug_data;
             CCheckBox* threads;
             CCheckBox* roll_resolver;

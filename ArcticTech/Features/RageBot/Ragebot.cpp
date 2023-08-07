@@ -212,7 +212,7 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 		}
 	}
 
-	if (last_valid_record && CompareRecords(last_valid_record, &records.back())) {
+	if (last_valid_record && !CompareRecords(last_valid_record, &records.back())) {
 		target_records.emplace_back(last_valid_record);
 	}
 

@@ -3,51 +3,6 @@
 #include "../../SDK/Globals.h"
 #include "../AntiAim/AntiAim.h"
 
-void CDoubleTap::CreateMove() {
-	if (teleport_next_tick) {
-		target_tickbase_shift = 0;
-		last_teleport_time = GlobalVars->realtime;
-		teleport_next_tick = false;
-		return;
-	}
-
-	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive()) {
-		target_tickbase_shift = 0;
-		return;
-	}
-
-	if (!config.ragebot.aimbot.doubletap->get() || config.antiaim.misc.fake_duck->get()) {
-		target_tickbase_shift = 0;
-		return;
-	}
-
-	const int max_tickbase_charge = MaxTickbaseShift();
-
-	CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
-
-	if (ctx.tickbase_shift == 0) { // Need to charge
-		if (activeWeapon->IsGrenade() || GlobalVars->realtime - last_teleport_time < 0.5f || GetAsyncKeyState(VK_LBUTTON) || block_charge || !ctx.send_packet || config.ragebot.aimbot.force_teleport->get()) {
-			target_tickbase_shift = 0;
-			return;
-		}
-		else {
-			target_tickbase_shift = max_tickbase_charge;
-			charged_command = ctx.cmd->command_number;
-		}
-	}
-	else if (ctx.tickbase_shift == max_tickbase_charge) { // Charged, can doubletap now
-		if (ctx.cmd->buttons & IN_ATTACK && activeWeapon->CanShoot() && !activeWeapon->IsGrenade()) {
-			target_tickbase_shift = 0;
-			last_teleport_time = GlobalVars->realtime;
-			return;
-		}
-		else if (config.ragebot.aimbot.force_teleport->get()) {
-			target_tickbase_shift = 0;
-			return;
-		}
-	}
-}
-
 bool CDoubleTap::ShouldCharge() {
 	if (GlobalVars->realtime - Cheat.LocalPlayer->m_flSpawnTime() < 0.2f)
 		return false;
@@ -59,7 +14,15 @@ void CDoubleTap::Run() {
 	if (!ctx.cmd)
 		return;
 
+	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
+
+	if (!weapon)
+		return;
+
 	if (teleport_next_tick) {
+		if ((weapon->m_iItemDefinitionIndex() == Ssg08 || weapon->m_iItemDefinitionIndex() == Awp) && defensive_ticks > 2)
+			return;
+
 		teleport_next_tick = false;
 		target_tickbase_shift = 0;
 		last_teleport_time = GlobalVars->realtime;
@@ -72,7 +35,6 @@ void CDoubleTap::Run() {
 	}
 
 	const int max_tickbase_charge = MaxTickbaseShift();
-	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
 
 	if (target_tickbase_shift < max_tickbase_charge) {
 		if (!(weapon->IsGrenade() || GlobalVars->realtime - last_teleport_time < 0.3f || GetAsyncKeyState(VK_LBUTTON) & 0x8000 || block_charge || !ctx.send_packet)) {
@@ -120,18 +82,16 @@ int CDoubleTap::MaxTickbaseShift() {
 }
 
 void CDoubleTap::ForceTeleport() {
-	target_tickbase_shift = 0;
-	last_teleport_time = GlobalVars->realtime;
-	teleport_next_tick = false;
+	teleport_next_tick = true;
 }
 
 
 void CDoubleTap::DefensiveDoubletap() {
-	if (defensive_ticks == 14)
-		defensive_ticks = 0;
-
 	if (defensive_this_tick || defensive_ticks != 0)
 		defensive_ticks++;
+
+	if (defensive_ticks == 16)
+		defensive_ticks = 0;
 }
 
 bool CDoubleTap::ShouldBreakLC() {

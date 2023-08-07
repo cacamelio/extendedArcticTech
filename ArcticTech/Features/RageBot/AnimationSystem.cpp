@@ -165,6 +165,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		prevRecord = &records.back();
 
 	record->player = player;
+	record->unupdated_animstate = *animstate;
 
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;
@@ -178,7 +179,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	auto backupLBY = player->m_flLowerBodyYawTarget();
 	auto nOcclusionMask = player->m_nOcclusionFlags();
 	auto nOcclusionFrame = player->m_nOcclusionFrame();
-	auto backupEFlags = player->m_iEFlags();
 
 	GlobalVars->realtime = player->m_flSimulationTime();
 	GlobalVars->curtime = player->m_flSimulationTime();
@@ -190,7 +190,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	memcpy(record->animlayers, player->GetAnimlayers(), 13 * sizeof(AnimationLayer));
 
-	player->InvalidateBoneCache();
+	player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
+
 	player->m_BoneAccessor().m_ReadableBones = 0;
 	player->m_BoneAccessor().m_WritableBones = 0;
 
@@ -200,37 +201,27 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	player->SetAbsVelocity(player->m_vecVelocity());
 	player->SetAbsOrigin(player->m_vecOrigin());
 
-	player->GetAnimlayers()[12].m_flWeight = 0;
-
-	float flDurationInAir = animstate->flDurationInAir;
-
 	if (!player->IsTeammate()) {
 		Resolver->Run(player, record, records);
 
-		animstate->SetTickInterval();
+		*animstate = record->unupdated_animstate;
 		player->UpdateClientSideAnimation();
 
 		Resolver->Apply(record, false);
 	}
 	else {
 		Resolver->SetRollAngle(player, 0.f);
-		animstate->SetTickInterval();
+
 		player->UpdateClientSideAnimation();
 	}
 
-	//// fix in air legs
-	//animstate->bOnGround = player->m_fFlags() & FL_ONGROUND;
-	//if (!animstate->bOnGround) {
-	//	const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-	//	const float gravity = cvars.sv_gravity->GetFloat();
-	//	const float speed = player->m_flFallVelocity();
-	//	// speed = jumpImpulse - gravity * flDurationInAir
-	//	animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
-	//}
+	if (player->m_fFlags() & FL_ONGROUND) {
+		animstate->flDurationInAir = 0;
+	}
+	else {
+		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat() + (record->shifting_tickbase ? GlobalVars->interval_per_tick * 14 : 0);
+	}
 
-	animstate->flDurationInAir = flDurationInAir;
-
-	CCSGOPlayerAnimationState originalAnimstate = *animstate;
 	player->GetAnimlayers()[12].m_flWeight = 0;
 
 	BuildMatrix(player, interpolate_data[idx].original_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
@@ -238,10 +229,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	record->boneMatrixFilled = true;
 
 	if (!player->IsTeammate()) {
-		animstate->SetTickInterval();
-		player->UpdateClientSideAnimation();
-
-		animstate->flDurationInAir = originalAnimstate.flDurationInAir;
 		Resolver->Apply(record);
 
 		BuildMatrix(player, record->aimMatrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
@@ -252,7 +239,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	player->m_nOcclusionFlags() = nOcclusionMask;
 
 	player->SetAbsOrigin(backupAbsOrigin);
-	player->m_iEFlags() = backupEFlags;
 	player->m_vecAbsVelocity() = backupAbsVelocity;
 
 	GlobalVars->realtime = backupRealtime;
@@ -263,7 +249,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	GlobalVars->tickcount = backupTickcount;
 	GlobalVars->framecount = backupFramecount;
 	
-	*animstate = originalAnimstate;
 	player->m_flLowerBodyYawTarget() = backupLBY;
 	memcpy(player->GetAnimlayers(), record->animlayers, sizeof(AnimationLayer) * 13);
 	memcpy(player->GetCachedBoneData().Base(), record->boneMatrix, sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());

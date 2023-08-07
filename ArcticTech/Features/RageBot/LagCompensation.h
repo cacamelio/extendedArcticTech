@@ -28,7 +28,6 @@ struct LagRecord {
 	float m_flDuckAmout = 0.f;
 	float m_flDuckSpeed = 0.f;
 	float m_flCycle = 0.f;
-	float m_flLowerBodyYawTarget = 0.f;
 	float roll = 0.f;
 
 	int m_nSequence = 0;
@@ -37,12 +36,13 @@ struct LagRecord {
 
 	bool shifting_tickbase = false;
 	bool breaking_lag_comp = false;
+	bool exploiting = false;
+
 	bool boneMatrixFilled = false;
 	bool aimMatrixFilled = false;
 
-	std::array<float, 24> flPoseParamaters;
-
 	ResolverData_t resolver_data;
+	CCSGOPlayerAnimationState unupdated_animstate;
 
 	LagRecord* prev_record;
 };
@@ -60,7 +60,7 @@ public:
 	void RecordDataIntoTrack(CBasePlayer* player, LagRecord* record);
 	void BacktrackEntity(LagRecord* record, bool use_aim_matrix = false);
 	void OnNetUpdate();
-	void Reset();
+	void Reset(int index = -1);
 
 	// Record helpers
 	float GetLerpTime();

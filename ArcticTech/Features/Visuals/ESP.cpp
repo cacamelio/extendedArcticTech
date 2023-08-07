@@ -237,7 +237,7 @@ void ESP::DrawHealth(ESPInfo_t info) {
 	float clr_a = clr.a / 255.f;
 
 	int h = info.m_BoundingBox[1].y - info.m_BoundingBox[0].y;
-	float health_fraction = 1 - health / 100.f;
+	float health_fraction = std::clamp(1 - health / 100.f, 0.f, 1.f);
 	Vector2 health_box_start = info.m_BoundingBox[0] - Vector2(7, 1);
 	Vector2 health_box_end(info.m_BoundingBox[0].x - 3, info.m_BoundingBox[1].y + 1);
 
@@ -274,7 +274,7 @@ void ESP::DrawFlags(ESPInfo_t info) {
 
 	std::vector<ESPFlag_t> flags;
 
-	if (config.visuals.esp.flags->get(0)) {
+	if (config.visuals.esp.flags->get(0) && !dormant) {
 		std::string str = "";
 		if (info.m_pEnt->m_ArmorValue() > 0)
 			str = "K";
@@ -283,23 +283,20 @@ void ESP::DrawFlags(ESPInfo_t info) {
 		flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
 	}
 
-	if (config.visuals.esp.flags->get(6))
-		flags.push_back({ std::format("{}%", (int)(record->resolver_data.anim_accuracy * 100)), Color(255, 255, 255) });
-
 	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck > 16 && !dormant)
 		flags.push_back({ "FD", Color(240, 240, 240, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(3) && info.m_bExploiting && !dormant)
-		flags.push_back({ "X", Color(240, 240, 240, 255 * info.m_flAlpha) });
+	if (config.visuals.esp.flags->get(3) && (record->shifting_tickbase || record->exploiting) && !dormant)
+		flags.push_back({ "E", record->shifting_tickbase ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(240, 240, 240, 255 * info.m_flAlpha)});
 
 	if (config.visuals.esp.flags->get(4) && info.m_pEnt->EntIndex() == PlayerResource->m_iPlayerC4())
 		flags.push_back({ "BOMB", Color(230, 40, 40, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
-		flags.push_back({ "LC", Color(230, 40, 40, 255 * info.m_flAlpha) });
+		flags.push_back({ "LC", Color(230, 60, 60, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(6) && record->resolver_data.resolver_type == ResolverType::ANIM && !dormant)
 		flags.push_back({ "ANIM", Color(165, 230, 14, 255 * info.m_flAlpha) });

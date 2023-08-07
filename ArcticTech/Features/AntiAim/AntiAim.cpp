@@ -311,10 +311,10 @@ void CAntiAim::LegMovement() {
 bool CAntiAim::IsPeeking() {
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	if (velocity.LengthSqr() < 64.f)
+	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Q_Normalized() * 21.f;
+	Vector move_factor = velocity.Q_Normalized() * 26.f;
 
 	matrix3x4_t backup_matrix[128];
 	Cheat.LocalPlayer->CopyBones(backup_matrix);
@@ -329,8 +329,8 @@ bool CAntiAim::IsPeeking() {
 
 	Vector scan_points[] = {
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT),
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
 	};
 
@@ -342,8 +342,15 @@ bool CAntiAim::IsPeeking() {
 
 		Vector enemyShootPos = nearest->GetShootPosition();
 
-		for (auto& point : scan_points) {
-			if (AutoWall->FireBullet(nearest, enemyShootPos, point, data, Cheat.LocalPlayer) && data.damage >= 4.f) {
+		for (int i = 0; i < 4; i++) {
+			Vector point = scan_points[i];
+			
+			Vector shoot_pos_adjusted = enemyShootPos;
+			if (i > 1) {
+				shoot_pos_adjusted = (shoot_pos_adjusted + point) * 0.5f;
+			}
+
+			if (AutoWall->FireBullet(nearest, shoot_pos_adjusted, point, data, Cheat.LocalPlayer) && data.damage >= 2.f) {
 				peeked = true;
 				break;
 			}

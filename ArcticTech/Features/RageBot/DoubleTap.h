@@ -26,7 +26,6 @@ public:
 	bool	ShouldCharge();
 	int		MaxTickbaseShift();
 	void	ForceTeleport();
-	void	CreateMove();
 	void	Run();
 	void	HandleTeleport(CL_Move_t cl_move, float extra_samples);
 	void	DefensiveDoubletap();

@@ -101,33 +101,29 @@ void CResolver::SetupMoveLayer(CBasePlayer* player) {
 
 void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
 	CCSGOPlayerAnimationState* animstate = player->GetAnimstate();
-	CCSGOPlayerAnimationState originalAnimstate = *animstate;
 
 	float eyeYaw = player->m_angEyeAngles().yaw;
 
 	// zero delta
-	animstate->SetTickInterval();
+	*animstate = record->unupdated_animstate;
 	animstate->flGoalFeetYaw = Math::AngleNormalize(eyeYaw);
 
-	player->UpdateClientSideAnimation(); // probably should use animstate->Update();
+	player->UpdateAnimationState(animstate, record->m_viewAngle, true); // probably should use animstate->Update();
 	memcpy(record->resolver_data.animlayers[0], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
-	*animstate = originalAnimstate;
 
 	// positive delta
-	animstate->SetTickInterval();
+	*animstate = record->unupdated_animstate;
 	animstate->flGoalFeetYaw = Math::AngleNormalize(eyeYaw + player->GetMaxDesyncDelta());
 
-	player->UpdateClientSideAnimation();
+	player->UpdateAnimationState(animstate, record->m_viewAngle, true);
 	memcpy(record->resolver_data.animlayers[1], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
-	*animstate = originalAnimstate;
 
 	// negative delta
-	animstate->SetTickInterval();
+	*animstate = record->unupdated_animstate;
 	animstate->flGoalFeetYaw = Math::AngleNormalize(eyeYaw - player->GetMaxDesyncDelta());
 
-	player->UpdateClientSideAnimation();
+	player->UpdateAnimationState(animstate, record->m_viewAngle, true);
 	memcpy(record->resolver_data.animlayers[2], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
-	*animstate = originalAnimstate;
 }
 
 void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
@@ -207,12 +203,11 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	SetupResolverLayers(player, record);
 
 	record->resolver_data.resolver_type = ResolverType::NONE;
-	record->resolver_data.delta_center = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[0][6].m_flPlaybackRate) * 1000.f;
-	record->resolver_data.delta_positive = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[1][6].m_flPlaybackRate) * 1000.f;
-	record->resolver_data.delta_negative = abs(record->animlayers[6].m_flPlaybackRate - record->resolver_data.animlayers[2][6].m_flPlaybackRate) * 1000.f;
+	record->resolver_data.delta_center = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight - record->resolver_data.animlayers[0][ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight) * 1000.f;
+	record->resolver_data.delta_positive = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight - record->resolver_data.animlayers[1][ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight) * 1000.f;
+	record->resolver_data.delta_negative = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight - record->resolver_data.animlayers[2][ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight) * 1000.f;
 
-	float flLastDelta = 1.f;
-	float flMaxDelta = max(max(record->resolver_data.delta_center, record->resolver_data.delta_negative), record->resolver_data.delta_positive);
+	float flLastDelta = 1000.f;
 
 	if (record->resolver_data.delta_center < flLastDelta) {
 		record->resolver_data.resolver_type = ResolverType::NONE;
@@ -232,9 +227,12 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 		flLastDelta = record->resolver_data.delta_negative;
 	}
 
-	record->resolver_data.anim_accuracy = 1.f - flLastDelta / flMaxDelta;
-
-	if (flMaxDelta < 0.000001f || (record->resolver_data.anim_accuracy < config.ragebot.aimbot.resolver_treshold->get() * 0.01f) || player->m_vecVelocity().LengthSqr() < 64.f) {
+	if (player->m_vecVelocity().LengthSqr() < 64.f || 
+		player->GetAnimstate()->flWalkToRunTransition < 0.8f || 
+		record->resolver_data.resolver_type == ResolverType::NONE || 
+		!(player->m_fFlags() & FL_ONGROUND)
+		) 
+	{
 		if (record->resolver_data.antiaim_type == R_AntiAimType::JITTER && prevRecord) {
 			float eyeYaw = player->m_angEyeAngles().yaw;
 			float prevEyeYaw = prevRecord->m_viewAngle.yaw;

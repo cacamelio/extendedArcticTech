@@ -66,8 +66,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			DoubleTap->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
 			config.ragebot.aimbot.peek_assist_keybind->set(false);
-			Cheat.LocalPlayer->m_iHealth() = 0;
-			Cheat.LocalPlayer->m_lifeState() = LIFE_DEAD;
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));

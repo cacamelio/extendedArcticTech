@@ -216,6 +216,12 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		cmd->viewangles.Normalize();
 		Utils::FixMovement(cmd, eyeYaw);
 
+		ctx.lc_exploit_prev = ctx.lc_exploit;
+		ctx.lc_exploit = false;
+
+		if (!ctx.lc_exploit && ctx.lc_exploit_prev)
+			ctx.lc_exploit_shift = cmd->command_number;
+
 		ctx.shifted_commands.emplace_back(cmd->command_number);
 		ctx.sented_commands.emplace_back(cmd->command_number);
 		ctx.teleported_last_tick = true;
@@ -260,6 +266,11 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		DoubleTap->DefenseiveThisTick() = lua_cmd.override_defensive.as<bool>();
 	}
 
+	DoubleTap->DefensiveDoubletap();
+
+	ctx.lc_exploit_prev = ctx.lc_exploit;
+	ctx.lc_exploit = DoubleTap->ShouldBreakLC();
+
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
 
@@ -302,12 +313,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	EnginePrediction->End();
 
-	DoubleTap->DefensiveDoubletap();
-
 	// createmove
-
-	ctx.lc_exploit_prev = ctx.lc_exploit;
-	ctx.lc_exploit = DoubleTap->ShouldBreakLC();
 
 	if (ctx.lc_exploit && !ctx.lc_exploit_prev)
 		ctx.lc_exploit_charge = cmd->command_number;
@@ -465,6 +471,9 @@ bool __fastcall hkIsPaused(IVEngineClient* thisptr, void* edx) {
 void __fastcall hkDrawModelExecute(IVModelRender* thisptr, void* edx, void* ctx, const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld) {
 	static tDrawModelExecute oDrawModelExecute = (tDrawModelExecute)Hooks::ModelRenderVMT->GetOriginal(21);
 
+	if (hook_info.in_draw_static_props)
+		return oDrawModelExecute(thisptr, ctx, state, pInfo, pCustomBoneToWorld);
+
 	if (StudioRender->IsForcedMaterialOverride())
 		return oDrawModelExecute(thisptr, ctx, state, pInfo, pCustomBoneToWorld);
 
@@ -582,7 +591,7 @@ void __fastcall hkStandardBlendingRules(CBasePlayer* thisptr, void* edx, void* h
 bool __fastcall hkIsHLTV(IVEngineClient* thisptr, void* edx) {
 	static auto oIsHLTV = (tIsHLTV)Hooks::EngineVMT->GetOriginal(93);
 
-	if (hook_info.setup_bones)
+	if (hook_info.setup_bones || hook_info.update_csa)
 		return true;
 
 	static const auto setup_velocity = Utils::PatternScan("client.dll", "84 C0 75 38 8B 0D ? ? ? ? 8B 01 8B 80 ? ? ? ? FF D0");
@@ -654,6 +663,11 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
+	if (ctx.lc_exploit_shift == cmd->command_number)
+		player->m_nTickBase() += DoubleTap->TargetTickbaseShift() > 0 ? 14 : 12;
+	if (ctx.lc_exploit_charge == cmd->command_number)
+		player->m_nTickBase() -= 14;
+
 	const int backup_tickbase = player->m_nTickBase();
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
@@ -663,33 +677,20 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 	player->m_flVelocityModifier() = backup_velocity_modifier;
 
-	bool shifted_this_tick = false;
 	for (auto i = ctx.shifted_commands.begin(); i != ctx.shifted_commands.end();) {
 		auto command = *i;
 
-		if (cmd->command_number - command > 64) {
+		if (cmd->command_number - command > 32) {
 			i = ctx.shifted_commands.erase(i);
 			continue;
 		}
 
 		if (command == cmd->command_number) {
-			shifted_this_tick = true;
-
-			if (!ctx.lc_exploit)
-				player->m_nTickBase() = backup_tickbase;
+			player->m_nTickBase() = backup_tickbase;
 		}
 
 		++i;
 	}
-
-	if (shifted_this_tick)
-		return;
-
-	// ghetto lc exploit tickbase fix
-	if (ctx.lc_exploit_charge == cmd->command_number)
-		player->m_nTickBase() -= 14;
-	else if (ctx.lc_exploit_shift == cmd->command_number)
-		player->m_nTickBase() += 14;
 
 	//EnginePrediction->PatchAttackPacket(cmd, false);
 
@@ -951,7 +952,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
 
 	to_cmd.command_number++;
-	to_cmd.tick_count += 192;
+	to_cmd.tick_count += 200;
 
 	for (int i = new_commands; i <= total_new_commands; i++)
 	{
@@ -1024,13 +1025,6 @@ bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
 	return oInPrediction(ecx, edx);
 }
 
-void __fastcall hkTraceBlood(CGameTrace* trace, int bloodColor) {
-	if (config.visuals.effects.removals->get(6))
-		return;
-
-	oTraceBlood(trace, bloodColor);
-}
-
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1097,13 +1091,12 @@ void Hooks::Initialize() {
 	oSetSignonState = HookFunction<tSetSignonState>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 57 FF 75 10"), hkSetSignonState);
 	oCreateNewParticleEffect = HookFunction<tCreateNewParticleEffect>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 0C 53 56 8B F2 89 75 F8 57"), hkCreateNewParticleEffect_proxy);
 	oSVCMsg_VoiceData = HookFunction<tSVCMsg_VoiceData>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 81 EC ? ? ? ? 53 56 8B F1 B9 ? ? ? ? 57 FF 50 34 8B 7D 08 85 C0 74 13 8B 47 08 40 50"), hkSVCMsg_VoiceData);
-	//oDrawStaticProps = HookFunction<tDrawStaticProps>(Utils::PatternScan("engine.dll", "55 8B EC 56 57 8B F9 8B 0D ? ? ? ? 8B B1 ? ? ? ? 85 F6 74 16 6A 04 6A 00 68"), hkDrawStaticProps);
+	oDrawStaticProps = HookFunction<tDrawStaticProps>(Utils::PatternScan("engine.dll", "55 8B EC 56 57 8B F9 8B 0D ? ? ? ? 8B B1 ? ? ? ? 85 F6 74 16 6A 04 6A 00 68"), hkDrawStaticProps);
 	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 68 53 56 8B D9 C7 45 ? ? ? ? ? 57 8D 4D 98"), hkWriteUserCmdDeltaToBuffer);
 	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
 	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
-	oTraceBlood = HookFunction<tTraceBlood>(Utils::PatternScan("client.dll", "56 57 8B FA 8B F1 83 FF FF 0F 84 ? ? ? ? 85 FF"), hkTraceBlood);
 
 	EventListner->Register();
 }
@@ -1159,11 +1152,10 @@ void Hooks::End() {
 	RemoveHook(oSetSignonState, hkSetSignonState);
 	RemoveHook(oCreateNewParticleEffect, hkCreateNewParticleEffect_proxy);
 	RemoveHook(oSVCMsg_VoiceData, hkSVCMsg_VoiceData);
-	//RemoveHook(oDrawStaticProps, hkDrawStaticProps);
+	RemoveHook(oDrawStaticProps, hkDrawStaticProps);
 	RemoveHook(oWriteUserCmdDeltaToBuffer, hkWriteUserCmdDeltaToBuffer);
 	RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
 	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
 	RemoveHook(oInPrediction, hkInPrediction);
-	RemoveHook(oTraceBlood, hkTraceBlood);
 }

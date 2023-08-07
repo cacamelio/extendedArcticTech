@@ -64,7 +64,6 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.peek_assist_color);
     add(config.ragebot.aimbot.peek_assist_keybind);
     add(config.ragebot.aimbot.show_aimpoints);
-    add(config.ragebot.aimbot.resolver_treshold);
     add(config.ragebot.aimbot.show_debug_data);
     add(config.ragebot.aimbot.threads);
     add(config.ragebot.aimbot.roll_resolver);
