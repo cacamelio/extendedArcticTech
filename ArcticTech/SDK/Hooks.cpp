@@ -510,7 +510,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
 
-		SkinChanger->AgentChanger();
 		SkinChanger->Run(true);
 
 		
@@ -541,6 +540,9 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
+		break;
+	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
+		SkinChanger->AgentChanger();
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
 		break;
