@@ -20,7 +20,7 @@ void CDoubleTap::Run() {
 		return;
 
 	if (teleport_next_tick) {
-		if ((weapon->m_iItemDefinitionIndex() == Ssg08 || weapon->m_iItemDefinitionIndex() == Awp) && defensive_ticks > 2)
+		if ((weapon->m_iItemDefinitionIndex() == Ssg08 || weapon->m_iItemDefinitionIndex() == Awp) && defensive_ticks > 2 && !config.ragebot.aimbot.doubletap_options->get(2))
 			return;
 
 		teleport_next_tick = false;

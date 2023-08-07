@@ -41,7 +41,7 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.extrapolation = aimbot->AddComboBox("Extrapolation", { "Disable", "Enable", "Force" });
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
-	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek" });
+	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport"});
 	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
 	config.ragebot.aimbot.force_body_aim = aimbot->AddKeyBind("Force Body Aim");
 	config.ragebot.aimbot.minimum_damage_override_key = aimbot->AddKeyBind("Min. damage override");

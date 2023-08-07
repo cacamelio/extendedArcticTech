@@ -124,7 +124,7 @@ void CAntiAim::Angles() {
 		notModifiedYaw = ctx.cmd->viewangles.yaw;
 
 		if (config.antiaim.angles.yaw_jitter->get() && !Cheat.LocalPlayer->m_bIsDefusing() && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
-			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.angles.modifier_value->get() : config.antiaim.angles.modifier_value->get();
+			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.angles.modifier_value->get() * 0.5f : config.antiaim.angles.modifier_value->get() * 0.5f;
 	}
 	else {
 		notModifiedYaw = ctx.cmd->viewangles.yaw;
@@ -146,15 +146,15 @@ void CAntiAim::Desync() {
 		int fs_side = DesyncFreestand();
 
 		if (fs_side != 0)
-			inverter = fs_side == -1;
+			inverter = fs_side == 1;
 	}
 
 	float desyncAngle = 0.f;
 
 	if (config.antiaim.angles.body_yaw_limit->get() < 58)
-		desyncAngle = inverter ? -config.antiaim.angles.body_yaw_limit->get() : config.antiaim.angles.body_yaw_limit->get();
+		desyncAngle = inverter ? config.antiaim.angles.body_yaw_limit->get() : -config.antiaim.angles.body_yaw_limit->get();
 	else
-		desyncAngle = inverter ? -120 : 120;
+		desyncAngle = inverter ? 120 : -120;
 
 	if (!ctx.send_packet) {
 		realAngle = Math::AngleNormalize(ctx.cmd->viewangles.yaw + std::clamp(desyncAngle, -Cheat.LocalPlayer->GetMaxDesyncDelta(), Cheat.LocalPlayer->GetMaxDesyncDelta()));
@@ -334,31 +334,27 @@ bool CAntiAim::IsPeeking() {
 	Vector scan_points[] = {
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
 	};
 
-	CBasePlayer* nearest = GetNearestTarget();
-
 	bool peeked = false;
-	if (nearest) {
-		FireBulletData_t data;
+	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
 
-		Vector enemyShootPos = nearest->GetShootPosition();
+		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant())
+			continue;
+
+		FireBulletData_t data;
+		Vector enemyShootPos = player->GetShootPosition() + player->m_vecVelocity() * GlobalVars->interval_per_tick * 2;
 
 		for (int i = 0; i < 4; i++) {
-			Vector point = scan_points[i];
-			
-			Vector shoot_pos_adjusted = enemyShootPos;
-			if (i > 1) {
-				shoot_pos_adjusted = (shoot_pos_adjusted + point) * 0.5f;
-			}
-
-			if (AutoWall->FireBullet(nearest, shoot_pos_adjusted, point, data, Cheat.LocalPlayer) && data.damage >= 2.f) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
 				peeked = true;
 				break;
 			}
 		}
+
+		if (peeked)
+			break;
 	}
 
 	Cheat.LocalPlayer->SetAbsOrigin(backup_abs_orgin);
