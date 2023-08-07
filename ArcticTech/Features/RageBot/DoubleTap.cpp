@@ -105,8 +105,15 @@ bool CDoubleTap::ShouldBreakLC() {
 		return false;
 
 	if (CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon()) {
-		if (weapon->IsGrenade() && reinterpret_cast<CBaseGrenade*>(weapon)->m_flThrowTime() > 0.f)
-			return false; // nades detonate faster with break lc
+		if (weapon->IsGrenade() && reinterpret_cast<CBaseGrenade*>(weapon)->m_flThrowTime() > 0.f) {
+			triggered_fast_throw = true;
+		}
+		else if (!weapon->IsGrenade()) {
+			triggered_fast_throw = false;
+		}
+
+		if (triggered_fast_throw)
+			return false;
 	}
 
 	bool result = false;

@@ -82,6 +82,7 @@ void CMenu::SetupUI() {
 	config.antiaim.angles.modifier_value = aa_angles->AddSliderInt("Modifier value", -180, 180, 0);
 	config.antiaim.angles.manual_left = aa_angles->AddKeyBind("Manual left");
 	config.antiaim.angles.manual_right = aa_angles->AddKeyBind("Manual right");
+	config.antiaim.angles.manual_options = aa_angles->AddMultiCombo("Manual options", {"Disable jitters", "Freestand"});
 	config.antiaim.angles.body_yaw = aa_angles->AddCheckBox("Body yaw");
 	config.antiaim.angles.body_yaw_options = aa_angles->AddMultiCombo("Body yaw options", { "Jitter", "Random jitter", "Extended", "Freestand" });
 	config.antiaim.angles.body_yaw_limit = aa_angles->AddSliderInt("Limit", 0, 58, 58);
@@ -145,7 +146,7 @@ void CMenu::SetupUI() {
 	config.visuals.chams.local_player = chams->AddCheckBox("Local player");
 	config.visuals.chams.local_player_color = chams->AddColorPicker("Local player", Color(100, 100, 100));
 	config.visuals.chams.local_player_second_color = chams->AddColorPicker("Local second color");
-	config.visuals.chams.local_player_type = chams->AddComboBox("Local type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.local_player_type = chams->AddComboBox("Local type", { "Default", "Solid", "Glow", "Glow outlined", "Glow owerlay" });
 	config.visuals.chams.local_glow_thickness = chams->AddSliderFloat("Local glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.attachments = chams->AddCheckBox("Attachments");
 	config.visuals.chams.attachments_color = chams->AddColorPicker("Attachments");

@@ -45,6 +45,7 @@ public:
 	void	RestoreLocalAnims();
 	matrix3x4_t* GetLocalBoneMatrix() { return sent_matrix; };
 	void	CorrectLocalMatrix(matrix3x4_t* mat, int size);
+	Vector	GetLocalSentAbsOrigin() { return sent_abs_origin; };
 
 	void	BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld, int maxBones, int mask, AnimationLayer* animlayers);
 	void	DisableInterpolationFlags(CBasePlayer* player);

@@ -129,6 +129,7 @@ void CConfig::Init() {
     add(config.antiaim.angles.modifier_value);
     add(config.antiaim.angles.manual_left);
     add(config.antiaim.angles.manual_right);
+    add(config.antiaim.angles.manual_options);
     add(config.antiaim.angles.body_yaw);
     add(config.antiaim.angles.body_yaw_options);
     add(config.antiaim.angles.body_yaw_limit);

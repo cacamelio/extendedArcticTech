@@ -578,6 +578,18 @@ namespace api {
 		CGameTrace trace_hull(Vector start, Vector end, Vector mins, Vector maxs, int mask, CBaseEntity* skip) {
 			return EngineTrace->TraceHull(start, end, mins, maxs, mask, skip);
 		}
+
+		bool is_key_pressed(int key) {
+			return GetAsyncKeyState(key) & 0x8000;
+		}
+
+		Vector get_mouse_position() {
+			POINT pt;
+			GetCursorPos(&pt);
+			ScreenToClient(GetForegroundWindow(), &pt);
+
+			return Vector(pt.x, pt.y);
+		}
 	}
 
 	namespace ui {
@@ -1144,7 +1156,9 @@ void CLua::Setup() {
 		"create_interface", api::utils::create_interface,
 		"pattern_scan", api::utils::pattern_scan,
 		"trace_line", api::utils::trace_line,
-		"trace_hull", api::utils::trace_hull
+		"trace_hull", api::utils::trace_hull,
+		"is_key_pressed", api::utils::is_key_pressed,
+		"get_mouse_position", api::utils::get_mouse_position
 	);
 
 	// network

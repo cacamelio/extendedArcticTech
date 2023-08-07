@@ -78,6 +78,7 @@ struct config_t {
             CSliderInt* modifier_value;
             CKeyBind* manual_left;
             CKeyBind* manual_right;
+            CMultiCombo* manual_options;
             CCheckBox* body_yaw;
             CMultiCombo* body_yaw_options;
             CSliderInt* body_yaw_limit;

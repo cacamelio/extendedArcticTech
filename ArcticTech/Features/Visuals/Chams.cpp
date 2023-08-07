@@ -13,6 +13,7 @@ enum MaterialType {
 	Default,
 	Flat,
 	Glow,
+	GlowOutline,
 	GlowOverlay,
 };
 
@@ -178,7 +179,17 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 			addAlpha = config.visuals.effects.viewmodel_scope_alpha->get() * 0.01f;
 	}
 
+	int backup_type = mat.type;
+	if (mat.type == MaterialType::GlowOverlay) {
+		mat.type = MaterialType::GlowOutline;
+
+		RenderView->SetBlend(addAlpha);
+		drawModelExecute(ModelRender, _ctx, _state, _info, _boneToWorld);
+	}
+
 	DrawModel(mat, addAlpha);
+
+	mat.type = backup_type;
 
 	return true;
 }
@@ -192,7 +203,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 	IMaterial* baseMat = baseMaterials[cham.type == MaterialType::Glow ? MaterialType::Default : cham.type];
 
 	if (cham.addZ) {
-		if (cham.type != MaterialType::GlowOverlay) {
+		if (cham.type != MaterialType::GlowOutline) {
 			baseMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
 			baseMat->ColorModulate(cham.invisibleColor);
 			RenderView->SetBlend(cham.invisibleColor.a / 255.f * alpha);
@@ -202,7 +213,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 			ModelRender->ForcedMaterialOverride(nullptr);
 		}
 
-		if (cham.type == MaterialType::Glow || cham.type == MaterialType::GlowOverlay) {
+		if (cham.type == MaterialType::Glow || cham.type == MaterialType::GlowOutline) {
 			IMaterial* glowMat = baseMaterials[MaterialType::Glow];
 
 			glowMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
@@ -221,7 +232,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 		}
 	}
 
-	if (cham.type != MaterialType::GlowOverlay) {
+	if (cham.type != MaterialType::GlowOutline) {
 		baseMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, ignorez);
 		baseMat->ColorModulate(cham.primaryColor);
 		RenderView->SetBlend(cham.primaryColor.a / 255.f * alpha);
@@ -231,7 +242,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 		ModelRender->ForcedMaterialOverride(nullptr);
 	}
 
-	if (cham.type == MaterialType::Glow || cham.type == MaterialType::GlowOverlay) {
+	if (cham.type == MaterialType::Glow || cham.type == MaterialType::GlowOutline) {
 		IMaterial* glowMat = baseMaterials[MaterialType::Glow];
 
 		glowMat->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, ignorez);

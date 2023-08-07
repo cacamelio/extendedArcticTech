@@ -6,6 +6,7 @@ typedef void(__cdecl* CL_Move_t)(float, bool);
 class CDoubleTap {
 	bool teleport_next_tick = false;
 	int defensive_ticks = 0;
+	bool triggered_fast_throw = false;
 
 public:
 	bool shifting_tickbase = false;

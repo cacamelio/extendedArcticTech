@@ -8,7 +8,7 @@
 
 void GrenadePrediction::PrecacheParticles() {
 	Effects->PrecacheParticleSystem("env_fire_tiny_b");
-	Effects->PrecacheParticleSystem("engSmokeA");
+	Effects->PrecacheParticleSystem("explosion_child_snow04b");
 }
 
 void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
@@ -98,6 +98,47 @@ void GrenadePrediction::Draw() {
 		return;
 	}
 
+	std::vector<Vector2> scrPoints;
+	Vector* renderPath = pathPoints.data();
+	int pathSize = pathPoints.size();
+
+	for (int i = 0; i < pathSize; i++) {
+		if (i % 2 == 1 && i != pathSize - 1)
+			continue;
+		Vector2 cpoint = Render->WorldToScreen(renderPath[i]);
+		if (!cpoint.Invalid())
+			scrPoints.push_back(cpoint);
+	}
+
+	bool hit = false;
+
+	if (weaponId == HeGrenade) {
+		int maxDamage = 0;
+		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
+
+			if (!player || player->IsTeammate() || !player->IsPlayer() || player->m_iHealth() == 0)
+				continue;
+
+			int dmg = CalcDamage(vecDetonate, player);
+
+			if (dmg > maxDamage)
+				maxDamage = dmg;
+		}
+		if (maxDamage > 0) {
+			Render->Text(std::format("-{}hp", maxDamage), Vector2(Cheat.ScreenSize.x * 0.5f, Cheat.ScreenSize.y * 0.4f), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW | TEXT_CENTERED);
+			hit = true;
+		}
+	}
+
+	Render->PolyLine(scrPoints, hit ? config.visuals.other_esp.grenade_trajectory_hit_color->get() : config.visuals.other_esp.grenade_trajectory_color->get());
+
+	for (auto& point : collisionPoints) {
+		Vector2 w2s = Render->WorldToScreen(point);
+		Render->CircleFilled(w2s, 3, Color(0, 0, 0, 190));
+		Render->CircleFilled(w2s, 2, Color(255, 255, 255, 255));
+	}
+
 	if (weaponId == Molotov || weaponId == IncGrenade) {
 		Ray_t ray;
 		CGameTrace trace;
@@ -135,8 +176,9 @@ void GrenadePrediction::Draw() {
 
 	if (weaponId == SmokeGrenade && config.visuals.other_esp.particles->get(1)) {
 		if (!pSmokeParticle) {
-			pSmokeParticle = Effects->DispatchParticleEffect("engSmokeA", vecDetonate, QAngle());
-		} else {
+			pSmokeParticle = Effects->DispatchParticleEffect("explosion_child_snow04b", vecDetonate, QAngle());
+		}
+		else {
 			pSmokeParticle->SetOrigin(vecDetonate, 0);
 		}
 	}
@@ -144,47 +186,6 @@ void GrenadePrediction::Draw() {
 		pSmokeParticle->Stop();
 		pSmokeParticle = nullptr;
 	}
-
-	std::vector<Vector2> scrPoints;
-	Vector* renderPath = pathPoints.data();
-	int pathSize = pathPoints.size();
-
-	for (int i = 0; i < pathSize; i++) {
-		if (i % 2 == 1 && i != pathSize - 1)
-			continue;
-		Vector2 cpoint = Render->WorldToScreen(renderPath[i]);
-		if (!cpoint.Invalid())
-			scrPoints.push_back(cpoint);
-	}
-
-	for (auto& point : collisionPoints) {
-		Vector2 w2s = Render->WorldToScreen(point);
-		Render->CircleFilled(w2s, 3, Color(0, 0, 0, 190));
-		Render->CircleFilled(w2s, 2, Color(255, 255, 255, 255));
-	}
-
-	bool hit = false;
-
-	if (weaponId == HeGrenade) {
-		int maxDamage = 0;
-		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
-			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
-
-			if (!player || player->IsTeammate() || !player->IsPlayer() || player->m_iHealth() == 0)
-				continue;
-
-			int dmg = CalcDamage(vecDetonate, player);
-
-			if (dmg > maxDamage)
-				maxDamage = dmg;
-		}
-		if (maxDamage > 0) {
-			Render->Text(std::format("-{}hp", maxDamage), Vector2(Cheat.ScreenSize.x * 0.5f, Cheat.ScreenSize.y * 0.4f), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW | TEXT_CENTERED);
-			hit = true;
-		}
-	}
-
-	Render->PolyLine(scrPoints, hit ? config.visuals.other_esp.grenade_trajectory_hit_color->get() : config.visuals.other_esp.grenade_trajectory_color->get());
 }
 
 void GrenadePrediction::Predict(const Vector& orign, const Vector& velocity, float throwTime, int offset) {
@@ -494,7 +495,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	for (int i = 1; i < pathPoints.size(); i++) {
 		Vector start = pathPoints[i - 1];
 		Vector end = pathPoints[i];
-		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.5, -0.5), Vector((start - end).Q_Length(), 0.5, 0.5), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 2.f);
+		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.5, -0.5), Vector((start - end).Q_Length(), 0.5, 0.5), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 2.1f);
 	}
 
 	//for (int i = 0; i < pathPoints.size(); i++) {

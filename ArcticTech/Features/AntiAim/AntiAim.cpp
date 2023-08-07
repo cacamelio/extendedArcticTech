@@ -6,6 +6,7 @@
 #include "../Misc/Prediction.h"
 #include "../RageBot/AutoWall.h"
 #include "../../Utils/Console.h"
+#include "../RageBot/AnimationSystem.h"
 
 void CAntiAim::FakeLag() {
 	static ConVar* sv_maxusrcmdprocessticks = CVar->FindVar("sv_maxusrcmdprocessticks");
@@ -122,7 +123,7 @@ void CAntiAim::Angles() {
 
 		notModifiedYaw = ctx.cmd->viewangles.yaw;
 
-		if (config.antiaim.angles.yaw_jitter->get() && !Cheat.LocalPlayer->m_bIsDefusing())
+		if (config.antiaim.angles.yaw_jitter->get() && !Cheat.LocalPlayer->m_bIsDefusing() && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
 			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.angles.modifier_value->get() : config.antiaim.angles.modifier_value->get();
 	}
 	else {
@@ -138,10 +139,10 @@ void CAntiAim::Desync() {
 
 	bool inverter = config.antiaim.angles.inverter->get();
 
-	if (config.antiaim.angles.body_yaw_options->get(0) && !(ctx.cmd->buttons & IN_USE))
+	if (config.antiaim.angles.body_yaw_options->get(0) && !(ctx.cmd->buttons & IN_USE) && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
 		inverter = jitter;
 
-	if (config.antiaim.angles.body_yaw_options->get(3)) {
+	if (config.antiaim.angles.body_yaw_options->get(3) || (manualAngleState != 0 && config.antiaim.angles.manual_options->get(1))) {
 		int fs_side = DesyncFreestand();
 
 		if (fs_side != 0)
@@ -311,10 +312,12 @@ void CAntiAim::LegMovement() {
 bool CAntiAim::IsPeeking() {
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
+	velocity.z = 0.f;
+
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Q_Normalized() * 26.f;
+	Vector move_factor = velocity.Q_Normalized() * 22.f;
 
 	matrix3x4_t backup_matrix[128];
 	Cheat.LocalPlayer->CopyBones(backup_matrix);
@@ -322,7 +325,8 @@ bool CAntiAim::IsPeeking() {
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
 
-	Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), Cheat.LocalPlayer->GetAbsOrigin(), Cheat.LocalPlayer->GetAbsOrigin() + move_factor);
+	memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), AnimationSystem->GetLocalBoneMatrix(), sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
+	Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), AnimationSystem->GetLocalSentAbsOrigin(), Cheat.LocalPlayer->GetAbsOrigin() + move_factor);
 	Cheat.LocalPlayer->SetAbsOrigin(backup_abs_orgin + move_factor);
 	Cheat.LocalPlayer->m_vecOrigin() += move_factor;
 	Cheat.LocalPlayer->ForceBoneCache();
