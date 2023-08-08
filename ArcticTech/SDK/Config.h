@@ -252,7 +252,8 @@ struct config_t {
         CCheckBox* override_knife;
         CCheckBox* mask_changer;
         CCheckBox* override_agent;
-        CComboBox* knife_model;
+        CComboBox* knife_model; 
+        CComboBox* paint_kits;
         CComboBox* mask_changer_models;
         CComboBox* agent_model_ct;
         CComboBox* agent_model_t;

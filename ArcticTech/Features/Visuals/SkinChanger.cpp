@@ -320,6 +320,7 @@ bool CSkinChanger::LoadModel( const char* thisModelName )
 	return true;
 }
 
+
 void CSkinChanger::InitCustomModels()
 {
 	LoadModel( "models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl" );
@@ -348,14 +349,19 @@ void CSkinChanger::InitCustomModels()
 }	
 constexpr int mask_flags = 0x10000;
 
-void CSkinChanger::MaskChanger(int stage)
+void CSkinChanger::UpdateSkins()
+{
+	EngineClient->ClientCmd_Unrestricted("record x;stop");
+}
+
+void CSkinChanger::MaskChanger()
 {
 	static UpdateAddonModelsFunc pUpdateAddonModels = reinterpret_cast<UpdateAddonModelsFunc>(Utils::PatternScan("client.dll", "55 8B EC 83 EC ? 53 8B D9 8D 45 ? 8B 08"));
-	static auto current_mask = *reinterpret_cast<char***>(Utils::PatternScan("client.dll", "FF 35 ? ? ? ? FF 90 ? ? ? ? 8B 8F", 0x2));
+	static auto currentMask = *reinterpret_cast<char***>(Utils::PatternScan("client.dll", "FF 35 ? ? ? ? FF 90 ? ? ? ? 8B 8F", 0x2));
 
-	static int old_mask = -1;
+	static int oldMask = -1;
 
-	if (!Cheat.LocalPlayer && stage != FRAME_NET_UPDATE_POSTDATAUPDATE_START)
+	if (!Cheat.LocalPlayer)
 		return;
 
 	auto mask = mask_models[config.skins.mask_changer_models->get()];
@@ -363,15 +369,15 @@ void CSkinChanger::MaskChanger(int stage)
 	if (!LoadModel(default_mask) || !LoadModel(mask))
 		return;
 
-	if (config.skins.mask_changer->get() && config.skins.mask_changer_models->get() > 0)
+	if (config.skins.mask_changer->get())
 	{
 		Cheat.LocalPlayer->m_iAddonBits() |= mask_flags;
 
-		if (old_mask != config.skins.mask_changer_models->get())
+		if (oldMask != config.skins.mask_changer_models->get())
 		{
-			*current_mask = (char*)mask;
+			*currentMask = (char*)mask;
 			pUpdateAddonModels(Cheat.LocalPlayer, true);
-			old_mask = config.skins.mask_changer_models->get();
+			oldMask = config.skins.mask_changer_models->get();
 		}
 	}
 	else
@@ -424,6 +430,7 @@ void CSkinChanger::Run( bool frame_end ) {
 
 		if ( !weapon )
 			return;
+
 
 		if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
 			ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );

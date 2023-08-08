@@ -25,6 +25,10 @@ namespace Utils {
 	HANDLE	CreateSimpleThread(void* func, void* params, size_t stackSize = 0);
 	bool	ThreadJoin(HANDLE thread, DWORD ms);
 
+	std::string ToUTF8(const std::wstring_view str);
+
+	void	ForceFullUpdate();
+
 	void	Print(const char* szMessage, ...);
 	void	RandomSeed(int seed);
 	int		RandomInt(int min, int max);

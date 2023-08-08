@@ -225,6 +225,9 @@ void CMenu::SetupUI() {
 	config.misc.movement.infinity_duck = movement->AddCheckBox("Infinity duck");
 	config.misc.movement.quick_stop = movement->AddCheckBox("Quick stop");
 
+
+	config.skins.paint_kits = skins->AddComboBox("Paint kits", SkinChanger->GetUIPaintKits());
+
 	config.skins.override_knife = models->AddCheckBox("Override knife");
 	config.skins.knife_model = models->AddComboBox("Knife model", SkinChanger->GetUIKnifeModels());
 
@@ -362,6 +365,10 @@ void CMenu::SetupUI() {
 
 	config.visuals.effects.override_skybox->SetCallback([]() {
 		World->SkyBox();
+	});
+
+	config.skins.knife_model->SetCallback([]() {
+		Utils::ForceFullUpdate();
 	});
 
 	auto world_fog_callback = []() {

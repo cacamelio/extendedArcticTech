@@ -48,6 +48,7 @@ void Initialize(HMODULE hModule) {
     Interfaces::Initialize();
     Hooks::Initialize();
     Lua->Setup();
+    SkinChanger->GetPaintKits();
     SkinChanger->FixViewModelSequence();
 
     while (!GetAsyncKeyState(VK_END)) {
