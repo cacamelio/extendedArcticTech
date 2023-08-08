@@ -67,12 +67,7 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	lua_voice_data.format = msg.format;
 
 	for (auto& func : Lua->hooks.getHooks(LUA_VOICE_DATA)) {
-		auto prot_func_res = func.func(lua_voice_data);
-
-		if (!prot_func_res.valid()) {
-			sol::error error = prot_func_res;
-			Console->Error(error.what());
-		}
+		func.func(lua_voice_data);
 	}
 
 	for (auto handler : m_voiceDataCallbacks)
@@ -92,7 +87,6 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 
 	player_info_t info;
 	EngineClient->GetPlayerInfo(msg.client + 1, &info);
-	ctx.arctic_users.insert(info.iSteamID);
 
 	SharedVoiceData_t* data = new SharedVoiceData_t;
 	data->xuid_high = msg.xuid_high;

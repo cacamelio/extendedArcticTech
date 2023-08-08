@@ -124,7 +124,7 @@ void CRender::RenderDrawData() {
 			{
 				int alpha = (object.color & 0xFF000000) >> 24;
 
-				Color shadow_color(15, 15, 15, alpha * 0.75f);
+				Color shadow_color(15, 15, 15, alpha * 0.6f);
 				DWORD outlineColor = shadow_color.d3d_color();
 
 				RECT outlineRect = { object.pRect.left - 1, object.pRect.top - 1, object.pRect.right - 1, object.pRect.bottom - 1 };
@@ -157,7 +157,7 @@ void CRender::RenderDrawData() {
 			else if (object.dropshadow) {
 				int alpha = (object.color & 0xFF000000) >> 24;
 
-				Color shadow_color(15, 15, 15, alpha * 0.75f);
+				Color shadow_color(15, 15, 15, alpha * 0.5f);
 				DWORD outlineColor = shadow_color.d3d_color();
 
 				RECT outlineRect = { object.pRect.left + 1, object.pRect.top + 1, object.pRect.right + 1, object.pRect.bottom + 1 };

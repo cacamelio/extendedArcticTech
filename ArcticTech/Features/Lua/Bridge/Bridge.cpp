@@ -33,10 +33,14 @@ void LuaSaveConfig(LuaScript_t* script) {
 		case WidgetType::Combo:
 			result[name] = ((CComboBox*)e)->value;
 			break;
-		case WidgetType::MultiCombo:
+		case WidgetType::MultiCombo: {
+			int temp = 0;
 			for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
-				result[name] = ((CMultiCombo*)e)->value[i];
+				if (((CMultiCombo*)e)->value[i])
+					temp |= 1 << i;
+			result[name] = temp;
 			break;
+		}
 		case WidgetType::Input:
 			result[name] = std::string(((CInputBox*)e)->buf);
 			break;
@@ -93,7 +97,7 @@ void LuaLoadConfig(LuaScript_t* script) {
 				break;
 			case WidgetType::MultiCombo:
 				for (int i = 0; i < ((CMultiCombo*)e)->elements.size(); i++)
-					((CMultiCombo*)e)->value[i] = val[i];
+					((CMultiCombo*)e)->value[i] = val & (1 << i);
 				break;
 			case WidgetType::Input: {
 				ZeroMemory(((CInputBox*)e)->buf, 64);
@@ -654,31 +658,55 @@ namespace api {
 			Console->Error("trying to get unknown element");
 		}
 
+		int element_get_mode(sol::this_state state, IBaseWidget* element) {
+			if (element->GetType() != WidgetType::KeyBind) {
+				Console->Error("this element is not keybind!");
+			}
+
+			return static_cast<CKeyBind*>(element)->mode;
+		}
+
+		int element_get_key(sol::this_state state, IBaseWidget* element) {
+			if (element->GetType() != WidgetType::KeyBind) {
+				Console->Error("this element is not keybind!");
+			}
+
+			return static_cast<CKeyBind*>(element)->key;
+		}
+
 		void element_set(sol::this_state state, IBaseWidget* element, sol::object val, sol::optional<int> index) {
 			switch (element->GetType()) {
 			case WidgetType::Checkbox:
 				static_cast<CCheckBox*>(element)->value = val.as<bool>();
+				break;
 			case WidgetType::ColorPicker: {
 				Color col = val.as<Color>();
 				static_cast<CColorPicker*>(element)->value[0] = col.r / 255.f;
 				static_cast<CColorPicker*>(element)->value[1] = col.g / 255.f;
 				static_cast<CColorPicker*>(element)->value[2] = col.b / 255.f;
 				static_cast<CColorPicker*>(element)->value[3] = col.a / 255.f;
+				break;
 			}
 			case WidgetType::KeyBind:
 				static_cast<CKeyBind*>(element)->set(val.as<bool>());
+				break;
 			case WidgetType::SliderInt:
 				static_cast<CSliderInt*>(element)->value = val.as<int>();
+				break;
 			case WidgetType::SliderFloat:
 				static_cast<CSliderFloat*>(element)->value = val.as<float>();
+				break;
 			case WidgetType::Combo:
 				static_cast<CComboBox*>(element)->value = val.as<int>();
+				break;
 			case WidgetType::MultiCombo:
 				static_cast<CMultiCombo*>(element)->value[index.value()] = val.as<bool>();
+				break;
 			case WidgetType::Input: {
 				ZeroMemory(static_cast<CInputBox*>(element)->buf, 64);
 				std::string inp = val.as<std::string>();
 				memcpy(static_cast<CInputBox*>(element)->buf, inp.c_str(), inp.size());
+				break;
 			}
 			default:
 				Console->Error("unknown type");
@@ -950,12 +978,13 @@ namespace api {
 	}
 }
 
+sol::state lua;
 void CLua::Setup() {
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts");
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts/cfg");
 
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
-	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package);
+	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::jit, sol::lib::ffi);
 	
 	// enums
 	lua.new_enum<EDamageGroup>("e_dmg_group", {
@@ -985,7 +1014,10 @@ void CLua::Setup() {
 		"set_callback", api::ui::element_set_callback,
 		"set_visible", api::ui::element_set_visible,
 		"get_name", api::ui::element_get_name,
+		"get_mode", api::ui::element_get_mode,
+		"get_key", api::ui::element_get_key,
 		"get", api::ui::element_get,
+		"set", api::ui::element_set,
 		"update_list", api::ui::element_update_list
 	);
 
@@ -1331,6 +1363,8 @@ void CLua::UnloadScript(int id) {
 
 	if (!script.loaded)
 		return;
+
+	LuaSaveConfig(&script);
 
 	for (auto& current : hooks.getHooks(LUA_UNLOAD)) {
 		if (current.scriptId == id)

@@ -104,9 +104,6 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Render->UpdateViewMatrix(EngineClient->WorldToScreenMatrix());
 
-	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
-		callback.func();
-
 	ESP::Draw();
 	ESP::DrawGrenades();
 	ESP::RenderMarkers();
@@ -116,6 +113,9 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	if (config.ragebot.aimbot.show_debug_data->get())
 		Ragebot->DrawDebugData();
 	Indicators->Draw();
+
+	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
+		callback.func();
 
 	InputSystem->EnableInput(!Menu->IsOpened());
 
@@ -288,6 +288,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			Exploits->ForceTeleport();
 		else if (Exploits->GetExploitType() == CExploits::E_HideShots)
 			Exploits->HideShot();
+
+		ShotManager->ProcessManualShot();
 	}
 
 	AntiAim->FakeLag();

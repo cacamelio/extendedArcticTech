@@ -66,12 +66,12 @@ void CAnimationSystem::OnCreateMove() {
 	animstate->flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
 	animstate->flDuckingSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
 
+	Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
+
 	if (ctx.send_packet) {
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
 
 		Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
-
-		Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
 
 		if (config.antiaim.misc.animations->get(2))
 			Cheat.LocalPlayer->m_flPoseParameter()[0] = 1.f;

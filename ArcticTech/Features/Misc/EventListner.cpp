@@ -103,6 +103,9 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		if (!buy_command.empty() && Cheat.LocalPlayer && Cheat.LocalPlayer->m_iAccount() >= 1000)
 			EngineClient->ExecuteClientCmd(buy_command.c_str());
+
+		for (int i = 0; i < ClientState->m_nMaxClients; i++)
+			ESPInfo[i].m_nHealth = 100;
 	}
 	else if (name == "round_freeze_end") {
 		Cheat.freezetime = false;

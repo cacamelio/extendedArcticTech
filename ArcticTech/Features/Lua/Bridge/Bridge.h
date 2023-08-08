@@ -7,7 +7,6 @@
 #pragma comment(lib, "lua51.lib")
 #pragma comment(lib, "luajit.lib")
 
-#define SOL_ALL_SAFETIES_ON 1
 #include "../Hook/Hook.h"
 #include "../../../Utils/Console.h"
 #include "../../../SDK/Globals.h"
@@ -57,7 +56,6 @@ public:
 	void Setup();
 
 	CLuaHookManager hooks;
-	sol::state lua;
 	std::vector<LuaScript_t> scripts;
 };
 

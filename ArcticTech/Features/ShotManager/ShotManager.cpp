@@ -4,6 +4,7 @@
 #include "../../SDK/Globals.h"
 #include "../../Utils/Console.h"
 
+#include "../RageBot/AutoWall.h"
 #include "../RageBot/LagCompensation.h"
 #include "../Visuals/ESP.h"
 
@@ -11,6 +12,19 @@
 
 
 CShotManager* ShotManager = new CShotManager;
+
+void CShotManager::ProcessManualShot() {
+	if (!config.visuals.effects.client_impacts->get())
+		return;
+
+	FireBulletData_t bullet;
+	AutoWall->FireBullet(Cheat.LocalPlayer, Cheat.LocalPlayer->GetShootPosition(), Cheat.LocalPlayer->GetShootPosition() + Math::AngleVectors(ctx.cmd->viewangles) * 8192.f, bullet);
+
+	Color col = config.visuals.effects.client_impacts_color->get();
+
+	for (auto& impact : bullet.impacts)
+		DebugOverlay->AddBoxOverlay(impact, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
+}
 
 bool CShotManager::OnEvent(IGameEvent* event) {
 	const std::string event_name(event->GetName());

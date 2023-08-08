@@ -48,7 +48,7 @@ struct RegisteredShot_t {
 class CShotManager {
 	std::vector<RegisteredShot_t>	m_RegisteredShots;
 public:
-	void	OnCreateMove();
+	void	ProcessManualShot();
 	void	OnNetUpdate();
 	bool	OnEvent(IGameEvent* event);
 	void	AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, LagRecord* record);

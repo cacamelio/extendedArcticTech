@@ -2,8 +2,6 @@
 #include "Misc/CBasePlayer.h"
 #include "Config.h"
 
-#include <unordered_set>
-
 class ConVar;
 
 struct CheatState_t {
@@ -39,7 +37,6 @@ struct Ctx_t {
 	bool should_update_local_anims = false;
 	Vector local_velocity;
 	Vector last_local_velocity;
-	std::unordered_set<unsigned int> arctic_users;
 	bool update_nightmode = false;
 	bool update_remove_blood = false;
 	Vector local_sent_origin;

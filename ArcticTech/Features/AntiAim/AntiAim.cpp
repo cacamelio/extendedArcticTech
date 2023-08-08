@@ -24,9 +24,10 @@ void CAntiAim::FakeLag() {
 		return;
 	}
 	else if (ctx.cmd->buttons & IN_ATTACK && activeWeapon->ShootingWeapon() && activeWeapon->CanShoot()) {
-		if (!config.antiaim.misc.fake_duck->get())
+		if (!config.antiaim.misc.fake_duck->get()) {
 			ctx.send_packet = true;
-		return;
+			return;
+		}
 	}
 
 	int fakelagTicks = 0;
@@ -41,17 +42,17 @@ void CAntiAim::FakeLag() {
 		fakelagMin = fakelagLimit = 14;
 
 	if (config.antiaim.fakelag.enabled->get()) {
-		if (Cheat.LocalPlayer->m_vecVelocity().Length() < 50) {
+		if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 256.f) {
 			fakelagTicks = 2;
 		}
 		else {
-			fakelagTicks = int(64.0f / (Cheat.LocalPlayer->m_vecVelocity().Length() * GlobalVars->interval_per_tick) + 1);
+			fakelagTicks = int(64.0f / (Cheat.LocalPlayer->m_vecVelocity().Q_Length() * GlobalVars->interval_per_tick) + 1);
 		}
 	}
 
 	fakelagMin = min(fakelagMin, fakelagLimit);
 
-	if (config.antiaim.fakelag.variability->get() && config.antiaim.fakelag.enabled->get())
+	if (config.antiaim.fakelag.variability->get() > 0 && config.antiaim.fakelag.enabled->get())
 		fakelagTicks = std::clamp(fakelagTicks - abs(rand() % int(config.antiaim.fakelag.variability->get())), fakelagMin, fakelagLimit);
 	else
 		fakelagTicks = std::clamp(fakelagTicks, fakelagMin, fakelagLimit);
@@ -67,7 +68,7 @@ void CAntiAim::FakeLag() {
 		if (!hasPeeked) {
 			hasPeeked = true;
 
-			if (ClientState->m_nChokedCommands > 0)
+			if (ClientState->m_nChokedCommands > 0 && ctx.tickbase_shift == 0)
 				ctx.send_packet = true;
 		}
 	}
@@ -310,6 +311,9 @@ void CAntiAim::LegMovement() {
 }
 
 bool CAntiAim::IsPeeking() {
+	if (Exploits->GetExploitType() == CExploits::E_HideShots)
+		return false;
+
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
 	velocity.z = 0.f;
@@ -317,7 +321,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Q_Normalized() * 22.f;
+	Vector move_factor = velocity.Q_Normalized() * 23.f;
 
 	matrix3x4_t backup_matrix[128];
 	Cheat.LocalPlayer->CopyBones(backup_matrix);
@@ -344,10 +348,10 @@ bool CAntiAim::IsPeeking() {
 			continue;
 
 		FireBulletData_t data;
-		Vector enemyShootPos = player->GetShootPosition() + player->m_vecVelocity() * GlobalVars->interval_per_tick * 2;
+		Vector enemyShootPos = player->GetShootPosition();
 
-		for (int i = 0; i < 4; i++) {
-			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
+		for (int i = 0; i < 2; i++) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 1.f) {
 				peeked = true;
 				break;
 			}
