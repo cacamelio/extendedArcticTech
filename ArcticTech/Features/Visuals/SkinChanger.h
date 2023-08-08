@@ -55,8 +55,13 @@ public:
 	static void Hooked_RecvProxy_Viewmodel( CRecvProxyData* pData, void* pStruct, void* pOut );
 	void FixViewModelSequence();
 	void AnimationUnHook( );
+	const char* default_mask = "models/player/holiday/facemasks/facemask_battlemask.mdl";
+
 	bool LoadModel( const char* thisModelName );
 	void InitCustomModels();
+	void MaskChanger(int stage);
+	typedef void(__thiscall* UpdateAddonModelsFunc)(void*, bool);
+
 	void AgentChanger( );
 	static constexpr std::array models_ct {
 			"models/player/custom_player/legacy/ctm_diver_varianta.mdl", // Cmdr. Davida "Goggles" Fernandez | SEAL Frogman

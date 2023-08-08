@@ -513,16 +513,8 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
-
 		SkinChanger->Run(true);
 
-		
-		if (config.skins.mask_changer->get() && Cheat.LocalPlayer->IsAlive() && Cheat.InGame) {
-			Cheat.LocalPlayer->m_iAddonBits() |= 0x10000 | 0x00800;
-		}
-
-		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
-			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
 
 		break;
 	case FRAME_RENDER_END:
@@ -547,6 +539,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
+		SkinChanger->MaskChanger(FRAME_NET_UPDATE_POSTDATAUPDATE_START);
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
 		break;
@@ -1071,7 +1064,7 @@ void Hooks::Initialize() {
 	ClientVMT->Hook(37, hkFrameStageNotify);
 	ClientVMT->Hook(11, hkHudUpdate);
 	ClientVMT->Hook(22, hkCHLCCreateMove);
-	ModelCacheVMT->Hook(10 ,hkFindMdl);
+	//ModelCacheVMT->Hook(10 ,hkFindMdl);
 	ClientVMT->Hook(7, hkLevelShutdown);
 	PredictionVMT->Hook(19, hkRunCommand);
 	KeyValuesVMT->Hook(2, hkAllocKeyValuesMemory);

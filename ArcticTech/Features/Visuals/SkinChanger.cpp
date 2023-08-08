@@ -325,6 +325,60 @@ void CSkinChanger::InitCustomModels()
 	LoadModel( "models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl" );
 	LoadModel( "models/player/custom_player/legacy/tm_jumpsuit_variantb.mdl" );
 	LoadModel( "models/player/custom_player/legacy/ctm_gign_varianta.mdl" );
+	LoadModel("models/player/holiday/facemasks/facemask_dallas.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_battlemask.mdl");
+	LoadModel("models/player/holiday/facemasks/evil_clown.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_anaglyph.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_boar.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_bunny.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_bunny_gold.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_chains.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_chicken.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_devil_plastic.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_hoxton.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_pumpkin.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_samurai.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_sheep_bloody.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_sheep_gold.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_sheep_model.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_skull.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_template.mdl");
+	LoadModel("models/player/holiday/facemasks/facemask_wolf.mdl");
+	LoadModel("models/player/holiday/facemasks/porcelain_doll.mdl");
+}	
+constexpr int mask_flags = 0x10000;
+
+void CSkinChanger::MaskChanger(int stage)
+{
+	static UpdateAddonModelsFunc pUpdateAddonModels = reinterpret_cast<UpdateAddonModelsFunc>(Utils::PatternScan("client.dll", "55 8B EC 83 EC ? 53 8B D9 8D 45 ? 8B 08"));
+	static auto current_mask = *reinterpret_cast<char***>(Utils::PatternScan("client.dll", "FF 35 ? ? ? ? FF 90 ? ? ? ? 8B 8F", 0x2));
+
+	static int old_mask = -1;
+
+	if (!Cheat.LocalPlayer && stage != FRAME_NET_UPDATE_POSTDATAUPDATE_START)
+		return;
+
+	auto mask = mask_models[config.skins.mask_changer_models->get()];
+
+	if (!LoadModel(default_mask) || !LoadModel(mask))
+		return;
+
+	if (config.skins.mask_changer->get() && config.skins.mask_changer_models->get() > 0)
+	{
+		Cheat.LocalPlayer->m_iAddonBits() |= mask_flags;
+
+		if (old_mask != config.skins.mask_changer_models->get())
+		{
+			*current_mask = (char*)mask;
+			pUpdateAddonModels(Cheat.LocalPlayer, true);
+			old_mask = config.skins.mask_changer_models->get();
+		}
+	}
+	else
+	{
+		if (Cheat.LocalPlayer->m_iAddonBits() & mask_flags)
+			Cheat.LocalPlayer->m_iAddonBits() &= ~mask_flags;
+	}
 }
 
 void CSkinChanger::AgentChanger( ) {
