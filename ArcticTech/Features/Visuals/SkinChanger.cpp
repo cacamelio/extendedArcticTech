@@ -11,6 +11,11 @@ void CSkinChanger::LoadKnifeModels() {
 	}
 }
 
+std::vector<std::string> CSkinChanger::GetUIPaintKits()
+{
+	return std::vector<std::string>();
+}
+
 std::vector<std::string> CSkinChanger::GetUIKnifeModels() {
 	std::vector<std::string> result;
 

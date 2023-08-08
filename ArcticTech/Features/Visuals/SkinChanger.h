@@ -103,8 +103,8 @@ public:
 	void LoadKnifeModels();
 	void InitPaintkit();
 	std::vector<PaintKit> GetPaintKits();
-	std::vector<const char*> GetUIPaintKits();
-	std::vector<const char*> GetUIKnifeModels();
+	std::vector<std::string> GetUIPaintKits();
+	std::vector<std::string> GetUIKnifeModels();
 	bool ApplyKnifeModel( CAttributableItem* weapon, const char* model );
 	static void SetViewModelSequence( const CRecvProxyData* pDataConst, void* pStruct, void* pOut );
 	static void Hooked_RecvProxy_Viewmodel( CRecvProxyData* pData, void* pStruct, void* pOut );
