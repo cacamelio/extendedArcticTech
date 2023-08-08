@@ -228,6 +228,7 @@ void CMenu::SetupUI() {
 
 	config.skins.mask_changer = models->AddCheckBox("Enable mask changer");
 	config.skins.mask_changer_models = models->AddComboBox("Mask models", {
+		"None",
 		"Dallas",
 		"Battle Mask",
 		"Evil Clown",

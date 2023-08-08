@@ -137,7 +137,8 @@ public:
 	};
 
 	static constexpr std::array mask_models
-	{	"models/player/holiday/facemasks/facemask_dallas.mdl",
+	{	"",
+		"models/player/holiday/facemasks/facemask_dallas.mdl",
 		"models/player/holiday/facemasks/facemask_battlemask.mdl",
 		"models/player/holiday/facemasks/evil_clown.mdl",
 		"models/player/holiday/facemasks/facemask_anaglyph.mdl",
