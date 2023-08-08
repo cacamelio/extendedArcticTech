@@ -11,9 +11,224 @@ void CSkinChanger::LoadKnifeModels() {
 	}
 }
 
-std::vector<std::string> CSkinChanger::GetUIPaintKits()
+std::vector<int> vecWeapons = {
+	WEAPON_AK47,
+	WEAPON_AUG,
+	WEAPON_AWP,
+	WEAPON_CZ75A,
+	WEAPON_DEAGLE,
+	WEAPON_ELITE,
+	WEAPON_FAMAS,
+	WEAPON_FIVESEVEN,
+	WEAPON_G3SG1,
+	WEAPON_GALILAR,
+	WEAPON_GLOCK,
+	WEAPON_M249,
+	WEAPON_M4A1_SILENCER,
+	WEAPON_M4A1,
+	WEAPON_MAC10,
+	WEAPON_MAG7,
+	WEAPON_MP5SD,
+	WEAPON_MP7,
+	WEAPON_MP9,
+	WEAPON_NEGEV,
+	WEAPON_NOVA,
+	WEAPON_HKP2000,
+	WEAPON_P250,
+	WEAPON_P90,
+	WEAPON_BIZON,
+	WEAPON_REVOLVER,
+	WEAPON_SAWEDOFF,
+	WEAPON_SCAR20,
+	WEAPON_SSG08,
+	WEAPON_SG556,
+	WEAPON_TEC9,
+	WEAPON_UMP45,
+	WEAPON_USP_SILENCER,
+	WEAPON_XM1014,
+	WEAPON_KNIFE_BAYONET,
+	WEAPON_KNIFE_FLIP,
+	WEAPON_KNIFE_GUT,
+	WEAPON_KNIFE_KARAMBIT,
+	WEAPON_KNIFE_M9_BAYONET,
+	WEAPON_KNIFE_TACTICAL,
+	WEAPON_KNIFE_FALCHION,
+	WEAPON_KNIFE_SURVIVAL_BOWIE,
+	WEAPON_KNIFE_BUTTERFLY,
+	WEAPON_KNIFE_PUSH,
+	WEAPON_KNIFE_URSUS,
+	WEAPON_KNIFE_GYPSY_JACKKNIFE,
+	WEAPON_KNIFE_STILETTO,
+	WEAPON_KNIFE_WIDOWMAKER,
+	WEAPON_KNIFE_CSS,
+	WEAPON_KNIFE_OUTDOOR,
+	WEAPON_KNIFE_SKELETON,
+	WEAPON_KNIFE_CORD,
+	WEAPON_KNIFE_CANIS,
+	GLOVE_STUDDED_BLOODHOUND,
+	GLOVE_SPORTY,
+	GLOVE_SLICK,
+	GLOVE_LEATHER_WRAP,
+	GLOVE_MOTORCYCLE,
+	GLOVE_SPECIALIST,
+	GLOVE_STUDDED_HYDRA,
+	GLOVE_STUDDED_BROKENFANG
+};
+
+
+std::string wchar_to_UTF8(const wchar_t* in)
 {
-	return std::vector<std::string>();
+	std::string out;
+	unsigned int codepoint = 0;
+	for (in; *in != 0; ++in)
+	{
+		if (*in >= 0xd800 && *in <= 0xdbff)
+			codepoint = ((*in - 0xd800) << 10) + 0x10000;
+		else
+		{
+			if (*in >= 0xdc00 && *in <= 0xdfff)
+				codepoint |= *in - 0xdc00;
+			else
+				codepoint = *in;
+
+			if (codepoint <= 0x7f)
+				out.append(1, static_cast<char>(codepoint));
+			else if (codepoint <= 0x7ff)
+			{
+				out.append(1, static_cast<char>(0xc0 | ((codepoint >> 6) & 0x1f)));
+				out.append(1, static_cast<char>(0x80 | (codepoint & 0x3f)));
+			}
+			else if (codepoint <= 0xffff)
+			{
+				out.append(1, static_cast<char>(0xe0 | ((codepoint >> 12) & 0x0f)));
+				out.append(1, static_cast<char>(0x80 | ((codepoint >> 6) & 0x3f)));
+				out.append(1, static_cast<char>(0x80 | (codepoint & 0x3f)));
+			}
+			else
+			{
+				out.append(1, static_cast<char>(0xf0 | ((codepoint >> 18) & 0x07)));
+				out.append(1, static_cast<char>(0x80 | ((codepoint >> 12) & 0x3f)));
+				out.append(1, static_cast<char>(0x80 | ((codepoint >> 6) & 0x3f)));
+				out.append(1, static_cast<char>(0x80 | (codepoint & 0x3f)));
+			}
+			codepoint = 0;
+		}
+	}
+	return out;
+}
+
+std::vector<PaintKit> CSkinChanger::GetPaintKits()
+{
+	auto dwSigAddress = (DWORD)Utils::PatternScan("client.dll", "E8 ? ? ? ? FF 76 0C 8D 48 04 E8");
+
+	// Skip the opcode, read rel32 address
+	auto iItemSystemOffset = *reinterpret_cast<int32_t*>(dwSigAddress + 1);
+	// Add the offset to the end of the instruction
+	auto pItemSystem = reinterpret_cast<CCStrike15ItemSystem * (*)()>(dwSigAddress + 5 + iItemSystemOffset);
+
+	// Skip the instructions between, skip the opcode, read rel32 address
+	auto iGetPaintKitDefinitionOffset = *reinterpret_cast<int32_t*>(dwSigAddress + 11 + 1);
+	// Add the offset to the end of the instruction
+	auto pGetPaintKitDefinition = reinterpret_cast<CPaintKit * (__thiscall*)(int id)>(dwSigAddress + 11 + 5 + iGetPaintKitDefinitionOffset);
+
+	// The last offset is nHeadElement, we need that
+
+	// push    ebp
+	// mov     ebp, esp
+	// sub     esp, 0Ch
+	// mov     eax, [ecx+298h]
+
+	// Skip instructions, skip opcode, read offset
+	auto dwStartElementOffset = *reinterpret_cast<uint32_t*>(uintptr_t(pGetPaintKitDefinition) + 8 + 2);
+
+	// Calculate head base from nStartElement's offset
+	auto dwHeadOffset = dwStartElementOffset - 12;
+
+	// Skip VTable, first member variable of ItemSystem is ItemSchema
+	auto pItemSchema = reinterpret_cast<CCStrike15ItemSchema*>(uintptr_t(pItemSystem()) + sizeof(void*));
+
+	auto pHead = reinterpret_cast<Head_t*>(uintptr_t(pItemSchema) + dwHeadOffset);
+
+	for (int i = 0; i <= pHead->nLastElement; ++i)
+	{
+		auto pKit = pHead->pMemory[i].pPaintKit;
+
+		if (pKit->iIndex == 9001)
+			continue;
+
+		const wchar_t* wstrName = Localize->Find(pKit->Tag.szBuffer + 1);
+		if (pKit->iIndex < 10000)
+			vecKits.push_back(PaintKit{ pKit->iIndex, wstrName });
+	}
+
+	return vecKits;
+}
+
+std::vector<PaintKit> CSkinChanger::GetGlovePaintKits()
+{
+	auto dwSigAddress = (DWORD)Utils::PatternScan("client.dll", "E8 ? ? ? ? FF 76 0C 8D 48 04 E8");
+
+	// Skip the opcode, read rel32 address
+	auto iItemSystemOffset = *reinterpret_cast<int32_t*>(dwSigAddress + 1);
+	// Add the offset to the end of the instruction
+	auto pItemSystem = reinterpret_cast<CCStrike15ItemSystem * (*)()>(dwSigAddress + 5 + iItemSystemOffset);
+
+	// Skip the instructions between, skip the opcode, read rel32 address
+	auto iGetPaintKitDefinitionOffset = *reinterpret_cast<int32_t*>(dwSigAddress + 11 + 1);
+	// Add the offset to the end of the instruction
+	auto pGetPaintKitDefinition = reinterpret_cast<CPaintKit * (__thiscall*)(int id)>(dwSigAddress + 11 + 5 + iGetPaintKitDefinitionOffset);
+
+	// The last offset is nHeadElement, we need that
+
+	// push    ebp
+	// mov     ebp, esp
+	// sub     esp, 0Ch
+	// mov     eax, [ecx+298h]
+
+	// Skip instructions, skip opcode, read offset
+	auto dwStartElementOffset = *reinterpret_cast<uint32_t*>(uintptr_t(pGetPaintKitDefinition) + 8 + 2);
+
+	// Calculate head base from nStartElement's offset
+	auto dwHeadOffset = dwStartElementOffset - 12;
+
+	// Skip VTable, first member variable of ItemSystem is ItemSchema
+	auto pItemSchema = reinterpret_cast<CCStrike15ItemSchema*>(uintptr_t(pItemSystem()) + sizeof(void*));
+
+	auto pHead = reinterpret_cast<Head_t*>(uintptr_t(pItemSchema) + dwHeadOffset);
+
+	for (int i = 0; i <= pHead->nLastElement; ++i)
+	{
+		auto pKit = pHead->pMemory[i].pPaintKit;
+
+		if (pKit->iIndex == 9001)
+			continue;
+
+		const wchar_t* wstrName = Localize->Find(pKit->Tag.szBuffer + 1);
+		if (pKit->iIndex > 10000)
+			vecKits_gloves.push_back(PaintKit{ pKit->iIndex, wstrName });
+	}
+
+	return vecKits_gloves;
+}
+
+std::vector<std::string> CSkinChanger::GetUIPaintKits() {
+	std::vector<std::string> result{};
+
+	auto kits = GetPaintKits();
+	for (auto& model : kits)
+		result.emplace_back(wchar_to_UTF8(model.name));
+
+	return result;
+}
+
+std::vector<std::string> CSkinChanger::GetUIPaintKitsGloves() {
+	std::vector<std::string> result{};
+
+	auto kits = GetGlovePaintKits();
+	for (auto& model : kits)
+		result.emplace_back(wchar_to_UTF8(model.name));
+
+	return result;
 }
 
 std::vector<std::string> CSkinChanger::GetUIKnifeModels() {
@@ -46,6 +261,25 @@ bool CSkinChanger::ApplyKnifeModel( CAttributableItem* weapon, const char* model
 
 	if (world_model_weapon)
 		world_model_weapon->SetModelIndex(model_index + 1);
+
+	return true;
+}
+
+bool CSkinChanger::ApplyKnifeSkin(CAttributableItem* pWeapon, const char* szModel, int iItemDefIndex, int iPaintKit, int iEntityQuality, float flFallbackWear)
+{
+	pWeapon->m_iItemDefinitionIndex() = iItemDefIndex;
+	pWeapon->m_iEntityQuality() = iEntityQuality;
+	pWeapon->m_nModelIndex() = ModelInfoClient->GetModelIndex(szModel);
+
+	CBaseHandle pWorldModelHandle = pWeapon->m_hWeaponWorldModel();
+	if (!pWorldModelHandle)
+		return false;
+
+	CBaseCombatWeapon* pWorldModel = (CBaseCombatWeapon*)(EntityList->GetClientEntityFromHandle(pWorldModelHandle));
+	if (!pWorldModel)
+		return false;
+
+	pWorldModel->m_hWeaponWorldModel() = ModelInfoClient->GetModelIndex(szModel) + 1;
 
 	return true;
 }
@@ -425,11 +659,35 @@ void CSkinChanger::AgentChanger( ) {
 	}
 }
 
+static void* GetWearableCreateFn()
+{
+	auto clazz = Client->GetAllClasses();
+
+	while (strcmp(clazz->m_pNetworkName, "CEconWearable"))
+		clazz = clazz->m_pNext;
+
+	return clazz->m_pCreateFn;
+}
+
+void CSkinChanger::ApplyGlove(CAttributableItem* pGlove)
+{
+	pGlove->m_iItemDefinitionIndex() = GloveCT;
+
+	pGlove->m_nFallbackPaintKit() = 0;
+	pGlove->m_nFallbackSeed() = 0.0000001f;
+
+	pGlove->m_OriginalOwnerXuidHigh() = -1;
+
+	pGlove->m_nModelIndex() = ModelInfoClient->GetModelIndex("models/weapons/v_models/arms/glove_motorcycle/v_glove_motorcycle.mdl");
+	pGlove->net_pre_data_update(0);
+}
+
 void CSkinChanger::Run( bool frame_end ) {
 	if ( !Cheat.InGame || !Cheat.LocalPlayer || !config.skins.override_knife->get() )
 		return;
 
 	auto my_weapons = Cheat.LocalPlayer->m_hMyWeapons( );
+
 	for ( size_t i = 0; my_weapons[ i ] != 0xFFFFFFFF; i++ ) {
 		auto weapon = reinterpret_cast< CAttributableItem* >( EntityList->GetClientEntityFromHandle( my_weapons[ i ] ) );
 
@@ -440,6 +698,24 @@ void CSkinChanger::Run( bool frame_end ) {
 		if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
 			ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );
 		}
+
+		auto cs_weapon = reinterpret_cast<CAttributableItem*>(Cheat.LocalPlayer->GetActiveWeapon());
+
+		cs_weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
+
+		player_info_t info;
+
+		EngineClient->GetPlayerInfo(Cheat.LocalPlayer->EntIndex(), &info);
+
+		// fix stattrak ownership.
+		cs_weapon->m_iAccountID() = info.xuid_low;
+
+		// fix stattrak in hud.
+		if (cs_weapon->m_nFallbackStatTrak() >= 0)
+			cs_weapon->m_iEntityQuality() = 9;
+
+		// force use fallback values.
+		cs_weapon->m_OriginalOwnerXuidHigh() = -1;
 	}
 }
 

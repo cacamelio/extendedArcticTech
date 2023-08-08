@@ -344,6 +344,7 @@ public:
 	NETVAR(m_nFallbackStatTrak, int, "DT_BaseAttributableItem", "m_nFallbackStatTrak")
 	NETVAR(m_nFallbackPaintKit, int, "DT_BaseAttributableItem", "m_nFallbackPaintKit")
 	NETVAR(m_nFallbackSeed, int, "DT_BaseAttributableItem", "m_nFallbackSeed")
+	NETVAR(m_iAccountID, int, "DT_BaseAttributableItem", "m_iAccountID")
 	NETVAR(m_iEntityQuality, int, "DT_BaseAttributableItem", "m_iEntityQuality")
 	NETVAR(m_flFallbackWear, float, "DT_BaseAttributableItem", "m_flFallbackWear")
 	NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")

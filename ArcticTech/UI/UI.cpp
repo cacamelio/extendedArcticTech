@@ -227,6 +227,7 @@ void CMenu::SetupUI() {
 
 
 	config.skins.paint_kits = skins->AddComboBox("Paint kits", SkinChanger->GetUIPaintKits());
+	config.skins.glove_paint_kits = skins->AddComboBox("Glove Paint kits", SkinChanger->GetUIPaintKitsGloves());
 
 	config.skins.override_knife = models->AddCheckBox("Override knife");
 	config.skins.knife_model = models->AddComboBox("Knife model", SkinChanger->GetUIKnifeModels());
@@ -369,6 +370,16 @@ void CMenu::SetupUI() {
 
 	config.skins.knife_model->SetCallback([]() {
 		Utils::ForceFullUpdate();
+	});
+
+	config.skins.paint_kits->SetCallback([](){
+		Utils::ForceFullUpdate();
+		SkinChanger->UpdateSkins();
+	});
+
+	config.skins.glove_paint_kits->SetCallback([]() {
+		Utils::ForceFullUpdate();
+		SkinChanger->UpdateSkins();
 	});
 
 	auto world_fog_callback = []() {

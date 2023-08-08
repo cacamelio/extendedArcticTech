@@ -95,6 +95,7 @@ struct CPaintKit
 	char pad_0x0054[0x8C];	//0x0054
 }; //Size=0x00E0
 
+
 class CSkinChanger {
 	std::vector<KnifeModel_t> knife_models;
 	RecvVarProxy_t fnSequenceProxyFn = nullptr;
@@ -102,10 +103,15 @@ class CSkinChanger {
 public:
 	void LoadKnifeModels();
 	void InitPaintkit();
+	std::vector<PaintKit> vecKits;
+	std::vector<PaintKit> vecKits_gloves;
 	std::vector<PaintKit> GetPaintKits();
+	std::vector<PaintKit> GetGlovePaintKits();
 	std::vector<std::string> GetUIPaintKits();
+	std::vector<std::string> GetUIPaintKitsGloves();
 	std::vector<std::string> GetUIKnifeModels();
 	bool ApplyKnifeModel( CAttributableItem* weapon, const char* model );
+	bool ApplyKnifeSkin(CAttributableItem* pWeapon, const char* szModel, int iItemDefIndex, int iPaintKit, int iEntityQuality, float flFallbackWear);
 	static void SetViewModelSequence( const CRecvProxyData* pDataConst, void* pStruct, void* pOut );
 	static void Hooked_RecvProxy_Viewmodel( CRecvProxyData* pData, void* pStruct, void* pOut );
 	void FixViewModelSequence();
@@ -215,6 +221,8 @@ public:
 		"models/player/holiday/facemasks/facemask_wolf.mdl",
 		"models/player/holiday/facemasks/porcelain_doll.mdl",
 	};
+
+	void ApplyGlove(CAttributableItem* pGlove);
 
 	void Run( bool frame_end );
 };
