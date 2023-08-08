@@ -3,6 +3,8 @@
 #include "../../ShotManager/ShotManager.h"
 #include "../../RageBot/LagCompensation.h"
 #include "../../../SDK/Requests.h"
+#include "../../../SDK/NetMessages.h"
+#include "../../Visuals/ESP.h"
 
 std::vector<UILuaCallback_t> g_ui_lua_callbacks;
 
@@ -266,6 +268,8 @@ namespace api {
 				Lua->hooks.registerHook(LUA_GAMEEVENTS, script_id, func);
 			else if (event_name == "unload")
 				Lua->hooks.registerHook(LUA_UNLOAD, script_id, func);
+			else if (event_name == "voice_message")
+				Lua->hooks.registerHook(LUA_VOICE_DATA, script_id, func);
 			else
 				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
 		}
@@ -329,15 +333,13 @@ namespace api {
 	}
 
 	namespace files {
-		std::string read(std::string path, sol::optional<bool> relative) {
-			std::string file_path = relative.value_or(true) ? std::filesystem::current_path().string() + path : path;
-
-			if (!std::filesystem::exists(file_path)) {
-				Console->Error(std::format("files.read: file {} doesn't exists!", file_path));
+		std::string read(std::string path) {
+			if (!std::filesystem::exists(path)) {
+				Console->Error(std::format("files.read: file {} doesn't exists!", path));
 				return "";
 			}
 
-			std::ifstream file(file_path);
+			std::ifstream file(path);
 
 			std::string result;
 			file >> result;
@@ -345,12 +347,20 @@ namespace api {
 			return result;
 		}
 
-		void write(std::string path, std::string data, sol::optional<bool> relative) {
-			std::string file_path = relative.value_or(true) ? std::filesystem::current_path().string() + path : path;
+		void write(std::string path, std::string data) {
+			std::ofstream file(path, std::ofstream::binary);
 
-			std::fstream file(file_path);
+			file.clear();
+			file.write(data.c_str(), data.size());
+			file.close();
+		}
 
-			file << data;
+		void create_directory(std::string path) {
+			std::filesystem::create_directory(path);
+		}
+
+		bool exists(std::string path) {
+			return std::filesystem::exists(path);
 		}
 	}
 
@@ -640,6 +650,41 @@ namespace api {
 			Console->Error("trying to get unknown element");
 		}
 
+		void element_set(sol::this_state state, IBaseWidget* element, sol::object val, sol::optional<int> index) {
+			switch (element->GetType()) {
+			case WidgetType::Checkbox:
+				static_cast<CCheckBox*>(element)->value = val.as<bool>();
+			case WidgetType::ColorPicker: {
+				Color col = val.as<Color>();
+				static_cast<CColorPicker*>(element)->value[0] = col.r / 255.f;
+				static_cast<CColorPicker*>(element)->value[1] = col.g / 255.f;
+				static_cast<CColorPicker*>(element)->value[2] = col.b / 255.f;
+				static_cast<CColorPicker*>(element)->value[3] = col.a / 255.f;
+			}
+			case WidgetType::KeyBind:
+				static_cast<CKeyBind*>(element)->set(val.as<bool>());
+			case WidgetType::SliderInt:
+				static_cast<CSliderInt*>(element)->value = val.as<int>();
+			case WidgetType::SliderFloat:
+				static_cast<CSliderFloat*>(element)->value = val.as<float>();
+			case WidgetType::Combo:
+				static_cast<CComboBox*>(element)->value = val.as<int>();
+			case WidgetType::MultiCombo:
+				static_cast<CMultiCombo*>(element)->value[index.value()] = val.as<bool>();
+			case WidgetType::Input: {
+				ZeroMemory(static_cast<CInputBox*>(element)->buf, 64);
+				std::string inp = val.as<std::string>();
+				memcpy(static_cast<CInputBox*>(element)->buf, inp.c_str(), inp.size());
+			}
+			default:
+				Console->Error("unknown type");
+			}
+		}
+
+		bool is_open() {
+			return Menu->IsOpened();
+		}
+
 		void element_update_list(sol::this_state state, IBaseWidget* element, std::vector<const char*> list) {
 			switch (element->GetType()) {
 			case WidgetType::Combo:
@@ -784,6 +829,21 @@ namespace api {
 	}
 
 	namespace entity {
+		sol::object get(sol::this_state state, int index) {
+			CBaseEntity* result = EntityList->GetClientEntity(index);
+
+			if (!result)
+				return sol::nil;
+
+			if (result->IsPlayer())
+				return sol::make_object(state, reinterpret_cast<CBasePlayer*>(result));
+
+			if (result->IsWeapon())
+				return sol::make_object(state, reinterpret_cast<CBaseCombatWeapon*>(result));
+
+			return sol::make_object(state, result);
+		}
+
 		CBasePlayer* get_local_player() {
 			return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetLocalPlayer()));
 		}
@@ -797,12 +857,12 @@ namespace api {
 			switch (prop.prop->m_RecvType)
 			{
 			case DPT_Int:
-				return sol::make_object(state, *reinterpret_cast<int*>((uintptr_t)ent + prop.offset));
+				return sol::make_object(state, reinterpret_cast<int*>((uintptr_t)ent + prop.offset));
 			case DPT_Float:
-				return sol::make_object(state, *reinterpret_cast<float*>((uintptr_t)ent + prop.offset));
+				return sol::make_object(state, reinterpret_cast<float*>((uintptr_t)ent + prop.offset));
 			case DPT_Vector:
 			case DPT_VectorXY:
-				return sol::make_object(state, *reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset));
+				return sol::make_object(state, reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset));
 			case DPT_String:
 				return sol::make_object(state, reinterpret_cast<char*>((uintptr_t)ent + prop.offset));
 			case DPT_Array: {
@@ -854,6 +914,10 @@ namespace api {
 
 			return collidable->GetCollisionOrigin();
 		}
+
+		void set_icon(CBasePlayer* player, int level) {
+			ESP::IconDisplay(player, level);
+		}
 	}
 
 	namespace network {
@@ -884,7 +948,7 @@ void CLua::Setup() {
 
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
 	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::bit32, sol::lib::ffi, sol::lib::jit, sol::lib::io, sol::lib::utf8);
-
+	
 	// enums
 	lua.new_enum<EDamageGroup>("e_dmg_group", {
 		{"head", EDamageGroup::DAMAGEGROUP_HEAD},
@@ -955,6 +1019,8 @@ void CLua::Setup() {
 
 	lua.new_usertype<CBaseEntity>("entity_t", sol::no_constructor,
 		"ent_index", &CBaseEntity::EntIndex,
+		"get_abs_origin", &CBasePlayer::GetAbsOrigin,
+		"get_abs_angles", &CBasePlayer::GetAbsAngles,
 		"obb_maxs", api::entity::obb_maxs,
 		"obb_mins", api::entity::obb_mins,
 		"collision_origin", api::entity::collision_origin,
@@ -962,26 +1028,17 @@ void CLua::Setup() {
 	);
 
 	lua.new_usertype<CBaseCombatWeapon>("weapon_t", sol::no_constructor,
-		"ent_index", &CBaseCombatWeapon::EntIndex,
 		"weapon_index", &CBaseCombatWeapon::m_iItemDefinitionIndex,
 		"get_inaccuracy", &CBaseCombatWeapon::GetInaccuracy,
 		"get_spread", &CBaseCombatWeapon::GetSpread,
-		"obb_maxs", api::entity::obb_maxs,
-		"obb_mins", api::entity::obb_mins,
-		"collision_origin", api::entity::collision_origin,
-		"__index", api::entity::get_prop
+		sol::base_classes, sol::bases<CBaseEntity>()
 	);
 
 	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor, 
-		"ent_index", &CBasePlayer::EntIndex,
 		"get_name", &CBasePlayer::GetName,
 		"get_active_weapon", &CBasePlayer::GetActiveWeapon,
-		"get_abs_origin", &CBasePlayer::GetAbsOrigin,
-		"get_abs_angles", &CBasePlayer::GetAbsAngles,
-		"obb_maxs", api::entity::obb_maxs,
-		"obb_mins", api::entity::obb_mins,
-		"collision_origin", api::entity::collision_origin,
-		"__index", api::entity::get_prop
+		"set_icon", api::entity::set_icon,
+		sol::base_classes, sol::bases<CBaseEntity>()
 	);
 
 	lua.new_usertype<LagRecord>("lag_record_t", sol::no_constructor,
@@ -1063,6 +1120,19 @@ void CLua::Setup() {
 		"hitgroup", &CGameTrace::hitgroup
 	);
 
+	lua.new_usertype<CSVCMsg_VoiceData_Lua>("voice_data_t", sol::no_constructor,
+		"client", &CSVCMsg_VoiceData_Lua::client,
+		"audible_mask", &CSVCMsg_VoiceData_Lua::audible_mask,
+		"xuid", &CSVCMsg_VoiceData_Lua::xuid,
+		"xuid_low", &CSVCMsg_VoiceData_Lua::xuid_low,
+		"xuid_high", &CSVCMsg_VoiceData_Lua::xuid_high,
+		"format", &CSVCMsg_VoiceData_Lua::format,
+		"sequence_bytes", &CSVCMsg_VoiceData_Lua::sequence_bytes,
+		"section_number", &CSVCMsg_VoiceData_Lua::section_number,
+		"uncompressed_sample_offset", &CSVCMsg_VoiceData_Lua::uncompressed_sample_offset,
+		"get_voice_data", &CSVCMsg_VoiceData_Lua::get_voice_data
+	);
+
 	// _G
 	lua["print"] = api::print;
 	lua["error"] = api::error;
@@ -1077,6 +1147,7 @@ void CLua::Setup() {
 
 	// entity
 	lua.create_named_table("entity",
+		"get", api::entity::get,
 		"get_local_player", api::entity::get_local_player
 	);
 
@@ -1085,7 +1156,8 @@ void CLua::Setup() {
 		"tab", api::ui::tab,
 		"groupbox", api::ui::groupbox,
 		"find_groupbox", api::ui::find_groupbox,
-		"find_item", api::ui::find_item
+		"find_item", api::ui::find_item,
+		"is_open", api::ui::is_open
 	);
 
 	// global vars
@@ -1142,7 +1214,9 @@ void CLua::Setup() {
 
 	lua.create_named_table("files",
 		"read", api::files::read,
-		"write", api::files::write
+		"write", api::files::write,
+		"create_folder", api::files::create_directory,
+		"exists", api::files::exists
 	);
 
 	lua.create_named_table("json", 
@@ -1200,7 +1274,7 @@ void CLua::LoadScript( int id ) {
 	if (scripts[id].loaded)
 		return;
 
-	const std::string path = GetScriptPath( id );
+	const std::string path = GetScriptPath(id);
 
 	if (path == "")
 		return;
@@ -1223,7 +1297,7 @@ void CLua::LoadScript( int id ) {
 
 		return result;
 	};
-	
+
 	lua.script_file(path, env, load_result_func);
 
 	LuaLoadConfig(&script);

@@ -1,5 +1,5 @@
 #include "AntiAim.h"
-#include "../RageBot/DoubleTap.h"
+#include "../RageBot/Exploits.h"
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
 #include <algorithm>
@@ -134,7 +134,7 @@ void CAntiAim::Angles() {
 }
 
 void CAntiAim::Desync() {
-	if (!config.antiaim.angles.body_yaw->get() || DoubleTap->IsShifting() || Cheat.LocalPlayer->m_bIsDefusing())
+	if (!config.antiaim.angles.body_yaw->get() || Exploits->IsShifting() || Cheat.LocalPlayer->m_bIsDefusing())
 		return;
 
 	bool inverter = config.antiaim.angles.inverter->get();

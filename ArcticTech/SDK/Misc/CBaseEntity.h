@@ -257,6 +257,7 @@ public:
 	ICollideable* GetCollideable();
 
 	bool IsPlayer();
+	bool IsWeapon();
 	ClientClass* GetClientClass();
 	const model_t* GetModel();
 	Vector GetAbsOrigin();

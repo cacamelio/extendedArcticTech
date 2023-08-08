@@ -1,9 +1,9 @@
 #include "LagCompensation.h"
 #include "AnimationSystem.h"
+#include "../Misc/Prediction.h"
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
 #include "../AntiAim/AntiAim.h"
-#include "DoubleTap.h"
 #include "../../Utils/Utils.h"
 #include <algorithm>
 #include "../../SDK/NetMessages.h"
@@ -90,7 +90,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = (ClientState->m_ClockDriftMgr.m_nServerTick - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
+			new_record->exploiting = (EnginePrediction->curtime() - pl->m_flSimulationTime()) > GlobalVars->interval_per_tick * 12.f;
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;
@@ -127,7 +127,7 @@ void CLagCompensation::OnNetUpdate() {
 					NetMessages->SendNetMessage((SharedVoiceData_t*)&msg);
 				}
 			}
-			while (records.size() > TIME_TO_TICKS(0.6f)) {
+			while (records.size() > TIME_TO_TICKS(1.f)) {
 				records.pop_front();
 			}
 		}

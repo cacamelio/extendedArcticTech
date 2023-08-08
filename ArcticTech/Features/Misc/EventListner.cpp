@@ -3,7 +3,7 @@
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
 #include "../../Utils/Console.h"
-#include "../RageBot/DoubleTap.h"
+#include "../RageBot/Exploits.h"
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/LagCompensation.h"
 #include "../Visuals/ESP.h"
@@ -63,7 +63,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		if (userid == EngineClient->GetLocalPlayer()) {
 			ctx.reset();
-			DoubleTap->target_tickbase_shift = 0;
+			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
 			config.ragebot.aimbot.peek_assist_keybind->set(false);
 		}

@@ -1,6 +1,5 @@
 #include "AutoPeek.h"
 #include "Prediction.h"
-#include "../RageBot/DoubleTap.h"
 #include "../../SDK/Globals.h"
 #include "../../SDK/Render.h"
 

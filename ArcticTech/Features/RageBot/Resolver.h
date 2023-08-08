@@ -78,6 +78,7 @@ public:
 
 	R_PlayerState	DetectPlayerState(CBasePlayer* player, AnimationLayer* animlayers);
 	R_AntiAimType	DetectAntiAim(CBasePlayer* player, const std::deque<LagRecord>& records);
+	float			FindAvgYaw(CBasePlayer* player, const std::deque<LagRecord>& records);
 
 	void			SetupMoveLayer(CBasePlayer* player);
 	void			SetupResolverLayers(CBasePlayer* player, LagRecord* record);

@@ -69,6 +69,7 @@ public:
 	__forceinline float WeaponInaccuracy() { return weaponInaccuracy; };
 	__forceinline float WeaponSpread() { return weaponSpread; };
 	__forceinline float frametime() { return flOldFrameTime; };
+	__forceinline float curtime() { return flOldCurrentTime; };
 
 	inline local_data_t& GetLocalData(int place) { return local_data[place % MULTIPLAYER_BACKUP]; };
 

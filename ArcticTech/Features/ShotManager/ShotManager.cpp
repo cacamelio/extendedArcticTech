@@ -134,6 +134,7 @@ void CShotManager::OnNetUpdate() {
 		RegisteredShot_t* shot = &*it;
 
 		shot->acked = true;
+		shot->end_pos = shot->impacts.back();
 
 		Vector direction;
 		
@@ -148,10 +149,9 @@ void CShotManager::OnNetUpdate() {
 			shot->angle = Math::VectorAngles(shot->impacts.back() - shot->client_shoot_pos);
 			shot->shoot_pos = shot->client_shoot_pos;
 
-			direction = Math::AngleVectors(shot->client_angle);
+			direction = (shot->end_pos - shot->shoot_pos).Normalized();
 		}
 
-		shot->end_pos = shot->impacts.back();
 
 		if (shot->player_death) {
 			Console->Log("missed shot due to player death");
@@ -223,13 +223,31 @@ void CShotManager::OnNetUpdate() {
 					}
 				}
 				else {
-					if ((shot->hit_point - shot->target_pos).LengthSqr() < 36.f) {
+					if ((shot->hit_point - shot->target_pos).LengthSqr() < 49.f) {
 						it->miss_reason = "damage rejection";
 						Console->ColorPrint("damage rejection\n", Color(255, 20, 20)); // correct naming: sin shluhi s gmom
 					}
 					else {
-						it->miss_reason = "correction";
-						Console->ColorPrint("correction\n", Color(200, 255, 0));
+						auto& records = LagCompensation->records(shot->record->player->EntIndex());
+						bool break_lag_comp = false;
+						for (auto it = records.rbegin(); it != records.rend(); it++) {
+							if (it->m_flSimulationTime < shot->record->m_flSimulationTime)
+								break;
+
+							if (it->breaking_lag_comp) {
+								break_lag_comp = true;
+								break;
+							}
+						}
+
+						if (break_lag_comp) {
+							it->miss_reason = "lag comp failure";
+							Console->ColorPrint("lag comp failure\n", Color(200, 255, 0));
+						}
+						else {
+							it->miss_reason = "correction";
+							Console->ColorPrint("correction\n", Color(200, 255, 0));
+						}
 
 						Resolver->OnMiss(player, shot->record);
 					}

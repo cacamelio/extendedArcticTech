@@ -6,6 +6,10 @@ bool CBaseEntity::IsPlayer() {
 	return CallVFunction<bool(__thiscall*)(CBaseEntity*)>(this, 158)(this);
 }
 
+bool CBaseEntity::IsWeapon() {
+	return CallVFunction<bool(__thiscall*)(CBaseEntity*)>(this, 166)(this);
+}
+
 CBaseEntity* CBaseEntity::m_pMoveParent() {
 	static auto _m_pMoveParent = *(uintptr_t*)Utils::PatternScan("client.dll", "66 90 8B 86 ? ? ? ? 83 F8 FF 74 1A 0F B7 C8 C1 E1 04", 0x4);
 

@@ -70,9 +70,8 @@ void CAnimationSystem::OnCreateMove() {
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
 
 		Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
-		stored_local_anims.poseparams = Cheat.LocalPlayer->m_flPoseParameter();
 
-		Cheat.LocalPlayer->UpdateClientSideAnimation();
+		Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
 
 		if (config.antiaim.misc.animations->get(2))
 			Cheat.LocalPlayer->m_flPoseParameter()[0] = 1.f;

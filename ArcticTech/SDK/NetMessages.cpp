@@ -3,6 +3,7 @@
 #include "../Utils/Utils.h"
 #include "../Utils/Console.h"
 #include "Memory.h"
+#include "../Features/Lua/Bridge/Bridge.h"
 
 #include "Globals.h"
 
@@ -50,6 +51,29 @@ void CNetMessages::SendNetMessage(SharedVoiceData_t* data) {
 bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	if (msg.client + 1 == EngineClient->GetLocalPlayer())
 		return true;
+
+	CSVCMsg_VoiceData_Lua lua_voice_data;
+	lua_voice_data.client = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(msg.client + 1));
+	lua_voice_data.audible_mask = msg.audible_mask;
+	lua_voice_data.xuid = msg.xuid;
+	lua_voice_data.xuid_low = msg.xuid_low;
+	lua_voice_data.xuid_high = msg.xuid_high;
+	lua_voice_data.voice_data = msg.voice_data;
+	lua_voice_data.proximity = msg.proximity;
+	lua_voice_data.caster = msg.caster;
+	lua_voice_data.sequence_bytes = msg.sequence_bytes;
+	lua_voice_data.section_number = msg.section_number;
+	lua_voice_data.uncompressed_sample_offset = msg.uncompressed_sample_offset;
+	lua_voice_data.format = msg.format;
+
+	for (auto& func : Lua->hooks.getHooks(LUA_VOICE_DATA)) {
+		auto prot_func_res = func.func(lua_voice_data);
+
+		if (!prot_func_res.valid()) {
+			sol::error error = prot_func_res;
+			Console->Error(error.what());
+		}
+	}
 
 	for (auto handler : m_voiceDataCallbacks)
 		handler(msg);

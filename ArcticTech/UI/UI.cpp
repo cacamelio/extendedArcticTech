@@ -42,6 +42,8 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
 	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport"});
+	config.ragebot.aimbot.hide_shots = aimbot->AddCheckBox("Hide Shots");
+	config.ragebot.aimbot.hide_shots_key = aimbot->AddKeyBind("Hide Shots");
 	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
 	config.ragebot.aimbot.force_body_aim = aimbot->AddKeyBind("Force Body Aim");
 	config.ragebot.aimbot.minimum_damage_override_key = aimbot->AddKeyBind("Min. damage override");
@@ -176,7 +178,7 @@ void CMenu::SetupUI() {
 	config.visuals.other_esp.grenade_proximity_warning = other_esp->AddCheckBox("Grenade proximity warning");
 	config.visuals.other_esp.grenade_predict_color = other_esp->AddColorPicker("Grenade predict color");
 	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov", "Smoke" });
-	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Double tap", "Min. damage", "Body aim", "Lag Compensation", "Roll Resolver"});
+	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Exploits", "Min. damage", "Body aim", "Lag Compensation", "Roll Resolver"});
 
 	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
 	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites" });

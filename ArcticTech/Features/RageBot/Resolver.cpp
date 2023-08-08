@@ -56,7 +56,7 @@ R_PlayerState CResolver::DetectPlayerState(CBasePlayer* player, AnimationLayer* 
 
 	CCSGOPlayerAnimationState* animstate = player->GetAnimstate();
 
-	if (player->m_vecVelocity().Length2DSqr() > 200.f && animstate->flWalkToRunTransition > 0.5f && animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate > 0.0001f)
+	if (player->m_vecVelocity().Length2DSqr() > 256.f && animstate->flWalkToRunTransition > 0.8f && animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate > 0.0001f)
 		return R_PlayerState::MOVING;
 
 	return R_PlayerState::STANDING;
@@ -70,7 +70,7 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 	float avgDelta = 0.f;
 	float prevEyeYaw = player->m_angEyeAngles().yaw;
 
-	for (int i = records.size() - 2; i > records.size() - 5; i--) {
+	for (int i = records.size() - 2; i > records.size() - 6; i--) {
 		const LagRecord* record = &records.at(i);
 		float eyeYaw = record->m_viewAngle.yaw;
 
@@ -80,7 +80,7 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 
 		float maxDeltaDiff = record->m_nChokedTicks > 2 ? 30 : 15;
 
-		if (std::abs(delta - 60.f) < maxDeltaDiff && delta > 30.f)
+		if (delta > 30.f)
 			jitteredRecords++;
 
 		prevEyeYaw = eyeYaw;
@@ -93,10 +93,6 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 		return R_AntiAimType::STATIC;
 
 	return R_AntiAimType::UNKNOWN;
-}
-
-void CResolver::SetupMoveLayer(CBasePlayer* player) {
-
 }
 
 void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
@@ -203,9 +199,10 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	SetupResolverLayers(player, record);
 
 	record->resolver_data.resolver_type = ResolverType::NONE;
-	record->resolver_data.delta_center = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight - record->resolver_data.animlayers[0][ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight) * 1000.f;
-	record->resolver_data.delta_positive = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight - record->resolver_data.animlayers[1][ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight) * 1000.f;
-	record->resolver_data.delta_negative = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight - record->resolver_data.animlayers[2][ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight) * 1000.f;
+
+	record->resolver_data.delta_center = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[0][ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1000.f;
+	record->resolver_data.delta_positive = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[1][ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1000.f;
+	record->resolver_data.delta_negative = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[2][ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1000.f;
 
 	float flLastDelta = 1000.f;
 
@@ -251,7 +248,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	}
 
 	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
-	if (bf_data->use && record->resolver_data.antiaim_type != R_AntiAimType::JITTER && GlobalVars->curtime - bf_data->last_shot < 2.f) { // don't bruteforce if data is too old or player using jitter antiaim
+	if (bf_data->use && record->resolver_data.antiaim_type != R_AntiAimType::JITTER && GlobalVars->realtime - bf_data->last_shot < 2.f) { // don't bruteforce if data is too old or player using jitter antiaim
 		record->resolver_data.side = bf_data->current_side;
 		record->resolver_data.resolver_type = ResolverType::BRUTEFORCE;
 	}
@@ -282,7 +279,7 @@ void CResolver::OnMiss(CBasePlayer* player, LagRecord* record) {
 	}
 
 	bf_data->use = true;
-	bf_data->last_shot = GlobalVars->curtime;
+	bf_data->last_shot = GlobalVars->realtime;
 }
 
 void CResolver::OnHit(CBasePlayer* player, LagRecord* record) {
@@ -290,5 +287,5 @@ void CResolver::OnHit(CBasePlayer* player, LagRecord* record) {
 
 	bf_data->use = true;
 	bf_data->current_side = record->resolver_data.side;
-	bf_data->last_shot = GlobalVars->curtime;
+	bf_data->last_shot = GlobalVars->realtime;
 }

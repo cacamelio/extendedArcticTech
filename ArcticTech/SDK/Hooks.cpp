@@ -18,7 +18,7 @@
 #include "../Features/Misc/Prediction.h"
 #include "../Features/AntiAim/AntiAim.h"
 #include "../Features/RageBot/LagCompensation.h"
-#include "../Features/RageBot/DoubleTap.h"
+#include "../Features/RageBot/Exploits.h"
 #include "../Features/Misc/AutoPeek.h"
 #include "../Features/RageBot/Ragebot.h"
 #include "../Features/RageBot/AutoWall.h"
@@ -153,7 +153,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	Miscelleaneus::Clantag();
 
-	DoubleTap->DefenseiveThisTick() = false;
+	Exploits->DefenseiveThisTick() = false;
 
 	if (!cmd || !cmd->command_number || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return;
@@ -194,7 +194,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	Miscelleaneus::AutoStrafe();
 
 
-	if (DoubleTap->IsShifting()) {
+	if (Exploits->IsShifting()) {
 		if (ClientState->m_nDeltaTick > 0)
 			Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
 
@@ -236,7 +236,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	ctx.is_peeking = AntiAim->IsPeeking();
 
 	if (ctx.is_peeking && config.ragebot.aimbot.doubletap_options->get(1))
-		DoubleTap->DefenseiveThisTick() = true;
+		Exploits->DefenseiveThisTick() = true;
 
 	AntiAim->SlowWalk();
 
@@ -260,16 +260,13 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	}
 
 	cmd->buttons = lua_cmd.buttons;
-	DoubleTap->AllowDefensive() = lua_cmd.allow_defensive;
+	Exploits->AllowDefensive() = lua_cmd.allow_defensive;
 
 	if (lua_cmd.override_defensive) {
-		DoubleTap->DefenseiveThisTick() = lua_cmd.override_defensive.as<bool>();
+		Exploits->DefenseiveThisTick() = lua_cmd.override_defensive.as<bool>();
 	}
 
-	DoubleTap->DefensiveDoubletap();
-
-	ctx.lc_exploit_prev = ctx.lc_exploit;
-	ctx.lc_exploit = DoubleTap->ShouldBreakLC();
+	Exploits->DefensiveDoubletap();
 
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
@@ -286,8 +283,12 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (weapon->ShootingWeapon() && !weapon->CanShoot())
 		cmd->buttons &= ~IN_ATTACK;
 
-	if (weapon->ShootingWeapon() && weapon->CanShoot() && cmd->buttons & IN_ATTACK)
-		DoubleTap->ForceTeleport();
+	if (weapon->ShootingWeapon() && weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
+		if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
+			Exploits->ForceTeleport();
+		else if (Exploits->GetExploitType() == CExploits::E_HideShots)
+			Exploits->HideShot();
+	}
 
 	AntiAim->FakeLag();
 	AntiAim->FakeDuck();
@@ -299,7 +300,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
 
-	if (ctx.send_packet) {
+	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
 		Cheat.thirdpersonAngles = cmd->viewangles;
 		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) > 5)
 			AntiAim->jitter = !AntiAim->jitter;
@@ -314,6 +315,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	EnginePrediction->End();
 
 	// createmove
+
+	ctx.lc_exploit_prev = ctx.lc_exploit;
+	ctx.lc_exploit = Exploits->ShouldBreakLC();
 
 	if (ctx.lc_exploit && !ctx.lc_exploit_prev)
 		ctx.lc_exploit_charge = cmd->command_number;
@@ -402,7 +406,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 	static auto oLevelShutdown = (void(__thiscall*)(IBaseClientDLL*))Hooks::ClientVMT->GetOriginal(7);
 
-	DoubleTap->target_tickbase_shift = ctx.tickbase_shift = 0;
+	Exploits->target_tickbase_shift = ctx.tickbase_shift = 0;
 	ctx.reset();
 	LagCompensation->Reset();
 	AnimationSystem->ResetInterpolation();
@@ -548,7 +552,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	}
 
-	if (Cheat.InGame && Cheat.LocalPlayer && DoubleTap->ShouldCharge())
+	if (Cheat.InGame && Cheat.LocalPlayer && Exploits->ShouldCharge())
 		GlobalVars->interpolation_amount = 0.f;
 
 	AnimationSystem->FrameStageNotify(stage);
@@ -570,7 +574,7 @@ bool __fastcall hkShouldSkipAnimationFrame(void* thisptr, void* edx) {
 }
 
 bool __fastcall hkShouldInterpolate(CBasePlayer* thisptr, void* edx) {
-	if (!DoubleTap->ShouldCharge() || thisptr != Cheat.LocalPlayer)
+	if (!Exploits->ShouldCharge() || thisptr != Cheat.LocalPlayer)
 		return oShouldInterpolate(thisptr, edx);
 
 	AnimationSystem->DisableInterpolationFlags(thisptr);
@@ -665,10 +669,12 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
+	int max_ticbase_shift = Exploits->MaxTickbaseShift();
+
 	if (ctx.lc_exploit_shift == cmd->command_number)
-		player->m_nTickBase() += DoubleTap->TargetTickbaseShift() > 0 ? 14 : 12;
+		player->m_nTickBase() += Exploits->TargetTickbaseShift() > 0 ? max_ticbase_shift : max_ticbase_shift - 2;
 	if (ctx.lc_exploit_charge == cmd->command_number)
-		player->m_nTickBase() -= 14;
+		player->m_nTickBase() -= max_ticbase_shift;
 
 	const int backup_tickbase = player->m_nTickBase();
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
@@ -708,7 +714,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 
 	auto& local_data = EnginePrediction->GetLocalData(c_ctx->command_number);
 
-	if (c_ctx->command_number == DoubleTap->charged_command + 1) {
+	if (c_ctx->command_number == Exploits->charged_command + 1) {
 		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick + 1;
 		//EnginePrediction->RestoreNetvars(last_simulated_tick % 150);
 	}
@@ -775,9 +781,9 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	auto nc = ClientState->m_NetChannel;
 	int out_seq_nr = nc ? nc->m_nOutSequenceNr : 0;
 
-	DoubleTap->Run();
+	Exploits->Run();
 
-	if (DoubleTap->ShouldCharge()) {
+	if (Exploits->ShouldCharge()) {
 		ctx.tickbase_shift++;
 		ctx.shifted_last_tick++;
 		return;
@@ -785,7 +791,7 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 
 	oCL_Move(accamulatedExtraSamples, bFinalTick);
 
-	DoubleTap->HandleTeleport(oCL_Move, accamulatedExtraSamples);
+	Exploits->HandleTeleport(oCL_Move, accamulatedExtraSamples);
 }
 
 QAngle* __fastcall hkGetEyeAngles(CBasePlayer* thisptr, void* edx) {
@@ -908,7 +914,7 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 }
 
 bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !DoubleTap->ShouldBreakLC())
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !Exploits->ShouldBreakLC())
 		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
 
 	if (from != -1)
@@ -920,7 +926,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	auto total_new_commands = 16;
+	auto total_new_commands = Exploits->MaxTickbaseShift() + 2;
 
 	from = -1;
 

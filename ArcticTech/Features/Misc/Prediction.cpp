@@ -1,5 +1,4 @@
 #include "Prediction.h"
-#include "../RageBot/DoubleTap.h"
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
 

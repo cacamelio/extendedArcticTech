@@ -180,7 +180,7 @@
     <ClCompile Include="Features\RageBot\AutoWall.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Features\RageBot\DoubleTap.cpp">
+    <ClCompile Include="Features\RageBot\Exploits.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Features\RageBot\LagCompensation.cpp">
@@ -485,7 +485,7 @@
     <ClInclude Include="Features\RageBot\AutoWall.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Features\RageBot\DoubleTap.h">
+    <ClInclude Include="Features\RageBot\Exploits.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Features\RageBot\LagCompensation.h">

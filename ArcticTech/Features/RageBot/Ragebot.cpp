@@ -6,7 +6,7 @@
 #include "../../Utils/Utils.h"
 #include <algorithm>
 #include "../Misc/AutoPeek.h"
-#include "DoubleTap.h"
+#include "Exploits.h"
 #include "../../Utils/Console.h"
 #include "../ShotManager/ShotManager.h"
 #include "../Visuals/Chams.h"
@@ -476,7 +476,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 			});
 
 			if (bullet.damage > 5.f)
-				DoubleTap->block_charge = true;
+				Exploits->block_charge = true;
 		}
 	}
 
@@ -501,7 +501,7 @@ void CRagebot::Run() {
 	if (!config.ragebot.aimbot.enabled->get())
 		return;
 
-	if (DoubleTap->IsShifting()) {
+	if (Exploits->IsShifting()) {
 		if (doubletap_stop) {
 			float current_vel = Math::Q_sqrt(ctx.cmd->sidemove * ctx.cmd->sidemove + ctx.cmd->forwardmove + ctx.cmd->forwardmove);
 			const float max_speed = doubletap_stop_speed * 0.75f;
@@ -608,7 +608,7 @@ void CRagebot::Run() {
 			if (settings.auto_stop->get(1) && (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.01f))) {
 				should_autostop = true;
 			}
-			DoubleTap->block_charge = true;
+			Exploits->block_charge = true;
 		}
 	}
 
@@ -632,7 +632,10 @@ void CRagebot::Run() {
 		doubletap_stop_speed = active_weapon->MaxSpeed() * 0.3f;
 	}
 
-	DoubleTap->ForceTeleport();
+	if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
+		Exploits->ForceTeleport();
+	else if (Exploits->GetExploitType() == CExploits::E_HideShots)
+		Exploits->HideShot();
 	if (!config.antiaim.misc.fake_duck->get())
 		ctx.send_packet = true;
 

@@ -175,7 +175,7 @@
     <ClCompile Include="Features\Misc\Prediction.cpp" />
     <ClCompile Include="Features\RageBot\AnimationSystem.cpp" />
     <ClCompile Include="Features\RageBot\AutoWall.cpp" />
-    <ClCompile Include="Features\RageBot\DoubleTap.cpp" />
+    <ClCompile Include="Features\RageBot\Exploits.cpp" />
     <ClCompile Include="Features\RageBot\LagCompensation.cpp" />
     <ClCompile Include="Features\RageBot\Ragebot.cpp" />
     <ClCompile Include="Features\RageBot\Resolver.cpp" />
@@ -236,7 +236,7 @@
     <ClInclude Include="Features\Misc\Prediction.h" />
     <ClInclude Include="Features\RageBot\AnimationSystem.h" />
     <ClInclude Include="Features\RageBot\AutoWall.h" />
-    <ClInclude Include="Features\RageBot\DoubleTap.h" />
+    <ClInclude Include="Features\RageBot\Exploits.h" />
     <ClInclude Include="Features\RageBot\LagCompensation.h" />
     <ClInclude Include="Features\RageBot\Ragebot.h" />
     <ClInclude Include="Features\RageBot\Resolver.h" />

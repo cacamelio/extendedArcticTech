@@ -4,7 +4,7 @@
 #include "../../SDK/Config.h"
 #include "../../SDK/Globals.h"
 
-#include "../RageBot/DoubleTap.h"
+#include "../RageBot/Exploits.h"
 
 
 CIndicators* Indicators = new CIndicators;
@@ -34,12 +34,12 @@ void CIndicators::Draw() {
 		AddIndicator("RR", Color(240));
 	}
 
-	if (config.visuals.other_esp.indicators->get(3)) {
+	if (config.visuals.other_esp.indicators->get(3) && Exploits->GetExploitType() != CExploits::E_HideShots) {
 		if (ctx.tickbase_shift == 0 && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 			AddIndicator("LC", ctx.breaking_lag_compensation ? Color(30, 220, 30) : Color(220, 30, 30));
 		}
-		else if (ctx.tickbase_shift > 0 && ctx.tickbase_shift == DoubleTap->TargetTickbaseShift() && config.ragebot.aimbot.doubletap_options->get(0)) {
-			AddIndicator("LC", DoubleTap->IsDefensiveActive() ? Color(30, 220, 30) : Color(240));
+		else if (ctx.tickbase_shift > 0 && ctx.tickbase_shift == Exploits->TargetTickbaseShift() && config.ragebot.aimbot.doubletap_options->get(0)) {
+			AddIndicator("LC", Exploits->IsDefensiveActive() ? Color(30, 220, 30) : Color(240));
 		}
 	}
 
@@ -49,6 +49,10 @@ void CIndicators::Draw() {
 	if (config.ragebot.aimbot.minimum_damage_override_key->get() && config.visuals.other_esp.indicators->get(1))
 		AddIndicator("DMG", Color(240));
 
-	if (config.ragebot.aimbot.doubletap->get() && config.visuals.other_esp.indicators->get(0))
-		AddIndicator("DT", Color(220, 30, 30).lerp(Color(240), DoubleTap->TargetTickbaseShift() > 0 ? float(ctx.tickbase_shift) / float(DoubleTap->TargetTickbaseShift()) : 0));
+	if (config.visuals.other_esp.indicators->get(0)) {
+		if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
+			AddIndicator("DT", Color(220, 30, 30).lerp(Color(240), Exploits->TargetTickbaseShift() > 0 ? float(ctx.tickbase_shift) / float(Exploits->TargetTickbaseShift()) : 0));
+		else if (Exploits->GetExploitType() == CExploits::E_HideShots)
+			AddIndicator("HS", Color(220, 30, 30).lerp(Color(240), Exploits->TargetTickbaseShift() > 0 ? float(ctx.tickbase_shift) / float(Exploits->TargetTickbaseShift()) : 0));
+	}
 }

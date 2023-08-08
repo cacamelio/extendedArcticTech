@@ -75,10 +75,35 @@ public:
 	std::string* voice_data;
 	bool proximity;
 	bool caster;
+	char pad_30[2];
 	int format;
 	int sequence_bytes;
 	uint32_t section_number;
 	uint32_t uncompressed_sample_offset;
+
+	std::string get_voice_data() {
+		return *voice_data;
+	}
+};
+
+class CBasePlayer;
+struct CSVCMsg_VoiceData_Lua {
+	CBasePlayer* client;
+	int audible_mask;
+	uint64_t xuid;
+	uint32_t xuid_low;
+	uint32_t xuid_high;
+	std::string* voice_data;
+	bool proximity;
+	bool caster;
+	int format;
+	int sequence_bytes;
+	uint32_t section_number;
+	uint32_t uncompressed_sample_offset;
+
+	std::string get_voice_data() {
+		return *voice_data;
+	}
 };
 
 struct SharedVoiceData_t {

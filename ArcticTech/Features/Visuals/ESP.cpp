@@ -195,11 +195,6 @@ void ESP::DrawPlayer(int id) {
 	DrawName(info);
 	DrawFlags(info);
 	DrawWeapon(info);
-	
-	player_info_t pinfo;
-	EngineClient->GetPlayerInfo(id, &pinfo);
-	if (ctx.arctic_users.contains(pinfo.iSteamID))
-		IconDisplay( player, 2221 );
 }
 
 void ESP::DrawBox(ESPInfo_t info) {

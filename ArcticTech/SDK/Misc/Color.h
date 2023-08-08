@@ -162,6 +162,11 @@ public:
 		a = int(a_ * 255.f + 0.5f);
 	}
 
+	float* to_fraction() {
+		float result[4] = { r / 255.f, g / 255.f, b / 255.f, a / 255.f };
+		return result;
+	}
+
 	int to_int32() const {
 		return *(int*)this;
 	}
