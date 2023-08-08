@@ -627,6 +627,10 @@ namespace api {
 			return found_item;
 		}
 
+		std::string element_get_name(sol::this_state state, IBaseWidget* widget) {
+			return widget->name;
+		}
+
 		sol::object element_get(sol::this_state state, IBaseWidget* element, sol::optional<int> index) {
 			switch (element->GetType()) {
 			case WidgetType::Checkbox:
@@ -951,7 +955,7 @@ void CLua::Setup() {
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts/cfg");
 
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
-	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::bit32, sol::lib::ffi, sol::lib::jit, sol::lib::io, sol::lib::utf8);
+	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package);
 	
 	// enums
 	lua.new_enum<EDamageGroup>("e_dmg_group", {
@@ -980,6 +984,7 @@ void CLua::Setup() {
 	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor, 
 		"set_callback", api::ui::element_set_callback,
 		"set_visible", api::ui::element_set_visible,
+		"get_name", api::ui::element_get_name,
 		"get", api::ui::element_get,
 		"update_list", api::ui::element_update_list
 	);
