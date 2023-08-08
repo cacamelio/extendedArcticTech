@@ -139,8 +139,19 @@ public:
 			return "";
 		return elements[value];
 	};
-	void UpdateList(const std::vector<const char*>& new_el) { 
-		elements = new_el; 
+	void UpdateList(const std::vector<std::string>& new_el) { 
+		for (auto st : elements)
+			delete[] st;
+
+		std::vector<const char*> elems;
+		for (auto st : new_el) {
+			char* buf = new char[st.size() + 1];
+			memcpy(buf, st.c_str(), st.size());
+			buf[st.size()] = 0;
+			elems.push_back(buf);
+		}
+
+		elements = elems;
 	};
 
 	virtual WidgetType GetType() { return WidgetType::Combo; };
@@ -153,8 +164,19 @@ public:
 	bool value[32];
 
 	bool get(int i) { return value[i]; };
-	void UpdateList(const std::vector<const char*>& new_el) { 
-		elements = new_el;
+	void UpdateList(const std::vector<std::string>& new_el) { 
+		for (auto st : elements)
+			delete[] st;
+
+		std::vector<const char*> elems;
+		for (auto st : new_el) {
+			char* buf = new char[st.size() + 1];
+			memcpy(buf, st.c_str(), st.size());
+			buf[st.size()] = 0;
+			elems.push_back(buf);
+		}
+
+		elements = elems;
 	};
 
 	virtual WidgetType GetType() { return WidgetType::MultiCombo; };
@@ -198,8 +220,8 @@ public:
 	CKeyBind*		AddKeyBind(const std::string& name);
 	CLabel*			AddLabel(const std::string& name);
 	CColorPicker*	AddColorPicker(const std::string& name, Color color = Color(), bool has_alpha = true);
-	CComboBox*		AddComboBox(const std::string& name, std::vector<const char*> items);
-	CMultiCombo*	AddMultiCombo(const std::string& name, std::vector<const char*> items);
+	CComboBox*		AddComboBox(const std::string& name, std::vector<std::string> items);
+	CMultiCombo*	AddMultiCombo(const std::string& name, std::vector<std::string> items);
 	CButton*		AddButton(const std::string& name);
 	CInputBox*		AddInput(const std::string& name, const std::string& init = "", ImGuiInputTextFlags flags = 0);
 };
@@ -238,6 +260,8 @@ private:
 
 	void RecalculateGroupboxes();
 public:
+	std::vector<IBaseWidget*> m_KeyBinds;
+
 	bool			IsOpened() { return m_bMenuOpened; };
 	bool			IsInitialized() { return m_bIsInitialized; };
 
@@ -253,6 +277,7 @@ public:
 	CMenuTab*		FindTab(const std::string& name);
 	CMenuGroupbox*	FindGroupbox(const std::string& tab, const std::string& groupbox);
 	IBaseWidget*	FindItem(const std::string& tab, const std::string& groupbox, const std::string& name, WidgetType type = WidgetType::Any);
+	std::vector<IBaseWidget*> GetKeyBinds();
 	void			RemoveItem(IBaseWidget* item);
 	void			RemoveGroupBox(CMenuGroupbox* gb);
 	void			RemoveTab(CMenuTab* tab);

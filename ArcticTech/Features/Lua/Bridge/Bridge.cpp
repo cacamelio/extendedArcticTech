@@ -685,7 +685,11 @@ namespace api {
 			return Menu->IsOpened();
 		}
 
-		void element_update_list(sol::this_state state, IBaseWidget* element, std::vector<const char*> list) {
+		std::vector<IBaseWidget*> get_binds() {
+			return Menu->GetKeyBinds();
+		}
+
+		void element_update_list(sol::this_state state, IBaseWidget* element, std::vector<std::string> list) {
 			switch (element->GetType()) {
 			case WidgetType::Combo:
 				return static_cast<CComboBox*>(element)->UpdateList(list);
@@ -782,10 +786,10 @@ namespace api {
 		}
 
 		IBaseWidget* combo(sol::this_state state, CMenuGroupbox* self, std::string name, sol::variadic_args elements) {
-			std::vector<const char*> vals;
+			std::vector<std::string> vals;
 			for (auto el : elements) {
 				std::string s = el;
-				vals.push_back(s.c_str());
+				vals.push_back(s);
 			}
 			IBaseWidget* elem = self->AddComboBox(name, vals);
 
@@ -796,10 +800,10 @@ namespace api {
 		}
 
 		IBaseWidget* multicombo(sol::this_state state, CMenuGroupbox* self, std::string name, sol::variadic_args elements) {
-			std::vector<const char*> vals;
+			std::vector<std::string> vals;
 			for (auto el : elements) {
 				std::string s = el;
-				vals.push_back(s.c_str());
+				vals.push_back(s);
 			}
 			IBaseWidget* elem = self->AddMultiCombo(name, vals);
 
@@ -1157,7 +1161,8 @@ void CLua::Setup() {
 		"groupbox", api::ui::groupbox,
 		"find_groupbox", api::ui::find_groupbox,
 		"find_item", api::ui::find_item,
-		"is_open", api::ui::is_open
+		"is_open", api::ui::is_open,
+		"get_binds", api::ui::get_binds
 	);
 
 	// global vars
@@ -1304,9 +1309,7 @@ void CLua::LoadScript( int id ) {
 
 	if (error_load)
 	{
-		script.loaded = false;
-		delete script.env;
-		script.env = nullptr;
+		UnloadScript(id);
 
 		RefreshUI();
 		return;
@@ -1394,11 +1397,11 @@ void CLua::UnloadAll() {
 	}
 }
 
-std::vector<const char*> CLua::GetUIList() {
-	std::vector<const char*> result;
+std::vector<std::string> CLua::GetUIList() {
+	std::vector<std::string> result;
 
 	for (auto& script : scripts) {
-		result.push_back(script.ui_name.c_str());
+		result.push_back(script.ui_name);
 	}
 
 	return result;

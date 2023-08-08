@@ -43,7 +43,7 @@ public:
 	int GetScriptID( std::string name );
 	std::string GetScriptPath( std::string name );
 	std::string GetScriptPath( int id );
-	std::vector<const char*> GetUIList();
+	std::vector<std::string> GetUIList();
 
 	void LoadScript( int id );
 	void UnloadScript( int id );

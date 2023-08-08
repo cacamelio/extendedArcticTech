@@ -295,8 +295,8 @@ public:
         std::filesystem::create_directory(std::filesystem::current_path().string() + "/at");
     }
 
-    std::vector<const char*> GetAllConfigs() {
-        std::vector<const char*> result;
+    std::vector<std::string> GetAllConfigs() {
+        std::vector<std::string> result;
 
         for (const auto& file : std::filesystem::directory_iterator(std::filesystem::current_path().string() + "/at"))
             if (file.path().extension() == ".cfg") {

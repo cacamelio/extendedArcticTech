@@ -411,11 +411,22 @@ IBaseWidget* CMenu::FindItem(const std::string& tab, const std::string& groupbox
     return nullptr;
 }
 
+std::vector<IBaseWidget*> CMenu::GetKeyBinds() {
+    return m_KeyBinds;
+}
+
 void CMenu::RemoveItem(IBaseWidget* widget) {
     CMenuGroupbox* gb = widget->parent;
 
     for (auto it = gb->widgets.begin(); it != gb->widgets.end(); it++) {
         if (*it == widget) {
+            if (widget->GetType() == WidgetType::MultiCombo || widget->GetType() == WidgetType::Combo) {
+                CComboBox* box = reinterpret_cast<CComboBox*>(widget);
+
+                for (auto st : box->elements)
+                    delete[] st;
+            }
+
             gb->widgets.erase(it);
 
             delete widget;
@@ -503,6 +514,7 @@ CKeyBind* CMenuGroupbox::AddKeyBind(const std::string& name) {
     parent_item->additional = item;
 
     widgets.push_back(item);
+    Menu->m_KeyBinds.push_back(item);
 
     return item;
 }
@@ -540,24 +552,40 @@ CColorPicker* CMenuGroupbox::AddColorPicker(const std::string& name, Color init,
     return item;
 }
 
-CComboBox* CMenuGroupbox::AddComboBox(const std::string& name, std::vector<const char*> items) {
+CComboBox* CMenuGroupbox::AddComboBox(const std::string& name, std::vector<std::string> items) {
     CComboBox* item = new CComboBox;
 
     item->name = name;
     item->parent = this;
-    item->elements = items;
+
+    std::vector<const char*> elems;
+    for (auto st : items) {
+        char* buf = new char[st.size() + 1];
+        memcpy(buf, st.c_str(), st.size());
+        buf[st.size()] = 0;
+        elems.push_back(buf);
+    }
+    item->elements = elems;
 
     widgets.push_back(item);
 
     return item;
 }
 
-CMultiCombo* CMenuGroupbox::AddMultiCombo(const std::string& name, std::vector<const char*> items) {
+CMultiCombo* CMenuGroupbox::AddMultiCombo(const std::string& name, std::vector<std::string> items) {
     CMultiCombo* item = new CMultiCombo;
 
     item->name = name;
     item->parent = this;
-    item->elements = items;
+
+    std::vector<const char*> elems;
+    for (auto st : items) {
+        char* buf = new char[st.size() + 1];
+        memcpy(buf, st.c_str(), st.size());
+        buf[st.size()] = 0;
+        elems.push_back(buf);
+    }
+    item->elements = elems;
 
     widgets.push_back(item);
 
