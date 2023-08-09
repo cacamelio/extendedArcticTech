@@ -62,6 +62,49 @@ bool Utils::ThreadJoin(HANDLE thread, DWORD ms) {
     return threadJoin(thread, ms);
 }
 
+std::string Utils::ToUTF8(const std::wstring_view str) {
+    if (str.empty())
+        return {};
+
+    const auto len = WideCharToMultiByte(CP_UTF8, 0, str.data(), str.size(), 0, 0, 0, 0);
+
+    std::string ret{};
+
+    ret.resize(len);
+
+    WideCharToMultiByte(CP_UTF8, 0, str.data(), str.size(), ret.data(), len, 0, 0);
+
+    return ret;
+}
+
+struct hud_weapons_t {
+    std::int32_t* get_weapon_count() {
+        return reinterpret_cast<std::int32_t*>(std::uintptr_t(this) + 0x80);
+    }
+};
+
+template <class C>
+C* Utils::FindHudElement(const char* szName)
+{
+    static auto fn = *reinterpret_cast<DWORD**>(Utils::PatternScan(("client.dll"), ("B9 ? ? ? ? E8 ? ? ? ? 8B 5D 08"), 0x1));
+    static auto find_hud_element = reinterpret_cast<DWORD(__thiscall*)(void*, const char*)>(Utils::PatternScan(("client.dll"), ("55 8B EC 53 8B 5D 08 56 57 8B F9 33 F6 39 77 28")));
+    return (C*)find_hud_element(fn, szName);
+}
+
+void Utils::ForceFullUpdate()
+{
+    const auto fn = reinterpret_cast<std::int32_t(__thiscall*)(void*, std::int32_t)>(Utils::PatternScan(("client.dll"), ("55 8B EC 51 53 56 8B 75 08 8B D9 57 6B")));
+    const auto element = FindHudElement<std::uintptr_t*>(("CCSGO_HudWeaponSelection"));
+    if (!element || !fn) { return; }
+
+    const auto hud_weapons = reinterpret_cast<hud_weapons_t*>(std::uintptr_t(element) - 0xA0);
+    if (!hud_weapons || !*hud_weapons->get_weapon_count()) { return; }
+
+    for (auto i = 0; i < *hud_weapons->get_weapon_count(); i++) {
+        i = fn(hud_weapons, i);
+    }
+}
+
 void Utils::Print(const char* szMessage, ...) {
     static MsgFn fn = (MsgFn)GetProcAddress(GetModuleHandle("tier0.dll"), "Msg");
     char buffer[989];

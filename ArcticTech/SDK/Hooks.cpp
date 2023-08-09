@@ -28,6 +28,7 @@
 #include "../Features/Misc/EventListner.h"
 #include "../Features/Visuals/SkinChanger.h"
 #include "../Features/ShotManager/ShotManager.h"
+#include "../Features/Visuals/PreserveKillfeed.h"
 
 GrenadePrediction NadePrediction;
 
@@ -448,6 +449,11 @@ void __fastcall hkPaintTraverse(IPanel* thisptr, void* edx, unsigned int panel, 
 	static tPaintTraverse oPaintTraverse = (tPaintTraverse)Hooks::PanelVMT->GetOriginal(41);
 	static unsigned int hud_zoom_panel = 0;
 
+	if (!Cheat.LocalPlayer->IsAlive())
+	{
+		KillFeed->ClearDeathNotice = true;
+	}
+
 	if (!hud_zoom_panel) {
 		std::string panelName = VPanel->GetName(panel);
 
@@ -521,7 +527,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
-		SkinChanger->Run(true);
+		SkinChanger->Run(false);
 
 
 		break;
@@ -530,6 +536,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 			World->Modulation();
 			ctx.update_nightmode = false;
 		}
+		SkinChanger->Run(true);
 
 		if (ctx.update_remove_blood) {
 			World->RemoveBlood();
@@ -542,13 +549,14 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
+		KillFeed->Instance();
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
-		SkinChanger->MaskChanger(FRAME_NET_UPDATE_POSTDATAUPDATE_START);
+		SkinChanger->MaskChanger();
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
 		break;

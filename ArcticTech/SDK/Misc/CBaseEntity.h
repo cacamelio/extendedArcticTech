@@ -298,6 +298,45 @@ public:
 
 };
 
+struct item_schema_t {
+	template < typename _key_t, typename _value_t >
+	struct node_t {
+		int			m_prev_id{};
+		int			m_next_id{};
+		char		pad0[8u]{};
+		_key_t		m_key{};
+		_value_t	m_value{};
+	};
+
+	template < typename _key_t, typename _value_t >
+	struct head_t {
+		node_t< _key_t, _value_t >* m_mem{};
+		int							m_alloc_count{};
+		int							m_grow_size{};
+		int							m_start_element{};
+		int							m_next_available{};
+		char						pad0[4u]{};
+		int							m_last_element{};
+	};
+
+	struct str_t {
+		char* m_buffer{};
+		int		m_capacity{};
+		int		m_grow_size{};
+		int		m_length{};
+	};
+
+	struct paint_kit_t {
+		int		m_id{};
+		str_t	m_name{};
+		str_t	m_description{};
+		str_t	m_item_name{};
+	};
+
+	char						pad0[652u]{};
+	head_t< int, paint_kit_t* > m_paint_kits{};
+};
+
 class CAttributableItem : public CBaseEntity {
 public:
 	NETVAR(m_OriginalOwnerXuidLow, int, "DT_BaseAttributableItem", "m_OriginalOwnerXuidLow")
@@ -305,6 +344,7 @@ public:
 	NETVAR(m_nFallbackStatTrak, int, "DT_BaseAttributableItem", "m_nFallbackStatTrak")
 	NETVAR(m_nFallbackPaintKit, int, "DT_BaseAttributableItem", "m_nFallbackPaintKit")
 	NETVAR(m_nFallbackSeed, int, "DT_BaseAttributableItem", "m_nFallbackSeed")
+	NETVAR(m_iAccountID, int, "DT_BaseAttributableItem", "m_iAccountID")
 	NETVAR(m_iEntityQuality, int, "DT_BaseAttributableItem", "m_iEntityQuality")
 	NETVAR(m_flFallbackWear, float, "DT_BaseAttributableItem", "m_flFallbackWear")
 	NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")
