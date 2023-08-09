@@ -186,6 +186,7 @@
     <ClCompile Include="Features\Visuals\Glow.cpp" />
     <ClCompile Include="Features\Visuals\GrenadePrediction.cpp" />
     <ClCompile Include="Features\Visuals\Indicators.cpp" />
+    <ClCompile Include="Features\Visuals\PreserveKillfeed.cpp" />
     <ClCompile Include="Features\Visuals\SkinChanger.cpp" />
     <ClCompile Include="Features\Visuals\World.cpp" />
     <ClCompile Include="ImGui\backends\imgui_impl_dx9.cpp" />
@@ -247,6 +248,7 @@
     <ClInclude Include="Features\Visuals\Glow.h" />
     <ClInclude Include="Features\Visuals\GrenadePrediction.h" />
     <ClInclude Include="Features\Visuals\Indicators.h" />
+    <ClInclude Include="Features\Visuals\PreserveKillfeed.h" />
     <ClInclude Include="Features\Visuals\SkinChanger.h" />
     <ClInclude Include="Features\Visuals\WeaponIcons.h" />
     <ClInclude Include="Features\Visuals\World.h" />

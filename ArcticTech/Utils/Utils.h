@@ -54,4 +54,6 @@ namespace Utils {
 	void	HandleInput(std::string& str, int key);
 
 	void    SetClantag(const char* tag);
+	template<class C>
+	C* FindHudElement(const char* szName);
 }
