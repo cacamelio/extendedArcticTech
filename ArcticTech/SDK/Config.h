@@ -44,6 +44,7 @@ struct config_t {
             CCheckBox* doubletap;
             CKeyBind* doubletap_key;
             CMultiCombo* doubletap_options;
+            CSliderFloat* defensive_distance;
             CCheckBox* hide_shots;
             CKeyBind* hide_shots_key;
             CKeyBind* force_teleport;
@@ -68,6 +69,7 @@ struct config_t {
             weapon_settings_t autosniper{ "Auto" };
             weapon_settings_t scout{ "Scout" };
             weapon_settings_t deagle{ "Deagle" };
+            weapon_settings_t revolver{ "Revolver" };
             weapon_settings_t pistol{ "Pistol" };
         } weapons;
     } ragebot;

@@ -45,9 +45,14 @@ struct RegisteredShot_t {
 	std::string_view miss_reason = "none";
 };
 
+class CBaseCombatWeapon;
 class CShotManager {
 	std::vector<RegisteredShot_t>	m_RegisteredShots;
+	float	m_fLastShotTime = 0.f;
+	CBaseCombatWeapon* last_weapon = nullptr;
+
 public:
+	void	DetectUnregisteredShots();
 	void	ProcessManualShot();
 	void	OnNetUpdate();
 	bool	OnEvent(IGameEvent* event);

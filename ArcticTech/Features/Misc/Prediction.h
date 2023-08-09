@@ -70,6 +70,7 @@ public:
 	__forceinline float WeaponSpread() { return weaponSpread; };
 	__forceinline float frametime() { return flOldFrameTime; };
 	__forceinline float curtime() { return flOldCurrentTime; };
+	__forceinline int tickcount() { return iOldTickCount; };
 
 	inline local_data_t& GetLocalData(int place) { return local_data[place % MULTIPLAYER_BACKUP]; };
 

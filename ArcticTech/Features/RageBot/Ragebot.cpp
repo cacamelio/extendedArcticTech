@@ -44,8 +44,10 @@ weapon_settings_t CRagebot::GetWeaponSettings(int weaponId) {
 		settings = config.ragebot.weapons.awp;
 		break;
 	case Deagle:
-	case Revolver:
 		settings = config.ragebot.weapons.deagle;
+		break;
+	case Revolver:
+		settings = config.ragebot.weapons.revolver;
 		break;
 	case Fiveseven:
 	case Glock:
@@ -501,6 +503,8 @@ void CRagebot::Run() {
 	if (!config.ragebot.aimbot.enabled->get())
 		return;
 
+	AutoRevolver();
+
 	if (Exploits->IsShifting()) {
 		if (doubletap_stop) {
 			float current_vel = Math::Q_sqrt(ctx.cmd->sidemove * ctx.cmd->sidemove + ctx.cmd->forwardmove + ctx.cmd->forwardmove);
@@ -612,7 +616,7 @@ void CRagebot::Run() {
 		}
 	}
 
-	if (settings.auto_stop->get(2) && !active_weapon->CanShoot())
+	if (settings.auto_stop->get(2) && !active_weapon->CanShoot() && active_weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
 	if (should_autostop)
@@ -620,8 +624,11 @@ void CRagebot::Run() {
 
 	debug_data.autostop = should_autostop;
 
-	if (!best_target.player || !active_weapon->CanShoot())
+	if (!best_target.player || !active_weapon->CanShoot()) {
+		if (best_target.player && active_weapon->m_iItemDefinitionIndex() == Revolver)
+			ctx.cmd->buttons |= IN_ATTACK;
 		return;
+	}
 
 	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime + LagCompensation->GetLerpTime());
 	ctx.cmd->viewangles = best_target.angle - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
@@ -745,6 +752,31 @@ void CRagebot::Zeusbot() {
 				return;
 			}
 		}
+	}
+}
+
+void CRagebot::AutoRevolver() {
+	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
+
+	if (!weapon)
+		return;
+
+	if (ctx.cmd->buttons & IN_ATTACK)
+		return;
+
+	if (weapon->m_iItemDefinitionIndex() != Revolver)
+		return;
+
+	ctx.cmd->buttons &= ~IN_ATTACK2;
+
+	static float next_cock_time = 0.f;
+
+	if (weapon->m_flPostponeFireReadyTime() > TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase())) {
+		if (GlobalVars->curtime > next_cock_time)
+			ctx.cmd->buttons |= IN_ATTACK;
+	}
+	else {
+		next_cock_time = GlobalVars->curtime + 0.25f;
 	}
 }
 

@@ -63,6 +63,7 @@ void CPrediction::Start(CUserCmd* cmd) {
 	Prediction->bIsFirstTimePredicted = false;
 	Prediction->bInPrediction = true;
 
+	Cheat.LocalPlayer->UpdateButtonState(cmd->buttons);
 	MoveHelper->SetHost(Cheat.LocalPlayer);
 
 	GameMovement->StartTrackPredictionErrors(Cheat.LocalPlayer);
@@ -104,6 +105,9 @@ void CPrediction::Start(CUserCmd* cmd) {
 		}
 	}
 
+	Prediction->bInPrediction = bOldInPrediction;
+	Prediction->bIsFirstTimePredicted = bOldIsFirstPrediction;
+
 
 	if (const auto weapon = Cheat.LocalPlayer->GetActiveWeapon()) {
 		//const auto backup_vel = Cheat.LocalPlayer->m_vecVelocity();
@@ -122,9 +126,6 @@ void CPrediction::Start(CUserCmd* cmd) {
 		//Cheat.LocalPlayer->m_vecAbsVelocity() = backup_abs_vel;
 		//Cheat.LocalPlayer->m_iEFlags() = backup_flags;
 	}
-
-	Prediction->bInPrediction = bOldInPrediction;
-	Prediction->bIsFirstTimePredicted = bOldIsFirstPrediction;
 }
 
 void CPrediction::End() {

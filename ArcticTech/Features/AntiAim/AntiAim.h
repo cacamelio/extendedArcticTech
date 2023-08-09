@@ -4,7 +4,6 @@
 class CUserCmd;
 class CBasePlayer;
 
-
 class CAntiAim {
 	int manualAngleState = 0;
 	CBasePlayer* target;

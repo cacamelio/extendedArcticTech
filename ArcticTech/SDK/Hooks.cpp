@@ -200,6 +200,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 		EnginePrediction->Start(cmd);
 
+		Cheat.ServerTime = GlobalVars->curtime;
+
 		QAngle eyeYaw = cmd->viewangles;
 
 		AutoPeek->CreateMove();
@@ -247,8 +249,11 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	EnginePrediction->Start(cmd);
 
+	ShotManager->DetectUnregisteredShots();
+
 	CUserCmd_lua lua_cmd;
 	lua_cmd.command_number = cmd->command_number;
+	lua_cmd.tickcount = cmd->tick_count;
 	lua_cmd.hasbeenpredicted = cmd->hasbeenpredicted;
 	lua_cmd.move = Vector(cmd->sidemove, cmd->forwardmove, cmd->upmove);
 	lua_cmd.viewangles = cmd->viewangles;
@@ -260,6 +265,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	}
 
 	cmd->buttons = lua_cmd.buttons;
+	cmd->tick_count = lua_cmd.tickcount;
 	Exploits->AllowDefensive() = lua_cmd.allow_defensive;
 
 	if (lua_cmd.override_defensive) {
@@ -280,7 +286,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (config.misc.movement.edge_jump->get() && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) && EnginePrediction->m_fFlags & FL_ONGROUND)
 		cmd->buttons |= IN_JUMP;
 
-	if (weapon->ShootingWeapon() && !weapon->CanShoot())
+	if (weapon->ShootingWeapon() && !weapon->CanShoot() && weapon->m_iItemDefinitionIndex() != Revolver)
 		cmd->buttons &= ~IN_ATTACK;
 
 	if (weapon->ShootingWeapon() && weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
@@ -532,6 +538,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_START:
 		ShotManager->OnNetUpdate();
+		ESP::ProcessSounds();
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
@@ -667,7 +674,7 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	int max_ticbase_shift = Exploits->MaxTickbaseShift();
 
 	if (ctx.lc_exploit_shift == cmd->command_number)
-		player->m_nTickBase() += Exploits->TargetTickbaseShift() > 0 ? max_ticbase_shift : max_ticbase_shift - 2;
+		player->m_nTickBase() += Exploits->TargetTickbaseShift() > 0 ? max_ticbase_shift : max_ticbase_shift - 1;
 	if (ctx.lc_exploit_charge == cmd->command_number)
 		player->m_nTickBase() -= max_ticbase_shift;
 
@@ -745,8 +752,6 @@ void __fastcall hkPacketEnd(CClientState* thisptr, void* edx) {
 	//const auto& local_data = EnginePrediction->GetLocalData(ClientState->m_nCommandAck % 150);
 	//if (local_data.shift_amount > 0 && local_data.m_nTickBase > Cheat.LocalPlayer->m_nTickBase())
 	//	Cheat.LocalPlayer->m_nTickBase() = local_data.m_nTickBase + 1;
-
-	ESP::ProcessSounds();
 
 	oPacketEnd(thisptr, edx);
 }
@@ -921,7 +926,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	auto total_new_commands = Exploits->MaxTickbaseShift() + 2;
+	auto total_new_commands = (Exploits->GetExploitType() == CExploits::E_DoubleTap) ? 16 : 11;
 
 	from = -1;
 

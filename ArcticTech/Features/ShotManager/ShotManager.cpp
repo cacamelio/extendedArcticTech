@@ -13,6 +13,50 @@
 
 CShotManager* ShotManager = new CShotManager;
 
+void CShotManager::DetectUnregisteredShots() {
+	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
+		return;
+
+	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
+
+	if (!weapon)
+		return;
+
+	float fShotTime = weapon->m_fLastShotTime();
+
+	if (weapon != last_weapon) {
+		last_weapon = weapon;
+		m_fLastShotTime = fShotTime;
+	}
+
+	if (m_fLastShotTime - fShotTime < GlobalVars->interval_per_tick * 2.f) {
+		m_fLastShotTime = fShotTime;
+		return;
+	}
+
+	for (auto it = m_RegisteredShots.rbegin(); it != m_RegisteredShots.rend(); it++) {
+		if (it->acked)
+			break;
+
+		if (it->ack_tick != 0)
+			continue;
+
+		it->acked = true;
+		it->unregistered = true;
+		it->miss_reason = "unregistered";
+
+		Console->ArcticTag();
+		Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
+		Console->ColorPrint("unregistered\n", Color(255, 20, 20));
+
+		weapon->m_flNextPrimaryAttack() = TICKS_TO_TIME(it->shot_tick) - 0.1f; // so we can shoot again immediately
+
+		break;
+	}
+
+	m_fLastShotTime = fShotTime;
+}
+
 void CShotManager::ProcessManualShot() {
 	if (!config.visuals.effects.client_impacts->get())
 		return;
@@ -95,6 +139,9 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 				if (it->acked)
 					break;
 
+				if (it->ack_tick != 0)
+					continue;
+
 				it->acked = true;
 				it->unregistered = true;
 				it->death = true;
@@ -127,13 +174,7 @@ void CShotManager::OnNetUpdate() {
 			break;
 
 		if (!it->ack_tick || it->impacts.size() == 0) { // dont recieved events yet or unregistered
-			int max_register_delay = 24;
-			INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
-			if (nci) {
-				max_register_delay += TIME_TO_TICKS(nci->GetAvgLatency(FLOW_INCOMING) + nci->GetAvgLatency(FLOW_OUTGOING));
-			}
-
-			if (GlobalVars->tickcount - it->shot_tick > max_register_delay) {
+			if (GlobalVars->tickcount - it->shot_tick > 64) {
 				it->acked = true;
 				it->unregistered = true;
 				it->miss_reason = "unregistered";
@@ -175,7 +216,7 @@ void CShotManager::OnNetUpdate() {
 			CBasePlayer* player = shot->record->player;
 			LagRecord* backup_record = &LagCompensation->records(player->EntIndex()).back(); // just updated player, so latest record is correct
 
-			LagCompensation->BacktrackEntity(shot->record);
+			LagCompensation->BacktrackEntity(shot->record, true);
 
 			Console->ArcticTag();
 			if (shot->damage > 0) {
@@ -237,7 +278,7 @@ void CShotManager::OnNetUpdate() {
 					}
 				}
 				else {
-					if ((shot->hit_point - shot->target_pos).LengthSqr() < 49.f) {
+					if ((shot->hit_point - shot->target_pos).LengthSqr() < 64.f && shot->impacts.size() > 1) {
 						it->miss_reason = "damage rejection";
 						Console->ColorPrint("damage rejection\n", Color(255, 20, 20)); // correct naming: sin shluhi s gmom
 					}
@@ -255,8 +296,8 @@ void CShotManager::OnNetUpdate() {
 						}
 
 						if (break_lag_comp) {
-							it->miss_reason = "lag comp failure";
-							Console->ColorPrint("lag comp failure\n", Color(200, 255, 0));
+							it->miss_reason = "lagcomp failure";
+							Console->ColorPrint("lagcomp failure\n", Color(200, 255, 0));
 						}
 						else {
 							it->miss_reason = "correction";

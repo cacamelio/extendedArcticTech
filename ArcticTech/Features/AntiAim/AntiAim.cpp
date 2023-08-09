@@ -316,15 +316,10 @@ bool CAntiAim::IsPeeking() {
 
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	velocity.z = 0.f;
-
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Q_Normalized() * 23.f;
-
-	matrix3x4_t backup_matrix[128];
-	Cheat.LocalPlayer->CopyBones(backup_matrix);
+	Vector move_factor = velocity.Normalized() * (18 + velocity.Q_Length() / 30.f);
 
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -338,6 +333,8 @@ bool CAntiAim::IsPeeking() {
 	Vector scan_points[] = {
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT)
 	};
 
 	bool peeked = false;
@@ -350,8 +347,8 @@ bool CAntiAim::IsPeeking() {
 		FireBulletData_t data;
 		Vector enemyShootPos = player->GetShootPosition();
 
-		for (int i = 0; i < 2; i++) {
-			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 1.f) {
+		for (int i = 0; i < 4; i++) {
+			if (AutoWall->FireBullet(player, (enemyShootPos + scan_points[i]) * 0.5f, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
 				peeked = true;
 				break;
 			}
@@ -361,9 +358,17 @@ bool CAntiAim::IsPeeking() {
 			break;
 	}
 
+	//int r = peeked ? 0 : 255;
+	//int g = peeked ? 255 : 0;
+
+	//DebugOverlay->AddBoxOverlay(scan_points[0], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
+	//DebugOverlay->AddBoxOverlay(scan_points[1], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
+	//DebugOverlay->AddBoxOverlay(scan_points[2], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
+	//DebugOverlay->AddBoxOverlay(scan_points[3], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
+
+
 	Cheat.LocalPlayer->SetAbsOrigin(backup_abs_orgin);
 	Cheat.LocalPlayer->m_vecOrigin() = backup_origin;
-	memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), backup_matrix, sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
 
 	return peeked;
 }

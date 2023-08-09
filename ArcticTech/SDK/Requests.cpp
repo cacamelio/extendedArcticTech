@@ -20,7 +20,7 @@ std::string CRequests::Create(EHTTPMethod method, std::string url, std::vector<H
 			break;
 		}
 
-		Sleep(100);
+		Sleep(10);
 		iters++;
 	}
 

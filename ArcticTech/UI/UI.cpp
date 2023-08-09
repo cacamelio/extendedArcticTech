@@ -42,6 +42,7 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
 	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport"});
+	config.ragebot.aimbot.defensive_distance = aimbot->AddSliderFloat("Defensive distance", 10.f, 30.f, 22.f);
 	config.ragebot.aimbot.hide_shots = aimbot->AddCheckBox("Hide Shots");
 	config.ragebot.aimbot.hide_shots_key = aimbot->AddKeyBind("Hide Shots");
 	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
@@ -57,7 +58,7 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.roll_resolver_key = aimbot->AddKeyBind("Roll Resolver");
 	config.ragebot.aimbot.roll_angle = aimbot->AddSliderInt("Roll Angle", -90, 90, 0);
 
-	config.ragebot.selected_weapon = aim_settings->AddComboBox("Current Weapon", { "Global", "AWP", "Autosniper", "Scout", "Deagle", "Pistol" });
+	config.ragebot.selected_weapon = aim_settings->AddComboBox("Current Weapon", { "Global", "AWP", "Autosniper", "Scout", "Deagle", "Revolver", "Pistol" });
 
 	auto setup_weapon_config = [this, aim_settings](weapon_settings_t& settings) {
 		settings.hitboxes = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Hitbox"), { "Head", "Chest", "Stomach", "Arms", "Legs", "Feet" });
@@ -76,6 +77,7 @@ void CMenu::SetupUI() {
 	setup_weapon_config(config.ragebot.weapons.autosniper);
 	setup_weapon_config(config.ragebot.weapons.scout);
 	setup_weapon_config(config.ragebot.weapons.deagle);
+	setup_weapon_config(config.ragebot.weapons.revolver);
 	setup_weapon_config(config.ragebot.weapons.pistol);
 
 	config.antiaim.angles.pitch = aa_angles->AddComboBox("Pitch", { "Disabled", "Down" });
@@ -338,7 +340,7 @@ void CMenu::SetupUI() {
 	Config->lua_save = scripts->AddButton("Save");
 
 	Config->Init();
-
+	
 	config.ragebot.selected_weapon->SetCallback([]() {
 		const int selected_weapon = config.ragebot.selected_weapon->get();
 		auto& weapon_configs = config.ragebot.weapons;
@@ -348,7 +350,8 @@ void CMenu::SetupUI() {
 		weapon_configs.autosniper.SetVisible(selected_weapon == 2);
 		weapon_configs.scout.SetVisible(selected_weapon == 3);
 		weapon_configs.deagle.SetVisible(selected_weapon == 4);
-		weapon_configs.pistol.SetVisible(selected_weapon == 5);
+		weapon_configs.revolver.SetVisible(selected_weapon == 5);
+		weapon_configs.pistol.SetVisible(selected_weapon == 6);
 	});
 
 	auto world_modulation_callback = []() {

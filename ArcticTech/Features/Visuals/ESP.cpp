@@ -50,16 +50,10 @@ void ESP::RegisterCallback() {
 void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
 	SharedESP_t esp = *(SharedESP_t*)data;
 
-	char flags = esp.m_flags;
-
 	auto& esp_info = ESPInfo[EngineClient->GetPlayerForUserID(esp.m_iPlayer)];
 
 	esp_info.m_vecOrigin = esp.m_vecOrigin;
 	esp_info.m_iActiveWeapon = esp.m_ActiveWeapon;
-	esp_info.m_bIsScoped = flags & Shared_Scoped;
-	esp_info.m_bExploiting = flags & Shared_Exploiting;
-	esp_info.m_bFakeDuck = flags & Shared_FakeDuck;
-	esp_info.m_bBreakingLagComp = flags & Shared_BreakLC;
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
 	esp_info.m_bValid = true;
 
@@ -278,14 +272,14 @@ void ESP::DrawFlags(ESPInfo_t info) {
 		flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
 	}
 
+	if (config.visuals.esp.flags->get(3) && (record->shifting_tickbase || record->exploiting) && !dormant)
+		flags.push_back({ "E", record->shifting_tickbase ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(240, 240, 240, 255 * info.m_flAlpha) });
+
 	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck > 16 && !dormant)
 		flags.push_back({ "FD", Color(240, 240, 240, 255 * info.m_flAlpha) });
-
-	if (config.visuals.esp.flags->get(3) && (record->shifting_tickbase || record->exploiting) && !dormant)
-		flags.push_back({ "E", record->shifting_tickbase ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(240, 240, 240, 255 * info.m_flAlpha)});
 
 	if (config.visuals.esp.flags->get(4) && info.m_pEnt->EntIndex() == PlayerResource->m_iPlayerC4())
 		flags.push_back({ "BOMB", Color(230, 40, 40, 255 * info.m_flAlpha) });

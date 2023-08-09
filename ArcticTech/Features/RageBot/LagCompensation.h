@@ -37,6 +37,7 @@ struct LagRecord {
 	bool shifting_tickbase = false;
 	bool breaking_lag_comp = false;
 	bool exploiting = false;
+	bool invalid = false;
 
 	bool boneMatrixFilled = false;
 	bool aimMatrixFilled = false;
@@ -65,6 +66,7 @@ public:
 	// Record helpers
 	float GetLerpTime();
 	bool ValidRecord(LagRecord* record);
+	void Invalidate(int index);
 };
 
 extern CLagCompensation* LagCompensation;

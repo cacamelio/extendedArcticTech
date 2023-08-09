@@ -70,6 +70,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));
 		AnimationSystem->InvalidateInterpolation(userid);
+		LagCompensation->Invalidate(userid);
 	}
 	else if (name == "round_start") {
 		LagCompensation->Reset();
@@ -146,6 +147,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	}
 	else if (name == "player_disconnect") {
 		Chams->RemoveShotChams(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
+		LagCompensation->Reset(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
 	}
 }
 

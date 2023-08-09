@@ -90,7 +90,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = (EnginePrediction->curtime() - pl->m_flSimulationTime()) > GlobalVars->interval_per_tick * 12.f;
+			new_record->exploiting = (EnginePrediction->tickcount() - pl->m_nTickBase()) > 12;
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;
@@ -111,16 +111,6 @@ void CLagCompensation::OnNetUpdate() {
 					EngineClient->GetPlayerInfo(i, &pinfo);
 
 					msg.m_iPlayer = pinfo.userId;
-					
-					if (pl->m_bIsScoped())
-						msg.m_flags |= Shared_Scoped;
-					if (ESPInfo[i].m_nFakeDuckTicks > 12)
-						msg.m_flags |= Shared_FakeDuck;
-					if (new_record->shifting_tickbase)
-						msg.m_flags |= Shared_Exploiting;
-					if (new_record->breaking_lag_comp)
-						msg.m_flags |= Shared_BreakLC;
-
 					msg.m_ActiveWeapon = pl->GetActiveWeapon() ? pl->GetActiveWeapon()->m_iItemDefinitionIndex() : 0;
 					msg.m_vecOrigin = new_record->m_vecOrigin;
 
@@ -154,7 +144,7 @@ float CLagCompensation::GetLerpTime() {
 }
 
 bool CLagCompensation::ValidRecord(LagRecord* record) {
-	if (!record || !record->player || record->shifting_tickbase || record->breaking_lag_comp)
+	if (!record || !record->player || record->shifting_tickbase || record->breaking_lag_comp || record->invalid)
 		return false;
 
 	auto nci = EngineClient->GetNetChannelInfo();
@@ -223,6 +213,11 @@ void CLagCompensation::Reset(int index) {
 			last_update_tick[i] = 0;
 		}
 	}
+}
+
+void CLagCompensation::Invalidate(int index) {
+	for (auto& record : lag_records[index])
+		record.invalid = true;
 }
 
 CLagCompensation* LagCompensation = new CLagCompensation;

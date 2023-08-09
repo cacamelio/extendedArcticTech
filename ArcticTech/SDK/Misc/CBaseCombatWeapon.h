@@ -80,12 +80,15 @@ public:
 class CBaseCombatWeapon : public CBaseEntity {
 public:
 	NETVAR(m_flNextPrimaryAttack, float, "DT_BaseCombatWeapon", "m_flNextPrimaryAttack")
+    NETVAR(m_flNextSecondaryAttack, float, "DT_BaseCombatWeapon", "m_flNextPrimaryAttack")
     NETVAR(m_flRecoilIndex, float, "DT_WeaponCSBase", "m_flRecoilIndex")
 	OFFSET(m_iItemDefinitionIndex, short, 0x2FBA)
     NETVAR(m_hOwner, unsigned long, "DT_BaseCombatWeapon", "m_hOwner")
     NETVAR(m_iClip, unsigned long, "DT_BaseCombatWeapon", "m_iClip1")
     NETVAR(m_fAccuracyPenalty, float, "CWeaponCSBase", "m_fAccuracyPenalty")
     NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")
+    NETVAR(m_fLastShotTime, float, "DT_WeaponCSBase", "m_fLastShotTime")
+    NETVAR(m_flPostponeFireReadyTime, float, "DT_WeaponCSBase", "m_flPostponeFireReadyTime")
 
     inline bool IsGrenade() {
         if (!this)
@@ -120,7 +123,7 @@ public:
 
 	CCSWeaponData* GetWeaponInfo();
 	std::string GetName(CCSWeaponData* custom_data = nullptr);
-    bool CanShoot();
+    bool CanShoot(bool revolver_check = true);
 };
 
 enum WeaponId : short {

@@ -70,7 +70,7 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 	float avgDelta = 0.f;
 	float prevEyeYaw = player->m_angEyeAngles().yaw;
 
-	for (int i = records.size() - 2; i > records.size() - 6; i--) {
+	for (int i = records.size() - 2; i > records.size() - 5; i--) {
 		const LagRecord* record = &records.at(i);
 		float eyeYaw = record->m_viewAngle.yaw;
 
@@ -80,7 +80,7 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 
 		float maxDeltaDiff = record->m_nChokedTicks > 2 ? 30 : 15;
 
-		if (delta > 30.f)
+		if (std::abs(delta - 60.f) < maxDeltaDiff && delta > 30.f)
 			jitteredRecords++;
 
 		prevEyeYaw = eyeYaw;

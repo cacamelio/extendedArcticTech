@@ -604,6 +604,10 @@ namespace api {
 
 			return Vector(pt.x, pt.y);
 		}
+
+		void send_voice_message(SharedVoiceData_t voice_data) {
+			NetMessages->SendNetMessage(&voice_data);
+		}
 	}
 
 	namespace ui {
@@ -1161,7 +1165,7 @@ void CLua::Setup() {
 		"hitgroup", &CGameTrace::hitgroup
 	);
 
-	lua.new_usertype<CSVCMsg_VoiceData_Lua>("voice_data_t", sol::no_constructor,
+	lua.new_usertype<CSVCMsg_VoiceData_Lua>("recv_voice_data_t", sol::no_constructor,
 		"client", &CSVCMsg_VoiceData_Lua::client,
 		"audible_mask", &CSVCMsg_VoiceData_Lua::audible_mask,
 		"xuid", &CSVCMsg_VoiceData_Lua::xuid,
@@ -1172,6 +1176,13 @@ void CLua::Setup() {
 		"section_number", &CSVCMsg_VoiceData_Lua::section_number,
 		"uncompressed_sample_offset", &CSVCMsg_VoiceData_Lua::uncompressed_sample_offset,
 		"get_voice_data", &CSVCMsg_VoiceData_Lua::get_voice_data
+	);
+
+	lua.new_usertype<SharedVoiceData_t>("voice_data", sol::call_constructor, sol::constructors<SharedVoiceData_t()>(),
+		"xuid_high", &SharedVoiceData_t::xuid_high,
+		"sequence_bytes", &SharedVoiceData_t::sequence_bytes,
+		"section_number", &SharedVoiceData_t::section_number,
+		"uncompressed_sample_offset", &SharedVoiceData_t::uncompressed_sample_offset
 	);
 
 	// _G
@@ -1274,7 +1285,8 @@ void CLua::Setup() {
 		"trace_line", api::utils::trace_line,
 		"trace_hull", api::utils::trace_hull,
 		"is_key_pressed", api::utils::is_key_pressed,
-		"get_mouse_position", api::utils::get_mouse_position
+		"get_mouse_position", api::utils::get_mouse_position,
+		"send_voice_message", api::utils::send_voice_message
 	);
 
 	// network

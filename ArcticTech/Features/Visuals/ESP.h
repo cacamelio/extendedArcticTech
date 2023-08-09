@@ -30,8 +30,7 @@ enum SharedESPFlags {
 };
 
 struct SharedESP_t {
-	char	m_iPlayer;
-	char	m_flags;
+	short	m_iPlayer;
 	short	m_ActiveWeapon;
 	Vector	m_vecOrigin;
 };

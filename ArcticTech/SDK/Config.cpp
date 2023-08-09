@@ -116,6 +116,15 @@ void CConfig::Init() {
     add(config.ragebot.weapons.deagle.minimum_damage_override);
     add(config.ragebot.weapons.deagle.auto_stop);
     add(config.ragebot.weapons.deagle.auto_scope);
+    add(config.ragebot.weapons.revolver.hitboxes);
+    add(config.ragebot.weapons.revolver.multipoints);
+    add(config.ragebot.weapons.revolver.head_point_scale);
+    add(config.ragebot.weapons.revolver.body_point_scale);
+    add(config.ragebot.weapons.revolver.hitchance);
+    add(config.ragebot.weapons.revolver.minimum_damage);
+    add(config.ragebot.weapons.revolver.minimum_damage_override);
+    add(config.ragebot.weapons.revolver.auto_stop);
+    add(config.ragebot.weapons.revolver.auto_scope);
     add(config.ragebot.weapons.pistol.hitboxes);
     add(config.ragebot.weapons.pistol.multipoints);
     add(config.ragebot.weapons.pistol.head_point_scale);
