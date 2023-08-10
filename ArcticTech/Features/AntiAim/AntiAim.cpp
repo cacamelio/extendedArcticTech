@@ -348,7 +348,7 @@ bool CAntiAim::IsPeeking() {
 		Vector enemyShootPos = player->GetShootPosition();
 
 		for (int i = 0; i < 4; i++) {
-			if (AutoWall->FireBullet(player, (enemyShootPos + scan_points[i]) * 0.5f, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
 				peeked = true;
 				break;
 			}

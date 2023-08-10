@@ -167,7 +167,7 @@ void CWorld::RemoveBlood() {
 
 		if (material && !material->IsErrorMaterial()) {
 			material->IncrementReferenceCount();
-			material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(3));
+			material->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, config.visuals.effects.removals->get(5));
 		}
 	}
 }
@@ -175,7 +175,7 @@ void CWorld::RemoveBlood() {
 void CWorld::Crosshair() {
 	cvars.weapon_debug_spread_show->SetInt((config.visuals.other_esp.sniper_crosshair->get() && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && !Cheat.LocalPlayer->m_bIsScoped()) ? 2 : 0);
 
-	if (Cheat.InGame && Cheat.LocalPlayer->IsAlive() && config.visuals.effects.removals->get(5) && Cheat.LocalPlayer->m_bIsScoped()) {
+	if (Cheat.InGame && Cheat.LocalPlayer->IsAlive() && config.visuals.effects.remove_scope->get() == 1 && Cheat.LocalPlayer->m_bIsScoped()) {
 		Render->BoxFilled(Vector2(Cheat.ScreenSize.x / 2, 0), Vector2(Cheat.ScreenSize.x / 2 + 1, Cheat.ScreenSize.y), Color(10, 10, 10, 255));
 		Render->BoxFilled(Vector2(0, Cheat.ScreenSize.y / 2), Vector2(Cheat.ScreenSize.x, Cheat.ScreenSize.y / 2 + 1), Color(10, 10, 10, 255));
 	}
@@ -205,13 +205,13 @@ void CWorld::Crosshair() {
 
 	if (fb_data.impacts.size() > 1) {
 		crosshairColor = Color(20, 255, 20);
-
-		if (hit)
-			crosshairColor = Color(56, 209, 255);
 	}
 
-	Render->BoxFilled(Cheat.ScreenSize * 0.5f - Vector2(0, 2), Cheat.ScreenSize * 0.5f + Vector2(1, 3), crosshairColor);
-	Render->BoxFilled(Cheat.ScreenSize * 0.5f - Vector2(2, 0), Cheat.ScreenSize * 0.5f + Vector2(3, 1), crosshairColor);
+	if (hit)
+		crosshairColor = Color(56, 209, 255);
+
+	Render->BoxFilled(Cheat.ScreenSize * 0.5f - Vector2(0, 1), Cheat.ScreenSize * 0.5f + Vector2(1, 2), crosshairColor);
+	Render->BoxFilled(Cheat.ScreenSize * 0.5f - Vector2(1, 0), Cheat.ScreenSize * 0.5f + Vector2(2, 1), crosshairColor);
 }
 
 void CWorld::SunDirection() {

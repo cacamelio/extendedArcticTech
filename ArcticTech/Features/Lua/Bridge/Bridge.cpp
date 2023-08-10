@@ -251,6 +251,15 @@ namespace api {
 		Console->ColorPrint(msg, color.value_or(Color(255, 255, 255)));
 	}
 
+	void safe_call(sol::protected_function func) {
+		auto result = func();
+
+		if (!result.valid()) {
+			sol::error er = result;
+			Console->Error(er.what());
+		}
+	}
+
 	namespace client {
 		void add_callback(sol::this_state state, std::string event_name, sol::protected_function func) {
 			const std::string script_name = GetCurrentScript(state);
@@ -889,6 +898,9 @@ namespace api {
 		}
 
 		sol::object get_prop(sol::this_state state, CBaseEntity* ent, std::string prop_name) {
+			static auto recvproxy_int32_to_int8 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 8A 48 08 8B 45 10");
+			static auto recvproxy_int32_to_int16 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 66 8B 48 08 8B 45 10 66 89 08");
+
 			auto prop = NetVars::FindProp(ent->GetClientClass()->m_pRecvTable, prop_name);
 
 			if (prop.offset == 0)
@@ -896,13 +908,21 @@ namespace api {
 
 			switch (prop.prop->m_RecvType)
 			{
-			case DPT_Int:
-				return sol::make_object(state, reinterpret_cast<int*>((uintptr_t)ent + prop.offset));
+			case DPT_Int: {
+				if (prop.prop->m_ProxyFn) {
+					if (prop.prop->m_ProxyFn == recvproxy_int32_to_int8)
+						return sol::make_object(state, *reinterpret_cast<bool*>((uintptr_t)ent + prop.offset));
+					else if (prop.prop->m_ProxyFn == recvproxy_int32_to_int16)
+						return sol::make_object(state, *reinterpret_cast<short*>((uintptr_t)ent + prop.offset));
+				}
+
+				return sol::make_object(state, *reinterpret_cast<int*>((uintptr_t)ent + prop.offset));
+			}
 			case DPT_Float:
-				return sol::make_object(state, reinterpret_cast<float*>((uintptr_t)ent + prop.offset));
+				return sol::make_object(state, *reinterpret_cast<float*>((uintptr_t)ent + prop.offset));
 			case DPT_Vector:
 			case DPT_VectorXY:
-				return sol::make_object(state, reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset));
+				return sol::make_object(state, *reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset));
 			case DPT_String:
 				return sol::make_object(state, reinterpret_cast<char*>((uintptr_t)ent + prop.offset));
 			case DPT_Array: {
@@ -988,7 +1008,7 @@ void CLua::Setup() {
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts/cfg");
 
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
-	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::jit, sol::lib::ffi);
+	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::jit, sol::lib::ffi, sol::lib::bit32);
 	
 	// enums
 	lua.new_enum<EDamageGroup>("e_dmg_group", {
@@ -1076,13 +1096,16 @@ void CLua::Setup() {
 		"weapon_index", &CBaseCombatWeapon::m_iItemDefinitionIndex,
 		"get_inaccuracy", &CBaseCombatWeapon::GetInaccuracy,
 		"get_spread", &CBaseCombatWeapon::GetSpread,
+		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
 
 	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor, 
 		"get_name", &CBasePlayer::GetName,
 		"get_active_weapon", &CBasePlayer::GetActiveWeapon,
+		"is_alive", &CBasePlayer::IsAlive,
 		"set_icon", api::entity::set_icon,
+		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
 
@@ -1189,6 +1212,7 @@ void CLua::Setup() {
 	lua["print"] = api::print;
 	lua["error"] = api::error;
 	lua["print_raw"] = api::print_raw;
+	lua["safe_call"] = api::safe_call;
 
 	// client
 	lua.create_named_table("client",

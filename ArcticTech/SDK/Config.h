@@ -44,7 +44,6 @@ struct config_t {
             CCheckBox* doubletap;
             CKeyBind* doubletap_key;
             CMultiCombo* doubletap_options;
-            CSliderFloat* defensive_distance;
             CCheckBox* hide_shots;
             CKeyBind* hide_shots_key;
             CKeyBind* force_teleport;
@@ -199,6 +198,7 @@ struct config_t {
         struct effects_t {
             CSliderInt* fov;
             CMultiCombo* removals;
+            CComboBox* remove_scope;
             CCheckBox* world_color_enable;
             CColorPicker* world_color;
             CCheckBox* props_color_enable;

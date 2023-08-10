@@ -90,7 +90,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = (EnginePrediction->tickcount() - pl->m_nTickBase()) > 12;
+			new_record->exploiting = (GlobalVars->tickcount + ctx.tickbase_shift - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;
@@ -163,7 +163,7 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 		return false;
 
 	/// omg v0lvo broke this check but i want to add it because i want to be like Soufiw
-	const float dead_time = (float)(TICKS_TO_TIME(server_tickcount) + latency) - 0.2f;
+	const float dead_time = TICKS_TO_TIME(server_tickcount) - 0.2f;
 	if (record->m_flSimulationTime + lerp_time < dead_time)
 		return false;
 

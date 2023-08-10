@@ -581,6 +581,9 @@ void CRagebot::Run() {
 	}
 
 	for (const auto& target : scanned_targets) {
+		if (target.best_point.damage > 2.f)
+			Exploits->DefenseiveThisTick() = true;
+
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
 			if (target.hitchance > settings.hitchance->get() * 0.009f) {
 				best_target = target;

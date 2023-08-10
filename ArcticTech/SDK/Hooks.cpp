@@ -273,10 +273,11 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		Exploits->DefenseiveThisTick() = lua_cmd.override_defensive.as<bool>();
 	}
 
-	Exploits->DefensiveDoubletap();
-
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
+
+	if (ctx.local_velocity.LengthSqr() > 0.f)
+		Cheat.freezetime = false;
 
 	Miscelleaneus::CompensateThrowable();
 
@@ -306,6 +307,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AutoPeek->CreateMove();
 
 	Ragebot->Run();
+
+	Exploits->DefensiveDoubletap();
 
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
 
@@ -461,7 +464,7 @@ void __fastcall hkPaintTraverse(IPanel* thisptr, void* edx, unsigned int panel, 
 			hud_zoom_panel = panel;
 	}
 
-	if (hud_zoom_panel == panel && config.visuals.effects.removals->get(5))
+	if (hud_zoom_panel == panel && config.visuals.effects.remove_scope->get() > 0)
 		return;
 
 	oPaintTraverse(thisptr, edx, panel, bForceRepaint, bForce);
@@ -525,10 +528,12 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.mat_postprocessing_enable->SetInt(!config.visuals.effects.removals->get(0));
 		cvars.cl_csm_shadows->SetInt(!config.visuals.effects.removals->get(2));
 		cvars.cl_foot_contact_shadows->SetInt(0);
-		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(7));
+		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(6));
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
 		SkinChanger->Run(false);
 
+		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
+			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
 
 		break;
 	case FRAME_RENDER_END:

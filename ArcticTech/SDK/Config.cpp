@@ -229,6 +229,7 @@ void CConfig::Init() {
     add(config.visuals.other_esp.indicators);
     add(config.visuals.effects.fov);
     add(config.visuals.effects.removals);
+    add(config.visuals.effects.remove_scope);
     add(config.visuals.effects.world_color_enable);
     add(config.visuals.effects.world_color);
     add(config.visuals.effects.props_color_enable);

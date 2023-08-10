@@ -42,7 +42,6 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
 	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport"});
-	config.ragebot.aimbot.defensive_distance = aimbot->AddSliderFloat("Defensive distance", 10.f, 30.f, 22.f);
 	config.ragebot.aimbot.hide_shots = aimbot->AddCheckBox("Hide Shots");
 	config.ragebot.aimbot.hide_shots_key = aimbot->AddKeyBind("Hide Shots");
 	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
@@ -183,7 +182,8 @@ void CMenu::SetupUI() {
 	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Exploits", "Min. damage", "Body aim", "Lag Compensation", "Roll Resolver"});
 
 	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
-	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Scope", "Blood", "Sprites" });
+	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Blood", "Sprites" });
+	config.visuals.effects.remove_scope = effects->AddComboBox("Remove scope", { "Disabled", "Remove overlay", "Remove all" });
 	config.visuals.effects.world_color_enable = effects->AddCheckBox("World color");
 	config.visuals.effects.world_color = effects->AddColorPicker("World color");
 	config.visuals.effects.props_color_enable = effects->AddCheckBox("Props color");
