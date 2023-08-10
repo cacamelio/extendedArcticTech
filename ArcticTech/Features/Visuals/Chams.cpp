@@ -266,7 +266,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 void CChams::AddShotChams(LagRecord* record) {
 	auto& hit = shot_chams.emplace_back();
 
-	std::memcpy(hit.pBoneToWorld, record->aimMatrix, 128 * sizeof(matrix3x4_t));
+	std::memcpy(hit.pBoneToWorld, record->clamped_matrix, 128 * sizeof(matrix3x4_t));
 	hit.end_time = GlobalVars->curtime + config.visuals.chams.shot_chams_duration->get();
 
 	hit.info.origin = record->m_vecOrigin;

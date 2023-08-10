@@ -408,8 +408,6 @@ void CMenu::SetupUI() {
 		config.visuals.effects.sun_pitch->SetVisible(config.visuals.effects.custom_sun_direction->get());
 		config.visuals.effects.sun_yaw->SetVisible(config.visuals.effects.custom_sun_direction->get());
 		config.visuals.effects.sun_distance->SetVisible(config.visuals.effects.custom_sun_direction->get());
-
-		World->SunDirection();
 	});
 
 	config.visuals.esp.shared_esp->SetCallback([]() {

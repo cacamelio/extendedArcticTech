@@ -423,6 +423,7 @@ public:
     void                SetAbsVelocity(const Vector& vecAbsVelocity);
     float               GetMaxSpeed();
     void                CopyBones(matrix3x4_t* boneMatrix);
+    void                ClampBonesInBBox(matrix3x4_t* bones, int bone_mask);
 
     int&                m_nImpulse();
     int                 GetButtonForced();

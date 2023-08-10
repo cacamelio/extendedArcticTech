@@ -11,8 +11,9 @@ class CBasePlayer;
 struct LagRecord {
 	CBasePlayer* player = nullptr;
 
-	matrix3x4_t boneMatrix[128];
-	matrix3x4_t aimMatrix[128];
+	matrix3x4_t bone_matrix[128];
+	matrix3x4_t aim_matrix[128];
+	matrix3x4_t clamped_matrix[128];
 
 	AnimationLayer animlayers[13];
 
@@ -22,7 +23,7 @@ struct LagRecord {
 	Vector m_vecMaxs = Vector(0, 0, 0);
 	QAngle m_vecAbsAngles;
 
-	QAngle m_viewAngle;
+	QAngle m_angEyeAngles;
 
 	float m_flSimulationTime = 0.f;
 	float m_flDuckAmout = 0.f;
@@ -39,13 +40,14 @@ struct LagRecord {
 	bool exploiting = false;
 	bool invalid = false;
 
-	bool boneMatrixFilled = false;
-	bool aimMatrixFilled = false;
+	bool bone_matrix_filled = false;
 
 	ResolverData_t resolver_data;
 	CCSGOPlayerAnimationState unupdated_animstate;
 
 	LagRecord* prev_record;
+
+	void BuildMatrix();
 };
 
 class CLagCompensation {
@@ -59,7 +61,7 @@ public:
 	LagRecord* BackupData(CBasePlayer* player);
 
 	void RecordDataIntoTrack(CBasePlayer* player, LagRecord* record);
-	void BacktrackEntity(LagRecord* record, bool use_aim_matrix = false);
+	void BacktrackEntity(LagRecord* record, bool copy_matrix = true, bool use_aim_matrix = false);
 	void OnNetUpdate();
 	void Reset(int index = -1);
 

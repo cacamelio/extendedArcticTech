@@ -21,7 +21,7 @@ LagRecord* CLagCompensation::BackupData(CBasePlayer* player) {
 void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* record) {
 	record->player = player;
 
-	record->m_viewAngle = player->m_angEyeAngles();
+	record->m_angEyeAngles = player->m_angEyeAngles();
 	record->m_flSimulationTime = player->m_flSimulationTime();
 	record->m_vecOrigin = player->m_vecOrigin();
 	record->m_fFlags = player->m_fFlags();
@@ -34,15 +34,15 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 	record->m_vecVelocity = player->m_vecVelocity();
 	record->m_vecAbsAngles = player->GetAbsAngles();
 
-	if (!record->boneMatrixFilled) {
-		memcpy(record->boneMatrix, player->GetCachedBoneData().Base(), sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
-		record->boneMatrixFilled = true;
+	if (!record->bone_matrix_filled) {
+		memcpy(record->bone_matrix, player->GetCachedBoneData().Base(), sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
+		record->bone_matrix_filled = true;
 	}
 
 	memcpy(record->animlayers, player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 }
 
-void CLagCompensation::BacktrackEntity(LagRecord* record, bool use_aim_matrix) {
+void CLagCompensation::BacktrackEntity(LagRecord* record, bool copy_matrix, bool use_aim_matrix) {
 	CBasePlayer* player = record->player;
 
 	float flSimulationTime = player->m_flSimulationTime();
@@ -61,10 +61,46 @@ void CLagCompensation::BacktrackEntity(LagRecord* record, bool use_aim_matrix) {
 	player->SetAbsAngles(record->m_vecAbsAngles);
 	player->ForceBoneCache();
 
-	if (use_aim_matrix)
-		memcpy(player->GetCachedBoneData().Base(), record->aimMatrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
-	else
-		memcpy(player->GetCachedBoneData().Base(), record->boneMatrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
+	if (copy_matrix) {
+		if (use_aim_matrix) {
+			memcpy(player->GetCachedBoneData().Base(), record->clamped_matrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
+		}
+		else {
+			memcpy(player->GetCachedBoneData().Base(), record->bone_matrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
+		}
+	}
+}
+
+void LagRecord::BuildMatrix() {
+	memcpy(clamped_matrix, aim_matrix, 128 * sizeof(matrix3x4_t));
+
+	if (config.antiaim.angles.legacy_desync->get())
+		return;
+
+	auto backup_curtime = GlobalVars->curtime;
+	auto backup_eye_angle = player->m_angEyeAngles();
+
+	player->m_vecMins() = m_vecMins;
+	player->m_vecMaxs() = m_vecMaxs;
+	auto collidable = player->GetCollideable();
+
+	if (collidable) {
+		collidable->OBBMaxs() = m_vecMaxs;
+		collidable->OBBMins() = m_vecMins;
+	}
+
+	player->SetCollisionBounds(m_vecMins, m_vecMaxs);
+
+	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
+
+	if (player->m_flSimulationTime() == m_flSimulationTime && nci && nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING) > TICKS_TO_TIME(m_nChokedTicks)) {
+		player->m_angEyeAngles() = prev_record->m_angEyeAngles;
+	}
+
+	player->ClampBonesInBBox(clamped_matrix, BONE_USED_BY_ANYTHING);
+
+	GlobalVars->curtime = backup_curtime;
+	player->m_angEyeAngles() = backup_eye_angle;
 }
 
 void CLagCompensation::OnNetUpdate() {
@@ -90,7 +126,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = (GlobalVars->tickcount + ctx.tickbase_shift - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
+			new_record->exploiting = (GlobalVars->tickcount - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;

@@ -770,7 +770,7 @@ void __fastcall hkPacketEnd(CClientState* thisptr, void* edx) {
 }
 
 void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t* bones, int boneMask) {
-	if (config.antiaim.angles.legacy_desync->get())
+	if (config.antiaim.angles.legacy_desync->get() || hook_info.disable_clamp_bones)
 		return;
 
 	if (thisptr->m_fFlags() & FL_FROZEN) {

@@ -206,11 +206,9 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		*animstate = record->unupdated_animstate;
 		player->UpdateClientSideAnimation();
 
-		Resolver->Apply(record, false);
+		Resolver->Apply(record);
 	}
 	else {
-		Resolver->SetRollAngle(player, 0.f);
-
 		player->UpdateClientSideAnimation();
 	}
 
@@ -218,21 +216,20 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		animstate->flDurationInAir = 0;
 	}
 	else {
-		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat() + (record->shifting_tickbase ? GlobalVars->interval_per_tick * 14 : 0);
+		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat();
 	}
 
 	player->GetAnimlayers()[12].m_flWeight = 0;
 
-	BuildMatrix(player, interpolate_data[idx].original_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
-	memcpy(record->boneMatrix, interpolate_data[idx].original_matrix, sizeof(matrix3x4_t) * 128);
-	record->boneMatrixFilled = true;
+	hook_info.disable_clamp_bones = true;
+	BuildMatrix(player, record->aim_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
+	hook_info.disable_clamp_bones = false;
 
-	if (!player->IsTeammate()) {
-		Resolver->Apply(record);
+	memcpy(record->bone_matrix, record->aim_matrix, sizeof(matrix3x4_t) * 128);
+	player->ClampBonesInBBox(record->bone_matrix, BONE_USED_BY_ANYTHING);
+	memcpy(interpolate_data[idx].original_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
 
-		BuildMatrix(player, record->aimMatrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
-		record->aimMatrixFilled = true;
-	}
+	record->bone_matrix_filled = true;
 
 	player->m_nOcclusionFrame() = nOcclusionFrame;
 	player->m_nOcclusionFlags() = nOcclusionMask;
@@ -250,7 +247,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	
 	player->m_flLowerBodyYawTarget() = backupLBY;
 	memcpy(player->GetAnimlayers(), record->animlayers, sizeof(AnimationLayer) * 13);
-	memcpy(player->GetCachedBoneData().Base(), record->boneMatrix, sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
+	memcpy(player->GetCachedBoneData().Base(), record->bone_matrix, sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
 
 	player->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
 }

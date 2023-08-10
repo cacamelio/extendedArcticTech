@@ -50,14 +50,15 @@ void ESP::RegisterCallback() {
 void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
 	SharedESP_t esp = *(SharedESP_t*)data;
 
-	auto& esp_info = ESPInfo[EngineClient->GetPlayerForUserID(esp.m_iPlayer)];
+	int ent_index = EngineClient->GetPlayerForUserID(esp.m_iPlayer);
+	auto& esp_info = ESPInfo[ent_index];
 
 	esp_info.m_vecOrigin = esp.m_vecOrigin;
 	esp_info.m_iActiveWeapon = esp.m_ActiveWeapon;
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
 	esp_info.m_bValid = true;
 
-	g_LastSharedESPData[esp.m_iPlayer] = GlobalVars->realtime;
+	g_LastSharedESPData[ent_index] = GlobalVars->realtime;
 }
 
 void ESP::ProcessSounds() {

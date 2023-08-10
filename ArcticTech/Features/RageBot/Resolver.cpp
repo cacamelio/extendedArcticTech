@@ -23,20 +23,6 @@ void CResolver::Reset(CBasePlayer* pl) {
 	}
 }
 
-float CResolver::ResolveRollAnimation(CBasePlayer* player, const LagRecord* prevRecord) {
-	int plIdx = player->EntIndex();
-
-	float eyeYaw = player->m_angEyeAngles().yaw;
-	if (!prevRecord || config.antiaim.angles.legacy_desync->get()) {
-		return 0.f;
-	}
-
-	float prevEyeYaw = prevRecord->m_viewAngle.yaw;
-	float delta = Math::AngleDiff(eyeYaw, prevEyeYaw);
-
-	return delta;
-}
-
 float CResolver::GetRollAngle(CBasePlayer* player) {
 	if (player->IsTeammate())
 		return 0.f;
@@ -72,7 +58,7 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 
 	for (int i = records.size() - 2; i > records.size() - 5; i--) {
 		const LagRecord* record = &records.at(i);
-		float eyeYaw = record->m_viewAngle.yaw;
+		float eyeYaw = record->m_angEyeAngles.yaw;
 
 		float delta = std::abs(Math::AngleDiff(eyeYaw, prevEyeYaw));
 
@@ -104,21 +90,21 @@ void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
 	*animstate = record->unupdated_animstate;
 	animstate->flGoalFeetYaw = Math::AngleNormalize(eyeYaw);
 
-	player->UpdateAnimationState(animstate, record->m_viewAngle, true); // probably should use animstate->Update();
+	player->UpdateAnimationState(animstate, record->m_angEyeAngles, true); // probably should use animstate->Update();
 	memcpy(record->resolver_data.animlayers[0], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	// positive delta
 	*animstate = record->unupdated_animstate;
 	animstate->flGoalFeetYaw = Math::AngleNormalize(eyeYaw + player->GetMaxDesyncDelta());
 
-	player->UpdateAnimationState(animstate, record->m_viewAngle, true);
+	player->UpdateAnimationState(animstate, record->m_angEyeAngles, true);
 	memcpy(record->resolver_data.animlayers[1], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	// negative delta
 	*animstate = record->unupdated_animstate;
 	animstate->flGoalFeetYaw = Math::AngleNormalize(eyeYaw - player->GetMaxDesyncDelta());
 
-	player->UpdateAnimationState(animstate, record->m_viewAngle, true);
+	player->UpdateAnimationState(animstate, record->m_angEyeAngles, true);
 	memcpy(record->resolver_data.animlayers[2], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 }
 
@@ -130,7 +116,7 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 	float notModifiedYaw = player->m_angEyeAngles().yaw;
 
 	if (record->prev_record) {
-		notModifiedYaw += Math::AngleDiff(record->prev_record->m_viewAngle.yaw, notModifiedYaw) * 0.5f;
+		notModifiedYaw += Math::AngleDiff(record->prev_record->m_angEyeAngles.yaw, notModifiedYaw) * 0.5f;
 	}
 
 	notModifiedYaw = Math::AngleNormalize(notModifiedYaw);
@@ -174,7 +160,6 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 }
 
 void CResolver::Apply(LagRecord* record, bool use_roll) {
-	SetRollAngle(record->player, use_roll ? record->roll : 0);
 	if (record->resolver_data.side != 0)
 		record->player->GetAnimstate()->flGoalFeetYaw = Math::NormalizeYaw(record->player->m_angEyeAngles().yaw + (record->player->GetMaxDesyncDelta() * record->resolver_data.side));
 }
@@ -185,7 +170,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 
 	LagRecord* prevRecord = record->prev_record;
 
-	record->roll = ResolveRollAnimation(player, prevRecord);
+	record->roll = 0;
 
 	if (!record->m_nChokedTicks || player->m_bIsDefusing()) {
 		record->resolver_data.side = 0;
@@ -232,7 +217,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	{
 		if (record->resolver_data.antiaim_type == R_AntiAimType::JITTER && prevRecord) {
 			float eyeYaw = player->m_angEyeAngles().yaw;
-			float prevEyeYaw = prevRecord->m_viewAngle.yaw;
+			float prevEyeYaw = prevRecord->m_angEyeAngles.yaw;
 			float delta = Math::AngleDiff(eyeYaw, prevEyeYaw);
 
 			if (delta > 0.f)

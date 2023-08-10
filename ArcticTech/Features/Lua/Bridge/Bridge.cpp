@@ -1116,7 +1116,7 @@ void CLua::Setup() {
 		"mins", &LagRecord::m_vecMins,
 		"maxs", &LagRecord::m_vecMaxs,
 		"abs_angles", &LagRecord::m_vecAbsAngles,
-		"view_angles", &LagRecord::m_viewAngle,
+		"view_angles", &LagRecord::m_angEyeAngles,
 		"simulation_time", &LagRecord::m_flSimulationTime,
 		"duck_amount", &LagRecord::m_flDuckAmout,
 		"duck_speed", &LagRecord::m_flDuckSpeed,

@@ -215,6 +215,12 @@ void CBasePlayer::CopyBones(matrix3x4_t* boneMatrix) {
 	memcpy(boneMatrix, GetCachedBoneData().Base(), sizeof(matrix3x4_t) * GetCachedBoneData().Count());
 }
 
+void CBasePlayer::ClampBonesInBBox(matrix3x4_t* bone_matrix, int bone_mask) {
+	static auto clampbones = reinterpret_cast<void(__thiscall*)(CBasePlayer*, matrix3x4_t*, int)>(Utils::PatternScan("client.dll", "56 57 8B F9 89 7C 24 38 83 BF ? ? ? ? ? 75 16 8B 47 04 8D 4F 04 8B 40 20 FF D0", -0x9));
+
+	clampbones(this, bone_matrix, bone_mask);
+}
+
 std::array<float, 24>& CBasePlayer::m_flPoseParameter() {
 	static int _m_flPoseParameter = NetVars::GetNetVar("DT_BaseAnimating", "m_flPoseParameter");
 	return *(std::array<float, 24>*)(this + _m_flPoseParameter);

@@ -24,6 +24,7 @@ struct HooksInfo_t {
 	bool console_log = false;
 	bool disable_interpolation = false;
 	bool in_draw_static_props = false;
+	bool disable_clamp_bones = false;
 };
 
 struct Ctx_t {

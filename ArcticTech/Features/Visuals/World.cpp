@@ -229,7 +229,8 @@ void CWorld::SunDirection() {
 	static float lerp_sun_yaw = 0;
 
 	static auto cascade_light_ptr = *reinterpret_cast<CCascadeLight***>(Utils::PatternScan("client.dll", "A1 ? ? ? ? B9 ? ? ? ? 56 F3 0F 7E 80", 0x1));
-	static CCascadeLight* cascade_light_entity = *cascade_light_ptr;
+	
+	CCascadeLight* cascade_light_entity = *cascade_light_ptr;
 
 	if (!cascade_light_entity) {
 		backupShouldReset = false;

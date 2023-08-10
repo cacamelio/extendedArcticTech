@@ -144,7 +144,7 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup)
 		Vector direction = forward + (right * (s_val.bcos * inaccuracy + s_val.dcos * spread)) + (up * (s_val.bsin * inaccuracy + s_val.dsin * spread));
 		direction.Q_Normalized();
 
-		if (!EngineTrace->RayIntersectPlayer(eye_position, eye_position + (direction * 8192.f), target->player, target->aimMatrix, damagegroup))
+		if (!EngineTrace->RayIntersectPlayer(eye_position, eye_position + (direction * 8192.f), target->player, target->clamped_matrix, damagegroup))
 			continue;
 
 		hits++;
@@ -172,7 +172,7 @@ bool CRagebot::CompareRecords(LagRecord* a, LagRecord* b) {
 	if (vec_diff.LengthSqr() > 4.f)
 		return false;
 
-	QAngle angle_diff = a->m_viewAngle - b->m_viewAngle;
+	QAngle angle_diff = a->m_angEyeAngles - b->m_angEyeAngles;
 	angle_diff.Normalize();
 
 	if (angle_diff.yaw > 90.f)
@@ -242,7 +242,7 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale, std
 	if (hitbox->flCapsuleRadius <= 0) // do not scan multipoints for feet
 		return;
 
-	matrix3x4_t boneMatrix = record->aimMatrix[hitbox->bone];
+	matrix3x4_t boneMatrix = record->clamped_matrix[hitbox->bone];
 
 	Vector mins, maxs;
 	Math::VectorTransform(hitbox->bbmin, boneMatrix, &mins);
@@ -322,7 +322,7 @@ std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record, bool backtrack
 		if (!settings.auto_stop->get(1) && max_possible_damage < CalcMinDamage(record->player))
 			continue;
 
-		points.emplace_back(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->aimMatrix), hitbox }));
+		points.emplace_back(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox }));
 
 		if (multipoints_enabled(hitbox))
 			GetMultipoints(record, hitbox, hitbox == HITBOX_HEAD ? settings.head_point_scale->get() * 0.01f : settings.body_point_scale->get() * 0.01f, points);
@@ -456,9 +456,14 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 
 	for (int i = 0; i < records.size(); i++) {
 		LagRecord* record = records[i];
+
+		LagCompensation->BacktrackEntity(record, false);
+		record->BuildMatrix();
+
+		memcpy(record->player->GetCachedBoneData().Base(), record->clamped_matrix, sizeof(matrix3x4_t) * record->player->GetCachedBoneData().Count());
+
 		std::vector<AimPoint_t> points = SelectPoints(record, i > 0);
 
-		LagCompensation->BacktrackEntity(record, true);
 
 		for (const auto& point : points) {
 			if (config.ragebot.aimbot.show_aimpoints->get())
@@ -721,11 +726,11 @@ void CRagebot::Zeusbot() {
 				continue;
 
 			const Vector points[]{
-				player->GetHitboxCenter(HITBOX_STOMACH, record->boneMatrix),
-				player->GetHitboxCenter(HITBOX_CHEST, record->boneMatrix),
-				player->GetHitboxCenter(HITBOX_UPPER_CHEST, record->boneMatrix),
-				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM, record->boneMatrix),
-				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM, record->boneMatrix)
+				player->GetHitboxCenter(HITBOX_STOMACH, record->bone_matrix),
+				player->GetHitboxCenter(HITBOX_CHEST, record->bone_matrix),
+				player->GetHitboxCenter(HITBOX_UPPER_CHEST, record->bone_matrix),
+				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM, record->bone_matrix),
+				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM, record->bone_matrix)
 			};
 
 			for (const auto& point : points) {

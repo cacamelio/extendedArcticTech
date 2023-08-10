@@ -29,7 +29,7 @@ void CShotManager::DetectUnregisteredShots() {
 		m_fLastShotTime = fShotTime;
 	}
 
-	if (m_fLastShotTime - fShotTime < GlobalVars->interval_per_tick * 2.f) {
+	if (m_fLastShotTime - fShotTime < GlobalVars->interval_per_tick * 3.f) {
 		m_fLastShotTime = fShotTime;
 		return;
 	}
@@ -42,6 +42,7 @@ void CShotManager::DetectUnregisteredShots() {
 			continue;
 
 		it->acked = true;
+		it->ack_tick = GlobalVars->tickcount;
 		it->unregistered = true;
 		it->miss_reason = "unregistered";
 
