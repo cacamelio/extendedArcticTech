@@ -133,7 +133,7 @@ inline void RecvProp::SetDataTableProxyFn(DataTableRecvVarProxyFn fn)
 
 class ClientClass {
 public:
-    void* m_pCreateFn;
+    CreateClientClassFn m_pCreateFn;
     void* m_pCreateEventFn;
     char* m_pNetworkName;
     RecvTable* m_pRecvTable;

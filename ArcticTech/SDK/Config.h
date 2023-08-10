@@ -255,6 +255,7 @@ struct config_t {
         CCheckBox* mask_changer;
         CCheckBox* override_agent;
         CComboBox* knife_model; 
+        CComboBox* current_profile;
         CComboBox* paint_kits;
         CComboBox* glove_paint_kits;
         CComboBox* mask_changer_models;
@@ -286,6 +287,7 @@ public:
 
     CComboBox* config_list;
     CInputBox* config_name;
+    CInputBox* knife_name;
     CButton* load_button;
     CButton* save_button;
     CButton* delete_button;

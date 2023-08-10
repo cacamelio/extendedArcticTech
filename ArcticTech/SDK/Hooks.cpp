@@ -554,7 +554,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
-		KillFeed->Instance();
 		if (Cheat.InGame) {
 			EngineClient->FireEvents();
 		}
@@ -765,6 +764,8 @@ void __fastcall hkPacketEnd(CClientState* thisptr, void* edx) {
 	//const auto& local_data = EnginePrediction->GetLocalData(ClientState->m_nCommandAck % 150);
 	//if (local_data.shift_amount > 0 && local_data.m_nTickBase > Cheat.LocalPlayer->m_nTickBase())
 	//	Cheat.LocalPlayer->m_nTickBase() = local_data.m_nTickBase + 1;
+
+	//ESP::ProcessSounds();
 
 	oPacketEnd(thisptr, edx);
 }

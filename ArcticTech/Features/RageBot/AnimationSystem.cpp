@@ -91,12 +91,6 @@ void CAnimationSystem::UpdateLocalAnimations() {
 
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 	animstate->iLastUpdateFrame = GlobalVars->framecount;
-
-	//Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
-	//Cheat.LocalPlayer->m_flPoseParameter() = stored_local_anims.poseparams;
-
-	//memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), sent_matrix, sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
-	//Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
 }
 
 void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
