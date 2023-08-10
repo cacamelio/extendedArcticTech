@@ -349,6 +349,7 @@ public:
 	NETVAR(m_flFallbackWear, float, "DT_BaseAttributableItem", "m_flFallbackWear")
 	NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")
 	NETVAR(m_iItemDefinitionIndex, short, "DT_BaseAttributableItem", "m_iItemDefinitionIndex")
+	NETVAR(m_iItemIDHigh, int, "DT_BaseAttributableItem", "m_iItemIDHigh")
 
 	void net_pre_data_update( int update_type ) {
 		using original_fn = void( __thiscall* )( void*, int );

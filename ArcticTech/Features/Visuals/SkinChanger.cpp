@@ -11,71 +11,6 @@ void CSkinChanger::LoadKnifeModels() {
 	}
 }
 
-std::vector<int> vecWeapons = {
-	WEAPON_AK47,
-	WEAPON_AUG,
-	WEAPON_AWP,
-	WEAPON_CZ75A,
-	WEAPON_DEAGLE,
-	WEAPON_ELITE,
-	WEAPON_FAMAS,
-	WEAPON_FIVESEVEN,
-	WEAPON_G3SG1,
-	WEAPON_GALILAR,
-	WEAPON_GLOCK,
-	WEAPON_M249,
-	WEAPON_M4A1_SILENCER,
-	WEAPON_M4A1,
-	WEAPON_MAC10,
-	WEAPON_MAG7,
-	WEAPON_MP5SD,
-	WEAPON_MP7,
-	WEAPON_MP9,
-	WEAPON_NEGEV,
-	WEAPON_NOVA,
-	WEAPON_HKP2000,
-	WEAPON_P250,
-	WEAPON_P90,
-	WEAPON_BIZON,
-	WEAPON_REVOLVER,
-	WEAPON_SAWEDOFF,
-	WEAPON_SCAR20,
-	WEAPON_SSG08,
-	WEAPON_SG556,
-	WEAPON_TEC9,
-	WEAPON_UMP45,
-	WEAPON_USP_SILENCER,
-	WEAPON_XM1014,
-	WEAPON_KNIFE_BAYONET,
-	WEAPON_KNIFE_FLIP,
-	WEAPON_KNIFE_GUT,
-	WEAPON_KNIFE_KARAMBIT,
-	WEAPON_KNIFE_M9_BAYONET,
-	WEAPON_KNIFE_TACTICAL,
-	WEAPON_KNIFE_FALCHION,
-	WEAPON_KNIFE_SURVIVAL_BOWIE,
-	WEAPON_KNIFE_BUTTERFLY,
-	WEAPON_KNIFE_PUSH,
-	WEAPON_KNIFE_URSUS,
-	WEAPON_KNIFE_GYPSY_JACKKNIFE,
-	WEAPON_KNIFE_STILETTO,
-	WEAPON_KNIFE_WIDOWMAKER,
-	WEAPON_KNIFE_CSS,
-	WEAPON_KNIFE_OUTDOOR,
-	WEAPON_KNIFE_SKELETON,
-	WEAPON_KNIFE_CORD,
-	WEAPON_KNIFE_CANIS,
-	GLOVE_STUDDED_BLOODHOUND,
-	GLOVE_SPORTY,
-	GLOVE_SLICK,
-	GLOVE_LEATHER_WRAP,
-	GLOVE_MOTORCYCLE,
-	GLOVE_SPECIALIST,
-	GLOVE_STUDDED_HYDRA,
-	GLOVE_STUDDED_BROKENFANG
-};
-
-
 std::string wchar_to_UTF8(const wchar_t* in)
 {
 	std::string out;
@@ -562,9 +497,62 @@ bool CSkinChanger::LoadModel( const char* thisModelName )
 
 void CSkinChanger::InitCustomModels()
 {
-	LoadModel( "models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl" );
-	LoadModel( "models/player/custom_player/legacy/tm_jumpsuit_variantb.mdl" );
-	LoadModel( "models/player/custom_player/legacy/ctm_gign_varianta.mdl" );
+	LoadModel("models/player/custom_player/legacy/tm_jumpsuit_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_jumpsuit_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_jumpsuit_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_anarchist_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_anarchist_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_anarchist_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_separatist_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_separatist_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_separatist_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_separatist_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_fbi.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_fbi_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_fbi_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_fbi_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_fbi_variante.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gign_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gign_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gign_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_st6.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_st6_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_st6_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_st6_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_st6_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_idf_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_idf_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_idf_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_idf_variante.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_idf_variantf.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_swat.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_swat_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_swat_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_swat_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_swat_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_sas.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gsg9.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gsg9_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gsg9_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gsg9_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/ctm_gsg9_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_professional_var1.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_professional_var2.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_professional_var3.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_professional_var4.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_leet_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_leet_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_leet_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_leet_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_Balkan_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_Balkan_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_Balkan_variantc.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_Balkan_variantd.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_pirate_varianta.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_pirate_variantb.mdl");
+	LoadModel("models/player/custom_player/legacy/tm_pirate_variantc.mdl");
+
+	//precahce mask models
 	LoadModel("models/player/holiday/facemasks/facemask_dallas.mdl");
 	LoadModel("models/player/holiday/facemasks/facemask_battlemask.mdl");
 	LoadModel("models/player/holiday/facemasks/evil_clown.mdl");
@@ -651,7 +639,7 @@ void CSkinChanger::AgentChanger( ) {
 	switch ( Cheat.LocalPlayer->m_iTeamNum() )
 	{
 		case 2:
-			pLocal->SetModelIndex( ModelInfoClient->GetModelIndex( models_t[ config.skins.agent_model_t->get( ) ] ) );
+			pLocal->SetModelIndex( ModelInfoClient->GetModelIndex(models_ct[ config.skins.agent_model_t->get( ) ] ) );
 			break;
 		case 3:
 			pLocal->SetModelIndex( ModelInfoClient->GetModelIndex( models_ct[ config.skins.agent_model_ct->get( ) ] ) );
@@ -681,6 +669,53 @@ void CSkinChanger::ApplyGlove(CAttributableItem* pGlove)
 	pGlove->m_nModelIndex() = ModelInfoClient->GetModelIndex("models/weapons/v_models/arms/glove_motorcycle/v_glove_motorcycle.mdl");
 	pGlove->net_pre_data_update(0);
 }
+int weapon_defenitication = 0;
+
+int GetItemDefenitication()
+{
+	switch (config.skins.knife_model->get())
+	{
+	case 4:
+		return weapon_defenitication = 500;
+	case 5:
+		return weapon_defenitication = 503;
+	case 6:
+		return weapon_defenitication = 505;
+	case 7:
+		return weapon_defenitication = 506;
+	case 8:
+		return weapon_defenitication = 507;
+	case 9:
+		return weapon_defenitication = 508;
+	case 10:
+		return weapon_defenitication = 509;
+	case 11:
+		return weapon_defenitication = 512;
+	case 12:
+		return weapon_defenitication = 514;
+	case 13:
+		return weapon_defenitication = 515;
+	case 14:
+		return weapon_defenitication = 516;
+	case 15:
+		return weapon_defenitication = 517;
+	case 16:
+		return weapon_defenitication = 518;
+	case 17:
+		return weapon_defenitication = 590;
+	case 18:
+		return weapon_defenitication = 520;
+	case 19:
+		return weapon_defenitication = 521;
+	case 20:
+		return weapon_defenitication = 522;
+	case 21:
+		return weapon_defenitication = 523;
+	case 22:
+		return weapon_defenitication = 525;
+	}
+}
+
 
 void CSkinChanger::Run( bool frame_end ) {
 	if ( !Cheat.InGame || !Cheat.LocalPlayer || !config.skins.override_knife->get() )
@@ -693,29 +728,34 @@ void CSkinChanger::Run( bool frame_end ) {
 
 		if ( !weapon )
 			return;
+		player_info_t pInfo;
+		if (!EngineClient->GetPlayerInfo(EngineClient->GetLocalPlayer(), &pInfo))
+			return;
 
+		weapon->m_iItemIDHigh() = -1;
+		weapon->m_OriginalOwnerXuidLow() = pInfo.xuid_low;
 
 		if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
+			weapon->m_iItemDefinitionIndex() = GetItemDefenitication();
+			weapon->m_iEntityQuality() = 3;
+			weapon->net_pre_data_update(0);
+			weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
 			ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );
 		}
 
-		auto cs_weapon = reinterpret_cast<CAttributableItem*>(Cheat.LocalPlayer->GetActiveWeapon());
+		if (weapon->GetClientClass()->m_ClassID == C_WEAPON_GLOCK18)
+		{
+			weapon->m_iItemIDHigh() = -1;
+			weapon->m_iEntityQuality() = 3;
+			weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
+			weapon->m_flFallbackWear() = 0.0001f;
 
-		cs_weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
+		}
 
-		player_info_t info;
-
-		EngineClient->GetPlayerInfo(Cheat.LocalPlayer->EntIndex(), &info);
-
-		// fix stattrak ownership.
-		cs_weapon->m_iAccountID() = info.xuid_low;
-
-		// fix stattrak in hud.
-		if (cs_weapon->m_nFallbackStatTrak() >= 0)
-			cs_weapon->m_iEntityQuality() = 9;
-
-		// force use fallback values.
-		cs_weapon->m_OriginalOwnerXuidHigh() = -1;
+		weapon->m_OriginalOwnerXuidLow() = 0;//crash?
+		weapon->m_OriginalOwnerXuidHigh() = 0;
+		weapon->m_flFallbackWear() = 0.001f;
+		weapon->m_iItemIDHigh() = 1;
 	}
 }
 

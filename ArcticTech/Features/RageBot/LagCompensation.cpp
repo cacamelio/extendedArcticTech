@@ -168,36 +168,6 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 		return false;
 
 	return true;
-
-	//if (record->shifting_tickbase || record->breaking_lag_comp)
-	//	return false;
-
-	//float correct = 0.0f;
-
-	//// Get true latency
-	//INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
-	//if (nci)
-	//{
-	//	// add network latency
-	//	correct += nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING);
-	//}
-
-	//// NOTE:  do these computations in float time, not ticks, to avoid big roundoff error accumulations in the math
-	//// add view interpolation latency see C_BaseEntity::GetInterpolationAmount()
-	//correct += GetLerpTime();
-
-	//// check bounds [0,sv_maxunlag]
-	//correct = std::clamp(correct, 0.0f, cvars.sv_maxunlag->GetFloat());
-
-	//// correct tick send by player 
-	//float flTargetTime = record->m_flSimulationTime;
-
-	//int tick_base = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift;
-
-	//// calculate difference between tick sent by player and our latency based tick
-	//float deltaTime = correct - (TICKS_TO_TIME(tick_base) - flTargetTime);
-
-	//return std::abs(deltaTime) < 0.2f;
 }
 
 void CLagCompensation::Reset(int index) {
