@@ -111,7 +111,6 @@ public:
 	std::vector<std::string> GetUIPaintKitsGloves();
 	std::vector<std::string> GetUIKnifeModels();
 	bool ApplyKnifeModel( CAttributableItem* weapon, const char* model );
-	bool ApplyKnifeSkin(CAttributableItem* pWeapon, const char* szModel, int iItemDefIndex, int iPaintKit, int iEntityQuality, float flFallbackWear);
 	static void SetViewModelSequence( const CRecvProxyData* pDataConst, void* pStruct, void* pOut );
 	static void Hooked_RecvProxy_Viewmodel( CRecvProxyData* pData, void* pStruct, void* pOut );
 	void FixViewModelSequence();
@@ -270,7 +269,6 @@ public:
 		"models/player/holiday/facemasks/porcelain_doll.mdl",
 	};
 
-	void ApplyGlove(CAttributableItem* pGlove);
 
 	void Run( bool frame_end );
 };

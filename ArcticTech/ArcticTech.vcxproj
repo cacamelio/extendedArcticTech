@@ -183,6 +183,7 @@
     <ClCompile Include="Features\ShotManager\ShotManager.cpp" />
     <ClCompile Include="Features\Visuals\Chams.cpp" />
     <ClCompile Include="Features\Visuals\ESP.cpp" />
+    <ClCompile Include="Features\Visuals\GlovesChanger.cpp" />
     <ClCompile Include="Features\Visuals\Glow.cpp" />
     <ClCompile Include="Features\Visuals\GrenadePrediction.cpp" />
     <ClCompile Include="Features\Visuals\Indicators.cpp" />
@@ -245,6 +246,7 @@
     <ClInclude Include="Features\ShotManager\ShotManager.h" />
     <ClInclude Include="Features\Visuals\Chams.h" />
     <ClInclude Include="Features\Visuals\ESP.h" />
+    <ClInclude Include="Features\Visuals\GlovesChanger.h" />
     <ClInclude Include="Features\Visuals\Glow.h" />
     <ClInclude Include="Features\Visuals\GrenadePrediction.h" />
     <ClInclude Include="Features\Visuals\Indicators.h" />
