@@ -44,11 +44,14 @@ void CShotManager::DetectUnregisteredShots() {
 		it->acked = true;
 		it->ack_tick = GlobalVars->tickcount;
 		it->unregistered = true;
-		it->miss_reason = "unregistered";
+		it->miss_reason = "unregistered shot";
 
 		Console->ArcticTag();
 		Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
-		Console->ColorPrint("unregistered\n", Color(255, 20, 20));
+		Console->ColorPrint("unregistered shot\n", Color(255, 20, 20));
+
+		for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
+			callback.func(*it);
 
 		weapon->m_flNextPrimaryAttack() = TICKS_TO_TIME(it->shot_tick) - 0.1f; // so we can shoot again immediately
 
@@ -120,7 +123,7 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 
 		Vector point(event->GetFloat("x"), event->GetFloat("y"), event->GetFloat("z"));
 
-		shot->impacts.emplace_back(point);
+		shot->impacts.push_back(point);
 		shot->ack_tick = GlobalVars->tickcount;
 
 		float min_distance = (shot->hit_point - shot->target_pos).LengthSqr();
@@ -151,6 +154,9 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 				Console->ArcticTag();
 				Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
 				Console->ColorPrint("death\n", Color(255, 20, 20));
+
+				for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
+					callback.func(*it);
 			}
 
 			return false;
@@ -178,11 +184,7 @@ void CShotManager::OnNetUpdate() {
 			if (GlobalVars->tickcount - it->shot_tick > 64) {
 				it->acked = true;
 				it->unregistered = true;
-				it->miss_reason = "unregistered";
-
-				Console->ArcticTag();
-				Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
-				Console->ColorPrint("unregistered\n", Color(255, 20, 20));
+				it->miss_reason = "unregistered shot";
 			}
 			continue;
 		}

@@ -51,7 +51,6 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.peek_assist_color = aimbot->AddColorPicker("Peek Assist");
 	config.ragebot.aimbot.peek_assist_keybind = aimbot->AddKeyBind("Peek Assist key");
 	config.ragebot.aimbot.show_aimpoints = aimbot->AddCheckBox("Show aim points");
-	config.ragebot.aimbot.show_debug_data = aimbot->AddCheckBox("Show debug data");
 	config.ragebot.aimbot.threads = aimbot->AddCheckBox("Multithread");
 	config.ragebot.aimbot.roll_resolver = aimbot->AddCheckBox("Roll Resolver");
 	config.ragebot.aimbot.roll_resolver_key = aimbot->AddKeyBind("Roll Resolver");

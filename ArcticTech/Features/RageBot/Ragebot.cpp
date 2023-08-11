@@ -77,9 +77,9 @@ void CRagebot::AutoStop() {
 	Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 	QAngle direction = Math::VectorAngles(vec_speed);
 
-	float target_speed = active_weapon->MaxSpeed() * 0.3f;
+	float target_speed = ctx.active_weapon->MaxSpeed() * 0.25f;
 
-	if (vec_speed.Q_Length() < target_speed + 3.f && !settings.auto_stop->get(0)) {
+	if (vec_speed.LengthSqr() < target_speed * target_speed + 9.f && !settings.auto_stop->get(0)) {
 		float cmd_speed = Math::Q_sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
 	
 		if (cmd_speed > target_speed) {
@@ -135,7 +135,7 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup)
 		float inaccuracy = a * EnginePrediction->WeaponInaccuracy();
 		float spread = c * EnginePrediction->WeaponSpread();
 
-		if (active_weapon->m_iItemDefinitionIndex() == 64)
+		if (ctx.active_weapon->m_iItemDefinitionIndex() == 64)
 		{
 			a = 1.f - a * a;
 			a = 1.f - c * c;
@@ -316,8 +316,8 @@ std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record, bool backtrack
 		if (!hitbox_enabled(hitbox))
 			continue;
 
-		float max_possible_damage = weapon_data->iDamage;
-		record->player->ScaleDamage(HitboxToHitgroup(hitbox), weapon_data, max_possible_damage);
+		float max_possible_damage = ctx.weapon_info->iDamage;
+		record->player->ScaleDamage(HitboxToHitgroup(hitbox), ctx.weapon_info, max_possible_damage);
 
 		if (!settings.auto_stop->get(1) && max_possible_damage < CalcMinDamage(record->player))
 			continue;
@@ -338,15 +338,14 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 	float player_sim_time = target.player->m_flSimulationTime();
 
 	for (const auto& point : target.points) {
-		float modified_damage = point.damage - std::abs(point.record->m_flSimulationTime - player_sim_time) * 20.f;
-
-		if (point.multipoint)
-			modified_damage -= 1.5f;
-
-		if (point.hitbox == HITBOX_HEAD && modified_damage > best_head_point.damage) 
-			best_head_point = point;
-		else if (point.hitbox != HITBOX_HEAD && modified_damage > best_body_point.damage)
-			best_body_point = point;
+		if (point.hitbox == HITBOX_HEAD) {
+			if (best_head_point.damage < target.minimum_damage || (point.priotity > best_head_point.priotity && point.damage > target.minimum_damage))
+				best_head_point = point;
+		}
+		else if (point.hitbox != HITBOX_HEAD) {
+			if (best_body_point.damage < target.minimum_damage || (point.priotity > best_body_point.priotity && point.damage > target.minimum_damage))
+				best_body_point = point;
+		}
 	}
 
 	//if (best_body_point.damage < target.player->m_iHealth() && 
@@ -406,7 +405,7 @@ void CRagebot::ScanTargets() {
 
 		{
 			std::unique_lock<std::mutex> lock(target_mutex);
-			scan_condition.wait(lock, [this]() { return scanned_targets.size() == selected_targets; });
+			result_condition.wait(lock, [this]() { return scanned_targets.size() == selected_targets; });
 		}
 	}
 }
@@ -425,7 +424,7 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 		Ragebot->targets.pop_back();
 		scan_lock.unlock();
 		
-		Ragebot->scan_condition.notify_all();
+		Ragebot->scan_condition.notify_one();
 
 		ScannedTarget_t scan = Ragebot->ScanTarget(target);
 
@@ -434,7 +433,7 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 		lock.unlock();
 
 		if (Ragebot->scanned_targets.size() == Ragebot->selected_targets)
-			Ragebot->scan_condition.notify_one();
+			Ragebot->result_condition.notify_one();
 	}
 
 	return 0;
@@ -473,11 +472,21 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 			if (!AutoWall->FireBullet(Cheat.LocalPlayer, eye_position, point.point, bullet, target))
 				continue;
 
+			int priority = 2;
+			if (point.multipoint)
+				priority--;
+
+			if (EngineTrace->RayIntersectPlayer(eye_position, point.point, target, record->bone_matrix) && EngineTrace->RayIntersectPlayer(eye_position, point.point, target, record->clamped_matrix))
+				priority += 2;
+
+			if (point.hitbox == HITBOX_STOMACH || point.hitbox == HITBOX_PELVIS)
+				priority++;
+
 			result.points.emplace_back(ScannedPoint_t{
 				record,
 				point.point,
 				point.hitbox,
-				point.multipoint,
+				priority,
 				bullet.damage,
 				bullet.impacts
 			});
@@ -493,7 +502,6 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 		delete backup_record;
 		return result;
 	}
-	//LagCompensation->BacktrackEntity(result.best_point.record, true);
 
 	result.angle = Math::VectorAngles_p(result.best_point.point - eye_position);
 	result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
@@ -527,23 +535,20 @@ void CRagebot::Run() {
 	if (Cheat.LocalPlayer->m_fFlags() & FL_FROZEN)
 		return;
 
-	active_weapon = Cheat.LocalPlayer->GetActiveWeapon();
 	eye_position = Cheat.LocalPlayer->GetShootPosition();
 
-	if (!active_weapon || active_weapon->IsGrenade())
+	if (!ctx.active_weapon || ctx.active_weapon->IsGrenade())
 		return;
 	
-	if (active_weapon->m_iItemDefinitionIndex() == Taser) {
+	if (ctx.active_weapon->m_iItemDefinitionIndex() == Taser) {
 		Zeusbot();
 		return;
 	}
 
-	weapon_data = active_weapon->GetWeaponInfo();
-
-	if (!active_weapon->ShootingWeapon())
+	if (!ctx.active_weapon->ShootingWeapon())
 		return;
 
-	settings = GetWeaponSettings(active_weapon->m_iItemDefinitionIndex());
+	settings = GetWeaponSettings(ctx.active_weapon->m_iItemDefinitionIndex());
 
 	doubletap_stop = false;
 
@@ -556,17 +561,12 @@ void CRagebot::Run() {
 	ScannedTarget_t best_target;
 	bool should_autostop = false;
 
-	debug_data.autostop = false;
-	debug_data.damage = 0;
-	debug_data.hitchance = 0;
-	debug_data.target = "null";
-
 	bool local_on_ground = Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && EnginePrediction->m_fFlags & FL_ONGROUND;
 	int m_nWeaponMode = Cheat.LocalPlayer->m_bIsScoped() ? 1 : 0;
 	float min_jump_inaccuracy_tan = 0.f;
 
 	if (settings.auto_stop->get(3) && !local_on_ground) { // superior "dynamic autostop"
-	float flInaccuracyJumpInitial = weapon_data->_flInaccuracyUnknown;
+		float flInaccuracyJumpInitial = ctx.weapon_info->_flInaccuracyUnknown;
 
 		float fSqrtMaxJumpSpeed = Math::Q_sqrt(cvars.sv_jump_impulse->GetFloat());
 		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.3f);
@@ -582,11 +582,11 @@ void CRagebot::Run() {
 		else if (flAirSpeedInaccuracy > (2.f * flInaccuracyJumpInitial))
 			flAirSpeedInaccuracy = 2.f * flInaccuracyJumpInitial;
 
-		min_jump_inaccuracy_tan = std::tan(weapon_data->flInaccuracyStand[m_nWeaponMode] + weapon_data->flInaccuracyJump[m_nWeaponMode] + flAirSpeedInaccuracy);
+		min_jump_inaccuracy_tan = std::tan(ctx.weapon_info->flInaccuracyStand[m_nWeaponMode] + ctx.weapon_info->flInaccuracyJump[m_nWeaponMode] + flAirSpeedInaccuracy);
 	}
 
 	for (const auto& target : scanned_targets) {
-		if (target.best_point.damage > 2.f)
+		if (target.best_point.damage > 2.f && config.ragebot.aimbot.doubletap_options->get(1))
 			Exploits->DefenseiveThisTick() = true;
 
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
@@ -608,11 +608,8 @@ void CRagebot::Run() {
 			if (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.009f)) {
 				should_autostop = true;
 			}
-			debug_data.hitchance = target.hitchance;
-			debug_data.damage = target.best_point.damage;
-			debug_data.target = target.player->GetName();
 
-			if (settings.auto_scope->get() && !Cheat.LocalPlayer->m_bIsScoped() && !Cheat.LocalPlayer->m_bResumeZoom() && weapon_data->nWeaponType == WEAPONTYPE_SNIPER)
+			if (settings.auto_scope->get() && !Cheat.LocalPlayer->m_bIsScoped() && !Cheat.LocalPlayer->m_bResumeZoom() && ctx.weapon_info->nWeaponType == WEAPONTYPE_SNIPER)
 				ctx.cmd->buttons |= IN_ATTACK2;
 		}
 
@@ -624,17 +621,20 @@ void CRagebot::Run() {
 		}
 	}
 
-	if (settings.auto_stop->get(2) && !active_weapon->CanShoot() && active_weapon->m_iItemDefinitionIndex() != Revolver)
+	if (settings.auto_stop->get(2) && !ctx.active_weapon->CanShoot() && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
-	if (should_autostop)
-		AutoStop();
+	bool shooting_this_tick = true;
 
-	debug_data.autostop = should_autostop;
-
-	if (!best_target.player || !active_weapon->CanShoot()) {
-		if (best_target.player && active_weapon->m_iItemDefinitionIndex() == Revolver)
+	if (!best_target.player || !ctx.active_weapon->CanShoot()) {
+		if (best_target.player && ctx.active_weapon->m_iItemDefinitionIndex() == Revolver)
 			ctx.cmd->buttons |= IN_ATTACK;
+		shooting_this_tick = false;
+	}
+
+	if (!shooting_this_tick) {
+		if (should_autostop)
+			AutoStop();
 		return;
 	}
 
@@ -644,7 +644,7 @@ void CRagebot::Run() {
 
 	if (!settings.auto_stop->get(2) && ctx.tickbase_shift > 0) {
 		doubletap_stop = true;
-		doubletap_stop_speed = active_weapon->MaxSpeed() * 0.3f;
+		doubletap_stop_speed = ctx.active_weapon->MaxSpeed() * 0.25f;
 	}
 
 	if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
@@ -688,20 +688,11 @@ void CRagebot::Run() {
 	}
 }
 
-void CRagebot::DrawDebugData() {
-	Render->Text("target: " + debug_data.target, Vector2(210, 10), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW);
-	Render->Text("autostop: " + std::to_string(debug_data.autostop), Vector2(210, 23), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW);
-	Render->Text("damage: " + std::to_string(debug_data.damage), Vector2(210, 36), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW);
-	Render->Text("hitchance: " + std::to_string(debug_data.hitchance), Vector2(210, 49), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW);
-	if (config.ragebot.aimbot.minimum_damage_override_key->get())
-		Render->Text("dmg override", Vector2(210, 62), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW);
-}
-
 void CRagebot::Zeusbot() {
 	const Vector shoot_pos = Cheat.LocalPlayer->GetShootPosition();
-	const float inaccuracy_tan = std::tan(active_weapon->GetInaccuracy());
+	const float inaccuracy_tan = std::tan(ctx.active_weapon->GetInaccuracy());
 
-	if (!active_weapon->CanShoot())
+	if (!ctx.active_weapon->CanShoot())
 		return;
 
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
@@ -755,6 +746,8 @@ void CRagebot::Zeusbot() {
 				ctx.cmd->buttons |= IN_ATTACK;
 				ctx.cmd->tick_count = TIME_TO_TICKS(record->m_flSimulationTime + LagCompensation->GetLerpTime());
 
+				Chams->AddShotChams(record);
+
 				Console->Log(std::format("shot at {} [hc: {}] [bt: {}]", player->GetName(), (int)(hitchance * 100.f), TIME_TO_TICKS(player->m_flSimulationTime() - record->m_flSimulationTime)));
 
 				return;
@@ -764,22 +757,20 @@ void CRagebot::Zeusbot() {
 }
 
 void CRagebot::AutoRevolver() {
-	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
-
-	if (!weapon)
+	if (!ctx.active_weapon)
 		return;
 
 	if (ctx.cmd->buttons & IN_ATTACK)
 		return;
 
-	if (weapon->m_iItemDefinitionIndex() != Revolver)
+	if (ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
 	ctx.cmd->buttons &= ~IN_ATTACK2;
 
 	static float next_cock_time = 0.f;
 
-	if (weapon->m_flPostponeFireReadyTime() > TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase())) {
+	if (ctx.active_weapon->m_flPostponeFireReadyTime() > TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase())) {
 		if (GlobalVars->curtime > next_cock_time)
 			ctx.cmd->buttons |= IN_ATTACK;
 	}

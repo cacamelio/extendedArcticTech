@@ -14,16 +14,14 @@ void CAntiAim::FakeLag() {
 	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || Cheat.freezetime)
 		return;
 
-	CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
-
-	if (!activeWeapon)
+	if (!ctx.active_weapon)
 		return;
 
-	if (activeWeapon->IsGrenade() && EnginePrediction->m_fThrowTime > 0) {
+	if (ctx.active_weapon->IsGrenade() && EnginePrediction->m_fThrowTime > 0) {
 		ctx.send_packet = true;
 		return;
 	}
-	else if (ctx.cmd->buttons & IN_ATTACK && activeWeapon->ShootingWeapon() && activeWeapon->CanShoot()) {
+	else if (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot()) {
 		if (!config.antiaim.misc.fake_duck->get()) {
 			ctx.send_packet = true;
 			return;
@@ -83,15 +81,13 @@ void CAntiAim::Angles() {
 	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || Cheat.freezetime)
 		return;
 
-	CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
-
-	if (!activeWeapon)
+	if (!ctx.active_weapon)
 		return;
 
-	if (activeWeapon->IsGrenade() && EnginePrediction->m_fThrowTime > 0)
+	if (ctx.active_weapon->IsGrenade() && EnginePrediction->m_fThrowTime > 0)
 		return;
 
-	if (!activeWeapon->IsGrenade() && (ctx.cmd->buttons & IN_ATTACK && Cheat.LocalPlayer->GetActiveWeapon()->CanShoot()))
+	if (!ctx.active_weapon->IsGrenade() && (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->CanShoot()))
 		return;
 
 	target = GetNearestTarget();
@@ -169,8 +165,9 @@ void CAntiAim::Desync() {
 
 	desyncing = true;
 
-	if (ctx.local_velocity.LengthSqr() < 5.f)
+	if (ctx.local_velocity.LengthSqr() < 5.f) {
 		ctx.cmd->sidemove = ctx.cmd->buttons & IN_DUCK ? (ctx.cmd->tick_count % 2 == 0 ? -3.01f : 3.01f) : (ctx.cmd->tick_count % 2 == 0 ? -1.01f : 1.01f);
+	}
 }
 
 CBasePlayer* CAntiAim::GetNearestTarget() {
@@ -244,16 +241,12 @@ void CAntiAim::SlowWalk() {
 	if (!config.antiaim.misc.slow_walk->get() || !Cheat.LocalPlayer || Cheat.LocalPlayer->m_iHealth() == 0 || !(GetAsyncKeyState(VK_SHIFT) & 0x8000))
 		return;
 
-	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
-
 	ctx.cmd->buttons &= ~IN_WALK;
 
-	if (!weapon)
+	if (!ctx.active_weapon)
 		return;
 
-	CCSWeaponData* data = weapon->GetWeaponInfo();
-
-	float maxSpeed = (Cheat.LocalPlayer->m_bIsScoped() ? data->flMaxSpeedAlt : data->flMaxSpeed) * 0.3f;
+	float maxSpeed = (Cheat.LocalPlayer->m_bIsScoped() ? ctx.weapon_info->flMaxSpeedAlt : ctx.weapon_info->flMaxSpeed) * 0.3f;
 
 	float movespeed = Math::Q_sqrt(ctx.cmd->sidemove * ctx.cmd->sidemove + ctx.cmd->forwardmove * ctx.cmd->forwardmove);
 	
@@ -288,21 +281,21 @@ void CAntiAim::LegMovement() {
 	case 0:
 		if (ctx.cmd->forwardmove > 0)
 			ctx.cmd->buttons |= IN_FORWARD;
-		else
+		else if (ctx.cmd->forwardmove < 0)
 			ctx.cmd->buttons |= IN_BACK;
 		if (ctx.cmd->sidemove > 0)
 			ctx.cmd->buttons |= IN_MOVERIGHT;
-		else
+		else if (ctx.cmd->sidemove < 0)
 			ctx.cmd->buttons |= IN_MOVELEFT;
 		break;
 	case 1:
 		if (ctx.cmd->forwardmove < 0)
 			ctx.cmd->buttons |= IN_FORWARD;
-		else
+		else if (ctx.cmd->forwardmove > 0)
 			ctx.cmd->buttons |= IN_BACK;
 		if (ctx.cmd->sidemove < 0)
 			ctx.cmd->buttons |= IN_MOVERIGHT;
-		else
+		else if (ctx.cmd->sidemove > 0)
 			ctx.cmd->buttons |= IN_MOVELEFT;
 		break;
 	default:
@@ -319,7 +312,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * (18 + velocity.Q_Length() / 30.f);
+	Vector move_factor = velocity.Normalized() * (19 + velocity.Q_Length() / 30.f);
 
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -337,6 +330,9 @@ bool CAntiAim::IsPeeking() {
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT)
 	};
 
+	auto backup_active_weapon = ctx.active_weapon;
+	auto backup_weapon_data = ctx.weapon_info;
+
 	bool peeked = false;
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
@@ -344,10 +340,14 @@ bool CAntiAim::IsPeeking() {
 		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant())
 			continue;
 
-		FireBulletData_t data;
 		Vector enemyShootPos = player->GetShootPosition();
+		ctx.active_weapon = player->GetActiveWeapon();
+
+		if (ctx.active_weapon)
+			ctx.weapon_info = ctx.active_weapon->GetWeaponInfo();
 
 		for (int i = 0; i < 4; i++) {
+			FireBulletData_t data;
 			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
 				peeked = true;
 				break;

@@ -45,8 +45,6 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 void CLagCompensation::BacktrackEntity(LagRecord* record, bool copy_matrix, bool use_aim_matrix) {
 	CBasePlayer* player = record->player;
 
-	float flSimulationTime = player->m_flSimulationTime();
-
 	player->m_flSimulationTime() = record->m_flSimulationTime;
 	player->m_vecOrigin() = record->m_vecOrigin;
 	player->SetAbsOrigin(record->m_vecOrigin);

@@ -98,6 +98,14 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 
+	if (Cheat.LocalPlayer)
+		ctx.active_weapon = Cheat.LocalPlayer->GetActiveWeapon();
+	else
+		ctx.active_weapon = nullptr;
+
+	if (ctx.active_weapon)
+		ctx.weapon_info = ctx.active_weapon->GetWeaponInfo();
+
 	if (!Render->IsInitialized() || !Menu->IsInitialized())
 		return;
 
@@ -111,8 +119,6 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	NadePrediction.Draw();
 	AutoPeek->Draw();
 	World->Crosshair();
-	if (config.ragebot.aimbot.show_debug_data->get())
-		Ragebot->DrawDebugData();
 	Indicators->Draw();
 
 	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
@@ -156,10 +162,15 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	Exploits->DefenseiveThisTick() = false;
 
+	ctx.active_weapon = nullptr;
+
 	if (!cmd || !cmd->command_number || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return;
 
-	CBaseCombatWeapon* weapon = Cheat.LocalPlayer->GetActiveWeapon();
+	ctx.active_weapon = Cheat.LocalPlayer->GetActiveWeapon();
+
+	if (ctx.active_weapon)
+		ctx.weapon_info = ctx.active_weapon->GetWeaponInfo();
 
 	if (!cmd || !cmd->command_number)
 		return;
@@ -218,6 +229,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 		cmd->viewangles.Normalize();
 		Utils::FixMovement(cmd, eyeYaw);
+
+		AntiAim->LegMovement();
 
 		ctx.lc_exploit_prev = ctx.lc_exploit;
 		ctx.lc_exploit = false;
@@ -288,10 +301,10 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (config.misc.movement.edge_jump->get() && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) && EnginePrediction->m_fFlags & FL_ONGROUND)
 		cmd->buttons |= IN_JUMP;
 
-	if (weapon->ShootingWeapon() && !weapon->CanShoot() && weapon->m_iItemDefinitionIndex() != Revolver)
+	if (ctx.active_weapon->ShootingWeapon() && !ctx.active_weapon->CanShoot() && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		cmd->buttons &= ~IN_ATTACK;
 
-	if (weapon->ShootingWeapon() && weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
+	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
 		if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
 			Exploits->ForceTeleport();
 		else if (Exploits->GetExploitType() == CExploits::E_HideShots)
@@ -1053,6 +1066,7 @@ void Hooks::Initialize() {
 	ESP::RegisterCallback();
 	Chams->LoadChams();
 	SkinChanger->LoadKnifeModels();
+	Ragebot->CreateThreads();
 
 	DirectXDeviceVMT = new VMT(DirectXDevice);
 	SurfaceVMT = new VMT(Surface);
@@ -1127,7 +1141,7 @@ void Hooks::End() {
 	SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)oWndProc);
 
 	EventListner->Unregister();
-	//Ragebot->TerminateThreads();
+	Ragebot->TerminateThreads();
 	Lua->UnloadAll();
 	Menu->Release();
 

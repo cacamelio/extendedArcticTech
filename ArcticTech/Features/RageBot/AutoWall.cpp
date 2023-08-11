@@ -2,6 +2,7 @@
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Misc/CBasePlayer.h"
 #include "../../Utils/Utils.h"
+#include "../../SDK/Globals.h"
 
 inline bool CGameTrace::DidHitWorld() const
 {
@@ -233,20 +234,17 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 	Vector eyePosition = start;
 	Vector direction = (end - start).Q_Normalized();
 
-	CBaseCombatWeapon* weapon = attacker->GetActiveWeapon();
-	CCSWeaponData* weaponData = weapon->GetWeaponInfo();
-
-	if (!weaponData)
+	if (!ctx.weapon_info)
 		return false;
 
 	CTraceFilter filter;
 	filter.pSkip = attacker;
 	
 	float currentDistance = 0.f;
-	float maxRange = weaponData->flRange;
+	float maxRange = ctx.weapon_info->flRange;
 
 	int possibleHitsRemaining = 4; 
-	data.damage = weaponData->iDamage;
+	data.damage = ctx.weapon_info->iDamage;
 	Ray_t ray;
 
 	bool friendlyFire = mp_friendlyfire->GetInt();
@@ -272,7 +270,7 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 
 		currentDistance += data.enterTrace.fraction * maxRange;
 
-		data.damage *= std::powf(weaponData->flRangeModifier, (currentDistance * 0.002f));
+		data.damage *= std::powf(ctx.weapon_info->flRangeModifier, (currentDistance * 0.002f));
 
 		if (currentDistance > 3000.f || enterSurfPenetrationModifier < 0.1f)
 			break;
@@ -282,13 +280,13 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 		if (hit_player && hit_player->m_iTeamNum() == attacker->m_iTeamNum())
 			return false;
 
-		if (data.enterTrace.hit_entity && data.enterTrace.hit_entity->IsPlayer())
+		if (data.enterTrace.hit_entity && data.enterTrace.hit_entity->IsPlayer() && (!target || target == data.enterTrace.hit_entity))
 		{
-			hit_player->ScaleDamage(data.enterTrace.hitgroup, weaponData, data.damage);
+			hit_player->ScaleDamage(data.enterTrace.hitgroup, ctx.weapon_info, data.damage);
 			return true;
 		}
 
-		if (!HandleBulletPenetration(attacker, weaponData, data.enterTrace, enterSurfaceData, eyePosition, direction, possibleHitsRemaining, data.damage))
+		if (!HandleBulletPenetration(attacker, ctx.weapon_info, data.enterTrace, enterSurfaceData, eyePosition, direction, possibleHitsRemaining, data.damage))
 			break;
 	}
 

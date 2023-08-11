@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <queue>
 
-#define MAX_RAGEBOT_THREADS 4
+#define MAX_RAGEBOT_THREADS 6
 
 class CUserCmd;
 
@@ -16,7 +16,7 @@ struct ScannedPoint_t {
 	LagRecord* record = nullptr;
 	Vector point;
 	int hitbox = -1;
-	bool multipoint = false;
+	int priotity = 0;
 	float damage = 0.f;
 	std::vector<Vector> impacts;
 };
@@ -34,13 +34,6 @@ struct AimPoint_t {
 	Vector point;
 	int hitbox = 0;
 	bool multipoint = false;
-};
-
-struct ragebot_debug_data_t {
-	std::string target;
-	bool autostop = false;
-	float hitchance = 0.f;
-	float damage = 0.f;
 };
 
 struct ThreadScanParams_t;
@@ -62,9 +55,7 @@ private:
 	bool doubletap_stop = false;
 	float doubletap_stop_speed = 0.f;
 
-	CBaseCombatWeapon* active_weapon = nullptr;
 	Vector eye_position;
-	CCSWeaponData* weapon_data = nullptr;
 	CBasePlayer* last_target = nullptr;
 	int last_target_shot = 0;
 
@@ -76,11 +67,10 @@ private:
 	std::mutex scan_mutex{};
 	std::mutex target_mutex{};
 	std::condition_variable scan_condition;
+	std::condition_variable result_condition;
 
 	std::vector<CBasePlayer*> targets;
 	std::vector<ScannedTarget_t> scanned_targets;
-
-	ragebot_debug_data_t debug_data;
 
 	inline bool hitbox_enabled(int hitbox) {
 		switch (hitbox)
@@ -151,7 +141,6 @@ public:
 	ScannedTarget_t		ScanTarget(CBasePlayer* target);
 
 	void				Run();
-	void				DrawDebugData();
 	void				Zeusbot();
 	void				AutoRevolver();
 };
