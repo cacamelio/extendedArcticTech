@@ -149,6 +149,8 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		if (player)
 			ESPInfo[player->EntIndex()].m_nHealth = 100;
+
+		Utils::ForceFullUpdate();
 	}
 	else if (name == "player_disconnect") {
 		Chams->RemoveShotChams(EngineClient->GetPlayerForUserID(event->GetInt("userid")));

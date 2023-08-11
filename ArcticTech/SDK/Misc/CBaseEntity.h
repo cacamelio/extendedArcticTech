@@ -350,6 +350,7 @@ public:
 	NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")
 	NETVAR(m_iItemDefinitionIndex, short, "DT_BaseAttributableItem", "m_iItemDefinitionIndex")
 	NETVAR(m_iItemIDHigh, int, "DT_BaseAttributableItem", "m_iItemIDHigh")
+	NETVAR(m_zCustomName, char*, "DT_BaseAttributableItem", "m_szCustomName")
 
 	void net_pre_data_update( int update_type ) {
 		using original_fn = void( __thiscall* )( void*, int );

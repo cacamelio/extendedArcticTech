@@ -200,25 +200,6 @@ bool CSkinChanger::ApplyKnifeModel( CAttributableItem* weapon, const char* model
 	return true;
 }
 
-bool CSkinChanger::ApplyKnifeSkin(CAttributableItem* pWeapon, const char* szModel, int iItemDefIndex, int iPaintKit, int iEntityQuality, float flFallbackWear)
-{
-	pWeapon->m_iItemDefinitionIndex() = iItemDefIndex;
-	pWeapon->m_iEntityQuality() = iEntityQuality;
-	pWeapon->m_nModelIndex() = ModelInfoClient->GetModelIndex(szModel);
-
-	CBaseHandle pWorldModelHandle = pWeapon->m_hWeaponWorldModel();
-	if (!pWorldModelHandle)
-		return false;
-
-	CBaseCombatWeapon* pWorldModel = (CBaseCombatWeapon*)(EntityList->GetClientEntityFromHandle(pWorldModelHandle));
-	if (!pWorldModel)
-		return false;
-
-	pWorldModel->m_hWeaponWorldModel() = ModelInfoClient->GetModelIndex(szModel) + 1;
-
-	return true;
-}
-
 void CSkinChanger::SetViewModelSequence( const CRecvProxyData* pDataConst, void* pStruct, void* pOut ) {
 	// Make the incoming data editable.
 	CRecvProxyData* pData = const_cast< CRecvProxyData* >( pDataConst );
@@ -647,28 +628,6 @@ void CSkinChanger::AgentChanger( ) {
 	}
 }
 
-static void* GetWearableCreateFn()
-{
-	auto clazz = Client->GetAllClasses();
-
-	while (strcmp(clazz->m_pNetworkName, "CEconWearable"))
-		clazz = clazz->m_pNext;
-
-	return clazz->m_pCreateFn;
-}
-
-void CSkinChanger::ApplyGlove(CAttributableItem* pGlove)
-{
-	pGlove->m_iItemDefinitionIndex() = GloveCT;
-
-	pGlove->m_nFallbackPaintKit() = 0;
-	pGlove->m_nFallbackSeed() = 0.0000001f;
-
-	pGlove->m_OriginalOwnerXuidHigh() = -1;
-
-	pGlove->m_nModelIndex() = ModelInfoClient->GetModelIndex("models/weapons/v_models/arms/glove_motorcycle/v_glove_motorcycle.mdl");
-	pGlove->net_pre_data_update(0);
-}
 int weapon_defenitication = 0;
 
 int GetItemDefenitication()
@@ -716,10 +675,68 @@ int GetItemDefenitication()
 	}
 }
 
+struct EconomyItemCfg {
+	int nFallbackPaintKit = 0;
+	int nFallbackSeed = 0;
+	int nFallbackStatTrak = -1;
+	int iEntityQuality = 4;
+	char* szCustomName = nullptr;
+	float flFallbackWear = 0.00001f;
+};
 
+std::unordered_map<int, EconomyItemCfg> g_SkinChangerCfg;
+
+static bool ApplySkin(CAttributableItem* pWeapon) {
+	if (!pWeapon)
+		return false;
+
+	auto nWeaponIndex = pWeapon->m_iItemDefinitionIndex();
+	if (g_SkinChangerCfg.find(nWeaponIndex) == g_SkinChangerCfg.end())
+		return false;
+
+	// Apply our changes to the fallback variables.
+	pWeapon->m_nFallbackPaintKit() = g_SkinChangerCfg[nWeaponIndex].nFallbackPaintKit;
+	pWeapon->m_iEntityQuality() = g_SkinChangerCfg[nWeaponIndex].iEntityQuality;
+	pWeapon->m_nFallbackSeed() = g_SkinChangerCfg[nWeaponIndex].nFallbackSeed;
+	pWeapon->m_nFallbackStatTrak() = g_SkinChangerCfg[nWeaponIndex].nFallbackStatTrak;
+	pWeapon->m_flFallbackWear() = g_SkinChangerCfg[nWeaponIndex].flFallbackWear;
+
+	if (g_SkinChangerCfg[nWeaponIndex].szCustomName)
+		sprintf_s(pWeapon->m_zCustomName(), 32, "%s", g_SkinChangerCfg[nWeaponIndex].szCustomName);
+
+	// Edit "m_iItemIDHigh" so fallback values will be used.
+	pWeapon->m_iItemIDHigh() = -1;
+	return true;
+}
+
+static void InitSkins()
+{
+	g_SkinChangerCfg[WEAPON_AWP].nFallbackPaintKit = 756;           // Dragon Lore
+	g_SkinChangerCfg[WEAPON_AK47].nFallbackPaintKit = 302;          // Vulkan
+	g_SkinChangerCfg[WEAPON_M4A1].nFallbackPaintKit = 309;          // Howl
+	g_SkinChangerCfg[WEAPON_M4A1_SILENCER].nFallbackPaintKit = 587; // Mecha Industries (M4A1-S)
+	g_SkinChangerCfg[WEAPON_SSG08].nFallbackPaintKit = 554;         // Blood in the Water
+	g_SkinChangerCfg[WEAPON_P90].nFallbackPaintKit = 359;           // Asiimov (P90)
+	g_SkinChangerCfg[WEAPON_GLOCK].nFallbackPaintKit = 38;          // Fade (Glock-18)
+	g_SkinChangerCfg[WEAPON_USP_SILENCER].nFallbackPaintKit = 313;  // Orion
+	g_SkinChangerCfg[WEAPON_P250].nFallbackPaintKit = 551;          // Asiimov (P250)
+	g_SkinChangerCfg[WEAPON_SCAR20].nFallbackPaintKit = 312;        // Cyrex
+	g_SkinChangerCfg[WEAPON_MAG7].nFallbackPaintKit = 39;           // Bulldozer
+	g_SkinChangerCfg[WEAPON_MP9].nFallbackPaintKit = 39;            // Bulldozer
+	g_SkinChangerCfg[WEAPON_G3SG1].nFallbackPaintKit = 493;         // Bulldozer
+	g_SkinChangerCfg[WEAPON_MP7].nFallbackPaintKit = 102;           // Whiteout
+	g_SkinChangerCfg[WEAPON_AUG].nFallbackPaintKit = 455;           // Akihabara Accept
+	g_SkinChangerCfg[WEAPON_FAMAS].nFallbackPaintKit = 626;         // Mecha Industries (FAMAS)
+	g_SkinChangerCfg[WEAPON_NOVA].nFallbackPaintKit = 62;           // Bloomstick
+	g_SkinChangerCfg[WEAPON_DEAGLE].nFallbackPaintKit = 351;        // Conspiracy
+	g_SkinChangerCfg[WEAPON_REVOLVER].nFallbackPaintKit = 522;      // Fade (Revolver)
+}
 void CSkinChanger::Run( bool frame_end ) {
 	if ( !Cheat.InGame || !Cheat.LocalPlayer || !config.skins.override_knife->get() )
 		return;
+
+	InitSkins();
+
 
 	auto my_weapons = Cheat.LocalPlayer->m_hMyWeapons( );
 
@@ -735,21 +752,14 @@ void CSkinChanger::Run( bool frame_end ) {
 		weapon->m_iItemIDHigh() = -1;
 		weapon->m_OriginalOwnerXuidLow() = pInfo.xuid_low;
 
+		ApplySkin(weapon);
+
 		if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
-			weapon->m_iItemDefinitionIndex() = GetItemDefenitication();
+			weapon->m_iItemDefinitionIndex() = GetItemDefenitication();		
 			weapon->m_iEntityQuality() = 3;
 			weapon->net_pre_data_update(0);
 			weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
-			ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );
-		}
-
-		if (weapon->GetClientClass()->m_ClassID == C_WEAPON_GLOCK18)
-		{
-			weapon->m_iItemIDHigh() = -1;
-			weapon->m_iEntityQuality() = 3;
-			weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
-			weapon->m_flFallbackWear() = 0.0001f;
-
+			ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );		
 		}
 
 		weapon->m_OriginalOwnerXuidLow() = 0;//crash?

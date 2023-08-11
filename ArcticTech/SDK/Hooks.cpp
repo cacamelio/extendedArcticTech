@@ -13,6 +13,7 @@
 #include "../Features/Lua/Bridge/Bridge.h"
 #include "../Features/Visuals/Chams.h"
 #include "../Features/Visuals/World.h"
+#include "../Features/Visuals/GlovesChanger.h"
 #include "../Features/Visuals/GrenadePrediction.h"
 #include "../Features/Visuals/Indicators.h"
 #include "../Features/Misc/Prediction.h"
@@ -561,6 +562,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
 		SkinChanger->MaskChanger();
+		SkinChanger->Run(true);
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
 		break;
