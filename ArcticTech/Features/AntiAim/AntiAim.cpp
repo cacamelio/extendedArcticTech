@@ -312,7 +312,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * (19 + velocity.Q_Length() / 30.f);
+	Vector move_factor = velocity.Normalized() * (20 + velocity.Q_Length() / 30.f);
 
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -366,6 +366,9 @@ bool CAntiAim::IsPeeking() {
 	//DebugOverlay->AddBoxOverlay(scan_points[2], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
 	//DebugOverlay->AddBoxOverlay(scan_points[3], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
 
+
+	ctx.active_weapon = backup_active_weapon;
+	ctx.weapon_info = backup_weapon_data;
 
 	Cheat.LocalPlayer->SetAbsOrigin(backup_abs_orgin);
 	Cheat.LocalPlayer->m_vecOrigin() = backup_origin;

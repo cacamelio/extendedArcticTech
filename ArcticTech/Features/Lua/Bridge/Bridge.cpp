@@ -878,7 +878,10 @@ namespace api {
 	}
 
 	namespace entity {
-		sol::object get(sol::this_state state, int index) {
+		sol::object get(sol::this_state state, int index, sol::optional<bool> is_userid) {
+			if (is_userid.value_or(false))
+				index = EngineClient->GetPlayerForUserID(index);
+
 			CBaseEntity* result = EntityList->GetClientEntity(index);
 
 			if (!result)
@@ -1208,6 +1211,14 @@ void CLua::Setup() {
 		"uncompressed_sample_offset", &SharedVoiceData_t::uncompressed_sample_offset
 	);
 
+	lua.new_usertype<IGameEvent>("game_event_t", sol::no_constructor,
+		"get_name", &IGameEvent::GetName,
+		"get_int", &IGameEvent::GetInt,
+		"get_float", &IGameEvent::GetFloat,
+		"get_bool", &IGameEvent::GetBool,
+		"get_string", &IGameEvent::GetString
+	);
+
 	// _G
 	lua["print"] = api::print;
 	lua["error"] = api::error;
@@ -1527,6 +1538,17 @@ void CLua::RefreshUI() {
 	}
 
 	Config->lua_list->UpdateList(GetUIList());
+}
+
+std::vector<std::string> CLua::GetLoadedScripts() {
+	std::vector<std::string> result;
+
+	for (auto& script : scripts) {
+		if (script.loaded)
+			result.push_back(script.name);
+	}
+
+	return result;
 }
 
 CLua* Lua = new CLua;

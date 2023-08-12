@@ -698,12 +698,12 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
-	int max_ticbase_shift = Exploits->MaxTickbaseShift();
+	int max_tickbase_shift = Exploits->GetExploitType() == CExploits::E_DoubleTap ? 14 : 9;
 
 	if (ctx.lc_exploit_shift == cmd->command_number)
-		player->m_nTickBase() += Exploits->TargetTickbaseShift() > 0 ? max_ticbase_shift : max_ticbase_shift - 1;
+		player->m_nTickBase() += Exploits->TargetTickbaseShift() > 0 ? max_tickbase_shift : max_tickbase_shift - 2;
 	if (ctx.lc_exploit_charge == cmd->command_number)
-		player->m_nTickBase() -= max_ticbase_shift;
+		player->m_nTickBase() -= max_tickbase_shift;
 
 	const int backup_tickbase = player->m_nTickBase();
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
@@ -1117,7 +1117,7 @@ void Hooks::Initialize() {
 	oPhysicsSimulate = HookFunction<tPhysicsSimulate>(Utils::PatternScan("client.dll", "56 8B F1 8B 8E ? ? ? ? 83 F9 FF 74 23 0F B7 C1 C1 E0 04 05 ? ? ? ?"), hkPhysicsSimulate);
 	oClampBonesInBBox = HookFunction<tClampBonesInBBox>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 70 56 57 8B F9 89 7C 24 38"), hkClampBonesInBBox);
 	oCalculateView = HookFunction<tCalculateView>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 14 53 56 57 FF 75 18"), hkCalculateView);
-	oSendNetMsg = HookFunction<tSendNetMsg>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 08 56 8B F1 8B 4D 04 E8 ? ? ? ? 8B 86 ? ? ? ? 85 C0 74 24 48 83 F8 02 77 2C 83 BE ? ? ? ? ? 8D 8E ? ? ? ? 74 06 32 C0 84 C0"), hkSendNetMsg);
+	oSendNetMsg = HookFunction<tSendNetMsg>(Utils::PatternScan("engine.dll", "F1 8B 4D 04 E8 ? ? ? ? 8B 86 ? ? ? ? 85 C0 74 24 48 83 F8 02 77 2C 83 BE ? ? ? ? ? 8D 8E ? ? ? ? 74 06 32 C0 84 C0", -0x8), hkSendNetMsg);
 	oGetEyeAngles = HookFunction<tGetEyeAngles>(Utils::PatternScan("client.dll", "56 8B F1 85 F6 74 32"), hkGetEyeAngles);
 	oRenderSmokeOverlay = HookFunction<tRenderSmokeOverlay>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 30 80 7D 08 00"), hkRenderSmokeOverlay);
 	oShouldInterpolate = HookFunction<tShouldInterpolate>(Utils::PatternScan("client.dll", "56 8B F1 E8 ? ? ? ? 3B F0"), hkShouldInterpolate);

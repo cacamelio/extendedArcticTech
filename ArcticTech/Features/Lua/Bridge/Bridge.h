@@ -7,6 +7,9 @@
 #pragma comment(lib, "lua51.lib")
 #pragma comment(lib, "luajit.lib")
 
+
+#define SOL_SAFE_FUNCTION_CALLS 1
+#define SOL_SAFE_FUNCTION 1
 #include "../Hook/Hook.h"
 #include "../../../Utils/Console.h"
 #include "../../../SDK/Globals.h"
@@ -49,6 +52,7 @@ public:
 	void UnloadScript( int id );
 	void UnloadAll();
 	void ReloadAll();
+	std::vector<std::string> GetLoadedScripts();
 
 	void RefreshScripts();
 	void RefreshUI();

@@ -2,6 +2,7 @@
 
 #include "../Utils/Utils.h"
 #include "../Utils/Console.h"
+#include "../Features/Lua/Bridge/Bridge.h"
 
 config_t config;
 CConfig* Config = new CConfig;
@@ -336,6 +337,17 @@ void CConfig::parse(nlohmann::json& cfg) {
             Console->Error("item not found: " + item.name);
         }
     }
+
+    try {
+        for (std::string script_name : cfg["loaded_scripts"]) {
+            int sid = Lua->GetScriptID(script_name);
+            if (sid != -1)
+                Lua->LoadScript(sid);
+        }
+    }
+    catch (nlohmann::json::exception& e) {
+        Console->Error("missing loaded scripts");
+    }
 }
 
 nlohmann::json CConfig::dump() {
@@ -380,6 +392,8 @@ nlohmann::json CConfig::dump() {
             break;
         }
     }
+
+    result["loaded_scripts"] = Lua->GetLoadedScripts();
 
     return result;
 }

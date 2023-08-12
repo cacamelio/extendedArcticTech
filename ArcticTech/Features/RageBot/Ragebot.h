@@ -130,7 +130,7 @@ public:
 	void				GetMultipoints(LagRecord* record, int hitbox, float scale, std::vector<AimPoint_t>& points);
 	void				FindTargets();
 	std::vector<LagRecord*> SelectRecords(CBasePlayer* player);
-	std::vector<AimPoint_t> SelectPoints(LagRecord* record, bool backtrack_scan);
+	std::vector<AimPoint_t> SelectPoints(LagRecord* record);
 	bool				CompareRecords(LagRecord* a, LagRecord* b);
 
 	void				CreateThreads();

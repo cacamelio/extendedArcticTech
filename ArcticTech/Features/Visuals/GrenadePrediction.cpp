@@ -495,7 +495,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	for (int i = 1; i < pathPoints.size(); i++) {
 		Vector start = pathPoints[i - 1];
 		Vector end = pathPoints[i];
-		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.5, -0.5), Vector((start - end).Q_Length(), 0.5, 0.5), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 2.1f);
+		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.5, -0.5), Vector((start - end).Q_Length(), 0.5, 0.5), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 2.5f);
 	}
 
 	//for (int i = 0; i < pathPoints.size(); i++) {

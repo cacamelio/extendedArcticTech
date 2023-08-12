@@ -2,6 +2,7 @@
 #include "../../Utils/Utils.h"
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Config.h"
+#include "../../SDK/Globals.h"
 
 void Miscelleaneus::Clantag()
 {

@@ -756,9 +756,9 @@ void CSkinChanger::Run( bool frame_end ) {
 
 		if ( weapon->GetClientClass( )->m_ClassID == C_KNIFE ) {
 			weapon->m_iItemDefinitionIndex() = GetItemDefenitication();		
-			weapon->m_iEntityQuality() = 3;
-			weapon->net_pre_data_update(0);
-			weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
+			//weapon->m_iEntityQuality() = 3;
+			//weapon->net_pre_data_update(0);
+			//weapon->m_nFallbackPaintKit() = vecKits[config.skins.paint_kits->get()].id;
 			ApplyKnifeModel( weapon, knife_models[ config.skins.knife_model->get( ) ].model_name.c_str( ) );		
 		}
 

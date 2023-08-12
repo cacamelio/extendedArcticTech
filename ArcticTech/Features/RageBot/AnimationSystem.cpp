@@ -50,8 +50,7 @@ void CAnimationSystem::OnCreateMove() {
 
 	memcpy(local_animlayers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
-	animstate->bOnGround = Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND;
-	if (!animstate->bOnGround) {
+	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 		if (!config.antiaim.misc.animations->get(1)) {
 			const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
 			const float gravity = cvars.sv_gravity->GetFloat();
@@ -63,8 +62,6 @@ void CAnimationSystem::OnCreateMove() {
 			animstate->flDurationInAir = 2.f;
 		}
 	}
-	animstate->flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
-	animstate->flDuckingSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
 
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
 
@@ -79,7 +76,7 @@ void CAnimationSystem::OnCreateMove() {
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
 		Cheat.LocalPlayer->SetCollisionBounds(Cheat.LocalPlayer->m_vecMins(), Cheat.LocalPlayer->m_vecMaxs());
-		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, local_animlayers);
+		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, Cheat.LocalPlayer->GetAnimlayers());
 	}
 
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), local_animlayers, sizeof(AnimationLayer) * 13);

@@ -307,7 +307,7 @@ bool CRagebot::IsArmored(int hitbox) {
 	}
 }
 
-std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record, bool backtrack_scan) {
+std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record) {
 	std::vector<AimPoint_t> points;
 
 	points.reserve(CalcPointsCount());
@@ -461,7 +461,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 
 		memcpy(record->player->GetCachedBoneData().Base(), record->clamped_matrix, sizeof(matrix3x4_t) * record->player->GetCachedBoneData().Count());
 
-		std::vector<AimPoint_t> points = SelectPoints(record, i > 0);
+		std::vector<AimPoint_t> points = SelectPoints(record);
 
 
 		for (const auto& point : points) {
@@ -480,7 +480,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 				priority += 2;
 
 			if (point.hitbox == HITBOX_STOMACH || point.hitbox == HITBOX_PELVIS)
-				priority++;
+				priority += 2;
 
 			result.points.emplace_back(ScannedPoint_t{
 				record,
@@ -521,7 +521,7 @@ void CRagebot::Run() {
 	if (Exploits->IsShifting()) {
 		if (doubletap_stop) {
 			float current_vel = Math::Q_sqrt(ctx.cmd->sidemove * ctx.cmd->sidemove + ctx.cmd->forwardmove + ctx.cmd->forwardmove);
-			const float max_speed = doubletap_stop_speed * 0.75f;
+			const float max_speed = doubletap_stop_speed * 0.5f;
 
 			if (current_vel > 1.f) {
 				float factor = max_speed / current_vel;
@@ -590,7 +590,7 @@ void CRagebot::Run() {
 			Exploits->DefenseiveThisTick() = true;
 
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
-			if (target.hitchance > settings.hitchance->get() * 0.009f) {
+			if (target.hitchance > settings.hitchance->get() * 0.01f) {
 				best_target = target;
 				break;
 			}

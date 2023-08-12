@@ -10,6 +10,7 @@
 #include "../Visuals/Chams.h"
 #include "../ShotManager/ShotManager.h"
 #include "../Visuals/PreserveKillfeed.h"
+#include "../Lua/Bridge/Bridge.h"
 
 CEventListner* EventListner = new CEventListner;
 
@@ -106,7 +107,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		if (!buy_command.empty() && Cheat.LocalPlayer && Cheat.LocalPlayer->m_iAccount() >= 1000)
 			EngineClient->ExecuteClientCmd(buy_command.c_str());
 
-		Utils::ForceFullUpdate();
+		//Utils::ForceFullUpdate();
 
 		KillFeed->ClearDeathNotice = true;
 
@@ -145,17 +146,19 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		}
 	}
 	else if (name == "player_spawned") {
-		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
+		int player = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
 
-		if (player)
-			ESPInfo[player->EntIndex()].m_nHealth = 100;
+		ESPInfo[player].m_nHealth = 100;
 
-		Utils::ForceFullUpdate();
+		//Utils::ForceFullUpdate();
 	}
 	else if (name == "player_disconnect") {
 		Chams->RemoveShotChams(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
 		LagCompensation->Reset(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
 	}
+
+	for (auto& func : Lua->hooks.getHooks(LUA_GAMEEVENTS))
+		func.func(event);
 }
 
 int CEventListner::GetEventDebugID() {
