@@ -29,18 +29,26 @@ enum SharedESPFlags {
 	Shared_FakeDuck = (1 << 3),
 };
 
+struct VectorSmall {
+	int16_t x = 0, y = 0, z = 0;
+
+	VectorSmall() {}
+
+	VectorSmall(Vector vec) {
+		x = vec.x;
+		y = vec.y;
+		z = vec.z;
+	}
+};
+
 struct SharedESP_t {
-	short	m_iPlayer;
+	int		m_iPlayer;
 	short	m_ActiveWeapon;
-	Vector	m_vecOrigin;
+	short	m_iHealth;
+	VectorSmall	m_vecOrigin;
 };
 
 static_assert(sizeof(SharedESP_t) == sizeof(SharedVoiceData_t));
-
-struct ESPFlag_t {
-	std::string flag;
-	Color color;
-};
 
 extern ESPInfo_t ESPInfo[64];
 

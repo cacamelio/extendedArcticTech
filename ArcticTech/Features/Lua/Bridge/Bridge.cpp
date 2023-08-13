@@ -5,6 +5,8 @@
 #include "../../../SDK/Requests.h"
 #include "../../../SDK/NetMessages.h"
 #include "../../Visuals/ESP.h"
+#include "../../AntiAim/AntiAim.h"
+#include "../../RageBot/Exploits.h"
 
 std::vector<UILuaCallback_t> g_ui_lua_callbacks;
 
@@ -238,9 +240,11 @@ void ScriptSaveButton() {
 	}
 }
 
+sol::state lua;
+
 namespace api {
-	void print(std::string msg) {
-		Console->Log(msg);
+	void print(sol::this_state staet, sol::object msg) {
+		Console->Log(lua["tostring"](msg));
 	}
 
 	void error(std::string msg) {
@@ -269,6 +273,8 @@ namespace api {
 				Lua->hooks.registerHook(LUA_RENDER, script_id, func);
 			else if (event_name == "createmove")
 				Lua->hooks.registerHook(LUA_CREATEMOVE, script_id, func);
+			else if (event_name == "antiaim")
+				Lua->hooks.registerHook(LUA_ANTIAIM, script_id, func);
 			else if (event_name == "level_init")
 				Lua->hooks.registerHook(LUA_LEVELINIT, script_id, func);
 			else if (event_name == "aim_shot")
@@ -417,6 +423,12 @@ namespace api {
 	namespace render {
 		Vector screen_size() {
 			return Vector(Cheat.ScreenSize.x, Cheat.ScreenSize.y);
+		}
+
+		QAngle camera_angles() {
+			QAngle result;
+			EngineClient->GetViewAngles(&result);
+			return result;
 		}
 
 		void add_font_from_memory(std::string mem) {
@@ -584,6 +596,18 @@ namespace api {
 	namespace utils {
 		void console_exec(std::string command) {
 			EngineClient->ExecuteClientCmd(command.c_str());
+		}
+
+		void random_seed(int seed) {
+			Utils::RandomSeed(seed);
+		}
+
+		int random_int(int min, int max) {
+			return Utils::RandomInt(min, max);
+		}
+
+		float random_float(float min, float max) {
+			return Utils::RandomFloat(min, max);
 		}
 
 		void* create_interface(std::string module_name, std::string interface_name) {
@@ -1003,9 +1027,22 @@ namespace api {
 			}
 		}
 	}
+
+	namespace rage {
+		CBasePlayer* get_antiaim_target() {
+			return AntiAim->GetNearestTarget();
+		}
+
+		float get_exploit_charge() {
+			return (float)ctx.tickbase_shift / (float)Exploits->MaxTickbaseShift();
+		}
+
+		bool is_defensive_active() {
+			return Exploits->IsDefensiveActive();
+		}
+	}
 }
 
-sol::state lua;
 void CLua::Setup() {
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts");
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts/cfg");
@@ -1219,6 +1256,11 @@ void CLua::Setup() {
 		"get_string", &IGameEvent::GetString
 	);
 
+	lua.new_usertype<LuaAntiAim_t>("antiaim_context_t", sol::no_constructor, 
+		"override_yaw", &LuaAntiAim_t::override_yaw,
+		"override_pitch", &LuaAntiAim_t::override_pitch
+	);
+
 	// _G
 	lua["print"] = api::print;
 	lua["error"] = api::error;
@@ -1273,6 +1315,7 @@ void CLua::Setup() {
 	// render
 	lua.create_named_table("render",
 		"screen_size", api::render::screen_size,
+		"camera_angles", api::render::camera_angles,
 		"add_font_from_memory", api::render::add_font_from_memory,
 		"load_font", api::render::load_font,
 		"load_image_from_memory", api::render::load_image_from_memory,
@@ -1314,6 +1357,9 @@ void CLua::Setup() {
 
 	// utils
 	lua.create_named_table("utils",
+		"random_seed", api::utils::random_seed,
+		"random_int", api::utils::random_int,
+		"random_float", api::utils::random_float,
 		"console_exec", api::utils::console_exec,
 		"create_interface", api::utils::create_interface,
 		"pattern_scan", api::utils::pattern_scan,
@@ -1327,6 +1373,13 @@ void CLua::Setup() {
 	// network
 	lua.create_named_table("network",
 		"get", api::network::get
+	);
+
+	// rage
+	lua.create_named_table("rage",
+		"get_antiaim_target", api::rage::get_antiaim_target,
+		"get_exploit_charge", api::rage::get_exploit_charge,
+		"is_defensive_active", api::rage::is_defensive_active
 	);
 
 	RefreshScripts();

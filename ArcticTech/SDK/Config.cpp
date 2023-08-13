@@ -55,6 +55,7 @@ void on_export() {};
 void CConfig::Init() {
     add(config.ragebot.aimbot.enabled);
     add(config.ragebot.aimbot.extrapolation);
+    add(config.ragebot.aimbot.extended_backtrack);
     add(config.ragebot.aimbot.doubletap);
     add(config.ragebot.aimbot.doubletap_key);
     add(config.ragebot.aimbot.doubletap_options);
@@ -67,7 +68,6 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.peek_assist_color);
     add(config.ragebot.aimbot.peek_assist_keybind);
     add(config.ragebot.aimbot.show_aimpoints);
-    add(config.ragebot.aimbot.threads);
     add(config.ragebot.aimbot.roll_resolver);
     add(config.ragebot.aimbot.roll_resolver_key);
     add(config.ragebot.aimbot.roll_angle);
@@ -149,11 +149,8 @@ void CConfig::Init() {
     add(config.antiaim.fakelag.enabled);
     add(config.antiaim.fakelag.limit);
     add(config.antiaim.fakelag.variability);
-    add(config.antiaim.fakelag.triggers);
     add(config.antiaim.misc.fake_duck);
     add(config.antiaim.misc.slow_walk);
-    add(config.antiaim.misc.slow_walk_type);
-    add(config.antiaim.misc.custom_slow_walk);
     add(config.antiaim.misc.animations);
     add(config.antiaim.misc.leg_movement);
     add(config.visuals.esp.enable);

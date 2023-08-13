@@ -39,6 +39,11 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 		record->bone_matrix_filled = true;
 	}
 
+	if (player->GetActiveWeapon())
+		if (player->GetActiveWeapon()->m_fLastShotTime() <= player->m_flSimulationTime())
+			if (player->GetActiveWeapon()->m_fLastShotTime() > player->m_flOldSimulationTime())
+				record->shooting = true;
+
 	memcpy(record->animlayers, player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 }
 
@@ -146,6 +151,7 @@ void CLagCompensation::OnNetUpdate() {
 
 					msg.m_iPlayer = pinfo.userId;
 					msg.m_ActiveWeapon = pl->GetActiveWeapon() ? pl->GetActiveWeapon()->m_iItemDefinitionIndex() : 0;
+					msg.m_iHealth = pl->m_iHealth();
 					msg.m_vecOrigin = new_record->m_vecOrigin;
 
 					NetMessages->SendNetMessage((SharedVoiceData_t*)&msg);

@@ -41,6 +41,7 @@ struct config_t {
         struct aimbot_t {
             CCheckBox* enabled;
             CComboBox* extrapolation;
+            CCheckBox* extended_backtrack;
             CCheckBox* doubletap;
             CKeyBind* doubletap_key;
             CMultiCombo* doubletap_options;
@@ -53,7 +54,6 @@ struct config_t {
             CColorPicker* peek_assist_color;
             CKeyBind* peek_assist_keybind;
             CCheckBox* show_aimpoints;
-            CCheckBox* threads;
             CCheckBox* roll_resolver;
             CKeyBind* roll_resolver_key;
             CSliderInt* roll_angle;
@@ -92,14 +92,11 @@ struct config_t {
             CCheckBox* enabled;
             CSliderInt* limit;
             CSliderInt* variability;
-            CMultiCombo* triggers;
         } fakelag;
 
         struct misc_t {
             CKeyBind* fake_duck;
             CKeyBind* slow_walk;
-            CComboBox* slow_walk_type;
-            CSliderInt* custom_slow_walk;
             CMultiCombo* animations;
             CComboBox* leg_movement;
         } misc;

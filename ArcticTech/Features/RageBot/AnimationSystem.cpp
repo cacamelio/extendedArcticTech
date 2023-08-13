@@ -265,6 +265,7 @@ void CAnimationSystem::RunInterpolation() {
 		}
 
 		data->origin += (origin - data->origin) * std::clamp(GlobalVars->frametime * 32, 0.f, 0.8f);
+		player->SetAbsOrigin(data->origin);
 	}
 }
 

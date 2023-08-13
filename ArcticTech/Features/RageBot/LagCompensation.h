@@ -39,6 +39,7 @@ struct LagRecord {
 	bool breaking_lag_comp = false;
 	bool exploiting = false;
 	bool invalid = false;
+	bool shooting = false;
 
 	bool bone_matrix_filled = false;
 

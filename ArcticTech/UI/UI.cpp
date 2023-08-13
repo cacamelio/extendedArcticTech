@@ -18,7 +18,7 @@ void CMenu::SetupUI() {
 	auto aim_settings = AddGroupBox("Aimbot", "Settings");
 	
 	auto aa_angles = AddGroupBox("Anti aim", "Angles");
-	auto fake_lag = AddGroupBox("Anti aim", "Fake lag", 1.f, 1);
+	auto fake_lag = AddGroupBox("Anti aim", "Fake lag", 0.8f, 1);
 	auto aa_other = AddGroupBox("Anti aim", "Other", 1.f, 1);
 
 	auto player_esp = AddGroupBox("Player", "ESP");
@@ -39,9 +39,10 @@ void CMenu::SetupUI() {
 
 	config.ragebot.aimbot.enabled = aimbot->AddCheckBox("Enabled");
 	config.ragebot.aimbot.extrapolation = aimbot->AddComboBox("Extrapolation", { "Disable", "Enable", "Force" });
+	config.ragebot.aimbot.extended_backtrack = aimbot->AddCheckBox("Extended backtrack");
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
-	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport"});
+	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport", "Fast throw"});
 	config.ragebot.aimbot.hide_shots = aimbot->AddCheckBox("Hide Shots");
 	config.ragebot.aimbot.hide_shots_key = aimbot->AddKeyBind("Hide Shots");
 	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
@@ -51,7 +52,6 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.peek_assist_color = aimbot->AddColorPicker("Peek Assist");
 	config.ragebot.aimbot.peek_assist_keybind = aimbot->AddKeyBind("Peek Assist key");
 	config.ragebot.aimbot.show_aimpoints = aimbot->AddCheckBox("Show aim points");
-	config.ragebot.aimbot.threads = aimbot->AddCheckBox("Multithread");
 	config.ragebot.aimbot.roll_resolver = aimbot->AddCheckBox("Roll Resolver");
 	config.ragebot.aimbot.roll_resolver_key = aimbot->AddKeyBind("Roll Resolver");
 	config.ragebot.aimbot.roll_angle = aimbot->AddSliderInt("Roll Angle", -90, 90, 0);
@@ -94,12 +94,9 @@ void CMenu::SetupUI() {
 	config.antiaim.fakelag.enabled = fake_lag->AddCheckBox("Enabled");
 	config.antiaim.fakelag.limit = fake_lag->AddSliderInt("Limit", 1, 15, 13);
 	config.antiaim.fakelag.variability = fake_lag->AddSliderInt("Variabaility", 1, 14, 1);
-	config.antiaim.fakelag.triggers = fake_lag->AddMultiCombo("Triggers", { "Move", "Air", "Break LC", "Peek" });
 
 	config.antiaim.misc.fake_duck = aa_other->AddKeyBind("Fake duck");
 	config.antiaim.misc.slow_walk = aa_other->AddKeyBind("Slow walk");
-	config.antiaim.misc.slow_walk_type = aa_other->AddComboBox("Type", { "Force accuracy", "Custom" });
-	config.antiaim.misc.custom_slow_walk = aa_other->AddSliderInt("Custom speed", 0, 100, 50, "%d%%");
 	config.antiaim.misc.animations = aa_other->AddMultiCombo("Animations", { "Lean", "Static legs in air", "Backward legs" });
 	config.antiaim.misc.leg_movement = aa_other->AddComboBox("Leg movement", { "Default", "Sliding", "Walking" });
 

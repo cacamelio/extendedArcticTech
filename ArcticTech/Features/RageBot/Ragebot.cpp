@@ -207,14 +207,22 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 			continue;
 		}
 
+		if (config.ragebot.aimbot.extended_backtrack->get()) {
+			target_records.emplace_back(record);
+			continue;
+		}
+
 		if (target_records.empty()) {
 			target_records.emplace_back(record);
 		} else {
+			if (record->shooting)
+				target_records.emplace_back(record);
+
 			last_valid_record = record;
 		}
 	}
 
-	if (last_valid_record && !CompareRecords(last_valid_record, &records.back())) {
+	if (!config.ragebot.aimbot.extended_backtrack->get() && last_valid_record && !CompareRecords(last_valid_record, &records.back())) {
 		target_records.emplace_back(last_valid_record);
 	}
 
@@ -348,13 +356,10 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 		}
 	}
 
-	//if (best_body_point.damage < target.player->m_iHealth() && 
-	//	best_head_point.damage > 0.f && 
-	//	best_head_point.record->m_viewAngle.pitch < 80 &&
-	//	best_head_point.damage > target.player->m_iHealth()) // go onshot
-	//	return best_head_point;
+	if (best_body_point.damage < target.player->m_iHealth() && best_head_point.damage > best_body_point.damage && best_head_point.record->shooting)
+		return best_head_point;
 
-	if (target.player != last_target && ctx.tickbase_shift == 0 && config.ragebot.aimbot.doubletap->get() && !config.ragebot.aimbot.force_teleport->get()) {
+	if ((target.player != last_target && ctx.tickbase_shift == 0 && config.ragebot.aimbot.doubletap->get() && !config.ragebot.aimbot.force_teleport->get())) {
 		if (best_body_point.damage > target.player->m_iHealth())
 			return best_body_point;
 
@@ -393,21 +398,23 @@ void CRagebot::ScanTargets() {
 	scanned_targets.clear();
 	scanned_targets.reserve(targets.size());
 
-	if (!config.ragebot.aimbot.threads->get()) {
-		for (int i = 0; i < targets.size(); i++) {
-			auto target = targets[i];
-			scanned_targets.emplace_back(ScanTarget(target));
-		}
-	}
-	else {
-		selected_targets = targets.size();
-		scan_condition.notify_one();
+	//if (!config.ragebot.aimbot.threads->get()) {
+	//	for (int i = 0; i < targets.size(); i++) {
+	//		auto target = targets[i];
+	//		scanned_targets.emplace_back(ScanTarget(target));
+	//	}
+	//}
+	//else {
 
-		{
-			std::unique_lock<std::mutex> lock(target_mutex);
-			result_condition.wait(lock, [this]() { return scanned_targets.size() == selected_targets; });
-		}
+	selected_targets = targets.size();
+	scan_condition.notify_one();
+
+	{
+		std::unique_lock<std::mutex> lock(target_mutex);
+		result_condition.wait(lock, [this]() { return scanned_targets.size() == selected_targets; });
 	}
+
+	//}
 }
 
 uintptr_t CRagebot::ThreadScan(int threadId) {
@@ -586,9 +593,6 @@ void CRagebot::Run() {
 	}
 
 	for (const auto& target : scanned_targets) {
-		if (target.best_point.damage > 2.f && config.ragebot.aimbot.doubletap_options->get(1))
-			Exploits->DefenseiveThisTick() = true;
-
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
 			if (target.hitchance > settings.hitchance->get() * 0.01f) {
 				best_target = target;
@@ -624,17 +628,12 @@ void CRagebot::Run() {
 	if (settings.auto_stop->get(2) && !ctx.active_weapon->CanShoot() && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
-	bool shooting_this_tick = true;
+	if (should_autostop)
+		AutoStop();
 
 	if (!best_target.player || !ctx.active_weapon->CanShoot()) {
 		if (best_target.player && ctx.active_weapon->m_iItemDefinitionIndex() == Revolver)
 			ctx.cmd->buttons |= IN_ATTACK;
-		shooting_this_tick = false;
-	}
-
-	if (!shooting_this_tick) {
-		if (should_autostop)
-			AutoStop();
 		return;
 	}
 

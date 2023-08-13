@@ -287,6 +287,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		Exploits->DefenseiveThisTick() = lua_cmd.override_defensive.as<bool>();
 	}
 
+	Exploits->DefensiveDoubletap();
+
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
 
@@ -322,8 +324,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	Ragebot->Run();
 
-	Exploits->DefensiveDoubletap();
-
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
 
 	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
@@ -339,6 +339,20 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AnimationSystem->OnCreateMove();
 
 	EnginePrediction->End();
+
+	// Gives shitton of pred errors
+
+	//if (!ctx.send_packet) {
+	//	auto net_channel = ClientState->m_NetChannel;
+
+	//	const auto backup_choked_packets = net_channel->m_nChokedPackets;
+
+	//	net_channel->m_nChokedPackets = 0;
+	//	net_channel->SendDatagram();
+	//	--net_channel->m_nOutSequenceNr;
+
+	//	net_channel->m_nChokedPackets = backup_choked_packets;
+	//}
 
 	// createmove
 
@@ -450,11 +464,9 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 
 	World->ProcessCamera(setup);
 
-	if (Cheat.InGame && Cheat.LocalPlayer && Cheat.LocalPlayer->m_iHealth() > 0) {
-		NadePrediction.Start(setup->angles, setup->origin);
-	}
+	NadePrediction.Start(setup->angles, setup->origin);
 
-	if (Cheat.LocalPlayer && Cheat.LocalPlayer->m_iHealth() > 0 && config.antiaim.misc.fake_duck->get())
+	if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && config.antiaim.misc.fake_duck->get())
 		setup->origin = Cheat.LocalPlayer->GetAbsOrigin() + Vector(0, 0, 64);
 
 	setup->angles.roll = 0;
@@ -955,7 +967,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	auto total_new_commands = (Exploits->GetExploitType() == CExploits::E_DoubleTap) ? 16 : 11;
+	auto total_new_commands = Exploits->GetExploitType() == CExploits::E_DoubleTap ? 16 : 11;
 
 	from = -1;
 

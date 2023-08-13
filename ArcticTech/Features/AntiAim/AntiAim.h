@@ -4,6 +4,23 @@
 class CUserCmd;
 class CBasePlayer;
 
+struct LuaAntiAim_t {
+	bool should_override_pitch = false;
+	bool should_override_yaw = false;
+	float pitch = 0.f;
+	float yaw = 0.f;
+
+	void override_pitch(float p) {
+		should_override_pitch = true;
+		pitch = p;
+	}
+
+	void override_yaw(float y) {
+		should_override_yaw = true;
+		yaw = y;
+	}
+};
+
 class CAntiAim {
 	int manualAngleState = 0;
 	CBasePlayer* target;

@@ -16,6 +16,11 @@ ESPInfo_t ESPInfo[64];
 GrenadeWarning NadeWarning;
 CUtlVector<SndInfo_t> soundList;
 
+struct ESPFlag_t {
+	std::string flag;
+	Color color;
+};
+
 float g_LastSharedESPData[64];
 
 void ESP::Draw() {
@@ -53,10 +58,21 @@ void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
 	int ent_index = EngineClient->GetPlayerForUserID(esp.m_iPlayer);
 	auto& esp_info = ESPInfo[ent_index];
 
-	esp_info.m_vecOrigin = esp.m_vecOrigin;
+	CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(ent_index));
+
+	if (!player || player == Cheat.LocalPlayer || !player->m_bDormant())
+		return;
+
+	//esp_info.m_vecOrigin = esp.m_vecOrigin;
 	esp_info.m_iActiveWeapon = esp.m_ActiveWeapon;
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
+	esp_info.m_nHealth = esp.m_iHealth;
 	esp_info.m_bValid = true;
+
+	if (player) {
+		player->m_vecOrigin() = Vector(esp.m_vecOrigin.x, esp.m_vecOrigin.y, esp.m_vecOrigin.z);
+		player->m_iHealth() = esp.m_iHealth;
+	}
 
 	g_LastSharedESPData[ent_index] = GlobalVars->realtime;
 }
@@ -86,6 +102,9 @@ void ESP::ProcessSounds() {
 		else
 			continue;
 
+		if (!player || player == Cheat.LocalPlayer || !player->m_bDormant())
+			continue;
+
 		if (GlobalVars->realtime - g_LastSharedESPData[player->EntIndex()] < 2.f)
 			continue;
 
@@ -93,7 +112,12 @@ void ESP::ProcessSounds() {
 
 		auto trace = EngineTrace->TraceHull(origin, origin - Vector(0, 0, 128), Vector(-16, -16, 0), Vector(16, 16, 72), MASK_SOLID, player);
 
-		ESPInfo[player->EntIndex()].m_vecOrigin = trace.endpos;
+		player->m_vecOrigin() = trace.endpos;
+		if (player->m_iHealth() == 0 || ESPInfo[player->EntIndex()].m_nHealth == 0) {
+			player->m_iHealth() = 100;
+			ESPInfo[player->EntIndex()].m_nHealth = 100;
+		}
+		//ESPInfo[player->EntIndex()].m_vecOrigin = trace.endpos;
 		ESPInfo[player->EntIndex()].m_flLastUpdateTime = GlobalVars->curtime;
 		ESPInfo[player->EntIndex()].m_bValid = true;
 	}
@@ -136,6 +160,8 @@ void ESP::UpdatePlayer(int id) {
 		if (info.m_nHealth == 0) {
 			info.m_bValid = false;
 		}
+
+		info.m_vecOrigin.Interpolate(player->m_vecOrigin(), GlobalVars->frametime * 16);
 	}
 
 	float playerHeight = player->m_vecMaxs().z;
@@ -374,7 +400,7 @@ void ESP::DrawGrenades() {
 		if (strstr(studioModel->szName, "thrown") || classId->m_ClassID == C_BASE_CS_GRENADE_PROJECTILE || classId->m_ClassID == C_MOLOTOV_PROJECTILE || classId->m_ClassID == C_DECOY_PROJECTILE) {
 			int weapId;
 
-			CBasePlayer* thrower = EntityList->GetClientEntity(ent->m_hThrower())->GetPlayer();
+			CBasePlayer* thrower = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(ent->m_hThrower()));
 
 			if (thrower && thrower->IsTeammate() && mp_friendlyfire->GetInt() == 0)
 				continue;

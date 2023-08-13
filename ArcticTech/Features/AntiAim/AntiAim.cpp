@@ -7,6 +7,7 @@
 #include "../RageBot/AutoWall.h"
 #include "../../Utils/Console.h"
 #include "../RageBot/AnimationSystem.h"
+#include "../Lua/Bridge/Bridge.h"
 
 void CAntiAim::FakeLag() {
 	static ConVar* sv_maxusrcmdprocessticks = CVar->FindVar("sv_maxusrcmdprocessticks");
@@ -122,6 +123,16 @@ void CAntiAim::Angles() {
 
 		if (config.antiaim.angles.yaw_jitter->get() && !Cheat.LocalPlayer->m_bIsDefusing() && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
 			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.angles.modifier_value->get() * 0.5f : config.antiaim.angles.modifier_value->get() * 0.5f;
+
+		LuaAntiAim_t antiaim_context;
+		
+		for (auto& cb : Lua->hooks.getHooks(LUA_ANTIAIM))
+			cb.func(&antiaim_context);
+
+		if (antiaim_context.should_override_pitch)
+			ctx.cmd->viewangles.pitch = antiaim_context.pitch;
+		if (antiaim_context.should_override_yaw)
+			ctx.cmd->viewangles.yaw = antiaim_context.yaw;
 	}
 	else {
 		notModifiedYaw = ctx.cmd->viewangles.yaw;
@@ -312,7 +323,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * (20 + velocity.Q_Length() / 30.f);
+	Vector move_factor = velocity.Normalized() * (18.5f + velocity.Q_Length() / 34.f);
 
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -326,8 +337,8 @@ bool CAntiAim::IsPeeking() {
 	Vector scan_points[] = {
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT),
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT)
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_CALF),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_CALF)
 	};
 
 	auto backup_active_weapon = ctx.active_weapon;
@@ -340,7 +351,9 @@ bool CAntiAim::IsPeeking() {
 		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant())
 			continue;
 
-		Vector enemyShootPos = player->GetShootPosition();
+		Vector target_vel = player->m_vecVelocity();
+
+		Vector enemyShootPos = player->GetShootPosition() + target_vel * GlobalVars->interval_per_tick;
 		ctx.active_weapon = player->GetActiveWeapon();
 
 		if (ctx.active_weapon)
@@ -348,7 +361,7 @@ bool CAntiAim::IsPeeking() {
 
 		for (int i = 0; i < 4; i++) {
 			FireBulletData_t data;
-			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= (target_vel.LengthSqr() > 256.f ? 1.5f : 6.f)) {
 				peeked = true;
 				break;
 			}

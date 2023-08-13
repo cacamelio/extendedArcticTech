@@ -64,7 +64,6 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 	runningPrediction = true;
 	owner = Cheat.LocalPlayer;
 
-
 	if (vel.LengthSqr() < 20)
 		vel = Vector();
 
