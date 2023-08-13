@@ -323,7 +323,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * (18.5f + velocity.Q_Length() / 34.f);
+	Vector move_factor = velocity.Normalized() * (19.5f + velocity.Q_Length() / 30.f);
 
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -361,7 +361,7 @@ bool CAntiAim::IsPeeking() {
 
 		for (int i = 0; i < 4; i++) {
 			FireBulletData_t data;
-			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= (target_vel.LengthSqr() > 256.f ? 1.5f : 6.f)) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
 				peeked = true;
 				break;
 			}
