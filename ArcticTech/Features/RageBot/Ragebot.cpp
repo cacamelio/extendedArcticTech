@@ -398,14 +398,6 @@ void CRagebot::ScanTargets() {
 	scanned_targets.clear();
 	scanned_targets.reserve(targets.size());
 
-	//if (!config.ragebot.aimbot.threads->get()) {
-	//	for (int i = 0; i < targets.size(); i++) {
-	//		auto target = targets[i];
-	//		scanned_targets.emplace_back(ScanTarget(target));
-	//	}
-	//}
-	//else {
-
 	selected_targets = targets.size();
 	scan_condition.notify_one();
 
@@ -413,8 +405,6 @@ void CRagebot::ScanTargets() {
 		std::unique_lock<std::mutex> lock(target_mutex);
 		result_condition.wait(lock, [this]() { return scanned_targets.size() == selected_targets; });
 	}
-
-	//}
 }
 
 uintptr_t CRagebot::ThreadScan(int threadId) {
