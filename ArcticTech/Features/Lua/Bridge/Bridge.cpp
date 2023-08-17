@@ -1365,8 +1365,13 @@ void CLua::Setup() {
 	);
 
 	lua.new_usertype<LuaAntiAim_t>("antiaim_context_t", sol::no_constructor, 
-		"override_yaw", &LuaAntiAim_t::override_yaw,
-		"override_pitch", &LuaAntiAim_t::override_pitch
+		"yaw", &LuaAntiAim_t::override_yaw,
+		"pitch", &LuaAntiAim_t::override_pitch,
+		"yaw_offset", &LuaAntiAim_t::override_yaw_offset,
+		"fakelag", &LuaAntiAim_t::override_fakelag,
+		"desync", &LuaAntiAim_t::override_desync,
+		"desync_limit", &LuaAntiAim_t::override_desync_limit,
+		"desync_side", &LuaAntiAim_t::override_desync_side
 	);
 
 	// _G

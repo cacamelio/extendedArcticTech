@@ -169,7 +169,7 @@ void CRagebot::FindTargets() {
 bool CRagebot::CompareRecords(LagRecord* a, LagRecord* b) {
 	const Vector vec_diff = a->m_vecOrigin - b->m_vecOrigin;
 
-	if (vec_diff.LengthSqr() > 4.f)
+	if (vec_diff.LengthSqr() > 1.f)
 		return false;
 
 	QAngle angle_diff = a->m_angEyeAngles - b->m_angEyeAngles;
@@ -222,7 +222,7 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 		}
 	}
 
-	if (!config.ragebot.aimbot.extended_backtrack->get() && last_valid_record && !CompareRecords(last_valid_record, &records.back())) {
+	if (!config.ragebot.aimbot.extended_backtrack->get() && last_valid_record && last_valid_record != &records.back()) {
 		target_records.emplace_back(last_valid_record);
 	}
 
@@ -427,9 +427,8 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 
 		std::unique_lock<std::mutex> lock(Ragebot->scan_mutex);
 		Ragebot->scanned_targets.push_back(scan);
-		lock.unlock();
 
-		if (Ragebot->scanned_targets.size() == Ragebot->selected_targets)
+		if (Ragebot->scanned_targets.size() >= Ragebot->selected_targets)
 			Ragebot->result_condition.notify_one();
 	}
 

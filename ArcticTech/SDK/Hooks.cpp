@@ -321,6 +321,11 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ShotManager->ProcessManualShot();
 	}
 
+	AntiAim->lua_override.reset();
+
+	for (auto& cb : Lua->hooks.getHooks(LUA_ANTIAIM))
+		cb.func(&AntiAim->lua_override);
+
 	AntiAim->FakeLag();
 	AntiAim->FakeDuck();
 	AntiAim->Angles();
@@ -824,9 +829,6 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return oCL_Move(accamulatedExtraSamples, bFinalTick);
 
-	auto nc = ClientState->m_NetChannel;
-	int out_seq_nr = nc ? nc->m_nOutSequenceNr : 0;
-
 	Exploits->Run();
 
 	if (Exploits->ShouldCharge()) {
@@ -858,9 +860,9 @@ bool __fastcall hkSendNetMsg(INetChannel* thisptr, void* edx, INetMessage& msg, 
 	if (msg.GetType() == 14) // Return and don't send messsage if its FileCRCCheck
 		return true;
 
-	if (msg.GetGroup() == 9) { // Fix lag when transmitting voice and fakelagging
+	if (msg.GetGroup() == 9) // Fix lag when transmitting voice and fakelagging
 		bVoice = true;
-	}
+
 	return oSendNetMsg(thisptr, edx, msg, bForceReliable, bVoice);
 }
 

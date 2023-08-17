@@ -29,37 +29,40 @@ void CAntiAim::FakeLag() {
 		}
 	}
 
-	int fakelagTicks = 0;
-	int fakelagLimit = min(14, config.antiaim.fakelag.limit->get());
-	int fakelagMin = 1;
+	fakelag = 0;
+	fakelag_limit = min(sv_maxusrcmdprocessticks->GetInt(), config.antiaim.fakelag.limit->get());
 
 	if (ctx.tickbase_shift > 0) {
-		fakelagLimit = max((sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 0);
+		fakelag_limit = max((sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 0);
 	}
-
-	if (config.antiaim.misc.fake_duck->get())
-		fakelagMin = fakelagLimit = 14;
 
 	if (config.antiaim.fakelag.enabled->get()) {
 		if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 256.f) {
-			fakelagTicks = 2;
+			fakelag = 2;
 		}
 		else {
-			fakelagTicks = int(64.0f / (Cheat.LocalPlayer->m_vecVelocity().Q_Length() * GlobalVars->interval_per_tick) + 1);
+			fakelag = fakelag_limit;
+
+			if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+				fakelag = int(64.0f / (Cheat.LocalPlayer->m_vecVelocity().Q_Length() * GlobalVars->interval_per_tick) + 1);
 		}
 	}
 
-	fakelagMin = min(fakelagMin, fakelagLimit);
+	if (config.antiaim.fakelag.variability->get() > 0 && !config.antiaim.fakelag.enabled->get())
+		fakelag += abs(rand() % config.antiaim.fakelag.variability->get());
 
-	if (config.antiaim.fakelag.variability->get() > 0 && config.antiaim.fakelag.enabled->get())
-		fakelagTicks = std::clamp(fakelagTicks - abs(rand() % int(config.antiaim.fakelag.variability->get())), fakelagMin, fakelagLimit);
-	else
-		fakelagTicks = std::clamp(fakelagTicks, fakelagMin, fakelagLimit);
+	if (lua_override.override_bits & LuaAntiAim_t::OverrideFakeLag)
+		fakelag = lua_override.fakelag;
+
+	if (config.antiaim.misc.fake_duck->get())
+		fakelag = 14;
+
+	fakelag = std::clamp(fakelag, 0, fakelag_limit);
 	
 	if (ctx.teleported_last_tick)
 		ctx.send_packet = true;
 	else
-		ctx.send_packet = ClientState->m_nChokedCommands >= fakelagTicks;
+		ctx.send_packet = ClientState->m_nChokedCommands >= fakelag;
 
 	static bool hasPeeked = false;
 
@@ -92,13 +95,15 @@ void CAntiAim::Angles() {
 		return;
 
 	target = GetNearestTarget();
+	pitch = ctx.cmd->viewangles.pitch;
+	base_yaw = ctx.cmd->viewangles.yaw;
 
 	if (!(ctx.cmd->buttons & IN_USE)) {
 		switch (config.antiaim.angles.pitch->get()) {
 		case 0:
 			break;
 		case 1:
-			ctx.cmd->viewangles.pitch = 89;
+			pitch = 89;
 			break;
 		}
 
@@ -108,46 +113,49 @@ void CAntiAim::Angles() {
 		case 0:
 			break;
 		case 1:
-			ctx.cmd->viewangles.yaw -= 180;
+			base_yaw -= 180;
 			break;
 		case 2:
-			ctx.cmd->viewangles.yaw = AtTargets();
+			base_yaw = AtTargets();
 			break;
 		}
 
 		if (manualAngleState) {
-			ctx.cmd->viewangles.yaw = originalYaw + ((manualAngleState == 1) ? 90 : -90);
+			base_yaw = originalYaw + ((manualAngleState == 1) ? 90 : -90);
 		}
 
-		notModifiedYaw = ctx.cmd->viewangles.yaw;
+		if (lua_override.override_bits & LuaAntiAim_t::OverrideYaw)
+			base_yaw = lua_override.yaw;
 
+		yaw_offset = 0;
 		if (config.antiaim.angles.yaw_jitter->get() && !Cheat.LocalPlayer->m_bIsDefusing() && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
-			ctx.cmd->viewangles.yaw += jitter ? -config.antiaim.angles.modifier_value->get() * 0.5f : config.antiaim.angles.modifier_value->get() * 0.5f;
+			yaw_offset = jitter ? -config.antiaim.angles.modifier_value->get() * 0.5f : config.antiaim.angles.modifier_value->get() * 0.5f;
 
-		LuaAntiAim_t antiaim_context;
-		
-		for (auto& cb : Lua->hooks.getHooks(LUA_ANTIAIM))
-			cb.func(&antiaim_context);
+		if (lua_override.override_bits & lua_override.OverridePitch)
+			pitch = lua_override.pitch;
+		if (lua_override.override_bits & lua_override.OverrideYaw)
+			base_yaw = lua_override.yaw;
+		if (lua_override.override_bits & lua_override.OverrideYawOffset)
+			yaw_offset = lua_override.yaw_offset;
 
-		if (antiaim_context.should_override_pitch)
-			ctx.cmd->viewangles.pitch = antiaim_context.pitch;
-		if (antiaim_context.should_override_yaw)
-			ctx.cmd->viewangles.yaw = antiaim_context.yaw;
-	}
-	else {
-		notModifiedYaw = ctx.cmd->viewangles.yaw;
+		ctx.cmd->viewangles.yaw = base_yaw + yaw_offset;
+		ctx.cmd->viewangles.pitch = pitch;
 	}
 
 	Desync();
 }
 
 void CAntiAim::Desync() {
-	if (!config.antiaim.angles.body_yaw->get() || Exploits->IsShifting() || Cheat.LocalPlayer->m_bIsDefusing())
+	if (!config.antiaim.angles.body_yaw->get() || 
+		Exploits->IsShifting() || 
+		Cheat.LocalPlayer->m_bIsDefusing() || 
+		(ctx.cmd->buttons & IN_USE && !(lua_override.override_bits & lua_override.OverrideDesync) && !lua_override.desync) ||
+		((lua_override.override_bits & lua_override.OverrideDesync) && !lua_override.desync))
 		return;
 
 	bool inverter = config.antiaim.angles.inverter->get();
 
-	if (config.antiaim.angles.body_yaw_options->get(0) && !(ctx.cmd->buttons & IN_USE) && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
+	if (config.antiaim.angles.body_yaw_options->get(0) && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
 		inverter = jitter;
 
 	if (config.antiaim.angles.body_yaw_options->get(3) || (manualAngleState != 0 && config.antiaim.angles.manual_options->get(1))) {
@@ -157,21 +165,26 @@ void CAntiAim::Desync() {
 			inverter = fs_side == 1;
 	}
 
-	float desyncAngle = 0.f;
+	if (lua_override.override_bits & lua_override.OverrideDesyncSide)
+		inverter = lua_override.desync_side == 1;
+
+	desync_limit = 0.f;
 
 	if (config.antiaim.angles.body_yaw_limit->get() < 58)
-		desyncAngle = inverter ? config.antiaim.angles.body_yaw_limit->get() : -config.antiaim.angles.body_yaw_limit->get();
+		desync_limit = config.antiaim.angles.body_yaw_limit->get();
 	else
-		desyncAngle = inverter ? 120 : -120;
+		desync_limit = 120.f;
+
+	float desync_angle = desync_limit * (inverter ? 1 : -1);
 
 	if (!ctx.send_packet) {
-		realAngle = Math::AngleNormalize(ctx.cmd->viewangles.yaw + std::clamp(desyncAngle, -Cheat.LocalPlayer->GetMaxDesyncDelta(), Cheat.LocalPlayer->GetMaxDesyncDelta()));
+		realAngle = Math::AngleNormalize(ctx.cmd->viewangles.yaw + std::clamp(desync_angle, -Cheat.LocalPlayer->GetMaxDesyncDelta(), Cheat.LocalPlayer->GetMaxDesyncDelta()));
 
-		ctx.cmd->viewangles.yaw += desyncAngle;
+		ctx.cmd->viewangles.yaw += desync_angle;
 	}
 
 	if (config.antiaim.angles.body_yaw_options->get(2) && ctx.send_packet && (!ctx.tickbase_shift || ctx.cmd->buttons & IN_DUCK || config.antiaim.misc.slow_walk->get() || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 400.f))) {
-		ctx.cmd->viewangles.roll = desyncAngle < 0 ? 64: -64;
+		ctx.cmd->viewangles.roll = desync_angle < 0 ? 64: -64;
 	}
 
 	desyncing = true;
@@ -227,7 +240,7 @@ int CAntiAim::DesyncFreestand() {
 	Vector forward = (target->m_vecOrigin() - Cheat.LocalPlayer->m_vecOrigin()).Q_Normalized();
 	Vector eyePos = Cheat.LocalPlayer->GetEyePosition();
 
-	Vector right = Math::AngleVectors(QAngle(0, notModifiedYaw + 90.f, 0));
+	Vector right = Math::AngleVectors(QAngle(0, base_yaw + 90.f, 0));
 
 	Vector negPos = eyePos - right * 16.f;
 	Vector posPos = eyePos + right * 16.f;

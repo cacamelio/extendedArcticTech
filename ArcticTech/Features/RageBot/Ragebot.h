@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <queue>
 
-#define MAX_RAGEBOT_THREADS 6
+#define MAX_RAGEBOT_THREADS 4
 
 class CUserCmd;
 
