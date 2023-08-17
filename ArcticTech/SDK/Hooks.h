@@ -75,8 +75,6 @@ inline tRenderSmokeOverlay oRenderSmokeOverlay;
 inline tShouldInterpolate oShouldInterpolate;
 inline tPacketEnd oPacketEnd;
 inline tPacketStart oPacketStart;
-inline tFireGameEvent oFireGameEvent;
-inline tFX_FireBullets oFX_FireBullets;
 inline tProcessMovement oProcessMovement;
 inline tLogDirect oLogDirect;
 inline tSetSignonState oSetSignonState;

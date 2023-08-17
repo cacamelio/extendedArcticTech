@@ -613,13 +613,15 @@ void CRender::Text(const std::wstring& text, const Vector2& pos, Color color, D3
 	vecDrawData.emplace_back(DrawCommand_t(EDrawType::WTEXT, wtext_command_t{ text, font, rect, clipType, color.d3d_color(), bool(flags & TEXT_OUTLINED), bool(flags & TEXT_DROPSHADOW) }));
 }
 
-IDirect3DTexture9* CRender::LoadImageFromMemory(void* data, int dataSize, const Vector2& size) {
-	IDirect3DTexture9* dummy;
-	D3DXCreateTextureFromFileInMemoryEx(device, data, dataSize, size.x, size.y, D3DUSAGE_DYNAMIC, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0x00000000, NULL, NULL, &dummy);
-	return dummy;
+DXImage CRender::LoadImageFromMemory(void* data, int dataSize, const Vector2& size) {
+	DXImage result;
+	result.width = size.x;
+	result.height = size.y;
+	D3DXCreateTextureFromFileInMemoryEx(device, data, dataSize, size.x, size.y, D3DUSAGE_DYNAMIC, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0x00000000, NULL, NULL, &result.texture);
+	return result;
 }
 
-void CRender::Image(IDirect3DTexture9* image, const Vector2& pos, Color color) {
+void CRender::Image(DXImage image, const Vector2& pos, Color color) {
 	D3DXVECTOR3 _pos(pos.x, pos.y, 0.0f);
 
 	if (clipping) {
@@ -628,10 +630,14 @@ void CRender::Image(IDirect3DTexture9* image, const Vector2& pos, Color color) {
 		lol.top = clipRect.top - _pos.y;
 		lol.right = clipRect.right - _pos.x;
 		lol.bottom = clipRect.bottom - _pos.y;
-		vecDrawData.emplace_back(DrawCommand_t(EDrawType::IMAGE, image_command_t(image, lol, _pos, color.d3d_color(), true)));
+		vecDrawData.emplace_back(DrawCommand_t(EDrawType::IMAGE, image_command_t(image.texture, lol, _pos, color.d3d_color(), true)));
 	}
 	else
-		vecDrawData.emplace_back(DrawCommand_t(EDrawType::IMAGE, image_command_t(image, RECT(), _pos, color.d3d_color(), false)));
+		vecDrawData.emplace_back(DrawCommand_t(EDrawType::IMAGE, image_command_t(image.texture, RECT(), _pos, color.d3d_color(), false)));
+}
+
+void CRender::Vertecies(int draw_type, int prim_count, const std::vector<Vertex>& verts) {
+	vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t((D3DPRIMITIVETYPE)draw_type, (UINT)prim_count, const_cast<std::vector<Vertex>&>(verts))));
 }
 
 void CRender::PushClipRect(const Vector2& start, const Vector2& end) {

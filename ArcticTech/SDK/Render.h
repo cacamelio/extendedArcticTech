@@ -38,6 +38,12 @@ struct Vertex {
 
     Vertex() {}
 
+    Vertex(Vector pos, Color clr) {
+        x = pos.x;
+        y = pos.y;
+        color = D3DCOLOR_ARGB(clr.a, clr.r, clr.g, clr.b);
+    }
+
     Vertex(float _x, float _y, Color clr) {
         x = _x;
         y = _y;
@@ -82,6 +88,12 @@ public:
         _ts_font->DrawTextW(NULL, text, -1, &rect, DT_CALCRECT, 0);
         return Vector2(rect.right - rect.left, rect.bottom - rect.top);
     }
+};
+
+struct DXImage {
+    IDirect3DTexture9* texture;
+    int width = 0;
+    int height = 0;
 };
 
 struct primitive_command_t {
@@ -156,9 +168,9 @@ inline D3DXFont* VerdanaBold;
 inline D3DXFont* CalibriBold;
 
 namespace Resources {
-    inline IDirect3DTexture9* Inferno;
-    inline IDirect3DTexture9* HeGrenade;
-    inline IDirect3DTexture9* Molotov;
+    inline DXImage Inferno;
+    inline DXImage HeGrenade;
+    inline DXImage Molotov;
 }
 
 class CRender
@@ -222,8 +234,9 @@ public:
     void                Text(const std::string& text, const Vector2& pos, Color color, D3DXFont* font, int flags = 0);
     void                Text(const std::wstring& text, const Vector2& pos, Color color, D3DXFont* font, int flags = 0);
 
-    IDirect3DTexture9*  LoadImageFromMemory(void* data, int dataSize, const Vector2& size);
-    void                Image(IDirect3DTexture9* image, const Vector2& pos, Color color = Color(255, 255, 255));
+    DXImage             LoadImageFromMemory(void* data, int dataSize, const Vector2& size);
+    void                Image(DXImage image, const Vector2& pos, Color color = Color(255, 255, 255));
+    void                Vertecies(int draw_type, int prim_count, const std::vector<Vertex>& vertexes);
 
     void                PushClipRect(const Vector2& start, const Vector2& end);
     void                PopClipRect();

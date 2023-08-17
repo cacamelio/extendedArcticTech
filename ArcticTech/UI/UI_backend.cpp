@@ -51,15 +51,15 @@ void CMenu::Setup() {
     ImGui_ImplWin32_Init(hWindow);
     ImGui_ImplDX9_Init(DirectXDevice);
 
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, ui_logo, sizeof(ui_logo), &pic::logo);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, aimbot, sizeof(aimbot), &pic::tab::aimbot);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, movement, sizeof(movement), &pic::tab::antiaim);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, visuals, sizeof(visuals), &pic::tab::visuals);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, misc, sizeof(misc), &pic::tab::misc);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, players, sizeof(players), &pic::tab::players);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, skins, sizeof(skins), &pic::tab::skins);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, configs, sizeof(configs), &pic::tab::configs);
-    D3DXCreateTextureFromFileInMemory(DirectXDevice, scripts, sizeof(scripts), &pic::tab::scripts);
+    pic::logo = Render->LoadImageFromMemory(ui_logo, sizeof(ui_logo), Vector2(128, 128));
+    pic::tab::aimbot = Render->LoadImageFromMemory(aimbot, sizeof(aimbot), Vector2(14, 14));
+    pic::tab::antiaim = Render->LoadImageFromMemory(anti_aimbot, sizeof(anti_aimbot), Vector2(14.74f, 14.f));
+    pic::tab::visuals = Render->LoadImageFromMemory(visuals, sizeof(visuals), Vector2(14, 9.33f));
+    pic::tab::misc = Render->LoadImageFromMemory(misc, sizeof(misc), Vector2(14, 11.74f));
+    pic::tab::players = Render->LoadImageFromMemory(players, sizeof(players), Vector2(8.75f, 14.f));
+    pic::tab::skins = Render->LoadImageFromMemory(skins, sizeof(skins), Vector2(16, 16));
+    pic::tab::configs = Render->LoadImageFromMemory(configs, sizeof(configs), Vector2(13.4f, 14.f));
+    pic::tab::scripts = Render->LoadImageFromMemory(scripts, sizeof(scripts), Vector2(15, 12));
 
     m_WindowSize = ImVec2(950, 750);
     m_ItemSpacing = ImVec2(24, 24);
@@ -75,7 +75,7 @@ void CMenu::Release() {
     ImGui::Shutdown();
 }
 
-void CMenu::Render() {
+void CMenu::Draw() {
     ImGui_ImplDX9_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
@@ -114,12 +114,9 @@ void CMenu::Render() {
 
             ImGui::GetWindowDrawList()->AddRectFilled(window_pos + ImVec2(181 + item_spacing.x, item_spacing.y), window_pos + ImVec2((window_size.x - item_spacing.x), (item_spacing.y + 58)), ImGui::GetColorU32(c::child::bg), c::child::rounding);
 
-            ImGui::GetWindowDrawList()->AddImage(pic::logo, window_pos + ImVec2(181 / 2 - 128 / 2 + item_spacing.x / 2, item_spacing.y - 16), window_pos + ImVec2(181 / 2 + 128 / 2 + item_spacing.x / 2, item_spacing.y - 16 + 128), ImVec2(0, 0), ImVec2(1, 1));
+            ImGui::GetWindowDrawList()->AddImage(pic::logo.texture, window_pos + ImVec2(181 / 2 - 128 / 2 + item_spacing.x / 2, item_spacing.y - 16), window_pos + ImVec2(181 / 2 + 128 / 2 + item_spacing.x / 2, item_spacing.y - 16 + 128), ImVec2(0, 0), ImVec2(1, 1));
 
             static int tabs = 0;
-            const char* name_array[8] = { "Aimbot", "Anti aim", "Player", "Visuals", "Misc", "Skins", "Configs", "Scripts" };
-            IDirect3DTexture9* pic_array[8] = { pic::tab::aimbot, pic::tab::antiaim, pic::tab::players, pic::tab::visuals, pic::tab::misc, pic::tab::skins, pic::tab::configs, pic::tab::scripts };
-            ImVec2 pic_size[8] = { ImVec2(14, 14), ImVec2(14.74f, 14), ImVec2(13.4f, 14), ImVec2(14, 9.33f), ImVec2(14, 11.74f), ImVec2(16, 16), ImVec2(8.75f, 14), ImVec2(15, 12)};
 
             ImGui::SetCursorPos(ImVec2((item_spacing.x * 2), (48 + (item_spacing.y * 3))));
 
@@ -196,11 +193,11 @@ void CMenu::RecalculateGroupboxes() {
     }
 }
 
-CMenuTab* CMenu::AddTab(const std::string& tab, IDirect3DTexture9* icon, ImVec2 icon_size) {
+CMenuTab* CMenu::AddTab(const std::string& tab, DXImage icon) {
     CMenuTab* result = new CMenuTab;
 
-    result->icon = icon;
-    result->icon_size = icon_size;
+    result->icon = icon.texture;
+    result->icon_size = ImVec2(icon.width, icon.height);
     result->name = tab;
 
     m_Tabs.push_back(result);

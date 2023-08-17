@@ -402,6 +402,7 @@ public:
 
     std::string         GetName();
     bool                IsTeammate();
+    bool                IsEnemy();
     float               GetMaxDesyncDelta();
     bool                IsAlive();
     Vector              GetBonePosition(int bone);

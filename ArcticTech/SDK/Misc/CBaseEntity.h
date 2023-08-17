@@ -48,10 +48,6 @@
 
 class CBasePlayer;
 
-#ifdef GetProp
-#undef GetProp
-#endif // GetProp
-
 typedef unsigned int CBaseHandle;
 
 class VarMapEntry_t
@@ -391,9 +387,9 @@ public:
 
 class CCascadeLight : public CBaseEntity {
 public:
-	NETVAR(m_shadowDirection, Vector, "DT_CascadeLight", "m_shadowDirection");
-	NETVAR(m_envLightShadowDirection, Vector, "DT_CascadeLight", "m_envLightShadowDirection");
-	NETVAR(m_flMaxShadowDist, float, "DT_CascadeLight", "m_flMaxShadowDist");
+	NETVAR(m_shadowDirection, Vector, "DT_CascadeLight", "m_shadowDirection")
+	NETVAR(m_envLightShadowDirection, Vector, "DT_CascadeLight", "m_envLightShadowDirection")
+	NETVAR(m_flMaxShadowDist, float, "DT_CascadeLight", "m_flMaxShadowDist")
 };
 
 enum EWeaponType : int

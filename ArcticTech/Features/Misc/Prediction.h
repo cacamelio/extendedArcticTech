@@ -82,12 +82,8 @@ public:
 	void Start(CUserCmd* cmd);
 	void End();
 
-	//void StoreNetvars();
-	//void RestoreNetvars();
-
 	void StoreNetvars(int place);
 	void RestoreNetvars(int place);
-	void PredictNetvars(int place);
 
 	void PatchAttackPacket(CUserCmd* cmd, bool restore);
 

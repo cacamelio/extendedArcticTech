@@ -230,23 +230,4 @@ void CPrediction::RestoreNetvars(int place) {
 	}
 }
 
-void CPrediction::PredictNetvars(int place) {
-	static ConVar* sv_gravity = CVar->FindVar("sv_gravity");
-
-	CBasePlayer* local = Cheat.LocalPlayer;
-
-	auto& nv = local_netvars[place % MULTIPLAYER_BACKUP];
-	auto& prevNv = local_netvars[(place - 1) % MULTIPLAYER_BACKUP];
-
-	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
-		float flFallVelocity = nv.m_vecVelocity.z - sv_gravity->GetFloat() * GlobalVars->interval_per_tick;
-
-		local->m_vecVelocity() += nv.m_vecVelocity - prevNv.m_vecVelocity;
-
-		local->m_flFallVelocity() = -flFallVelocity;
-		local->m_vecVelocity().z = flFallVelocity;
-		local->m_vecOrigin() += local->m_vecVelocity() * GlobalVars->interval_per_tick;
-	}
-}
-
 CPrediction* EnginePrediction = new CPrediction;

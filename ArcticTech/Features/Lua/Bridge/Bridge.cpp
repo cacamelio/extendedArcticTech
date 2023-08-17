@@ -7,6 +7,7 @@
 #include "../../Visuals/ESP.h"
 #include "../../AntiAim/AntiAim.h"
 #include "../../RageBot/Exploits.h"
+#include "../../RageBot/AutoWall.h"
 
 std::vector<UILuaCallback_t> g_ui_lua_callbacks;
 
@@ -349,6 +350,14 @@ namespace api {
 		std::string get_map_shortname() {
 			return EngineClient->GetLevelNameShort();
 		}
+
+		std::string get_map_name() {
+			return EngineClient->GetLevelName();
+		}
+
+		bool is_recording_voice() {
+			return EngineClient->IsVoiceRecording();
+		}
 	}
 
 	namespace files {
@@ -374,7 +383,7 @@ namespace api {
 			file.close();
 		}
 
-		void create_directory(std::string path) {
+		void create_folder(std::string path) {
 			std::filesystem::create_directory(path);
 		}
 
@@ -425,13 +434,18 @@ namespace api {
 			return Vector(Cheat.ScreenSize.x, Cheat.ScreenSize.y);
 		}
 
-		QAngle camera_angles() {
+		QAngle camera_angles(sol::optional<QAngle> angle) {
 			QAngle result;
 			EngineClient->GetViewAngles(&result);
+
+			if (angle.has_value()) {
+				EngineClient->SetViewAngles(&angle.value());
+			}
+
 			return result;
 		}
 
-		void add_font_from_memory(std::string mem) {
+		void add_font(std::string mem) {
 			Render->AddFontFromMemory(mem.data(), mem.size());
 		}
 
@@ -439,7 +453,7 @@ namespace api {
 			return Render->LoadFont(name, size, (flags.find("b") != std::string::npos) ? 600 : 400, (flags.find("a") != std::string::npos) ? CLEARTYPE_NATURAL_QUALITY : 0);
 		}
 
-		IDirect3DTexture9* load_image_from_memory(std::string mem, Vector size) {
+		DXImage load_image(std::string mem, Vector size) {
 			return Render->LoadImageFromMemory(mem.data(), mem.size(), size.to_vec2());
 		}
 
@@ -497,7 +511,7 @@ namespace api {
 			Render->Circle3D(center, radius, color, true);
 		}
 
-		void texture(IDirect3DTexture9* texture, Vector pos, std::optional<Color> col) {
+		void texture(DXImage texture, Vector pos, std::optional<Color> col) {
 			Render->Image(texture, pos.to_vec2(), col.value_or(Color(255, 255, 255)));
 		}
 
@@ -580,6 +594,15 @@ namespace api {
 			return Vector(res.x, res.y);
 		}
 
+		void vertex(int draw_type, int prim_count, sol::variadic_args vertecies) {
+			std::vector<Vertex> verts;
+
+			for (auto x : vertecies)
+				verts.push_back(x);
+
+			Render->Vertecies(draw_type, prim_count, verts);
+		}
+
 		void push_clip_rect(Vector start, Vector end) {
 			Render->PushClipRect(start.to_vec2(), end.to_vec2());
 		}
@@ -610,12 +633,12 @@ namespace api {
 			return Utils::RandomFloat(min, max);
 		}
 
-		void* create_interface(std::string module_name, std::string interface_name) {
-			return Utils::CreateInterface(module_name.c_str(), interface_name.c_str());
+		uintptr_t create_interface(std::string module_name, std::string interface_name) {
+			return reinterpret_cast<uintptr_t>(Utils::CreateInterface(module_name.c_str(), interface_name.c_str()));
 		}
 
-		void* pattern_scan(std::string module_name, std::string pattern, sol::optional<int> offset) {
-			return Utils::PatternScan(module_name.c_str(), pattern.c_str(), offset.value_or(0));
+		uintptr_t pattern_scan(std::string module_name, std::string pattern) {
+			return reinterpret_cast<uintptr_t>(Utils::PatternScan(module_name.c_str(), pattern.c_str()));
 		}
 
 		CGameTrace trace_line(Vector start, Vector end, int mask, CBaseEntity* skip_entity) {
@@ -624,6 +647,12 @@ namespace api {
 
 		CGameTrace trace_hull(Vector start, Vector end, Vector mins, Vector maxs, int mask, CBaseEntity* skip) {
 			return EngineTrace->TraceHull(start, end, mins, maxs, mask, skip);
+		}
+
+		FireBulletData_t trace_bullet(CBasePlayer* attacker, Vector start, Vector end, sol::optional<CBasePlayer*> target) {
+			FireBulletData_t data;
+			AutoWall->FireBullet(attacker, start, end, data, target.value_or(nullptr));
+			return data;
 		}
 
 		bool is_key_pressed(int key) {
@@ -644,28 +673,28 @@ namespace api {
 	}
 
 	namespace ui {
-		CMenuGroupbox* find_groupbox(sol::this_state state, std::string tab, std::string groupbox) {
-			CMenuGroupbox* found_item = Menu->FindGroupbox(tab, groupbox);
+		sol::object find(sol::this_state state, std::string tab, std::string group, sol::optional<std::string> widget, sol::optional<WidgetType> wtype) {
+			if (!widget.has_value()) {
+				CMenuGroupbox* found_item = Menu->FindGroupbox(tab, group);
+
+				if (!found_item) {
+					Console->Error(std::format("[{}] cont find item: ({}, {})", GetCurrentScript(state), tab, group));
+					return nullptr;
+				}
+
+				return sol::make_object(state, found_item);
+			}
+
+			WidgetType etype = wtype.value_or(WidgetType::Any);
+
+			IBaseWidget* found_item = Menu->FindItem(tab, group, widget.value(), etype);
 
 			if (!found_item) {
-				Console->Error(std::format("[{}] cont find item: ({}, {})", GetCurrentScript(state), tab, groupbox));
+				Console->Error(std::format("[{}] cont find item: ({}, {}, {})", GetCurrentScript(state), tab, group, widget.value()));
 				return nullptr;
 			}
 
-			return found_item;
-		}
-
-		IBaseWidget* find_item(sol::this_state state, std::string tab, std::string groupbox, std::string name, sol::optional<WidgetType> type) {
-			WidgetType etype = type.value_or(WidgetType::Any);
-
-			IBaseWidget* found_item = Menu->FindItem(tab, groupbox, name, etype);
-
-			if (!found_item) {
-				Console->Error(std::format("[{}] cont find item: ({}, {}, {})", GetCurrentScript(state), tab, groupbox, name));
-				return nullptr;
-			}
-
-			return found_item;
+			return sol::make_object(state, found_item);
 		}
 
 		std::string element_get_name(sol::this_state state, IBaseWidget* widget) {
@@ -779,11 +808,8 @@ namespace api {
 			element->SetVisible(visible);
 		}
 
-		CMenuTab* tab(sol::this_state state, std::string name, sol::optional<IDirect3DTexture9*> icon, sol::optional<Vector> size) {
-			Vector s = size.value_or(Vector(16, 16));
-			ImVec2 im_size(s.x, s.y);
-			
-			CMenuTab* tab = Menu->AddTab(name, icon.value_or(pic::tab::scripts), im_size);
+		CMenuTab* tab(sol::this_state state, std::string name, sol::optional<DXImage> icon) {
+			CMenuTab* tab = Menu->AddTab(name, icon.value_or(pic::tab::scripts));
 			
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
 			script->tabs.push_back(tab);
@@ -818,7 +844,7 @@ namespace api {
 			return elem;
 		}
 
-		IBaseWidget* colorpicker(sol::this_state state, CMenuGroupbox* self, std::string name, sol::optional<Color> default_color) {
+		IBaseWidget* color_picker(sol::this_state state, CMenuGroupbox* self, std::string name, sol::optional<Color> default_color) {
 			IBaseWidget* elem = self->AddColorPicker(name, default_color.value_or(Color()));
 
 			LuaScript_t* script = &Lua->scripts[Lua->GetScriptID(GetCurrentScript(state))];
@@ -920,6 +946,21 @@ namespace api {
 			return sol::make_object(state, result);
 		}
 
+		sol::object from_handle(sol::this_state state, unsigned int handle) {
+			CBaseEntity* result = EntityList->GetClientEntityFromHandle(handle);
+
+			if (!result)
+				return sol::nil;
+
+			if (result->IsPlayer())
+				return sol::make_object(state, reinterpret_cast<CBasePlayer*>(result));
+
+			if (result->IsWeapon())
+				return sol::make_object(state, reinterpret_cast<CBaseCombatWeapon*>(result));
+
+			return sol::make_object(state, result);
+		}
+
 		CBasePlayer* get_local_player() {
 			return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetLocalPlayer()));
 		}
@@ -1002,13 +1043,55 @@ namespace api {
 			return collidable->GetCollisionOrigin();
 		}
 
+		bool is_player(CBaseEntity* ent) {
+			return ent->IsPlayer();
+		}
+
+		bool is_weapon(CBaseEntity* ent) {
+			return ent->IsWeapon();
+		}
+
+		uintptr_t ptr(CBaseEntity* ent) {
+			return reinterpret_cast<uintptr_t>(ent);
+		}
+
+		int get_classid(CBaseEntity* ent) {
+			auto cc = ent->GetClientClass();
+
+			if (!cc)
+				return 0;
+
+			return cc->m_ClassID;
+		}
+
+		std::string get_classname(CBaseEntity* ent) {
+			auto cc = ent->GetClientClass();
+
+			if (!cc)
+				return 0;
+
+			return cc->m_pNetworkName;
+		}
+
+		player_info_t get_player_info(CBasePlayer* pl) {
+			player_info_t pinfo;
+			EngineClient->GetPlayerInfo(pl->EntIndex(), &pinfo);
+			return pinfo;
+		}
+
+		bool is_bot(CBasePlayer* pl) {
+			player_info_t pinfo;
+			EngineClient->GetPlayerInfo(pl->EntIndex(), &pinfo);
+			return pinfo.fakeplayer;
+		}
+
 		void set_icon(CBasePlayer* player, int level) {
 			ESP::IconDisplay(player, level);
 		}
 	}
 
 	namespace network {
-		std::string get(sol::this_state state, std::string url, sol::optional<sol::table> headers, sol::optional<sol::protected_function> callback) {
+		std::string get(std::string url, sol::optional<sol::table> headers, sol::optional<sol::protected_function> callback) {
 			if (callback.has_value()) {
 				// will implement async request later
 			}
@@ -1026,6 +1109,7 @@ namespace api {
 				return Requests->Create(k_EHTTPMethodGET, url, _headers);
 			}
 		}
+
 	}
 
 	namespace rage {
@@ -1076,7 +1160,7 @@ void CLua::Setup() {
 	// usertypes
 	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor, 
 		"set_callback", api::ui::element_set_callback,
-		"set_visible", api::ui::element_set_visible,
+		"visible", api::ui::element_set_visible,
 		"get_name", api::ui::element_get_name,
 		"get_mode", api::ui::element_get_mode,
 		"get_key", api::ui::element_get_key,
@@ -1122,6 +1206,17 @@ void CLua::Setup() {
 		"to_screen", &api::vector::to_screen
 	);
 
+	lua.new_usertype<player_info_t>("player_info_t", sol::no_constructor,
+		"steamID64", &player_info_t::steamID64,
+		"xuid_low", &player_info_t::xuid_low,
+		"xuid_high", &player_info_t::xuid_high,
+		"name", &player_info_t::szName,
+		"userid", &player_info_t::userId,
+		"szSteamID", &player_info_t::szSteamID,
+		"steamID", &player_info_t::iSteamID,
+		"bot", &player_info_t::fakeplayer
+	);
+
 	lua.new_usertype<CBaseEntity>("entity_t", sol::no_constructor,
 		"ent_index", &CBaseEntity::EntIndex,
 		"get_abs_origin", &CBasePlayer::GetAbsOrigin,
@@ -1129,6 +1224,11 @@ void CLua::Setup() {
 		"obb_maxs", api::entity::obb_maxs,
 		"obb_mins", api::entity::obb_mins,
 		"collision_origin", api::entity::collision_origin,
+		"is_player", api::entity::is_player,
+		"is_weapon", api::entity::is_weapon,
+		"ptr", api::entity::ptr,
+		"get_classid", api::entity::get_classid,
+		"get_classname", api::entity::get_classname,
 		"__index", api::entity::get_prop
 	);
 
@@ -1136,6 +1236,8 @@ void CLua::Setup() {
 		"weapon_index", &CBaseCombatWeapon::m_iItemDefinitionIndex,
 		"get_inaccuracy", &CBaseCombatWeapon::GetInaccuracy,
 		"get_spread", &CBaseCombatWeapon::GetSpread,
+		"shooting_weapon", &CBaseCombatWeapon::ShootingWeapon,
+		"can_shoot", &CBaseCombatWeapon::CanShoot,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
@@ -1144,6 +1246,12 @@ void CLua::Setup() {
 		"get_name", &CBasePlayer::GetName,
 		"get_active_weapon", &CBasePlayer::GetActiveWeapon,
 		"is_alive", &CBasePlayer::IsAlive,
+		"is_enemy", &CBasePlayer::IsEnemy,
+		"is_bot", api::entity::is_bot,
+		"get_player_info", api::entity::get_player_info,
+		"get_eye_position", &CBasePlayer::GetEyePosition,
+		"get_bone_position", &CBasePlayer::GetBonePosition,
+		"get_hitbox_position", &CBasePlayer::GetHitboxCenter,
 		"set_icon", api::entity::set_icon,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
@@ -1196,7 +1304,7 @@ void CLua::Setup() {
 	lua.new_usertype<CMenuGroupbox>("groupbox_t", sol::no_constructor,
 		"checkbox", api::ui::checkbox,
 		"label", api::ui::label,
-		"color_picker", api::ui::colorpicker,
+		"color_picker", api::ui::color_picker,
 		"keybind", api::ui::keybind,
 		"slider_int", api::ui::slider_int,
 		"slider_float", api::ui::slider_float,
@@ -1284,8 +1392,7 @@ void CLua::Setup() {
 	lua.create_named_table("ui",
 		"tab", api::ui::tab,
 		"groupbox", api::ui::groupbox,
-		"find_groupbox", api::ui::find_groupbox,
-		"find_item", api::ui::find_item,
+		"find", api::ui::find,
 		"is_open", api::ui::is_open,
 		"get_binds", api::ui::get_binds
 	);
@@ -1316,9 +1423,9 @@ void CLua::Setup() {
 	lua.create_named_table("render",
 		"screen_size", api::render::screen_size,
 		"camera_angles", api::render::camera_angles,
-		"add_font_from_memory", api::render::add_font_from_memory,
+		"add_font", api::render::add_font,
 		"load_font", api::render::load_font,
-		"load_image_from_memory", api::render::load_image_from_memory,
+		"load_image", api::render::load_image,
 		"measure_text", api::render::measure_text,
 		"line", api::render::line,
 		"poly", api::render::poly,
@@ -1346,7 +1453,7 @@ void CLua::Setup() {
 	lua.create_named_table("files",
 		"read", api::files::read,
 		"write", api::files::write,
-		"create_folder", api::files::create_directory,
+		"create_folder", api::files::create_folder,
 		"exists", api::files::exists
 	);
 

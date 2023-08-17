@@ -87,7 +87,7 @@ HRESULT __stdcall hkPresent(IDirect3DDevice9* thisptr, const RECT* src, const RE
 
 	if (thisptr->BeginScene() == D3D_OK) {
 		Render->RenderDrawData();
-		Menu->Render();
+		Menu->Draw();
 		thisptr->EndScene();
 	}
 
@@ -179,6 +179,26 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	ctx.cmd = cmd;
 	ctx.send_packet = true;
 
+	CUserCmd_lua lua_cmd;
+	lua_cmd.command_number = cmd->command_number;
+	lua_cmd.tickcount = cmd->tick_count;
+	lua_cmd.hasbeenpredicted = cmd->hasbeenpredicted;
+	lua_cmd.move = Vector(cmd->sidemove, cmd->forwardmove, cmd->upmove);
+	lua_cmd.viewangles = cmd->viewangles;
+	lua_cmd.random_seed = cmd->random_seed;
+	lua_cmd.buttons = cmd->buttons;
+
+	for (auto& callback : Lua->hooks.getHooks(LUA_CREATEMOVE)) {
+		callback.func(&lua_cmd);
+	}
+
+	cmd->buttons = lua_cmd.buttons;
+	cmd->sidemove = lua_cmd.move.x;
+	cmd->forwardmove = lua_cmd.move.y;
+	cmd->upmove = lua_cmd.move.z;
+	cmd->tick_count = lua_cmd.tickcount;
+	cmd->viewangles = lua_cmd.viewangles;
+
 	if (config.misc.movement.infinity_duck->get())
 		ctx.cmd->buttons |= IN_BULLRUSH;
 
@@ -266,21 +286,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	ShotManager->DetectUnregisteredShots();
 
-	CUserCmd_lua lua_cmd;
-	lua_cmd.command_number = cmd->command_number;
-	lua_cmd.tickcount = cmd->tick_count;
-	lua_cmd.hasbeenpredicted = cmd->hasbeenpredicted;
-	lua_cmd.move = Vector(cmd->sidemove, cmd->forwardmove, cmd->upmove);
-	lua_cmd.viewangles = cmd->viewangles;
-	lua_cmd.random_seed = cmd->random_seed;
-	lua_cmd.buttons = cmd->buttons;
-
-	for (auto& callback : Lua->hooks.getHooks(LUA_CREATEMOVE)) {
-		callback.func(&lua_cmd);
-	}
-
-	cmd->buttons = lua_cmd.buttons;
-	cmd->tick_count = lua_cmd.tickcount;
 	Exploits->AllowDefensive() = lua_cmd.allow_defensive;
 
 	if (lua_cmd.override_defensive) {
@@ -876,24 +881,6 @@ void __fastcall hkCalculateView(CBasePlayer* thisptr, void* edx, Vector& eyeOrig
 void __fastcall hkRenderSmokeOverlay(void* thisptr, void* edx, bool bPreViewModel) {
 	if (!config.visuals.effects.removals->get(3))
 		oRenderSmokeOverlay(thisptr, edx, bPreViewModel);
-}
-
-void __stdcall hkFX_FireBullets(
-	CBaseCombatWeapon* weapon,
-	int iPlayer,
-	int nItemDefIndex,
-	const Vector& vOrigin,
-	const QAngle& vAngles,
-	int	iMode,
-	int iSeed,
-	float fInaccuracy,
-	float fSpread,
-	float fAccuracyFishtail,
-	float flSoundTime,
-	int sound_type,
-	float flRecoilIndex) // TODO: find correct signature
-{
-	oFX_FireBullets(weapon, iPlayer, nItemDefIndex, vOrigin, vAngles, iMode, iSeed, fInaccuracy, fSpread, fAccuracyFishtail, flSoundTime, sound_type, flRecoilIndex);
 }
 
 void __fastcall hkProcessMovement(IGameMovement* thisptr, void* edx, CBasePlayer* player, CMoveData* mv) {

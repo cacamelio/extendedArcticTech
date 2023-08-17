@@ -8,6 +8,13 @@ bool CBasePlayer::IsTeammate() {
 	return Cheat.LocalPlayer->m_iTeamNum() == m_iTeamNum();
 }
 
+bool CBasePlayer::IsEnemy() {
+	if (!Cheat.LocalPlayer)
+		return true;
+
+	return Cheat.LocalPlayer->m_iTeamNum() != m_iTeamNum();
+}
+
 Vector CBasePlayer::GetEyePosition() {
 	if (this != Cheat.LocalPlayer) {
 		return m_vecOrigin() + Vector(0, 0, 64 - (64 - 28) * m_flDuckAmount());

@@ -5,14 +5,14 @@
 #include "../Features/Visuals/World.h"
 
 void CMenu::SetupUI() {
-	AddTab("Aimbot", pic::tab::aimbot, ImVec2(14, 14));
-	AddTab("Anti aim", pic::tab::antiaim, ImVec2(14.74f, 14));
-	AddTab("Player", pic::tab::players, ImVec2(8.75f, 14));
-	AddTab("Visuals", pic::tab::visuals, ImVec2(14, 9.33f));
-	AddTab("Misc", pic::tab::misc, ImVec2(14, 11.74f));
-	AddTab("Skins", pic::tab::skins, ImVec2(16, 16));
-	AddTab("Config", pic::tab::configs, ImVec2(13.4f, 14));
-	AddTab("Scripts", pic::tab::scripts, ImVec2(15, 12));
+	AddTab("Aimbot", pic::tab::aimbot);
+	AddTab("Anti aim", pic::tab::antiaim);
+	AddTab("Player", pic::tab::players);
+	AddTab("Visuals", pic::tab::visuals);
+	AddTab("Misc", pic::tab::misc);
+	AddTab("Skins", pic::tab::skins);
+	AddTab("Config", pic::tab::configs);
+	AddTab("Scripts", pic::tab::scripts);
 
 	auto aimbot = AddGroupBox("Aimbot", "Aimbot");
 	auto aim_settings = AddGroupBox("Aimbot", "Settings");

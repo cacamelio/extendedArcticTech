@@ -8,6 +8,7 @@
 #include "../ImGui/imgui.h"
 #include "../Features/Lua/Sol.hpp"
 #include "../SDK/Misc/Color.h"
+#include "../SDK/Render.h"
 
 class CMenuGroupbox;
 class IBaseWidget;
@@ -235,17 +236,17 @@ struct CMenuTab {
 };
 
 namespace pic {
-	inline IDirect3DTexture9* logo = nullptr;
+	inline DXImage logo;
 
 	namespace tab {
-		inline IDirect3DTexture9* aimbot = nullptr;
-		inline IDirect3DTexture9* antiaim = nullptr;
-		inline IDirect3DTexture9* visuals = nullptr;
-		inline IDirect3DTexture9* misc = nullptr;
-		inline IDirect3DTexture9* players = nullptr;
-		inline IDirect3DTexture9* skins = nullptr;
-		inline IDirect3DTexture9* configs = nullptr;
-		inline IDirect3DTexture9* scripts = nullptr;
+		inline DXImage aimbot;
+		inline DXImage antiaim;
+		inline DXImage visuals;
+		inline DXImage misc;
+		inline DXImage players;
+		inline DXImage skins;
+		inline DXImage configs;
+		inline DXImage scripts;
 	}
 }
 
@@ -268,10 +269,10 @@ public:
 	void			Setup();
 	void			SetupUI();
 	void			Release();
-	void			Render();
+	void			Draw();
 	LRESULT			WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	CMenuTab*		AddTab(const std::string& tab, IDirect3DTexture9* icon, ImVec2 icon_size);
+	CMenuTab*		AddTab(const std::string& tab, DXImage icon);
 	CMenuGroupbox*	AddGroupBox(const std::string& tab, const std::string& groupbox, float relative_size = 1.f, int column = -1);
 
 	CMenuTab*		FindTab(const std::string& name);
