@@ -159,9 +159,11 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 	record->resolver_data.resolver_type = ResolverType::FREESTAND;
 }
 
-void CResolver::Apply(LagRecord* record, bool use_roll) {
+void CResolver::Apply(LagRecord* record) {
 	if (record->resolver_data.side != 0)
 		record->player->GetAnimstate()->flGoalFeetYaw = Math::NormalizeYaw(record->player->m_angEyeAngles().yaw + (record->player->GetMaxDesyncDelta() * record->resolver_data.side));
+
+	record->player->m_angEyeAngles().roll = record->roll;
 }
 
 void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records) {
@@ -250,6 +252,8 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 			record->roll = config.ragebot.aimbot.roll_angle->get() * record->resolver_data.side;
 		else
 			record->roll = config.ragebot.aimbot.roll_angle->get();
+
+		SetRollAngle(player, record->roll);
 	}
 }
 

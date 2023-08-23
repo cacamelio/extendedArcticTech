@@ -42,8 +42,6 @@ struct ResolverData_t {
 	//matrix3x4_t matrix_left[MAXSTUDIOBONES];
 	//matrix3x4_t matrix_right[MAXSTUDIOBONES];
 
-	float anim_accuracy = 0.f;
-
 	int side = 0;
 };
 
@@ -82,7 +80,7 @@ public:
 
 	void			DetectFreestand(CBasePlayer* player, LagRecord* record);
 
-	void			Apply(LagRecord* record, bool use_roll = true);
+	void			Apply(LagRecord* record);
 	void			Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records);
 
 	void			OnMiss(CBasePlayer* player, LagRecord* record);

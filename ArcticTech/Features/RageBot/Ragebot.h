@@ -36,8 +36,6 @@ struct AimPoint_t {
 	bool multipoint = false;
 };
 
-struct ThreadScanParams_t;
-
 class CRagebot {
 private:
 	struct SpreadValues_t {

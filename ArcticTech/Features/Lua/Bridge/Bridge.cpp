@@ -594,11 +594,29 @@ namespace api {
 			return Vector(res.x, res.y);
 		}
 
-		void vertex(int draw_type, int prim_count, sol::variadic_args vertecies) {
+		void vertex(int draw_type, sol::variadic_args vertecies) {
 			std::vector<Vertex> verts;
 
 			for (auto x : vertecies)
 				verts.push_back(x);
+
+			int prim_count = verts.size();
+
+			switch (draw_type) {
+			case D3DPT_LINELIST:
+				prim_count = verts.size() / 2;
+				break;
+			case D3DPT_LINESTRIP:
+				prim_count = verts.size() - 1;
+				break;
+			case D3DPT_TRIANGLELIST:
+				prim_count = verts.size() / 3;
+				break;
+			case D3DPT_TRIANGLESTRIP:
+			case D3DPT_TRIANGLEFAN:
+				prim_count = verts.size() - 2;
+				break;
+			}
 
 			Render->Vertecies(draw_type, prim_count, verts);
 		}

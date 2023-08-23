@@ -659,14 +659,13 @@ void CRagebot::Run() {
 	LagRecord* record = best_target.best_point.record;
 
 	if (config.misc.miscellaneous.logs->get(1)) {
-		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}] [bt: {}] [res: {:.1f}deg {}%]", 
+		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}] [bt: {}] [res: {:.1f}deg]", 
 			best_target.player->GetName(), 
 			GetHitboxName(best_target.best_point.hitbox), 
 			static_cast<int>(best_target.best_point.damage), 
 			static_cast<int>(best_target.hitchance * 100), 
 			TIME_TO_TICKS(best_target.player->m_flSimulationTime() - record->m_flSimulationTime),
-			record->resolver_data.side * best_target.player->GetMaxDesyncDelta(),
-			static_cast<int>(record->resolver_data.anim_accuracy * 100.f)
+			record->resolver_data.side * best_target.player->GetMaxDesyncDelta()
 		));
 	}
 

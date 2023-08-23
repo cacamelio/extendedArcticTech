@@ -100,6 +100,8 @@ void LagRecord::BuildMatrix() {
 		player->m_angEyeAngles() = prev_record->m_angEyeAngles;
 	}
 
+	player->m_angEyeAngles().roll = roll;
+
 	player->ClampBonesInBBox(clamped_matrix, BONE_USED_BY_ANYTHING);
 
 	GlobalVars->curtime = backup_curtime;
