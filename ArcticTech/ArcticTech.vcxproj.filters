@@ -341,9 +341,6 @@
     <ClInclude Include="SDK\Misc\UtlVector.h">
       <Filter>SDK\Misc</Filter>
     </ClInclude>
-    <ClInclude Include="SDK\Misc\UtlMemory.h">
-      <Filter>SDK\Misc</Filter>
-    </ClInclude>
     <ClInclude Include="SDK\Interfaces\ViewRenderBeams.h">
       <Filter>SDK\Interfaces</Filter>
     </ClInclude>

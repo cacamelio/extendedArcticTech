@@ -668,8 +668,8 @@ void __fastcall hkBuildTransformations(CBaseEntity* thisptr, void* edx, void* hd
 }
 
 void __fastcall hkSetUpLean(CCSGOPlayerAnimationState* thisptr, void* edx) {
-	if (config.antiaim.misc.animations->get(0) && thisptr->pEntity == Cheat.LocalPlayer)
-		oSetUpLean(thisptr, edx);
+	//if (thisptr->pEntity == Cheat.LocalPlayer)
+	oSetUpLean(thisptr, edx);
 }
 
 bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBoneToWorld, int maxBones, int mask, float curTime) {

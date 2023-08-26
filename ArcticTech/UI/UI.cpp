@@ -97,7 +97,6 @@ void CMenu::SetupUI() {
 
 	config.antiaim.misc.fake_duck = aa_other->AddKeyBind("Fake duck");
 	config.antiaim.misc.slow_walk = aa_other->AddKeyBind("Slow walk");
-	config.antiaim.misc.animations = aa_other->AddMultiCombo("Animations", { "Lean", "Static legs in air", "Backward legs" });
 	config.antiaim.misc.leg_movement = aa_other->AddComboBox("Leg movement", { "Default", "Sliding", "Walking" });
 
 	config.visuals.esp.enable = player_esp->AddCheckBox("Enable");
@@ -133,29 +132,29 @@ void CMenu::SetupUI() {
 	config.visuals.chams.enemy_color = chams->AddColorPicker("Player", Color(150, 190, 70));
 	config.visuals.chams.enemy_invisible_color = chams->AddColorPicker("Player behind wall", Color(60, 120, 160));
 	config.visuals.chams.enemy_second_color = chams->AddColorPicker("Enemy second color");
-	config.visuals.chams.enemy_type = chams->AddComboBox("Enemy type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.enemy_type = chams->AddComboBox("Enemy type", { "Default", "Solid", "Glow", "Glow outlined", "Glow overlay" });
 	config.visuals.chams.enemy_glow_thickness = chams->AddSliderFloat("Enemy glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.shot_chams = chams->AddCheckBox("Shot");
 	config.visuals.chams.shot_chams_color = chams->AddColorPicker("Shot", Color(100, 100, 100));
 	config.visuals.chams.shot_chams_second_color = chams->AddColorPicker("Shot second color");
-	config.visuals.chams.shot_chams_type = chams->AddComboBox("Shot type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.shot_chams_type = chams->AddComboBox("Shot type", { "Default", "Solid", "Glow", "Glow outlined", "Glow overlay" });
 	config.visuals.chams.shot_chams_thickness = chams->AddSliderFloat("Shot glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.shot_chams_duration = chams->AddSliderInt("Shot chams duration", 1, 10, 4, "s");
 	config.visuals.chams.shot_chams_options = chams->AddMultiCombo("Shot chams options", { "Behind walls", "Last shot only" });
 	config.visuals.chams.local_player = chams->AddCheckBox("Local player");
 	config.visuals.chams.local_player_color = chams->AddColorPicker("Local player", Color(100, 100, 100));
 	config.visuals.chams.local_player_second_color = chams->AddColorPicker("Local second color");
-	config.visuals.chams.local_player_type = chams->AddComboBox("Local type", { "Default", "Solid", "Glow", "Glow outlined", "Glow owerlay" });
+	config.visuals.chams.local_player_type = chams->AddComboBox("Local type", { "Default", "Solid", "Glow", "Glow outlined", "Glow overlay" });
 	config.visuals.chams.local_glow_thickness = chams->AddSliderFloat("Local glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.attachments = chams->AddCheckBox("Attachments");
 	config.visuals.chams.attachments_color = chams->AddColorPicker("Attachments");
 	config.visuals.chams.attachments_second_color = chams->AddColorPicker("Attachments second color");
-	config.visuals.chams.attachments_type = chams->AddComboBox("Attachments type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.attachments_type = chams->AddComboBox("Attachments type", { "Default", "Solid", "Glow", "Glow outlined", "Glow overlay" });
 	config.visuals.chams.attachments_glow_thickness = chams->AddSliderFloat("Attachments glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.viewmodel = chams->AddCheckBox("Viewmodel");
 	config.visuals.chams.viewmodel_color = chams->AddColorPicker("Viewmodel");
 	config.visuals.chams.viewmodel_second_color = chams->AddColorPicker("Viewmodel second color");
-	config.visuals.chams.viewmodel_type = chams->AddComboBox("Viewmodel type", { "Default", "Solid", "Glow", "Glow overlay" });
+	config.visuals.chams.viewmodel_type = chams->AddComboBox("Viewmodel type", { "Default", "Solid", "Glow", "Glow outlined", "Glow overlay" });
 	config.visuals.chams.viewmodel_glow_thickness = chams->AddSliderFloat("Viewmodel glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.disable_model_occlusion = chams->AddCheckBox("Disable model occlusion");
 

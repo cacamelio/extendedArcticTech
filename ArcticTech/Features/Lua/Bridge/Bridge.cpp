@@ -9,6 +9,8 @@
 #include "../../RageBot/Exploits.h"
 #include "../../RageBot/AutoWall.h"
 
+#define DEF_LUA_ARR(type) lua.new_usertype<ArrayWrapper_Lua<type>>((std::string)#type + "_array", sol::no_constructor, "__index", &ArrayWrapper_Lua<type>::get)
+
 std::vector<UILuaCallback_t> g_ui_lua_callbacks;
 
 void LuaSaveConfig(LuaScript_t* script) {
@@ -290,6 +292,10 @@ namespace api {
 				Lua->hooks.registerHook(LUA_UNLOAD, script_id, func);
 			else if (event_name == "voice_message")
 				Lua->hooks.registerHook(LUA_VOICE_DATA, script_id, func);
+			else if (event_name == "pre_anim_update")
+				Lua->hooks.registerHook(LUA_PRE_ANIMUPDATE, script_id, func);
+			else if (event_name == "post_anim_update")
+				Lua->hooks.registerHook(LUA_POST_ANIMUPDATE, script_id, func);
 			else
 				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
 		}
@@ -719,6 +725,10 @@ namespace api {
 			return widget->name;
 		}
 
+		int element_type(IBaseWidget* widget) {
+			return (int)widget->GetType();
+		}
+
 		sol::object element_get(sol::this_state state, IBaseWidget* element, sol::optional<int> index) {
 			switch (element->GetType()) {
 			case WidgetType::Checkbox:
@@ -1017,14 +1027,14 @@ namespace api {
 				switch (array_prop.m_RecvType)
 				{
 				case DPT_Int:
-					return sol::make_object(state, reinterpret_cast<int*>((uintptr_t)ent + prop.offset));
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<int*>((uintptr_t)ent + prop.offset)));
 				case DPT_Float:
-					return sol::make_object(state, reinterpret_cast<float*>((uintptr_t)ent + prop.offset));
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<float*>((uintptr_t)ent + prop.offset)));
 				case DPT_Vector:
 				case DPT_VectorXY:
-					return sol::make_object(state, reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset));
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset)));
 				case DPT_String:
-					return sol::make_object(state, reinterpret_cast<char**>((uintptr_t)ent + prop.offset));
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<char**>((uintptr_t)ent + prop.offset)));
 				}
 			}
 			default:
@@ -1059,6 +1069,10 @@ namespace api {
 				return Vector();
 
 			return collidable->GetCollisionOrigin();
+		}
+
+		ArrayWrapper_Lua<AnimationLayer> get_anim_layers(CBasePlayer* pla) {
+			return ArrayWrapper_Lua(pla->GetAnimlayers());
 		}
 
 		bool is_player(CBaseEntity* ent) {
@@ -1151,34 +1165,12 @@ void CLua::Setup() {
 
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
 	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::jit, sol::lib::ffi, sol::lib::bit32);
-	
-	// enums
-	lua.new_enum<EDamageGroup>("e_dmg_group", {
-		{"head", EDamageGroup::DAMAGEGROUP_HEAD},
-		{"chest", EDamageGroup::DAMAGEGROUP_CHEST},
-		{"stomach", EDamageGroup::DAMAGEGROUP_STOMACH},
-		{"arms", EDamageGroup::DAMAGEGROUP_ARM},
-		{"legs", EDamageGroup::DAMAGEGROUP_LEG},
-	});
-
-	lua.new_enum<WidgetType>("e_ui_type", {
-		{"checkbox", WidgetType::Checkbox},
-		{"label", WidgetType::Label},
-		{"color_picker", WidgetType::ColorPicker},
-		{"keybind", WidgetType::KeyBind},
-		{"sliderint", WidgetType::SliderInt},
-		{"sliderfloat", WidgetType::SliderFloat},
-		{"combo", WidgetType::Combo},
-		{"multicombo", WidgetType::MultiCombo},
-		{"button", WidgetType::Button},
-		{"input", WidgetType::Input},
-		{"any", WidgetType::Any}
-	});
 
 	// usertypes
 	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor, 
 		"set_callback", api::ui::element_set_callback,
 		"visible", api::ui::element_set_visible,
+		"type", api::ui::element_type,
 		"get_name", api::ui::element_get_name,
 		"get_mode", api::ui::element_get_mode,
 		"get_key", api::ui::element_get_key,
@@ -1260,6 +1252,69 @@ void CLua::Setup() {
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
 
+	lua.new_usertype<CCSGOPlayerAnimationState>("animstate_t", sol::no_constructor,
+		"entity", &CCSGOPlayerAnimationState::pEntity,
+		"active_weapon", &CCSGOPlayerAnimationState::pActiveWeapon,
+		"last_active_weapon", &CCSGOPlayerAnimationState::pLastActiveWeapon,
+		"last_update_time", &CCSGOPlayerAnimationState::flLastUpdateTime,
+		"last_update_frame", &CCSGOPlayerAnimationState::iLastUpdateFrame,
+		"last_update_increment", &CCSGOPlayerAnimationState::flLastUpdateIncrement,
+		"eye_yaw", &CCSGOPlayerAnimationState::flEyeYaw,
+		"eye_pitch", &CCSGOPlayerAnimationState::flEyePitch,
+		"goal_feet_yaw", &CCSGOPlayerAnimationState::flGoalFeetYaw,
+		"last_feet_yaw", &CCSGOPlayerAnimationState::flLastFeetYaw,
+		"move_yaw", &CCSGOPlayerAnimationState::flMoveYaw,
+		"last_move_yaw", &CCSGOPlayerAnimationState::flLastMoveYaw,
+		"lean_amount", &CCSGOPlayerAnimationState::flLeanAmount,
+		"feet_cycle", &CCSGOPlayerAnimationState::flFeetCycle,
+		"move_weight", &CCSGOPlayerAnimationState::flMoveWeight,
+		"move_weight_smoothed", &CCSGOPlayerAnimationState::flMoveWeightSmoothed,
+		"duck_amount", &CCSGOPlayerAnimationState::flDuckAmount,
+		"hit_ground_cycle", &CCSGOPlayerAnimationState::flHitGroundCycle,
+		"recrouch_weight", &CCSGOPlayerAnimationState::flRecrouchWeight,
+		"origin", &CCSGOPlayerAnimationState::vecOrigin,
+		"last_origin", &CCSGOPlayerAnimationState::vecLastOrigin,
+		"velocity", &CCSGOPlayerAnimationState::vecVelocity,
+		"velocity_normalized", &CCSGOPlayerAnimationState::vecVelocityNormalized,
+		"velocity_normalized_non_zero", &CCSGOPlayerAnimationState::vecVelocityNormalizedNonZero,
+		"velocity_length_2d", &CCSGOPlayerAnimationState::flVelocityLenght2D,
+		"jump_fall_velocity", &CCSGOPlayerAnimationState::flJumpFallVelocity,
+		"speed_normalized", &CCSGOPlayerAnimationState::flSpeedNormalized,
+		"running_speed", &CCSGOPlayerAnimationState::flRunningSpeed,
+		"ducking_speed", &CCSGOPlayerAnimationState::flDuckingSpeed,
+		"duration_moving", &CCSGOPlayerAnimationState::flDurationMoving,
+		"duration_still", &CCSGOPlayerAnimationState::flDurationStill,
+		"on_ground", &CCSGOPlayerAnimationState::bOnGround,
+		"hit_ground_animation", &CCSGOPlayerAnimationState::bHitGroundAnimation,
+		"next_lower_body_yaw_update_time", &CCSGOPlayerAnimationState::flNextLowerBodyYawUpdateTime,
+		"duration_in_air", &CCSGOPlayerAnimationState::flDurationInAir,
+		"left_ground_height", &CCSGOPlayerAnimationState::flLeftGroundHeight,
+		"hit_ground_weight", &CCSGOPlayerAnimationState::flHitGroundWeight,
+		"walk_to_run_transition", &CCSGOPlayerAnimationState::flWalkToRunTransition,
+		"affected_fraction", &CCSGOPlayerAnimationState::flAffectedFraction,
+		"min_body_yaw", &CCSGOPlayerAnimationState::flMinBodyYaw,
+		"max_body_yaw", &CCSGOPlayerAnimationState::flMaxBodyYaw,
+		"min_pitch", &CCSGOPlayerAnimationState::flMinPitch,
+		"max_pitch", &CCSGOPlayerAnimationState::flMaxPitch,
+		"animset_version", &CCSGOPlayerAnimationState::iAnimsetVersion
+	);
+
+	lua.new_usertype<AnimationLayer>("animlayer_t", sol::no_constructor,
+		"client_blend", &AnimationLayer::m_bClientBlend,
+		"layer_fade_out", &AnimationLayer::m_flBlendIn,
+		"dispatched_studio_hdr", &AnimationLayer::m_pStudioHdr,
+		"dispatched_src", &AnimationLayer::m_nDispatchSequence,
+		"dispatched_dest", &AnimationLayer::m_nDispatchSequence_2,
+		"order", &AnimationLayer::m_nOrder,
+		"sequence", &AnimationLayer::m_nSequence,
+		"prev_cycle", &AnimationLayer::m_flPrevCycle,
+		"weight", &AnimationLayer::m_flWeight,
+		"weight_delta_rate", &AnimationLayer::m_flWeightDeltaRate,
+		"playback_rate", &AnimationLayer::m_flPlaybackRate,
+		"cycle", &AnimationLayer::m_flCycle,
+		"owner", &AnimationLayer::m_pOwner
+	);
+
 	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor, 
 		"get_name", &CBasePlayer::GetName,
 		"get_active_weapon", &CBasePlayer::GetActiveWeapon,
@@ -1270,6 +1325,8 @@ void CLua::Setup() {
 		"get_eye_position", &CBasePlayer::GetEyePosition,
 		"get_bone_position", &CBasePlayer::GetBonePosition,
 		"get_hitbox_position", &CBasePlayer::GetHitboxCenter,
+		"get_animstate", &CBasePlayer::GetAnimstate,
+		"get_animlayers", &api::entity::get_anim_layers,
 		"set_icon", api::entity::set_icon,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
@@ -1290,6 +1347,11 @@ void CLua::Setup() {
 		"shifting_tickbase", &LagRecord::shifting_tickbase,
 		"breaking_lag_compensation", &LagRecord::breaking_lag_comp
 	);
+
+	DEF_LUA_ARR(int);
+	DEF_LUA_ARR(float);
+	DEF_LUA_ARR(Vector);
+	DEF_LUA_ARR(char*);
 
 	lua.new_usertype<QAngle>("qangle", sol::call_constructor, sol::constructors<QAngle(), QAngle(float, float), QAngle(float, float, float)>(), 
 		"pitch", &QAngle::pitch,

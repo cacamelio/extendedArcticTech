@@ -40,6 +40,17 @@ struct CUserCmd_lua {
 	bool allow_defensive = true;
 };
 
+template <typename T>
+struct ArrayWrapper_Lua {
+	T* layers;
+
+	ArrayWrapper_Lua(T* arr) : layers(arr) {}
+
+	T& get(int index) {
+		return layers[index];
+	}
+};
+
 class CLua
 {
 public:

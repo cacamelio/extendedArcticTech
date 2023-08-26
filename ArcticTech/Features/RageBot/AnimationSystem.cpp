@@ -2,6 +2,7 @@
 #include "LagCompensation.h"
 #include "../AntiAim/AntiAim.h"
 #include "Resolver.h"
+#include "../Lua/Bridge/Bridge.h"
 
 void CAnimationSystem::StoreLocalAnims() {
 	auto animstate = Cheat.LocalPlayer->GetAnimstate();
@@ -51,17 +52,15 @@ void CAnimationSystem::OnCreateMove() {
 	memcpy(local_animlayers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
-		if (!config.antiaim.misc.animations->get(1)) {
-			const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-			const float gravity = cvars.sv_gravity->GetFloat();
-			const float speed = Cheat.LocalPlayer->m_flFallVelocity();
+		const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
+		const float gravity = cvars.sv_gravity->GetFloat();
+		const float speed = Cheat.LocalPlayer->m_flFallVelocity();
 
-			animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
-		}
-		else {
-			animstate->flDurationInAir = 2.f;
-		}
+		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
 	}
+
+	for (auto cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
+		cb.func(Cheat.LocalPlayer);
 
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
 
@@ -69,13 +68,12 @@ void CAnimationSystem::OnCreateMove() {
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
 
 		Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
-
-		if (config.antiaim.misc.animations->get(2))
-			Cheat.LocalPlayer->m_flPoseParameter()[0] = 1.f;
-
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
-		Cheat.LocalPlayer->SetCollisionBounds(Cheat.LocalPlayer->m_vecMins(), Cheat.LocalPlayer->m_vecMaxs());
+		for (auto cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
+			cb.func(Cheat.LocalPlayer);
+
+		Cheat.LocalPlayer->SetCollisionBounds(Cheat.LocalPlayer->m_vecMins(), Cheat.LocalPlayer->m_vecMaxs()); // fuck valve, this doesn't work
 		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, Cheat.LocalPlayer->GetAnimlayers());
 	}
 
@@ -148,12 +146,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	if (!animstate)
 		return;
-
-	LagRecord* prevRecord = nullptr;
-
-	if (records.size() > 2)
-		prevRecord = &records.back();
-
+	
 	record->player = player;
 	record->unupdated_animstate = *animstate;
 
@@ -210,7 +203,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat();
 	}
 
-	player->GetAnimlayers()[12].m_flWeight = 0;
+	//player->GetAnimlayers()[12].m_flWeight = 0;
 
 	hook_info.disable_clamp_bones = true;
 	BuildMatrix(player, record->aim_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);

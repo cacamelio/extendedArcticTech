@@ -97,7 +97,6 @@ struct config_t {
         struct misc_t {
             CKeyBind* fake_duck;
             CKeyBind* slow_walk;
-            CMultiCombo* animations;
             CComboBox* leg_movement;
         } misc;
     } antiaim;

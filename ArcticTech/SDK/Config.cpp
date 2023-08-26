@@ -151,7 +151,6 @@ void CConfig::Init() {
     add(config.antiaim.fakelag.variability);
     add(config.antiaim.misc.fake_duck);
     add(config.antiaim.misc.slow_walk);
-    add(config.antiaim.misc.animations);
     add(config.antiaim.misc.leg_movement);
     add(config.visuals.esp.enable);
     add(config.visuals.esp.dormant);

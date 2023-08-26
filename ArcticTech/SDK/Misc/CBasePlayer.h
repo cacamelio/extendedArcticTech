@@ -166,12 +166,34 @@ enum animstate_layer_t
     ANIMATION_LAYER_COUNT,
 };
 
+enum PoseParam_t {
+    STRAFE_YAW,
+    STAND,
+    LEAN_YAW,
+    SPEED,
+    LADDER_YAW,
+    LADDER_SPEED,
+    JUMP_FALL,
+    MOVE_YAW,
+    MOVE_BLEND_CROUCH,
+    MOVE_BLEND_WALK,
+    MOVE_BLEND_RUN,
+    BODY_YAW,
+    BODY_PITCH,
+    AIM_BLEND_STAND_IDLE,
+    AIM_BLEND_STAND_WALK,
+    AIM_BLEND_STAND_RUN,
+    AIM_BLEND_COURCH_IDLE,
+    AIM_BLEND_CROUCH_WALK,
+    DEATH_YAW
+};
+
 #pragma endregion
 
 class CBasePlayer;
 class CBaseCombatWeapon;
 
-struct  CCSGOPlayerAnimationState
+struct CCSGOPlayerAnimationState
 {
     char	pad0[0x60]; // 0x00
     CBasePlayer* pEntity; // 0x60
@@ -237,9 +259,7 @@ struct  CCSGOPlayerAnimationState
     }
 };
 
-struct AnimationLayer
-{
-public:
+struct AnimationLayer {
     bool m_bClientBlend;		 //0x0000
     float m_flBlendIn;			 //0x0004
     void* m_pStudioHdr;			 //0x0008
@@ -252,7 +272,7 @@ public:
     float m_flWeightDeltaRate; //0x0024
     float m_flPlaybackRate;    //0x0028
     float m_flCycle;           //0x002C
-    void* m_pOwner;              //0x0030
+    CBasePlayer* m_pOwner;       //0x0030
     char pad_0038[4];            //0x0034
 };
 

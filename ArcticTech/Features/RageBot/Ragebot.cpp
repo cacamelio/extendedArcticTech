@@ -478,6 +478,9 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 			if (point.hitbox == HITBOX_STOMACH || point.hitbox == HITBOX_PELVIS)
 				priority += 2;
 
+			if (record->shooting)
+				priority += 2;
+
 			result.points.emplace_back(ScannedPoint_t{
 				record,
 				point.point,
