@@ -18,6 +18,7 @@ struct ScannedPoint_t {
 	int hitbox = -1;
 	int priotity = 0;
 	float damage = 0.f;
+	bool jitter_safe = false;
 	std::vector<Vector> impacts;
 };
 
@@ -53,7 +54,6 @@ private:
 	bool doubletap_stop = false;
 	float doubletap_stop_speed = 0.f;
 
-	Vector eye_position;
 	CBasePlayer* last_target = nullptr;
 	int last_target_shot = 0;
 

@@ -14,6 +14,7 @@ struct LagRecord {
 	matrix3x4_t bone_matrix[128];
 	matrix3x4_t aim_matrix[128];
 	matrix3x4_t clamped_matrix[128];
+	matrix3x4_t opposite_matrix[128];
 
 	AnimationLayer animlayers[13];
 

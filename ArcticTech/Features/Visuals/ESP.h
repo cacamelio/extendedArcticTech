@@ -53,7 +53,7 @@ static_assert(sizeof(SharedESP_t) == sizeof(SharedVoiceData_t));
 extern ESPInfo_t ESPInfo[64];
 
 namespace ESP {
-	void		ProcessSounds();
+	void		ProcessSound(const SoundInfo_t& sound);
 	void		RegisterCallback();
 
 	void		ProcessSharedESP(const SharedVoiceData_t* data);

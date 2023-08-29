@@ -235,6 +235,7 @@ public:
     void                Text(const std::wstring& text, const Vector2& pos, Color color, D3DXFont* font, int flags = 0);
 
     DXImage             LoadImageFromMemory(void* data, int dataSize, const Vector2& size);
+    DXImage             LoadImageFromMemory(void* data, int dataSize);
     void                Image(DXImage image, const Vector2& pos, Color color = Color(255, 255, 255));
     void                Vertecies(int draw_type, int prim_count, const std::vector<Vertex>& vertexes);
 

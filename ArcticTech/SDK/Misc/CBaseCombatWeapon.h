@@ -226,6 +226,7 @@ public:
 	CCSWeaponData* GetWeaponInfo();
 	std::string GetName(CCSWeaponData* custom_data = nullptr);
     bool CanShoot(bool revolver_check = true);
+	DXImage& GetIcon();
 };
 
 enum WeaponId : short {

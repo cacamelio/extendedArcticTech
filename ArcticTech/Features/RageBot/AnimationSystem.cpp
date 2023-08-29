@@ -3,6 +3,7 @@
 #include "../AntiAim/AntiAim.h"
 #include "Resolver.h"
 #include "../Lua/Bridge/Bridge.h"
+#include "../Misc/Prediction.h"
 
 void CAnimationSystem::StoreLocalAnims() {
 	auto animstate = Cheat.LocalPlayer->GetAnimstate();
@@ -46,8 +47,11 @@ void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 void CAnimationSystem::OnCreateMove() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
-	if (AntiAim->desyncing)
-		animstate->flGoalFeetYaw = AntiAim->realAngle;
+	auto backup_curtime = GlobalVars->curtime;
+	auto backup_tickcount = GlobalVars->tickcount;
+
+	GlobalVars->curtime = EnginePrediction->curtime();
+	GlobalVars->tickcount = EnginePrediction->tickcount();
 
 	memcpy(local_animlayers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
@@ -62,20 +66,29 @@ void CAnimationSystem::OnCreateMove() {
 	for (auto cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
-	Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
-
 	if (ctx.send_packet) {
+		Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
+
+		if (AntiAim->desyncing)
+			animstate->flGoalFeetYaw = AntiAim->realAngle;
+
+		Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw) / 116.f);
+
 		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
 
 		Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
+		memcpy(Cheat.LocalPlayer->GetAnimlayers(), local_animlayers, sizeof(AnimationLayer) * 13);
+
 		for (auto cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
 			cb.func(Cheat.LocalPlayer);
 
-		Cheat.LocalPlayer->SetCollisionBounds(Cheat.LocalPlayer->m_vecMins(), Cheat.LocalPlayer->m_vecMaxs()); // fuck valve, this doesn't work
 		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, Cheat.LocalPlayer->GetAnimlayers());
 	}
+
+	GlobalVars->curtime = backup_curtime;
+	GlobalVars->tickcount = backup_tickcount;
 
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), local_animlayers, sizeof(AnimationLayer) * 13);
 }
@@ -162,6 +175,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	auto backupLBY = player->m_flLowerBodyYawTarget();
 	auto nOcclusionMask = player->m_nOcclusionFlags();
 	auto nOcclusionFrame = player->m_nOcclusionFrame();
+	auto backupAbsAngles = player->GetAbsAngles();
 
 	GlobalVars->realtime = player->m_flSimulationTime();
 	GlobalVars->curtime = player->m_flSimulationTime();
@@ -172,6 +186,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	GlobalVars->framecount = TIME_TO_TICKS(player->m_flSimulationTime());
 
 	memcpy(record->animlayers, player->GetAnimlayers(), 13 * sizeof(AnimationLayer));
+	auto pose_params = player->m_flPoseParameter();
 
 	player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
 
@@ -203,17 +218,28 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat();
 	}
 
-	//player->GetAnimlayers()[12].m_flWeight = 0;
-
 	hook_info.disable_clamp_bones = true;
 	BuildMatrix(player, record->aim_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
 	hook_info.disable_clamp_bones = false;
 
+	interpolate_data_t* lerp_data = &interpolate_data[idx];
+
+	lerp_data->net_origin = player->m_vecOrigin();
+
 	memcpy(record->bone_matrix, record->aim_matrix, sizeof(matrix3x4_t) * 128);
 	player->ClampBonesInBBox(record->bone_matrix, BONE_USED_BY_ANYTHING);
-	memcpy(interpolate_data[idx].original_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
+	memcpy(lerp_data->original_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
 
 	record->bone_matrix_filled = true;
+
+	float deltaOriginal = Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw);
+	float eyeYawNew = Math::AngleNormalize(animstate->flEyeYaw - deltaOriginal);
+	player->SetAbsAngles(QAngle(0, eyeYawNew, 0));
+	float newBodyYawParam = 1.f - player->m_flPoseParameter()[BODY_YAW];
+
+	player->m_flPoseParameter()[BODY_YAW] = newBodyYawParam; // opposite side
+	Resolver->SetRollAngle(player, 0.f);
+	BuildMatrix(player, record->opposite_matrix, 128, BONE_USED_BY_HITBOX, record->animlayers);
 
 	player->m_nOcclusionFrame() = nOcclusionFrame;
 	player->m_nOcclusionFlags() = nOcclusionMask;
@@ -229,9 +255,11 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	GlobalVars->tickcount = backupTickcount;
 	GlobalVars->framecount = backupFramecount;
 	
+	player->SetAbsAngles(backupAbsAngles);
 	player->m_flLowerBodyYawTarget() = backupLBY;
 	memcpy(player->GetAnimlayers(), record->animlayers, sizeof(AnimationLayer) * 13);
 	memcpy(player->GetCachedBoneData().Base(), record->bone_matrix, sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
+	player->m_flPoseParameter() = pose_params;
 
 	player->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
 }
@@ -247,17 +275,16 @@ void CAnimationSystem::RunInterpolation() {
 		if (!player || player == Cheat.LocalPlayer || !player->IsAlive() || player->m_bDormant())
 			continue;
 
-		const Vector origin = player->m_vecOrigin();
-
 		interpolate_data_t* data = &interpolate_data[i];
 
-		if (!data->valid || (origin - data->origin).LengthSqr() > 8192) {
-			data->origin = origin;
-			data->valid = true;
+		if ((data->net_origin - data->origin).LengthSqr() > 8192) {
+			data->origin = data->net_origin;
+			data->valid = false;
 			continue;
 		}
 
-		data->origin += (origin - data->origin) * std::clamp(GlobalVars->frametime * 32, 0.f, 0.8f);
+		data->valid = true;
+		data->origin += (data->net_origin - data->origin) * std::clamp(GlobalVars->frametime * 32, 0.f, 0.8f);
 		player->SetAbsOrigin(data->origin);
 	}
 }
@@ -271,7 +298,7 @@ void CAnimationSystem::InterpolateModel(CBasePlayer* player, matrix3x4_t* matrix
 	if (!data->valid)
 		return;
 
-	Utils::MatrixMove(data->original_matrix, matrix, player->GetCachedBoneData().Count(), player->m_vecOrigin(), data->origin);
+	Utils::MatrixMove(data->original_matrix, matrix, player->GetCachedBoneData().Count(), data->net_origin, data->origin);
 }
 
 void CAnimationSystem::ResetInterpolation() {

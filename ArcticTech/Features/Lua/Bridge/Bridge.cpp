@@ -8,8 +8,9 @@
 #include "../../AntiAim/AntiAim.h"
 #include "../../RageBot/Exploits.h"
 #include "../../RageBot/AutoWall.h"
+#include "../../Visuals/WeaponIcons.h"
 
-#define DEF_LUA_ARR(type) lua.new_usertype<ArrayWrapper_Lua<type>>((std::string)#type + "_array", sol::no_constructor, "__index", &ArrayWrapper_Lua<type>::get)
+#define DEF_LUA_ARR(type) lua.new_usertype<ArrayWrapper_Lua<type>>((std::string)#type + "_array", sol::no_constructor, "__index", &ArrayWrapper_Lua<type>::get, "__newindex", &ArrayWrapper_Lua<type>::set)
 
 std::vector<UILuaCallback_t> g_ui_lua_callbacks;
 
@@ -296,6 +297,8 @@ namespace api {
 				Lua->hooks.registerHook(LUA_PRE_ANIMUPDATE, script_id, func);
 			else if (event_name == "post_anim_update")
 				Lua->hooks.registerHook(LUA_POST_ANIMUPDATE, script_id, func);
+			else if (event_name == "local_alpha")
+				Lua->hooks.registerHook(LUA_LOCAL_ALPHA, script_id, func);
 			else
 				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
 		}
@@ -993,6 +996,10 @@ namespace api {
 			return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetLocalPlayer()));
 		}
 
+		DXImage get_weapon_icon(int weap_id) {
+			return WeaponIcons->GetIcon(weap_id);
+		}
+
 		sol::object get_prop(sol::this_state state, CBaseEntity* ent, std::string prop_name) {
 			static auto recvproxy_int32_to_int8 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 8A 48 08 8B 45 10");
 			static auto recvproxy_int32_to_int16 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 66 8B 48 08 8B 45 10 66 89 08");
@@ -1036,12 +1043,28 @@ namespace api {
 				case DPT_String:
 					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<char**>((uintptr_t)ent + prop.offset)));
 				}
+			case DPT_DataTable: {
+				auto dt_prop = prop.prop->m_pDataTable->m_pProps[0];
+
+				switch (dt_prop.m_RecvType)
+				{
+				case DPT_Int:
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<int*>((uintptr_t)ent + prop.offset)));
+				case DPT_Float:
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<float*>((uintptr_t)ent + prop.offset)));
+				case DPT_Vector:
+				case DPT_VectorXY:
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset)));
+				case DPT_String:
+					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<char**>((uintptr_t)ent + prop.offset)));
+				}
+			}
 			}
 			default:
 				break;
 			}
 
-			return sol::nil;
+ 			return sol::nil;
 		}
 
 		Vector obb_maxs(sol::this_state state, CBaseEntity* ent) {
@@ -1248,6 +1271,7 @@ void CLua::Setup() {
 		"get_spread", &CBaseCombatWeapon::GetSpread,
 		"shooting_weapon", &CBaseCombatWeapon::ShootingWeapon,
 		"can_shoot", &CBaseCombatWeapon::CanShoot,
+		"get_icon", &CBaseCombatWeapon::GetIcon,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
@@ -1352,6 +1376,7 @@ void CLua::Setup() {
 	DEF_LUA_ARR(float);
 	DEF_LUA_ARR(Vector);
 	DEF_LUA_ARR(char*);
+	DEF_LUA_ARR(AnimationLayer);
 
 	lua.new_usertype<QAngle>("qangle", sol::call_constructor, sol::constructors<QAngle(), QAngle(float, float), QAngle(float, float, float)>(), 
 		"pitch", &QAngle::pitch,

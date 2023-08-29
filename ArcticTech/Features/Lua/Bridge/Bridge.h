@@ -49,6 +49,10 @@ struct ArrayWrapper_Lua {
 	T& get(int index) {
 		return layers[index];
 	}
+
+	void set(int index, const T& val) {
+		layers[index] = val;
+	}
 };
 
 class CLua

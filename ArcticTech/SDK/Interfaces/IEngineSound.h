@@ -61,6 +61,30 @@ struct SndInfo_t
 	bool		m_bFromServer;
 };
 
+
+struct SoundInfo_t
+{
+	Vector			vOrigin;
+	Vector			vDirection;
+	Vector			vListenerOrigin;
+	const char* pszName;		// UNDONE: Make this a FilenameHandle_t to avoid bugs with arrays of these
+	float			fVolume;
+	float			fDelay;
+	float			fTickTime;			// delay is encoded relative to this tick, fix up if packet is delayed
+	int				nSequenceNumber;
+	int				nEntityIndex;
+	int				nChannel;
+	int				nPitch;
+	int				nFlags;
+	unsigned int 	nSoundNum;
+	int				nSpeakerEntity;
+	int				nRandomSeed;
+	soundlevel_t	Soundlevel;
+	bool			bIsSentence;
+	bool			bIsAmbient;
+	bool			bLooping;
+};
+
 #define	PITCH_NORM		100			  // non-pitch shifted
 #define PITCH_LOW		95			    // other values are possible - 0-255, where 255 is very high
 #define PITCH_HIGH		120

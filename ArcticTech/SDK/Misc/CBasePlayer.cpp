@@ -2,6 +2,8 @@
 #include "../../SDK/Globals.h"
 #include "../../Utils/Utils.h"
 
+#include "../../Features/RageBot/AnimationSystem.h"
+
 bool CBasePlayer::IsTeammate() {
 	if (!Cheat.LocalPlayer)
 		return false;
@@ -240,13 +242,7 @@ bool CBasePlayer::IsAlive() {
 	if (m_iTeamNum() != 2 && m_iTeamNum() != 3)
 		return false;
 
-	if (deadflag())
-		return false;
-
 	if (m_lifeState() != LIFE_ALIVE)
-		return false;
-
-	if (m_iHealth() <= 0)
 		return false;
 
 	return true;
@@ -347,10 +343,14 @@ void CBasePlayer::ModifyEyePosition(Vector& eye_position) {
 	if (!animstate)
 		return;
 
-	if (!animstate->bHitGroundAnimation)
+	if (!animstate->bHitGroundAnimation && animstate->flDuckAmount == 0.f)
 		return;
 
-	auto head_position = GetHitboxCenter(HITBOX_HEAD);
+	matrix3x4_t local_matrix[128];
+	memcpy(local_matrix, AnimationSystem->GetLocalBoneMatrix(), sizeof(matrix3x4_t) * 128);
+	AnimationSystem->CorrectLocalMatrix(local_matrix, 128);
+
+	auto head_position = GetHitboxCenter(HITBOX_HEAD, local_matrix);
 	head_position.z += 1.7f;
 
 	if (head_position.z >= eye_position.z)

@@ -40,19 +40,22 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 		return;
 	}
 
+	Vector vel = Cheat.LocalPlayer->m_vecVelocity();
+	if (config.misc.movement.compensate_throwable->get() && config.misc.movement.auto_strafe->get() && !(localPlayer->m_fFlags() & FL_ONGROUND))
+		vel = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
+
 	Vector eyePosition = origin;
 	if (origin == Vector())
 		eyePosition = localPlayer->GetEyePosition();
+
+	eyePosition += vel * GlobalVars->interval_per_tick;
+
 	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
 
 	Vector direction;
 	Utils::AngleVectors(viewAngles, direction);
 
 	const float flThrowStrength = std::clamp(grenade->m_flThrowStrength(), 0.f, 1.f);
-
-	Vector vel = Cheat.LocalPlayer->m_vecVelocity();
-	if (config.misc.movement.compensate_throwable->get() && config.misc.movement.auto_strafe->get() && !(localPlayer->m_fFlags() & FL_ONGROUND))
-		vel = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
 	Vector src = eyePosition + Vector(0.f, 0.f, flThrowStrength * 12.f - 12.f) + vel * 0.046875f;
 	Vector dest = src;

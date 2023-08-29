@@ -116,7 +116,7 @@ float CRagebot::FastHitchance(LagRecord* target, float inaccuracy, int hitbox_ra
 	if (inaccuracy == -1.f)
 		inaccuracy = std::tan(EnginePrediction->WeaponInaccuracy());
 
-	return min(hitbox_radius / ((eye_position - (target->m_vecOrigin + Vector(0, 0, 32))).Q_Length() * inaccuracy), 1.f);
+	return min(hitbox_radius / ((ctx.shoot_position - (target->m_vecOrigin + Vector(0, 0, 32))).Q_Length() * inaccuracy), 1.f);
 }
 
 float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup) {
@@ -144,7 +144,7 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup)
 		Vector direction = forward + (right * (s_val.bcos * inaccuracy + s_val.dcos * spread)) + (up * (s_val.bsin * inaccuracy + s_val.dsin * spread));
 		direction.Q_Normalized();
 
-		if (!EngineTrace->RayIntersectPlayer(eye_position, eye_position + (direction * 8192.f), target->player, target->clamped_matrix, damagegroup))
+		if (!EngineTrace->RayIntersectPlayer(ctx.shoot_position, ctx.shoot_position + (direction * 8192.f), target->player, target->clamped_matrix, damagegroup))
 			continue;
 
 		hits++;
@@ -229,8 +229,8 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 	if (target_records.empty()) {
 		// TODO: should be extrapolation here
 
-		LagRecord* mostRecentRecord = &records.back();
-		target_records.emplace_back(mostRecentRecord);
+		if (!records.back().shifting_tickbase)
+			target_records.push_back(&records.back());
 	}
 
 	return target_records;
@@ -268,16 +268,16 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale, std
 		Vector(0, 0, -width * scale),
 	};
 
-	if (hitbox_id == HITBOX_HEAD) {
-		verts[2].z = radius * scale;
-		verts[3].z = -radius * scale;
-	}
+	//if (hitbox_id == HITBOX_HEAD) {
+	//	verts[2].z = radius * scale;
+	//	verts[3].z = -radius * scale;
+	//}
 
 	for (const auto& vert : verts)
-		points.emplace_back(Math::VectorTransform(vert, boneMatrix));
+		points.push_back(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
 
 	if (hitbox_id == HITBOX_HEAD)
-		points.emplace_back(Vector(center.x, center.y, center.z + width * scale * 0.85f));
+		points.push_back(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
 }
 
 int CRagebot::CalcPointsCount() {
@@ -330,7 +330,7 @@ std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record) {
 		if (!settings.auto_stop->get(1) && max_possible_damage < CalcMinDamage(record->player))
 			continue;
 
-		points.emplace_back(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox }));
+		points.push_back(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false }));
 
 		if (multipoints_enabled(hitbox))
 			GetMultipoints(record, hitbox, hitbox == HITBOX_HEAD ? settings.head_point_scale->get() * 0.01f : settings.body_point_scale->get() * 0.01f, points);
@@ -465,17 +465,22 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 				DebugOverlay->AddBoxOverlay(point.point, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(0, 0, 0), 255, 255, 255, 200, GlobalVars->interval_per_tick * 2);
 
 			FireBulletData_t bullet;
-			if (!AutoWall->FireBullet(Cheat.LocalPlayer, eye_position, point.point, bullet, target))
+			if (!AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, point.point, bullet, target))
 				continue;
 
 			int priority = 2;
+			bool jitter_safe = false;
 			if (point.multipoint)
 				priority--;
 
-			if (EngineTrace->RayIntersectPlayer(eye_position, point.point, target, record->bone_matrix) && EngineTrace->RayIntersectPlayer(eye_position, point.point, target, record->clamped_matrix))
-				priority += 2;
+			if (EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, record->opposite_matrix, HitboxToDamagegroup(point.hitbox)) && 
+				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, record->clamped_matrix, HitboxToDamagegroup(point.hitbox))) {
 
-			if (point.hitbox == HITBOX_STOMACH || point.hitbox == HITBOX_PELVIS)
+				priority += 2;
+				jitter_safe = true;
+			}
+
+			if (point.hitbox == HITBOX_STOMACH)
 				priority += 2;
 
 			if (record->shooting)
@@ -487,6 +492,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 				point.hitbox,
 				priority,
 				bullet.damage,
+				jitter_safe,
 				bullet.impacts
 			});
 
@@ -502,7 +508,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 		return result;
 	}
 
-	result.angle = Math::VectorAngles_p(result.best_point.point - eye_position);
+	result.angle = Math::VectorAngles_p(result.best_point.point - ctx.shoot_position);
 	result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
 
 	LagCompensation->BacktrackEntity(backup_record);
@@ -533,8 +539,6 @@ void CRagebot::Run() {
 
 	if (Cheat.LocalPlayer->m_fFlags() & FL_FROZEN)
 		return;
-
-	eye_position = Cheat.LocalPlayer->GetShootPosition();
 
 	if (!ctx.active_weapon || ctx.active_weapon->IsGrenade())
 		return;
@@ -662,24 +666,24 @@ void CRagebot::Run() {
 	LagRecord* record = best_target.best_point.record;
 
 	if (config.misc.miscellaneous.logs->get(1)) {
-		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}] [bt: {}] [res: {:.1f}deg]", 
+		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}] [bt: {}] [res: {:.1f}deg safe: {}]", 
 			best_target.player->GetName(), 
 			GetHitboxName(best_target.best_point.hitbox), 
 			static_cast<int>(best_target.best_point.damage), 
 			static_cast<int>(best_target.hitchance * 100), 
 			TIME_TO_TICKS(best_target.player->m_flSimulationTime() - record->m_flSimulationTime),
-			record->resolver_data.side * best_target.player->GetMaxDesyncDelta()
+			record->resolver_data.side * best_target.player->GetMaxDesyncDelta(),
+			best_target.best_point.jitter_safe
 		));
 	}
 
-	ShotManager->AddShot(eye_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.record);
+	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.record);
 	if (config.visuals.chams.shot_chams->get()) {
 		Chams->AddShotChams(best_target.best_point.record);
 	}
 }
 
 void CRagebot::Zeusbot() {
-	const Vector shoot_pos = Cheat.LocalPlayer->GetShootPosition();
 	const float inaccuracy_tan = std::tan(ctx.active_weapon->GetInaccuracy());
 
 	if (!ctx.active_weapon->CanShoot())
@@ -701,7 +705,7 @@ void CRagebot::Zeusbot() {
 				continue;
 			}
 
-			float distance = ((record->m_vecOrigin + (record->m_vecMaxs + record->m_vecMins) * 0.5f) - shoot_pos).LengthSqr();
+			float distance = ((record->m_vecOrigin + (record->m_vecMaxs + record->m_vecMins) * 0.5f) - ctx.shoot_position).LengthSqr();
 
 			if (distance > 170 * 170)
 				continue;
@@ -715,14 +719,14 @@ void CRagebot::Zeusbot() {
 			};
 
 			for (const auto& point : points) {
-				CGameTrace trace = EngineTrace->TraceRay(shoot_pos, point, MASK_SHOT | CONTENTS_GRATE, Cheat.LocalPlayer);
+				CGameTrace trace = EngineTrace->TraceRay(ctx.shoot_position, point, MASK_SHOT | CONTENTS_GRATE, Cheat.LocalPlayer);
 
 				if (trace.hit_entity != player)
 					continue;
 
-				QAngle angle = Math::VectorAngles(point - shoot_pos);
+				QAngle angle = Math::VectorAngles(point - ctx.shoot_position);
 
-				float hitchance = min(7 / ((shoot_pos - point).Q_Length() * inaccuracy_tan), 1.f);
+				float hitchance = min(7 / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
 
 				if (hitchance < 0.6f)
 					continue;

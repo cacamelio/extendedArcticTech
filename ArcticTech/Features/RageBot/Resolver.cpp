@@ -123,8 +123,8 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record) {
 
 	Vector right = Math::AngleVectors(QAngle(0, notModifiedYaw + 90.f, 0));
 
-	Vector negPos = eyePos - right * 16.f;
-	Vector posPos = eyePos + right * 16.f;
+	Vector negPos = eyePos - right * 18.f;
+	Vector posPos = eyePos + right * 18.f;
 
 	CTraceFilterWorldAndPropsOnly filter;
 	Ray_t rayNeg(negPos, Cheat.LocalPlayer->GetShootPosition());

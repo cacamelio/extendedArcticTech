@@ -66,7 +66,7 @@ void CShotManager::ProcessManualShot() {
 		return;
 
 	FireBulletData_t bullet;
-	AutoWall->FireBullet(Cheat.LocalPlayer, Cheat.LocalPlayer->GetShootPosition(), Cheat.LocalPlayer->GetShootPosition() + Math::AngleVectors(ctx.cmd->viewangles) * 8192.f, bullet);
+	AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, ctx.shoot_position + Math::AngleVectors(ctx.cmd->viewangles) * 8192.f, bullet);
 
 	Color col = config.visuals.effects.client_impacts_color->get();
 
@@ -269,7 +269,11 @@ void CShotManager::OnNetUpdate() {
 
 				Console->ColorPrint("missed shot due to ", Color(240, 240, 240));
 
-				if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
+				if (shot->shoot_pos.DistTo(shot->end_pos) + 10.f < shot->client_shoot_pos.DistTo(shot->target_pos)) {
+					it->miss_reason = "occlusion";
+					Console->ColorPrint("occlusion\n", Color(255, 200, 0));
+				}
+				else if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
 					if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f) {
 						it->miss_reason = "prediction error";
 						Console->ColorPrint("pred. error", Color(255, 200, 0));
@@ -310,7 +314,7 @@ void CShotManager::OnNetUpdate() {
 						Resolver->OnMiss(player, shot->record);
 					}
 				}
-			}
+		}
 
 			LagCompensation->BacktrackEntity(backup_record);
 		}

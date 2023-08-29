@@ -5,6 +5,7 @@
 #include "../RageBot/LagCompensation.h"
 #include "../../SDK/Misc/KeyValues.h"
 #include "../../Utils/Console.h"
+#include "../Lua/Bridge/Bridge.h"
 
 #include <format>
 
@@ -159,24 +160,31 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 
 	ChamsMaterial& mat = materials[entType];
 
-	if (!mat.enabled) {
-		if (Cheat.LocalPlayer && Cheat.LocalPlayer->m_bIsScoped())
-			if (entType == Attachment || entType == LocalPlayer)
-				RenderView->SetBlend(config.visuals.effects.scope_blend->get() * 0.01f);
-			else if (entType == ViewModel) {
-				RenderView->SetBlend(config.visuals.effects.viewmodel_scope_alpha->get() * 0.01f);
-		}
-		drawModelExecute(ModelRender, _ctx, _state, _info, _boneToWorld);
-		return true;
-	}
-
 	float addAlpha = 1.f;
 
 	if (Cheat.LocalPlayer && Cheat.LocalPlayer->m_bIsScoped()) {
-		if (entType == Attachment || entType == LocalPlayer)
+		if (entType == Attachment || entType == LocalPlayer) {
 			addAlpha = config.visuals.effects.scope_blend->get() * 0.01f;
-		else if (entType == ViewModel)
+		}
+		else if (entType == ViewModel) {
 			addAlpha = config.visuals.effects.viewmodel_scope_alpha->get() * 0.01f;
+		}
+	}
+
+	if (entType == Attachment || entType == LocalPlayer) {
+		for (auto& cb : Lua->hooks.getHooks(LUA_LOCAL_ALPHA)) {
+			auto result = cb.func(Cheat.LocalPlayer);
+			if (result.valid() && result.get_type() == sol::type::number)
+				addAlpha = result.get<float>();
+		}
+	}
+
+	if (!mat.enabled) {
+		if (addAlpha == 1.f)
+			return false;
+		RenderView->SetBlend(addAlpha);
+		drawModelExecute(ModelRender, _ctx, _state, _info, _boneToWorld);
+		return true;
 	}
 
 	int backup_type = mat.type;

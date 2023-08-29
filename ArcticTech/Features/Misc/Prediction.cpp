@@ -95,7 +95,6 @@ void CPrediction::Start(CUserCmd* cmd) {
 	MoveHelper->SetHost(nullptr);
 	GameMovement->Reset();
 
-
 	for (int i = 0; i < MAX_VIEWMODELS; i++) { 
 		CBaseViewModel* vm = reinterpret_cast<CBaseViewModel*>(EntityList->GetClientEntityFromHandle(Cheat.LocalPlayer->m_hViewModel()[i]));
 
@@ -126,6 +125,8 @@ void CPrediction::Start(CUserCmd* cmd) {
 		//Cheat.LocalPlayer->m_vecAbsVelocity() = backup_abs_vel;
 		//Cheat.LocalPlayer->m_iEFlags() = backup_flags;
 	}
+
+	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();
 }
 
 void CPrediction::End() {

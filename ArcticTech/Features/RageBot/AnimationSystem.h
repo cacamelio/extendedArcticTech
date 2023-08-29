@@ -26,7 +26,8 @@ class CAnimationSystem {
 
 	struct interpolate_data_t {
 		Vector origin;
-		matrix3x4_t original_matrix[MAXSTUDIOBONES];
+		Vector net_origin;
+		matrix3x4_t original_matrix[128];
 		bool valid = false;
 	};
 

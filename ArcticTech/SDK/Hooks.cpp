@@ -381,6 +381,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	bSendPacket = ctx.send_packet;
 	ctx.sented_commands.emplace_back(cmd->command_number);
 	ctx.teleported_last_tick = false;
+	ctx.last_tickbase = Cheat.LocalPlayer->m_nTickBase();
 
 	verified->m_cmd = *cmd;
 	verified->m_crc = cmd->GetChecksum();
@@ -586,7 +587,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_START:
 		ShotManager->OnNetUpdate();
-		ESP::ProcessSounds();
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
@@ -615,7 +615,7 @@ void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
 	if (hook_info.update_csa)
 		return oUpdateClientSideAnimation(thisptr, edx);
 	if (thisptr == Cheat.LocalPlayer)
-		return oUpdateClientSideAnimation(thisptr, edx);
+		oUpdateClientSideAnimation(thisptr, edx);
 	if (!thisptr->IsPlayer())
 		return oUpdateClientSideAnimation(thisptr, edx);
 }
@@ -665,11 +665,6 @@ void __fastcall hkBuildTransformations(CBaseEntity* thisptr, void* edx, void* hd
 		thisptr->m_isJiggleBonesEnabled() = false;
 
 	oBuildTransformations(thisptr, edx, hdr, pos, q, camera_transform, bone_mask, bone_computed);
-}
-
-void __fastcall hkSetUpLean(CCSGOPlayerAnimationState* thisptr, void* edx) {
-	//if (thisptr->pEntity == Cheat.LocalPlayer)
-	oSetUpLean(thisptr, edx);
 }
 
 bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBoneToWorld, int maxBones, int mask, float curTime) {
@@ -723,12 +718,15 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	int max_tickbase_shift = Exploits->GetExploitType() == CExploits::E_DoubleTap ? 14 : 9;
 
 	if (ctx.lc_exploit_shift == cmd->command_number)
-		player->m_nTickBase() += Exploits->TargetTickbaseShift() > 0 ? max_tickbase_shift : max_tickbase_shift - 2;
+		player->m_nTickBase() += max_tickbase_shift;
 	if (ctx.lc_exploit_charge == cmd->command_number)
 		player->m_nTickBase() -= max_tickbase_shift;
 
-	const int backup_tickbase = player->m_nTickBase();
+	int backup_tickbase = player->m_nTickBase();
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
+
+	if (ctx.lc_exploit_shift == cmd->command_number)
+		backup_tickbase--; // wtf
 
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
@@ -1063,6 +1061,24 @@ bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
 	return oInPrediction(ecx, edx);
 }
 
+void __fastcall hkCL_DispatchSound(const SoundInfo_t& snd, void* edx) {
+	ESP::ProcessSound(snd);
+	oCL_DispatchSound(snd, edx);
+}
+
+bool __fastcall hkInterpolateViewmodel(CBaseViewModel* vm, void* edx, float curTime) {
+	if (EntityList->GetClientEntityFromHandle(vm->m_hOwner()) != Cheat.LocalPlayer)
+		return oInterpolateViewmodel(vm, edx, curTime);
+
+	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
+
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = EnginePrediction->tickcount();
+	auto result = oInterpolateViewmodel(vm, edx, curTime);
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
+
+	return result;
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1112,7 +1128,6 @@ void Hooks::Initialize() {
 	oShouldSkipAnimationFrame = HookFunction<tShouldSkipAnimationFrame>(Utils::PatternScan("client.dll", "57 8B F9 8B 07 8B 80 ? ? ? ? FF D0 84 C0 75 02"), hkShouldSkipAnimationFrame);
 	oStandardBlendingRules = HookFunction<tStandardBlendingRules>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 8B 75 08 57 8B F9 85 F6"), hkStandardBlendingRules);
 	oBuildTransformations = HookFunction<tBuildTransformations>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 81 ? ? ? ? ? 56 57 8B F9 8B"), hkBuildTransformations);
-	oSetUpLean = HookFunction<tSetUpLean>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 83 EC 20 F3"), hkSetUpLean);
 	oSetupBones = HookFunction<tSetupBones>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 57"), hkSetupBones);
 	oCL_Move = HookFunction<tCL_Move>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 53 56 8A F9 F3 0F 11 45 ? 8B 4D 04"), hkCL_Move);
 	oPhysicsSimulate = HookFunction<tPhysicsSimulate>(Utils::PatternScan("client.dll", "56 8B F1 8B 8E ? ? ? ? 83 F9 FF 74 23 0F B7 C1 C1 E0 04 05 ? ? ? ?"), hkPhysicsSimulate);
@@ -1136,6 +1151,8 @@ void Hooks::Initialize() {
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
 	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
+	oCL_DispatchSound = HookFunction<tCL_DispatchSound>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 8B F1 8D 4D 98 E8"), hkCL_DispatchSound);
+	oInterpolateViewmodel = HookFunction<tInterpolateViewmodel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateViewmodel);
 
 	EventListner->Register();
 }
@@ -1173,7 +1190,6 @@ void Hooks::End() {
 	RemoveHook(oShouldSkipAnimationFrame, hkShouldSkipAnimationFrame);
 	RemoveHook(oStandardBlendingRules, hkStandardBlendingRules);
 	RemoveHook(oBuildTransformations, hkBuildTransformations);
-	RemoveHook(oSetUpLean, hkSetUpLean);
 	RemoveHook(oSetupBones, hkSetupBones);
 	RemoveHook(oCL_Move, hkCL_Move);
 	RemoveHook(oPhysicsSimulate, hkPhysicsSimulate);
@@ -1197,4 +1213,6 @@ void Hooks::End() {
 	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
 	RemoveHook(oInPrediction, hkInPrediction);
+	RemoveHook(oCL_DispatchSound, hkCL_DispatchSound);
+	RemoveHook(oInterpolateViewmodel, hkInterpolateViewmodel);
 }

@@ -123,6 +123,7 @@
     <ClCompile Include="Features\Visuals\Indicators.cpp" />
     <ClCompile Include="Features\Visuals\PreserveKillfeed.cpp" />
     <ClCompile Include="Features\Visuals\SkinChanger.cpp" />
+    <ClCompile Include="Features\Visuals\WeaponIcons.cpp" />
     <ClCompile Include="Features\Visuals\World.cpp" />
     <ClCompile Include="ImGui\backends\imgui_impl_dx9.cpp" />
     <ClCompile Include="ImGui\backends\imgui_impl_win32.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="Features\Visuals\PreserveKillfeed.h" />
     <ClInclude Include="Features\Visuals\SkinChanger.h" />
     <ClInclude Include="Features\Visuals\WeaponIcons.h" />
+    <ClInclude Include="Features\Visuals\weapon_icons.h" />
     <ClInclude Include="Features\Visuals\World.h" />
     <ClInclude Include="ImGui\backends\imgui_impl_dx9.h" />
     <ClInclude Include="ImGui\backends\imgui_impl_win32.h" />

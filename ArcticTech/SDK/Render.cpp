@@ -6,6 +6,8 @@
 #include "../Resources/molotov.h"
 #include "../Resources/hegrenade.h"
 
+#include "../Features/Visuals/WeaponIcons.h"
+
 #include <vector>
 #include <mutex>
 
@@ -46,6 +48,8 @@ void CRender::Init(IDirect3DDevice9* dev) {
 	Resources::Inferno = Render->LoadImageFromMemory(inferno_icon, sizeof(inferno_icon), Vector2(30, 29));
 	Resources::Molotov = Render->LoadImageFromMemory(molotov_icon, sizeof(molotov_icon), Vector2(19, 32));
 	Resources::HeGrenade = Render->LoadImageFromMemory(hegrenade_icon, sizeof(hegrenade_icon), Vector2(19, 32));
+
+	WeaponIcons->Setup();
 
 	device->GetRenderState(D3DRS_ALPHATESTENABLE, &state_backup.alphablend);
 	device->GetRenderState(D3DRS_CULLMODE, &state_backup.cull);
@@ -618,6 +622,16 @@ DXImage CRender::LoadImageFromMemory(void* data, int dataSize, const Vector2& si
 	result.width = size.x;
 	result.height = size.y;
 	D3DXCreateTextureFromFileInMemoryEx(device, data, dataSize, size.x, size.y, D3DUSAGE_DYNAMIC, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0x00000000, NULL, NULL, &result.texture);
+	return result;
+}
+
+DXImage CRender::LoadImageFromMemory(void* data, int dataSize) {
+	DXImage result;
+	D3DXCreateTextureFromFileInMemory(device, data, dataSize, &result.texture);
+	D3DSURFACE_DESC desc;
+	result.texture->GetLevelDesc(0, &desc);
+	result.width = desc.Width;
+	result.height = desc.Height;
 	return result;
 }
 

@@ -11,6 +11,7 @@
 #include "GrenadePrediction.h"
 #include "../RageBot/LagCompensation.h"
 #include "../RageBot/AnimationSystem.h"
+#include "WeaponIcons.h"
 
 ESPInfo_t ESPInfo[64];
 GrenadeWarning NadeWarning;
@@ -77,50 +78,47 @@ void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
 	g_LastSharedESPData[ent_index] = GlobalVars->realtime;
 }
 
-void ESP::ProcessSounds() {
+void ESP::ProcessSound(const SoundInfo_t& sound) {
 	if (!config.visuals.esp.dormant->get())
 		return;
 
-	soundList.RemoveAll();
-	EngineSound->GetActiveSounds(soundList);
+	if (sound.nEntityIndex == 0 || sound.vOrigin.Zero())
+		return;
 
-	for (int i = 0; i < soundList.Count(); i++) {
-		SndInfo_t& sound = soundList[i];
+	CBaseEntity* sound_source = EntityList->GetClientEntity(sound.nEntityIndex);
 
-		if (sound.m_nSoundSource == 0)
-			continue;
+	if (!sound_source)
+		return;
 
-		CBaseEntity* sound_source = EntityList->GetClientEntity(sound.m_nSoundSource);
+	CBasePlayer* player = nullptr;
+	CBasePlayer* moveparent = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(sound_source->moveparent()));
+	CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(sound_source->m_hOwner()));
 
-		if (!sound_source)
-			continue;
+	if (sound_source->IsPlayer())
+		player = reinterpret_cast<CBasePlayer*>(sound_source);
+	else if (moveparent && moveparent->IsPlayer())
+		player = moveparent;
+	else if (owner && owner->IsPlayer())
+		player = owner;
+	else
+		return;
 
-		CBasePlayer* player = nullptr;
+	if (!player || player == Cheat.LocalPlayer || !player->m_bDormant() || player->IsTeammate())
+		return;
 
-		if (sound_source->IsPlayer())
-			player = reinterpret_cast<CBasePlayer*>(sound_source);
-		else
-			continue;
+	if (GlobalVars->realtime - g_LastSharedESPData[player->EntIndex()] < 2.f)
+		return;
 
-		if (!player || player == Cheat.LocalPlayer || !player->m_bDormant())
-			continue;
+	Vector origin = sound.vOrigin;
 
-		if (GlobalVars->realtime - g_LastSharedESPData[player->EntIndex()] < 2.f)
-			continue;
+	auto trace = EngineTrace->TraceHull(origin, origin - Vector(0, 0, 128), Vector(-16, -16, 0), Vector(16, 16, 72), MASK_SOLID, player);
+	player->m_vecOrigin() = trace.fraction == 1.f ? trace.startpos : trace.endpos;
 
-		Vector origin = *sound.m_pOrigin;
+	ESPInfo_t& esp_info = ESPInfo[player->EntIndex()];
 
-		auto trace = EngineTrace->TraceHull(origin, origin - Vector(0, 0, 128), Vector(-16, -16, 0), Vector(16, 16, 72), MASK_SOLID, player);
-
-		player->m_vecOrigin() = trace.endpos;
-		if (player->m_iHealth() == 0 || ESPInfo[player->EntIndex()].m_nHealth == 0) {
-			player->m_iHealth() = 100;
-			ESPInfo[player->EntIndex()].m_nHealth = 100;
-		}
-		//ESPInfo[player->EntIndex()].m_vecOrigin = trace.endpos;
-		ESPInfo[player->EntIndex()].m_flLastUpdateTime = GlobalVars->curtime;
-		ESPInfo[player->EntIndex()].m_bValid = true;
-	}
+	//ESPInfo[player->EntIndex()].m_vecOrigin = trace.endpos;
+	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
+	esp_info.m_bValid = true;
 }
 
 void ESP::UpdatePlayer(int id) {
@@ -128,7 +126,7 @@ void ESP::UpdatePlayer(int id) {
 	ESPInfo_t& info = ESPInfo[id];
 
 	info.m_pEnt = player;
-	if (!player || player->m_iTeamNum() == Cheat.LocalPlayer->m_iTeamNum() || !player->IsPlayer() || !player->IsAlive()) {
+	if (!player || player->IsTeammate() || !player->IsAlive()) {
 		info.m_bValid = false;
 		return;
 	}
@@ -138,18 +136,17 @@ void ESP::UpdatePlayer(int id) {
 	auto& records = LagCompensation->records(id);
 
 	if (records.empty()) {
-		info.m_bValid = false;
-		return;
+		info.m_bDormant = true;
 	}
 
-	LagRecord* latestRecord = &records.back();
-
-	if (latestRecord->m_flDuckAmout > 0.01f && latestRecord->m_flDuckAmout < 0.9 && player->m_flDuckSpeed() == 8)
-		info.m_nFakeDuckTicks++;
-	else
-		info.m_nFakeDuckTicks = 0;
-
 	if (!info.m_bDormant) {
+		LagRecord* latestRecord = &records.back();
+
+		if (latestRecord->m_flDuckAmout > 0.01f && latestRecord->m_flDuckAmout < 0.9 && player->m_flDuckSpeed() == 8)
+			info.m_nFakeDuckTicks++;
+		else
+			info.m_nFakeDuckTicks = 0;
+
 		info.m_vecOrigin = AnimationSystem->GetInterpolated(player);
 		info.m_bFakeDuck = info.m_nFakeDuckTicks > 14;
 		info.m_bExploiting = latestRecord->shifting_tickbase;
@@ -160,6 +157,11 @@ void ESP::UpdatePlayer(int id) {
 		if (info.m_nHealth == 0) {
 			info.m_bValid = false;
 		}
+
+		info.m_nFakeDuckTicks = 0;
+		info.m_bFakeDuck = false;
+		info.m_bExploiting = false;
+		info.m_bBreakingLagComp = false;
 
 		info.m_vecOrigin.Interpolate(player->m_vecOrigin(), GlobalVars->frametime * 16);
 	}
@@ -286,7 +288,12 @@ void ESP::DrawName(ESPInfo_t info) {
 
 void ESP::DrawFlags(ESPInfo_t info) {
 	bool dormant = info.m_bDormant;
-	LagRecord* record = &LagCompensation->records(info.m_pEnt->EntIndex()).back();
+
+	auto& records = LagCompensation->records(info.m_pEnt->EntIndex());
+
+	LagRecord* record = nullptr;
+	if (!records.empty())
+		LagRecord* record = &records.back();
 
 	std::vector<ESPFlag_t> flags;
 
@@ -299,7 +306,7 @@ void ESP::DrawFlags(ESPInfo_t info) {
 		flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
 	}
 
-	if (config.visuals.esp.flags->get(3) && (record->shifting_tickbase || record->exploiting) && !dormant)
+	if (config.visuals.esp.flags->get(3) && record && (record->shifting_tickbase || record->exploiting) && !dormant)
 		flags.push_back({ "E", record->shifting_tickbase ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(240, 240, 240, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
@@ -314,7 +321,7 @@ void ESP::DrawFlags(ESPInfo_t info) {
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
 		flags.push_back({ "LC", Color(230, 60, 60, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(6) && record->resolver_data.resolver_type == ResolverType::ANIM && !dormant)
+	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.resolver_type == ResolverType::ANIM && !dormant)
 		flags.push_back({ "ANIM", Color(165, 230, 14, 255 * info.m_flAlpha) });
 
 	int line_offset = 0;
@@ -326,7 +333,7 @@ void ESP::DrawFlags(ESPInfo_t info) {
 }
 
 void ESP::DrawWeapon(ESPInfo_t info) {
-	if (!config.visuals.esp.weapon_text->get())
+	if (!config.visuals.esp.weapon_text->get() && !config.visuals.esp.weapon_icon->get())
 		return;
 
 	if (!info.m_iActiveWeapon)
@@ -338,8 +345,20 @@ void ESP::DrawWeapon(ESPInfo_t info) {
 		return;
 
 	std::string weap = info.m_pEnt->GetActiveWeapon()->GetName(weapon_data);
+	int current_offset = 0;
+	if (config.visuals.esp.weapon_text->get()) {
+		Render->Text(weap, Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) / 2, info.m_BoundingBox[1].y + 2), info.m_bDormant ? config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha) : config.visuals.esp.weapon_text_color->get().alpha_modulatef(info.m_flAlpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
+		current_offset += 11;
+	}
 
-	Render->Text(weap, Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) / 2, info.m_BoundingBox[1].y + 2), info.m_bDormant ? config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha) : config.visuals.esp.weapon_text_color->get().alpha_modulatef(info.m_flAlpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
+	if (config.visuals.esp.weapon_icon->get()) {
+		auto& wicon = WeaponIcons->GetIcon(info.m_iActiveWeapon);
+
+		if (wicon.texture) {
+			Render->Image(wicon, Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) / 2 - wicon.width * 0.5f + 1, info.m_BoundingBox[1].y + 2 + current_offset + 1), Color(8, (int)(info.m_flAlpha * 125)));
+			Render->Image(wicon, Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) / 2 - wicon.width * 0.5f, info.m_BoundingBox[1].y + 2 + current_offset), info.m_bDormant ? config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha) : config.visuals.esp.weapon_icon_color->get().alpha_modulatef(info.m_flAlpha));
+		}
+	}
 }
 
 void ESP::DrawGrenades() {

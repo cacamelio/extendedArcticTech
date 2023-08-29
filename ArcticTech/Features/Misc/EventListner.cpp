@@ -73,6 +73,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));
 		AnimationSystem->InvalidateInterpolation(userid);
 		LagCompensation->Invalidate(userid);
+		ESPInfo[userid].m_nHealth = 0;
 	}
 	else if (name == "round_start") {
 		LagCompensation->Reset();
@@ -144,13 +145,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 				}
 			}
 		}
-	}
-	else if (name == "player_spawned") {
-		int player = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
-
-		ESPInfo[player].m_nHealth = 100;
-
-		//Utils::ForceFullUpdate();
 	}
 	else if (name == "player_disconnect") {
 		Chams->RemoveShotChams(EngineClient->GetPlayerForUserID(event->GetInt("userid")));

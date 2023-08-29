@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "../../SDK/NetMessages.h"
 #include "../Visuals/ESP.h"
+#include "Exploits.h"
 
 LagRecord* CLagCompensation::BackupData(CBasePlayer* player) {
 	LagRecord* record = new LagRecord;
@@ -197,9 +198,13 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	const float latency = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
 
 	const int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(latency);
+	int tick_base = Cheat.LocalPlayer->m_nTickBase();
+
+	if (!ctx.lc_exploit)
+		tick_base -= ctx.tickbase_shift;
 
 	const float lerp_time = GetLerpTime();
-	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) - record->m_flSimulationTime);
+	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(tick_base) - record->m_flSimulationTime);
 
 	if (fabs(delta_time) > 0.2f)
 		return false;

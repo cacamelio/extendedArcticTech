@@ -45,11 +45,13 @@ struct Ctx_t {
 
 	CBaseCombatWeapon* active_weapon = nullptr;
 	CCSWeaponData* weapon_info = nullptr;
+	Vector shoot_position;
 
 	bool lc_exploit = false; // for tickbase correction
 	bool lc_exploit_prev = false;
 	int lc_exploit_charge = 0;
 	int lc_exploit_shift = 0;
+	int last_tickbase = 0;
 
 	std::vector<int> shifted_commands;
 	std::vector<int> sented_commands;

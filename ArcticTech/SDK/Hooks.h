@@ -27,7 +27,6 @@ typedef void(__fastcall* tDoExtraBoneProcessing)(CBaseEntity*, void*, CStudioHdr
 typedef void(__fastcall* tStandardBlendingRules)(void*, void*, void*, void*, void*, float, int);
 typedef bool(__fastcall* tIsHLTV)(IVEngineClient*, void*);
 typedef void(__fastcall* tBuildTransformations)(CBaseEntity*, void*, void*, void*, void*, const void*, int, void*);
-typedef void(__fastcall* tSetUpLean)(void*, void*);
 typedef bool(__fastcall* tSetupBones)(CBaseEntity*, void*, matrix3x4_t*, int, int, float);
 typedef void(__cdecl* tCL_Move)(float, bool);
 typedef void(__fastcall* tHudUpdate)(IBaseClientDLL*, void*, bool);
@@ -55,6 +54,8 @@ typedef void(__fastcall* tPerformScreenOverlay)(void*, void*, int, int, int, int
 typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vector&, unsigned int*, int);
 typedef bool(__fastcall* tInPrediction)(IPrediction*, void*);
 typedef void(__fastcall* tTraceBlood)(CGameTrace*, int);
+typedef void(__fastcall* tCL_DispatchSound)(const SoundInfo_t&, void*);
+typedef bool(__fastcall* tInterpolateViewmodel)(CBaseViewModel*, void*, float);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -64,7 +65,6 @@ inline tShouldSkipAnimationFrame oShouldSkipAnimationFrame;
 inline tDoExtraBoneProcessing oDoExtraBoneProcessing;
 inline tStandardBlendingRules oStandardBlendingRules;
 inline tBuildTransformations oBuildTransformations;
-inline tSetUpLean oSetUpLean;
 inline tSetupBones oSetupBones;
 inline tCL_Move oCL_Move;
 inline tPhysicsSimulate oPhysicsSimulate;
@@ -88,6 +88,8 @@ inline tPerformScreenOverlay oPerformScreenOverlay;
 inline tListLeavesInBox oListLeavesInBox;
 inline tInPrediction oInPrediction;
 inline tTraceBlood oTraceBlood;
+inline tCL_DispatchSound oCL_DispatchSound;
+inline tInterpolateViewmodel oInterpolateViewmodel;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

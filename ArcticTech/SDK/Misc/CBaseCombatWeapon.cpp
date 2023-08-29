@@ -4,6 +4,7 @@
 #include "../../Utils/Utils.h"
 #include <string>
 #include "../../Features/Misc/Prediction.h"
+#include "../../Features/Visuals/WeaponIcons.h"
 
 
 CCSWeaponData* CBaseCombatWeapon::GetWeaponInfo() {
@@ -59,4 +60,8 @@ bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
 		return false;
 
 	return true;
+}
+
+DXImage& CBaseCombatWeapon::GetIcon() {
+	return WeaponIcons->GetIcon(m_iItemDefinitionIndex());
 }
