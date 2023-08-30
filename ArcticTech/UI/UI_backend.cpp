@@ -243,7 +243,7 @@ void CMenuGroupbox::Render() {
     ImGui::BeginChild(name.c_str(), size);
 
     for (auto el : widgets) {
-        if (!el->visible || el->GetType() == WidgetType::ColorPicker || el->GetType() == WidgetType::KeyBind)
+        if (!el || !el->visible || el->GetType() == WidgetType::ColorPicker || el->GetType() == WidgetType::KeyBind)
             continue;
 
         el->Render();
@@ -508,6 +508,7 @@ CKeyBind* CMenuGroupbox::AddKeyBind(const std::string& name) {
 
     item->name = name;
     item->parent = this;
+    item->parent_item = parent_item;
     parent_item->additional = item;
 
     widgets.push_back(item);
@@ -537,6 +538,7 @@ CColorPicker* CMenuGroupbox::AddColorPicker(const std::string& name, Color init,
 
     item->name = name;
     item->parent = this;
+    item->parent_item = parent_item;
     parent_item->additional = item;
     item->value[0] = init.r / 255.f;
     item->value[1] = init.g / 255.f;

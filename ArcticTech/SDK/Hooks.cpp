@@ -159,13 +159,15 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	CUserCmd* cmd = Input->GetUserCmd(sequence_number);
 	CVerifiedUserCmd* verified = Input->GetVerifiedCmd(sequence_number);
 
+	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
+
 	Miscelleaneus::Clantag();
 
 	Exploits->DefenseiveThisTick() = false;
 
 	ctx.active_weapon = nullptr;
 
-	if (!cmd || !cmd->command_number || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
+	if (!cmd || !cmd->command_number || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !active)
 		return;
 
 	ctx.active_weapon = Cheat.LocalPlayer->GetActiveWeapon();
@@ -226,17 +228,14 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	Miscelleaneus::AutoStrafe();
 
+	if (ClientState->m_nDeltaTick > 0)
+		Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
+
+	EnginePrediction->Start(cmd);
+	Cheat.ServerTime = GlobalVars->curtime;
+	QAngle eyeYaw = cmd->viewangles;
 
 	if (Exploits->IsShifting()) {
-		if (ClientState->m_nDeltaTick > 0)
-			Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
-
-		EnginePrediction->Start(cmd);
-
-		Cheat.ServerTime = GlobalVars->curtime;
-
-		QAngle eyeYaw = cmd->viewangles;
-
 		AutoPeek->CreateMove();
 		Ragebot->Run();
 
@@ -276,13 +275,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		Exploits->DefenseiveThisTick() = true;
 
 	AntiAim->SlowWalk();
-
-	QAngle storedAng = cmd->viewangles;
-
-	if (ClientState->m_nDeltaTick > 0)
-		Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
-
-	EnginePrediction->Start(cmd);
 
 	ShotManager->DetectUnregisteredShots();
 
@@ -374,7 +366,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	else if (!ctx.lc_exploit && ctx.lc_exploit_prev)
 		ctx.lc_exploit_shift = cmd->command_number;
 
-	Utils::FixMovement(cmd, storedAng);
+	Utils::FixMovement(cmd, eyeYaw);
 
 	AntiAim->LegMovement();
 
@@ -1072,7 +1064,7 @@ bool __fastcall hkInterpolateViewmodel(CBaseViewModel* vm, void* edx, float curT
 
 	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = EnginePrediction->tickcount();
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = GlobalVars->tickcount; // fix lag while defensive
 	auto result = oInterpolateViewmodel(vm, edx, curTime);
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
 

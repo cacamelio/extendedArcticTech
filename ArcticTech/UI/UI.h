@@ -39,6 +39,7 @@ public:
 	std::string name;
 	CMenuGroupbox* parent = nullptr;
 	IBaseWidget* additional = nullptr;
+	IBaseWidget* parent_item = nullptr;
 	bool visible = true;
 	std::vector<UILuaCallback_t> lua_callbacks;
 	std::vector<tUiCallback> callbacks;
@@ -48,7 +49,13 @@ public:
 		if (this->GetType() != WidgetType::Button)
 			callback();
 	};
-	void SetVisible(bool visible_) { visible = visible_; };
+
+	void SetVisible(bool visible_) {
+		visible = visible_;
+
+		if (parent_item && parent_item->GetType() == WidgetType::Label)
+			parent_item->SetVisible(visible_);
+	};
 
 	virtual WidgetType GetType() = 0;
 	virtual void Render() = 0;

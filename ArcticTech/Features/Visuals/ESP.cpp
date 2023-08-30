@@ -293,7 +293,7 @@ void ESP::DrawFlags(ESPInfo_t info) {
 
 	LagRecord* record = nullptr;
 	if (!records.empty())
-		LagRecord* record = &records.back();
+		record = &records.back();
 
 	std::vector<ESPFlag_t> flags;
 
@@ -303,7 +303,8 @@ void ESP::DrawFlags(ESPInfo_t info) {
 			str = "K";
 		if (info.m_pEnt->m_bHasHelmet())
 			str = "HK";
-		flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
+		if (!str.empty())
+			flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
 	}
 
 	if (config.visuals.esp.flags->get(3) && record && (record->shifting_tickbase || record->exploiting) && !dormant)
@@ -312,14 +313,14 @@ void ESP::DrawFlags(ESPInfo_t info) {
 	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck > 16 && !dormant)
+	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck && !dormant)
 		flags.push_back({ "FD", Color(240, 240, 240, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(4) && info.m_pEnt->EntIndex() == PlayerResource->m_iPlayerC4())
-		flags.push_back({ "BOMB", Color(230, 40, 40, 255 * info.m_flAlpha) });
+		flags.push_back({ "BOMB", Color(230, 80, 80, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
-		flags.push_back({ "LC", Color(230, 60, 60, 255 * info.m_flAlpha) });
+		flags.push_back({ "LC", Color(230, 80, 80, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.resolver_type == ResolverType::ANIM && !dormant)
 		flags.push_back({ "ANIM", Color(165, 230, 14, 255 * info.m_flAlpha) });

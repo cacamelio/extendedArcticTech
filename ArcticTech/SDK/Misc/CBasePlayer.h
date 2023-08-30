@@ -434,7 +434,7 @@ public:
     void                ModifyEyePosition(Vector& eye_position);
     Vector              GetShootPosition();
     void                UpdateClientSideAnimation();
-    void                UpdateAnimationState(CCSGOPlayerAnimationState* state, const QAngle& angles, bool bForce);
+    void                UpdateAnimationState(CCSGOPlayerAnimationState* state, const QAngle& angles, bool bForce = false);
     AnimationLayer*     GetAnimlayers();
     CBaseCombatWeapon*  GetActiveWeapon();
     bool                SetupBones(matrix3x4_t* boneToWorld, int maxBones, int mask, float curTime = 0.f);

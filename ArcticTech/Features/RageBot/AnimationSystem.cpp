@@ -49,11 +49,8 @@ void CAnimationSystem::OnCreateMove() {
 
 	auto backup_curtime = GlobalVars->curtime;
 	auto backup_tickcount = GlobalVars->tickcount;
-
 	GlobalVars->curtime = EnginePrediction->curtime();
 	GlobalVars->tickcount = EnginePrediction->tickcount();
-
-	memcpy(local_animlayers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 		const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
@@ -67,30 +64,24 @@ void CAnimationSystem::OnCreateMove() {
 		cb.func(Cheat.LocalPlayer);
 
 	if (ctx.send_packet) {
-		Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles, true);
+		Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles);
 
 		if (AntiAim->desyncing)
 			animstate->flGoalFeetYaw = AntiAim->realAngle;
 
-		Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw) / 116.f);
+		Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw) / 120.f);
 
-		local_abs_angles = QAngle(0, animstate->flGoalFeetYaw, 0);
-
-		Cheat.LocalPlayer->SetAbsAngles(local_abs_angles);
+		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flGoalFeetYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
-
-		memcpy(Cheat.LocalPlayer->GetAnimlayers(), local_animlayers, sizeof(AnimationLayer) * 13);
 
 		for (auto cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
 			cb.func(Cheat.LocalPlayer);
 
-		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, Cheat.LocalPlayer->GetAnimlayers());
+		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
 	}
 
 	GlobalVars->curtime = backup_curtime;
 	GlobalVars->tickcount = backup_tickcount;
-
-	memcpy(Cheat.LocalPlayer->GetAnimlayers(), local_animlayers, sizeof(AnimationLayer) * 13);
 }
 
 void CAnimationSystem::UpdateLocalAnimations() {
@@ -130,7 +121,8 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 	player->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
 	player->InvalidateBoneCache();
 
-	memcpy(player->GetAnimlayers(), animlayers, sizeof(AnimationLayer) * 13);
+	if (animlayers != nullptr)
+		memcpy(player->GetAnimlayers(), animlayers, sizeof(AnimationLayer) * 13);
 
 	bool backupMaintainSequenceTransitions = player->m_bMaintainSequenceTransitions();
 	int backupEffects = player->m_fEffects();
@@ -232,14 +224,14 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	record->bone_matrix_filled = true;
 
-	float deltaOriginal = Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw);
-	float eyeYawNew = Math::AngleNormalize(animstate->flEyeYaw - deltaOriginal);
-	player->SetAbsAngles(QAngle(0, eyeYawNew, 0));
-	float newBodyYawParam = 1.f - player->m_flPoseParameter()[BODY_YAW];
-
-	player->m_flPoseParameter()[BODY_YAW] = newBodyYawParam; // opposite side
-	Resolver->SetRollAngle(player, 0.f);
-	BuildMatrix(player, record->opposite_matrix, 128, BONE_USED_BY_HITBOX, record->animlayers);
+	if (player->IsEnemy()) {
+		float deltaOriginal = Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw);
+		float eyeYawNew = Math::AngleNormalize(animstate->flEyeYaw + deltaOriginal);
+		player->SetAbsAngles(QAngle(0, eyeYawNew, 0));
+		player->m_flPoseParameter()[BODY_YAW] = 1.f - player->m_flPoseParameter()[BODY_YAW]; // opposite side
+		Resolver->SetRollAngle(player, 0.f);
+		BuildMatrix(player, record->opposite_matrix, 128, BONE_USED_BY_HITBOX, record->animlayers);
+	}
 
 	player->m_nOcclusionFrame() = nOcclusionFrame;
 	player->m_nOcclusionFlags() = nOcclusionMask;
@@ -285,7 +277,6 @@ void CAnimationSystem::RunInterpolation() {
 
 		data->valid = true;
 		data->origin += (data->net_origin - data->origin) * std::clamp(GlobalVars->frametime * 32, 0.f, 0.8f);
-		player->SetAbsOrigin(data->origin);
 	}
 }
 

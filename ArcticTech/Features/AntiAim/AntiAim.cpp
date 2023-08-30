@@ -178,7 +178,8 @@ void CAntiAim::Desync() {
 	float desync_angle = desync_limit * (inverter ? 1 : -1);
 
 	if (!ctx.send_packet) {
-		realAngle = Math::AngleNormalize(ctx.cmd->viewangles.yaw + std::clamp(desync_angle, -Cheat.LocalPlayer->GetMaxDesyncDelta(), Cheat.LocalPlayer->GetMaxDesyncDelta()));
+		float max_desync_angle = Cheat.LocalPlayer->GetMaxDesyncDelta();
+		realAngle = Math::AngleNormalize(ctx.cmd->viewangles.yaw + std::clamp(desync_angle, -max_desync_angle, max_desync_angle));
 
 		ctx.cmd->viewangles.yaw += desync_angle;
 	}
@@ -336,7 +337,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 256.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * (18.f + velocity.Q_Length() / 30.f);
+	Vector move_factor = velocity.Normalized() * 21.f;
 
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -366,7 +367,7 @@ bool CAntiAim::IsPeeking() {
 
 		Vector target_vel = player->m_vecVelocity();
 
-		Vector enemyShootPos = player->GetShootPosition() + target_vel * GlobalVars->interval_per_tick;
+		Vector enemyShootPos = player->GetShootPosition() + target_vel * GlobalVars->interval_per_tick * 2.f;
 		ctx.active_weapon = player->GetActiveWeapon();
 
 		if (ctx.active_weapon)

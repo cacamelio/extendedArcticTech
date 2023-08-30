@@ -147,7 +147,7 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup)
 		if (!EngineTrace->RayIntersectPlayer(ctx.shoot_position, ctx.shoot_position + (direction * 8192.f), target->player, target->clamped_matrix, damagegroup))
 			continue;
 
-		hits++;
+			hits++;
 	}
 
 	return hits * 0.01f;
@@ -343,8 +343,6 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 	ScannedPoint_t best_body_point;
 	ScannedPoint_t best_head_point;
 
-	float player_sim_time = target.player->m_flSimulationTime();
-
 	for (const auto& point : target.points) {
 		if (point.hitbox == HITBOX_HEAD) {
 			if (best_head_point.damage < target.minimum_damage || (point.priotity > best_head_point.priotity && point.damage > target.minimum_damage))
@@ -354,6 +352,16 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 			if (best_body_point.damage < target.minimum_damage || (point.priotity > best_body_point.priotity && point.damage > target.minimum_damage))
 				best_body_point = point;
 		}
+	}
+
+	int& delay = delayed_ticks[target.player->EntIndex()];
+	if (best_body_point.damage > 1.f && best_head_point.damage > 1.f && settings.delay_shot->get() > 0) {
+		if (delay < settings.delay_shot->get())
+			best_head_point.damage = -1.f;
+		delay++;
+	}
+	else {
+		delay = 0;
 	}
 
 	if (best_body_point.damage < target.player->m_iHealth() && best_head_point.damage > best_body_point.damage && best_head_point.record->shooting)
@@ -376,7 +384,7 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 }
 
 void CRagebot::CreateThreads() {
-	for (int i = 0; i < MAX_RAGEBOT_THREADS; i++) {
+	for (int i = 0; i < GetRagebotThreads(); i++) {
 		threads[i] = Utils::CreateSimpleThread(&CRagebot::ThreadScan, (void*)i);
 		inited_threads++;
 	}
@@ -480,7 +488,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 				jitter_safe = true;
 			}
 
-			if (point.hitbox == HITBOX_STOMACH)
+			if (point.hitbox >= HITBOX_PELVIS && point.hitbox <= HITBOX_UPPER_CHEST)
 				priority += 2;
 
 			if (record->shooting)

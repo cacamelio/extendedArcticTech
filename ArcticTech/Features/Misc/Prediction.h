@@ -53,7 +53,7 @@ private:
 	CMoveData moveData = {};
 	float flOldCurrentTime = 0.f;
 	float flOldFrameTime = 0.f;
-	int iOldTickCount = 0;
+	int iOldTickcount = 0;
 	local_data_t local_data[MULTIPLAYER_BACKUP];
 	local_netvars_t local_netvars[MULTIPLAYER_BACKUP];
 
@@ -70,7 +70,7 @@ public:
 	__forceinline float WeaponSpread() { return weaponSpread; };
 	__forceinline float frametime() { return flOldFrameTime; };
 	__forceinline float curtime() { return flOldCurrentTime; };
-	__forceinline int tickcount() { return iOldTickCount; };
+	__forceinline int tickcount() { return iOldTickcount; };
 
 	inline local_data_t& GetLocalData(int place) { return local_data[place % MULTIPLAYER_BACKUP]; };
 

@@ -41,7 +41,7 @@ void CPrediction::BackupData() {
 
 	flOldCurrentTime = GlobalVars->curtime;
 	flOldFrameTime = GlobalVars->frametime;
-	iOldTickCount = GlobalVars->tickcount;
+	iOldTickcount = GlobalVars->tickcount;
 }
 
 void CPrediction::Start(CUserCmd* cmd) {
@@ -55,6 +55,7 @@ void CPrediction::Start(CUserCmd* cmd) {
 
 	const bool bOldIsFirstPrediction = Prediction->bIsFirstTimePredicted;
 	const bool bOldInPrediction = Prediction->bInPrediction;
+	const float backup_velocity_modifier = Cheat.LocalPlayer->m_flVelocityModifier();
 
 	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift);
 	GlobalVars->frametime = Prediction->bEnginePaused ? 0.f : GlobalVars->interval_per_tick;
@@ -67,27 +68,12 @@ void CPrediction::Start(CUserCmd* cmd) {
 	MoveHelper->SetHost(Cheat.LocalPlayer);
 
 	GameMovement->StartTrackPredictionErrors(Cheat.LocalPlayer);
-
-	float m_nSequence[2]{ 0, 0 };
-	float m_nAnimationParity[2]{ 0, 0 };
-	
-	for (int i = 0; i < MAX_VIEWMODELS; i++) {
-		CBaseViewModel* vm = reinterpret_cast<CBaseViewModel*>(EntityList->GetClientEntityFromHandle(Cheat.LocalPlayer->m_hViewModel()[i]));
-
-		if (vm) {
-			m_nSequence[i] = vm->m_nSequence();
-			m_nAnimationParity[i] = vm->m_nAnimationParity();
-		}
-	}
 	
 	Prediction->SetLocalViewAngles(cmd->viewangles);
 
 	Prediction->SetupMove(Cheat.LocalPlayer, cmd, MoveHelper, &moveData);
 
-	const float backup_velocity_modifier = Cheat.LocalPlayer->m_flVelocityModifier();
 	GameMovement->ProcessMovement(Cheat.LocalPlayer, &moveData);
-	Cheat.LocalPlayer->m_flVelocityModifier() = backup_velocity_modifier;
-
 	Prediction->FinishMove(Cheat.LocalPlayer, cmd, &moveData);
 	MoveHelper->ProcessImpacts();
 
@@ -95,18 +81,10 @@ void CPrediction::Start(CUserCmd* cmd) {
 	MoveHelper->SetHost(nullptr);
 	GameMovement->Reset();
 
-	for (int i = 0; i < MAX_VIEWMODELS; i++) { 
-		CBaseViewModel* vm = reinterpret_cast<CBaseViewModel*>(EntityList->GetClientEntityFromHandle(Cheat.LocalPlayer->m_hViewModel()[i]));
-
-		if (vm) {
-			vm->m_nSequence() = m_nSequence[i];
-			vm->m_nAnimationParity() = m_nAnimationParity[i];
-		}
-	}
-
 	Prediction->bInPrediction = bOldInPrediction;
 	Prediction->bIsFirstTimePredicted = bOldIsFirstPrediction;
 
+	Cheat.LocalPlayer->m_flVelocityModifier() = backup_velocity_modifier;
 
 	if (ctx.active_weapon) {
 		//const auto backup_vel = Cheat.LocalPlayer->m_vecVelocity();
@@ -135,7 +113,7 @@ void CPrediction::End() {
 
 	GlobalVars->curtime = flOldCurrentTime;
 	GlobalVars->frametime = flOldFrameTime;
-	GlobalVars->tickcount = iOldTickCount;
+	GlobalVars->tickcount = iOldTickcount;
 
 	*Cheat.LocalPlayer->GetCurrentCommand() = nullptr;
 	*predictionRandomSeed = -1;

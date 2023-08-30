@@ -31,11 +31,9 @@ class CAnimationSystem {
 		bool valid = false;
 	};
 
-	AnimationLayer local_animlayers[13];
 	interpolate_data_t interpolate_data[64];
 
 	matrix3x4_t sent_matrix[128];
-	QAngle local_abs_angles;
 	Vector sent_abs_origin;
 public:
 	void	FrameStageNotify(EClientFrameStage stage);

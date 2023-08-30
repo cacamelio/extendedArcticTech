@@ -132,7 +132,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = (EnginePrediction->tickcount() - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
+			new_record->exploiting = (GlobalVars->tickcount - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;

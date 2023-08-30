@@ -38,6 +38,7 @@ struct CUserCmd_lua {
 
 	sol::object override_defensive = sol::nil;
 	bool allow_defensive = true;
+	int pre_prediction_flags;
 };
 
 template <typename T>

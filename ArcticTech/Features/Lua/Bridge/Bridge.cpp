@@ -454,6 +454,10 @@ namespace api {
 			return result;
 		}
 
+		DXImage get_weapon_icon(int weap_id) {
+			return WeaponIcons->GetIcon(weap_id);
+		}
+
 		void add_font(std::string mem) {
 			Render->AddFontFromMemory(mem.data(), mem.size());
 		}
@@ -996,10 +1000,6 @@ namespace api {
 			return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetLocalPlayer()));
 		}
 
-		DXImage get_weapon_icon(int weap_id) {
-			return WeaponIcons->GetIcon(weap_id);
-		}
-
 		sol::object get_prop(sol::this_state state, CBaseEntity* ent, std::string prop_name) {
 			static auto recvproxy_int32_to_int8 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 8A 48 08 8B 45 10");
 			static auto recvproxy_int32_to_int16 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 66 8B 48 08 8B 45 10 66 89 08");
@@ -1428,7 +1428,8 @@ void CLua::Setup() {
 		"random_seed", &CUserCmd_lua::random_seed,
 		"hasbeenpredicted", &CUserCmd_lua::hasbeenpredicted,
 		"override_defensive", &CUserCmd_lua::override_defensive,
-		"allow_defensive", &CUserCmd_lua::allow_defensive
+		"allow_defensive", &CUserCmd_lua::allow_defensive,
+		"pre_prediction_flags", &CUserCmd_lua::pre_prediction_flags
 	);
 
 	lua.new_usertype<CGameTrace>("trace_t", sol::no_constructor,
@@ -1533,6 +1534,7 @@ void CLua::Setup() {
 	lua.create_named_table("render",
 		"screen_size", api::render::screen_size,
 		"camera_angles", api::render::camera_angles,
+		"get_weapon_icon", api::render::get_weapon_icon,
 		"add_font", api::render::add_font,
 		"load_font", api::render::load_font,
 		"load_image", api::render::load_image,
@@ -1550,6 +1552,7 @@ void CLua::Setup() {
 		"circle_gradient", api::render::circle_gradient,
 		"texture", api::render::texture,
 		"text", api::render::text,
+		"vertex", api::render::vertex,
 		"push_clip_rect", api::render::push_clip_rect,
 		"pop_clip_rect", api::render::pop_clip_rect,
 		"world_to_screen", api::vector::to_screen,

@@ -68,6 +68,7 @@ void CMenu::SetupUI() {
 		settings.minimum_damage_override = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage override"), 1, 130, 10);
 		settings.auto_stop = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Full stop", "Early", "Move between shots", "In Air" });
 		settings.auto_scope = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Auto scope"));
+		settings.delay_shot = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Delay shot"), 0, 16, 0);
 	};
 
 	setup_weapon_config(config.ragebot.weapons.global);
@@ -127,6 +128,7 @@ void CMenu::SetupUI() {
 	config.visuals.esp.damage_marker = player_esp->AddCheckBox("Damage marker");
 	config.visuals.esp.damage_marker_color = player_esp->AddColorPicker("Damage marker");
 
+	config.visuals.chams.chams_selector = chams->AddComboBox("Class", { "Player", "Shot", "Local", "Attachments", "Viewmodel" });
 	config.visuals.chams.enemy = chams->AddCheckBox("Player");
 	config.visuals.chams.enemy_invisible = chams->AddCheckBox("Player behind wall");
 	config.visuals.chams.enemy_color = chams->AddColorPicker("Player", Color(150, 190, 70));
@@ -580,5 +582,42 @@ void CMenu::SetupUI() {
 
 	config.visuals.esp.shared_esp->SetCallback([]() {
 		config.visuals.esp.share_with_enemies->SetVisible(config.visuals.esp.shared_esp->get());
+	});
+
+	config.visuals.chams.chams_selector->SetCallback([]() {
+		config.visuals.chams.enemy->SetVisible(config.visuals.chams.chams_selector->get() == 0);
+		config.visuals.chams.enemy_color->SetVisible(config.visuals.chams.chams_selector->get() == 0);
+		config.visuals.chams.enemy_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 0);
+		config.visuals.chams.enemy_invisible->SetVisible(config.visuals.chams.chams_selector->get() == 0);
+		config.visuals.chams.enemy_invisible_color->SetVisible(config.visuals.chams.chams_selector->get() == 0);
+		config.visuals.chams.enemy_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 0);
+		config.visuals.chams.enemy_type->SetVisible(config.visuals.chams.chams_selector->get() == 0);
+
+		config.visuals.chams.shot_chams->SetVisible(config.visuals.chams.chams_selector->get() == 1);
+		config.visuals.chams.shot_chams_color->SetVisible(config.visuals.chams.chams_selector->get() == 1);
+		config.visuals.chams.shot_chams_type->SetVisible(config.visuals.chams.chams_selector->get() == 1);
+		config.visuals.chams.shot_chams_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 1);
+		config.visuals.chams.shot_chams_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 1);
+		config.visuals.chams.shot_chams_duration->SetVisible(config.visuals.chams.chams_selector->get() == 1);
+		config.visuals.chams.shot_chams_options->SetVisible(config.visuals.chams.chams_selector->get() == 1);
+
+		config.visuals.chams.local_player->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.local_player_color->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.local_player_type->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.local_player_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.local_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+
+		config.visuals.chams.attachments->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.attachments_color->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.attachments_type->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.attachments_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.attachments_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+
+		config.visuals.chams.viewmodel->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.viewmodel_color->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.viewmodel_type->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.viewmodel_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.viewmodel_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+
 	});
 }

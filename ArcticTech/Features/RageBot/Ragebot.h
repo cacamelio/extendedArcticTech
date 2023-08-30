@@ -8,7 +8,13 @@
 #include <condition_variable>
 #include <queue>
 
-#define MAX_RAGEBOT_THREADS 4
+#define MAX_RAGEBOT_THREADS 6
+inline int GetRagebotThreads() {
+	int threads = std::thread::hardware_concurrency() - 2;
+	if (threads > MAX_RAGEBOT_THREADS)
+		threads = MAX_RAGEBOT_THREADS;
+	return threads;
+}
 
 class CUserCmd;
 
@@ -69,6 +75,7 @@ private:
 
 	std::vector<CBasePlayer*> targets;
 	std::vector<ScannedTarget_t> scanned_targets;
+	std::array<int, 64> delayed_ticks;
 
 	inline bool hitbox_enabled(int hitbox) {
 		switch (hitbox)

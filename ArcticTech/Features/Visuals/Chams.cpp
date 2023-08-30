@@ -173,7 +173,7 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 
 	if (entType == Attachment || entType == LocalPlayer) {
 		for (auto& cb : Lua->hooks.getHooks(LUA_LOCAL_ALPHA)) {
-			auto result = cb.func(Cheat.LocalPlayer);
+			auto result = cb.func(Cheat.LocalPlayer, addAlpha);
 			if (result.valid() && result.get_type() == sol::type::number)
 				addAlpha = result.get<float>();
 		}

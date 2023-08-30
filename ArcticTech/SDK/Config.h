@@ -19,6 +19,7 @@ struct weapon_settings_t {
     CSliderInt* minimum_damage_override{ nullptr };
     CMultiCombo* auto_stop{ nullptr };
     CCheckBox* auto_scope{ nullptr };
+    CSliderInt* delay_shot{ nullptr };
 
     weapon_settings_t() {}
     weapon_settings_t(const std::string& name) : weapon_name(name) {}
@@ -33,6 +34,7 @@ struct weapon_settings_t {
         minimum_damage_override->SetVisible(visible);
         auto_stop->SetVisible(visible);
         auto_scope->SetVisible(visible);
+        delay_shot->SetVisible(visible);
     };
 };
 
@@ -133,6 +135,8 @@ struct config_t {
         } esp;
 
         struct chams_t {
+            CComboBox* chams_selector;
+
             CCheckBox* enemy;
             CColorPicker* enemy_color;
             CColorPicker* enemy_second_color;
