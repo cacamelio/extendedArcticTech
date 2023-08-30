@@ -692,7 +692,7 @@ void CRagebot::Run() {
 }
 
 void CRagebot::Zeusbot() {
-	const float inaccuracy_tan = std::tan(ctx.active_weapon->GetInaccuracy());
+	const float inaccuracy_tan = std::tan(EnginePrediction->WeaponInaccuracy());
 
 	if (!ctx.active_weapon->CanShoot())
 		return;
@@ -718,12 +718,13 @@ void CRagebot::Zeusbot() {
 			if (distance > 170 * 170)
 				continue;
 
+			record->BuildMatrix();
 			const Vector points[]{
-				player->GetHitboxCenter(HITBOX_STOMACH, record->bone_matrix),
-				player->GetHitboxCenter(HITBOX_CHEST, record->bone_matrix),
-				player->GetHitboxCenter(HITBOX_UPPER_CHEST, record->bone_matrix),
-				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM, record->bone_matrix),
-				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM, record->bone_matrix)
+				player->GetHitboxCenter(HITBOX_STOMACH, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_CHEST, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_UPPER_CHEST, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM, record->clamped_matrix)
 			};
 
 			for (const auto& point : points) {

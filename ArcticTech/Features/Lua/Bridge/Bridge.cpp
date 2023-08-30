@@ -9,6 +9,8 @@
 #include "../../RageBot/Exploits.h"
 #include "../../RageBot/AutoWall.h"
 #include "../../Visuals/WeaponIcons.h"
+#include "../../../SDK/Misc/KeyValues.h"
+#include "../../Visuals/Chams.h"
 
 #define DEF_LUA_ARR(type) lua.new_usertype<ArrayWrapper_Lua<type>>((std::string)#type + "_array", sol::no_constructor, "__index", &ArrayWrapper_Lua<type>::get, "__newindex", &ArrayWrapper_Lua<type>::set)
 
@@ -299,6 +301,8 @@ namespace api {
 				Lua->hooks.registerHook(LUA_POST_ANIMUPDATE, script_id, func);
 			else if (event_name == "local_alpha")
 				Lua->hooks.registerHook(LUA_LOCAL_ALPHA, script_id, func);
+			else if (event_name == "draw_chams")
+				Lua->hooks.registerHook(LUA_DRAW_CHAMS, script_id, func);
 			else
 				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
 		}
@@ -1180,6 +1184,33 @@ namespace api {
 			return Exploits->IsDefensiveActive();
 		}
 	}
+
+	namespace materials {
+		IMaterial* create(std::string mat_name, std::string mattype, sol::table kv) {
+			KeyValues* mat_kv = new KeyValues(mattype.c_str());
+
+			for (auto& p : kv) {
+				if (p.second.get_type() == sol::type::number)
+					mat_kv->SetFloat(p.first.as<std::string>().c_str(), p.second.as<float>());
+				else if (p.second.get_type() == sol::type::string)
+					mat_kv->SetString(p.first.as<std::string>().c_str(), p.second.as<std::string>().c_str());
+			}
+
+			return MaterialSystem->CreateMaterial(mat_name.c_str(), mat_kv);
+		}
+
+		IMaterial* find(std::string mat_name) {
+			return MaterialSystem->FindMaterial(mat_name.c_str());
+		}
+
+		void draw_chams() {
+			Chams->DrawModelExecute();
+		}
+
+		void override_material(IMaterial* material) {
+			ModelRender->ForcedMaterialOverride(material);
+		}
+	}
 }
 
 void CLua::Setup() {
@@ -1462,6 +1493,18 @@ void CLua::Setup() {
 		"uncompressed_sample_offset", &SharedVoiceData_t::uncompressed_sample_offset
 	);
 
+	lua.new_usertype<IMaterial>("material_t", sol::no_constructor,
+		"get_name", &IMaterial::GetName,
+		"get_color_modulation", &IMaterial::GetColorModulation,
+		"color_modulate", &IMaterial::_ColorModulate,
+		"get_alpha_modulation", &IMaterial::GetAlphaModulation,
+		"alpha_modulate", &IMaterial::AlphaModulate,
+		"get_material_flag", &IMaterial::GetMaterialVarFlag,
+		"material_flag", &IMaterial::SetMaterialVarFlag,
+		"increment_ref_count", &IMaterial::IncrementReferenceCount,
+		"decrement_ref_count", &IMaterial::DecrementReferenceCount
+	);
+
 	lua.new_usertype<IGameEvent>("game_event_t", sol::no_constructor,
 		"get_name", &IGameEvent::GetName,
 		"get_int", &IGameEvent::GetInt,
@@ -1600,6 +1643,13 @@ void CLua::Setup() {
 		"get_antiaim_target", api::rage::get_antiaim_target,
 		"get_exploit_charge", api::rage::get_exploit_charge,
 		"is_defensive_active", api::rage::is_defensive_active
+	);
+
+	lua.create_named_table("materials", 
+		"create", api::materials::create,
+		"find", api::materials::find,
+		"draw_chams", api::materials::draw_chams,
+		"override_material", api::materials::override_material
 	);
 
 	RefreshScripts();

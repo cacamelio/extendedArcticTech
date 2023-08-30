@@ -39,6 +39,8 @@ class CChams {
 
 	std::vector<ShotChams_t> shot_chams;
 public:
+	void DrawModelExecute();
+
 	void LoadChams();
 	void UpdateSettings();
 	bool OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const ModelRenderInfo_t& info, matrix3x4_t* pBoneToWorld);

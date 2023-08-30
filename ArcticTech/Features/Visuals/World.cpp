@@ -23,24 +23,24 @@ void CWorld::Modulation() {
 		if (strstr(material->GetTextureGroupName(), "World")) {
 			if (config.visuals.effects.world_color_enable->get()) {
 				const Color clr = config.visuals.effects.world_color->get();
-				material->ColorModulate(clr.r / 255.f, clr.g / 255.f, clr.b / 255.f);
+				material->ColorModulate(clr);
 				material->AlphaModulate(clr.a / 255.f);
 			}
 			else {
-				material->ColorModulate(1, 1, 1);
+				material->ColorModulate(Color());
 				material->AlphaModulate(1);
 			}
 		}
 		else if (strstr(material->GetTextureGroupName(), "StaticProp")) {
 			if (config.visuals.effects.props_color_enable->get()) {
 				const Color clr = config.visuals.effects.props_color->get();
-				material->ColorModulate(clr.r / 255.f, clr.g / 255.f, clr.b / 255.f);
+				material->ColorModulate(clr);
 				material->AlphaModulate(clr.a / 255.f);
 				material->SetMaterialVarFlag(MATERIAL_VAR_TRANSLUCENT, false);
 				cvars.r_DrawSpecificStaticProp->SetInt(0);
 			}
 			else {
-				material->ColorModulate(1, 1, 1);
+				material->ColorModulate(Color());
 				material->AlphaModulate(1);
 			}
 		}

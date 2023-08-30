@@ -229,7 +229,6 @@ void CConfig::Init() {
     add(config.visuals.other_esp.grenade_proximity_warning);
     add(config.visuals.other_esp.grenade_predict_color);
     add(config.visuals.other_esp.particles);
-    add(config.visuals.other_esp.indicators);
     add(config.visuals.effects.fov);
     add(config.visuals.effects.removals);
     add(config.visuals.effects.remove_scope);

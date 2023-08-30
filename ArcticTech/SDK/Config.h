@@ -191,7 +191,6 @@ struct config_t {
             CCheckBox* grenade_proximity_warning;
             CColorPicker* grenade_predict_color;
             CMultiCombo* particles;
-            CMultiCombo* indicators;
         } other_esp;
 
         struct effects_t {

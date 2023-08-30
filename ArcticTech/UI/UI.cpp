@@ -139,7 +139,7 @@ void CMenu::SetupUI() {
 	config.visuals.chams.shot_chams = chams->AddCheckBox("Shot");
 	config.visuals.chams.shot_chams_color = chams->AddColorPicker("Shot", Color(100, 100, 100));
 	config.visuals.chams.shot_chams_second_color = chams->AddColorPicker("Shot second color");
-	config.visuals.chams.shot_chams_type = chams->AddComboBox("Shot type", { "Default", "Solid", "Glow", "Glow outlined", "Glow overlay" });
+	config.visuals.chams.shot_chams_type = chams->AddComboBox("Shot type", { "Default", "Solid", "Glow", "Glow outlined" });
 	config.visuals.chams.shot_chams_thickness = chams->AddSliderFloat("Shot glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.shot_chams_duration = chams->AddSliderInt("Shot chams duration", 1, 10, 4, "s");
 	config.visuals.chams.shot_chams_options = chams->AddMultiCombo("Shot chams options", { "Behind walls", "Last shot only" });
@@ -176,7 +176,6 @@ void CMenu::SetupUI() {
 	config.visuals.other_esp.grenade_proximity_warning = other_esp->AddCheckBox("Grenade proximity warning");
 	config.visuals.other_esp.grenade_predict_color = other_esp->AddColorPicker("Grenade predict color");
 	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov", "Smoke" });
-	config.visuals.other_esp.indicators = other_esp->AddMultiCombo("Indicators", { "Exploits", "Min. damage", "Body aim", "Lag Compensation", "Roll Resolver"});
 
 	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
 	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Blood", "Sprites" });

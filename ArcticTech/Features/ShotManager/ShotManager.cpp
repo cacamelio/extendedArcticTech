@@ -230,7 +230,7 @@ void CShotManager::OnNetUpdate() {
 					ESP::AddHitmarker(shot->hit_point);
 
 				if (config.visuals.esp.damage_marker->get())
-					ESP::AddDamageMarker(shot->record->m_vecOrigin + Vector(0, 0, 80), shot->damage);
+					ESP::AddDamageMarker(shot->hit_point + Vector(0, 0, 10), shot->damage);
 
 				if (shot->wanted_damagegroup != shot->damagegroup) {
 					CGameTrace trace;

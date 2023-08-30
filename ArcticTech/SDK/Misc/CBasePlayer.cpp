@@ -343,7 +343,7 @@ void CBasePlayer::ModifyEyePosition(Vector& eye_position) {
 	if (!animstate)
 		return;
 
-	if (!animstate->bHitGroundAnimation && animstate->flDuckAmount == 0.f)
+	if (!animstate->bHitGroundAnimation)
 		return;
 
 	matrix3x4_t local_matrix[128];

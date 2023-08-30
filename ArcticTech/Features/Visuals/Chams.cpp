@@ -116,9 +116,13 @@ void CChams::UpdateSettings() {
 	materials[ClassOfEntity::Attachment].glowThickness = config.visuals.chams.attachments_glow_thickness->get();
 }
 
-bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const ModelRenderInfo_t& info, matrix3x4_t* pBoneToWorld) {
+void CChams::DrawModelExecute() {
 	static tDrawModelExecute drawModelExecute = (tDrawModelExecute)Hooks::ModelRenderVMT->GetOriginal(21);
 
+	drawModelExecute(ModelRender, _ctx, _state, _info, _boneToWorld);
+};
+
+bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const ModelRenderInfo_t& info, matrix3x4_t* pBoneToWorld) {
 	_ctx = ctx;
 	_state = state;
 	_info = info;
@@ -151,11 +155,23 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	else if (isArms) {
 		if (Cheat.LocalPlayer && Cheat.LocalPlayer->m_bIsScoped())
 			RenderView->SetBlend(config.visuals.effects.viewmodel_scope_alpha->get() * 0.01f);
-		drawModelExecute(ModelRender, _ctx, _state, _info, _boneToWorld);
-		return true;
+		return false;
 	}
 	else {
 		return false;
+	}
+
+	for (auto& cb : Lua->hooks.getHooks(LUA_DRAW_CHAMS)) {
+		auto result = cb.func((int)entType);
+
+		if (result.valid()) {
+			int code = result.get<int>();
+
+			if (code == 0)
+				return true;
+			else if (code == 1)
+				return false;
+		}
 	}
 
 	ChamsMaterial& mat = materials[entType];
@@ -183,8 +199,7 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 		if (addAlpha == 1.f)
 			return false;
 		RenderView->SetBlend(addAlpha);
-		drawModelExecute(ModelRender, _ctx, _state, _info, _boneToWorld);
-		return true;
+		return false;
 	}
 
 	int backup_type = mat.type;
@@ -192,7 +207,7 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 		mat.type = MaterialType::GlowOutline;
 
 		RenderView->SetBlend(addAlpha);
-		drawModelExecute(ModelRender, _ctx, _state, _info, _boneToWorld);
+		DrawModelExecute();
 	}
 
 	DrawModel(mat, addAlpha);
@@ -205,8 +220,8 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBoneToWorld, bool ignorez) {
 	static auto drawModelExecute = (tDrawModelExecute)Hooks::ModelRenderVMT->GetOriginal(21);
 
-	if (!customBoneToWorld)
-		customBoneToWorld = _boneToWorld;
+	if (customBoneToWorld)
+		_boneToWorld = customBoneToWorld;
 
 	IMaterial* baseMat = baseMaterials[cham.type == MaterialType::Glow ? MaterialType::Default : cham.type];
 
@@ -217,7 +232,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 			RenderView->SetBlend(cham.invisibleColor.a / 255.f * alpha);
 
 			ModelRender->ForcedMaterialOverride(baseMat);
-			drawModelExecute(ModelRender, _ctx, _state, _info, customBoneToWorld);
+			DrawModelExecute();
 			ModelRender->ForcedMaterialOverride(nullptr);
 		}
 
@@ -235,7 +250,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 			RenderView->SetBlend(cham.secondaryColor.a / 255.f * alpha);
 
 			ModelRender->ForcedMaterialOverride(glowMat);
-			drawModelExecute(ModelRender, _ctx, _state, _info, customBoneToWorld);
+			DrawModelExecute();
 			ModelRender->ForcedMaterialOverride(nullptr);
 		}
 	}
@@ -246,7 +261,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 		RenderView->SetBlend(cham.primaryColor.a / 255.f * alpha);
 
 		ModelRender->ForcedMaterialOverride(baseMat);
-		drawModelExecute(ModelRender, _ctx, _state, _info, customBoneToWorld);
+		DrawModelExecute();
 		ModelRender->ForcedMaterialOverride(nullptr);
 	}
 
@@ -264,7 +279,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 		RenderView->SetBlend(cham.secondaryColor.a / 255.f * alpha);
 
 		ModelRender->ForcedMaterialOverride(glowMat);
-		drawModelExecute(ModelRender, _ctx, _state, _info, customBoneToWorld);
+		DrawModelExecute();
 		ModelRender->ForcedMaterialOverride(nullptr);
 	}
 

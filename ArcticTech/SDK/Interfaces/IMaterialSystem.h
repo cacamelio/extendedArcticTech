@@ -227,7 +227,7 @@ public:
     virtual bool                    NeedsFullFrameBufferTexture(bool bCheckSpecificToThisFrame = true) = 0;
     virtual bool                    NeedsSoftwareSkinning(void) = 0;
     virtual void                    AlphaModulate(float alpha) = 0;
-    virtual void                    ColorModulate(float r, float g, float b) = 0;
+    virtual void                    _ColorModulate(float r, float g, float b) = 0;
     virtual void                    SetMaterialVarFlag(MaterialVarFlags_t flag, bool on) = 0;
     virtual bool                    GetMaterialVarFlag(MaterialVarFlags_t flag) const = 0;
     virtual void                    GetReflectivity(Vector& reflect) = 0;
@@ -258,7 +258,7 @@ public:
     virtual int                     GetReferenceCount() const = 0;
 
     void ColorModulate(const Color& clr) {
-        ColorModulate(clr.r / 255.f, clr.g / 255.f, clr.b / 255.f);
+        _ColorModulate(clr.r / 255.f, clr.g / 255.f, clr.b / 255.f);
     }
 };
 

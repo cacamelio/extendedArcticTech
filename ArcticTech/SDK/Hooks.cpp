@@ -15,7 +15,6 @@
 #include "../Features/Visuals/World.h"
 #include "../Features/Visuals/GlovesChanger.h"
 #include "../Features/Visuals/GrenadePrediction.h"
-#include "../Features/Visuals/Indicators.h"
 #include "../Features/Misc/Prediction.h"
 #include "../Features/AntiAim/AntiAim.h"
 #include "../Features/RageBot/LagCompensation.h"
@@ -120,7 +119,6 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	NadePrediction.Draw();
 	AutoPeek->Draw();
 	World->Crosshair();
-	Indicators->Draw();
 
 	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
 		callback.func();
@@ -1064,7 +1062,7 @@ bool __fastcall hkInterpolateViewmodel(CBaseViewModel* vm, void* edx, float curT
 
 	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = GlobalVars->tickcount; // fix lag while defensive
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = EnginePrediction->tickcount(); // fix lag while defensive
 	auto result = oInterpolateViewmodel(vm, edx, curTime);
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
 

@@ -261,6 +261,10 @@ DXImage& CWeaponIcon::GetIcon(int weapon_id) {
 		return weap_knife_widowmaker;
 	case SkeletonKnife:
 		return weap_knife_skeleton;
+	case Molotov:
+		return weap_molotov;
+	case IncGrenade:
+		return weap_incgrenade;
 	default:
 		break;
 	}
