@@ -51,3 +51,10 @@ uintptr_t CMemory::ToAbsolute(const uintptr_t at) {
 	const int relative = *reinterpret_cast<int*>(at);
 	return at + relative + sizeof(int);
 }
+
+void CMemory::BytePatch(void* address, std::vector<unsigned char> bytes) {
+	unsigned long org_prot;
+	VirtualProtect(address, bytes.size(), PAGE_EXECUTE_READWRITE, &org_prot);
+	memcpy(address, bytes.data(), bytes.size());
+	VirtualProtect(address, bytes.size(), org_prot, &org_prot);
+}

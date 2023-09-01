@@ -17,7 +17,6 @@ typedef void(__fastcall* tPaintTraverse)(IPanel*, void*, unsigned int, bool, boo
 typedef void(__fastcall* tDoPostScreenEffects)(IClientMode*, void*, CViewSetup*);
 typedef bool(__fastcall* tIsPaused)(IVEngineClient*, void*);
 typedef void(__thiscall* tDrawModelExecute)(IVModelRender*, void*, const DrawModelState_t&, const ModelRenderInfo_t&, matrix3x4_t*);
-typedef int(__fastcall* tGetBool)(ConVar*, void*);
 typedef void(__fastcall* tFrameStageNotify)(IBaseClientDLL*, void*, EClientFrameStage);
 typedef void(__fastcall* tRunCommand)(IPrediction*, void*, CBasePlayer*, CUserCmd*, IMoveHelper*);
 typedef void(__fastcall* tUpdateClientSideAnimation)(CBasePlayer*, void*);

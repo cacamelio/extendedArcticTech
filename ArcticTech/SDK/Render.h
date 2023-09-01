@@ -29,7 +29,8 @@ enum class EDrawType : int
     WTEXT,
     IMAGE,
     CLIP,
-    SETANTIALIAS
+    SETANTIALIAS,
+    BLUR
 };
 
 struct Vertex {
@@ -154,6 +155,14 @@ struct image_command_t {
     {}
 };
 
+struct blur_command_t {
+    Vector2 blurBegin;
+    Vector2 blurEnd;
+    float borderRadius;
+    float blurRadius;
+    Color blurColor;
+};
+
 struct DrawCommand_t {
     DrawCommand_t(const EDrawType nType, std::any&& _object) :
         type(nType), object(std::move(_object)) { }
@@ -200,6 +209,9 @@ class CRender
         DWORD srcblend;
         DWORD destblend;
     } state_backup;
+
+    IDirect3DPixelShader9* blurShader = nullptr;
+    ID3DXConstantTable* constantTable = nullptr;
 public:
     RECT clipRect;
     bool bDeadZone = false;
@@ -226,6 +238,7 @@ public:
     void                Circle3DGradient(const Vector& center, float radius, Color color, bool reverse = false);
     void                GlowCircle(const Vector2& center, float radius, Color color);
     void                GlowCircle2(const Vector2& center, float radius, Color centerColor, Color edgeColor);
+    void                Blur(const Vector2& start, const Vector2& end, float borderRadius = 0.f, float blurWeight = 8.f, Color multiplyColor = Color());
 
     void                AddFontFromMemory(void* file, unsigned int size);
     D3DXFont*           LoadFont(const std::string& fontname, int size, int weight = 400, int flags = CLEARTYPE_QUALITY);

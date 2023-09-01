@@ -21,6 +21,12 @@ struct Vec4 {
 	float x, y, z, w;
 };
 
+struct QuadVertex
+{
+	float x, y, z, rhw = 1.f;
+};
+#define FVF_QUADVERTEX (D3DFVF_XYZRHW | D3DFVF_TEX1) // Flexible Vertex Format
+
 std::wstring utf8_convert(const std::string& str) {
 	int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.length()), nullptr, 0);
 	std::wstring result(size_needed, 0);
@@ -57,6 +63,27 @@ void CRender::Init(IDirect3DDevice9* dev) {
 	device->GetRenderState(D3DRS_ALPHABLENDENABLE, &state_backup.alphablend);
 	device->GetRenderState(D3DRS_SRCBLEND, &state_backup.srcblend);
 	device->GetRenderState(D3DRS_DESTBLEND, &state_backup.destblend);
+
+	ID3DXBuffer* buf = nullptr;
+	ID3DXBuffer* errors = nullptr;
+
+	std::ifstream shader_f("blur_shader.hlsl");
+	std::stringstream sbuf;
+	sbuf << shader_f.rdbuf();
+	shader_f.close();
+
+	std::string shader_src = sbuf.str();
+
+	D3DXCompileShader(shader_src.c_str(), shader_src.size(), NULL, NULL, "main", "ps_3_0", 0, &buf, &errors, &constantTable);
+
+	if (!buf) {
+		char* error = new char[errors->GetBufferSize()];
+		memcpy(error, errors->GetBufferPointer(), errors->GetBufferSize());
+
+		return;
+	}
+
+	device->CreatePixelShader(reinterpret_cast<DWORD*>(buf->GetBufferPointer()), &blurShader);
 
 	renderInitialized = true;
 }
@@ -282,6 +309,63 @@ void CRender::RenderDrawData() {
 			device->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, object);
 			device->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, object);
 			break;
+		}
+		case EDrawType::BLUR: {
+			static IDirect3DSurface9* rtBackup = nullptr;
+			static IDirect3DTexture9* blurTexture = nullptr;
+			static int backbufferWidth = 0;
+			static int backbufferHeight = 0;
+
+			const auto& object = std::any_cast<blur_command_t>(data.object);
+
+			IDirect3DSurface9* backBuffer;
+			device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer);
+			D3DSURFACE_DESC desc;
+			backBuffer->GetDesc(&desc);
+
+			if (backbufferWidth != desc.Width || backbufferHeight != desc.Height)
+			{
+				if (blurTexture)
+					blurTexture->Release();
+
+				backbufferWidth = desc.Width;
+				backbufferHeight = desc.Height;
+				device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &blurTexture, nullptr);
+			}
+
+			device->GetRenderTarget(0, &rtBackup);
+
+			{
+				IDirect3DSurface9* surface;
+				blurTexture->GetSurfaceLevel(0, &surface);
+				device->StretchRect(backBuffer, NULL, surface, NULL, D3DTEXF_NONE);
+				device->SetRenderTarget(0, surface);
+				surface->Release();
+			}
+
+			backBuffer->Release();
+
+			//device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+			//device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+
+			device->SetPixelShader(blurShader);
+
+			constantTable->SetFloat(device, "screen_width", backbufferWidth);
+			constantTable->SetFloat(device, "screen_height", backbufferHeight);
+
+			D3DXVECTOR3 pos(0, 0, 0);
+			sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
+			sprite->Flush();
+			device->SetTexture(0, 0);
+
+			device->SetRenderTarget(0, rtBackup);
+			rtBackup->Release();
+
+			device->SetPixelShader(nullptr);
+
+			sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
+			sprite->Flush();
+			device->SetTexture(0, 0);
 		}
 		}
 	};
@@ -554,6 +638,10 @@ void CRender::GlowCircle2(const Vector2& center, float radius, Color centerColor
 	vertex[segments] = Vertex(center.x + radius, center.y, edgeColor);
 
 	vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLEFAN, segments - 1, vertex)));
+}
+
+void CRender::Blur(const Vector2& start, const Vector2& end, float borderRadius, float blurWeight, Color multiplyColor) {
+	vecDrawData.emplace_back(DrawCommand_t(EDrawType::BLUR, blur_command_t(start, end, borderRadius, blurWeight, multiplyColor)));
 }
 
 void CRender::AddFontFromMemory(void* file, unsigned int size) {

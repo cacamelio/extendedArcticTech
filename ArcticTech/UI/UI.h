@@ -277,7 +277,7 @@ public:
 	void			SetupUI();
 	void			Release();
 	void			Draw();
-	LRESULT			WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	bool			WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	CMenuTab*		AddTab(const std::string& tab, DXImage icon);
 	CMenuGroupbox*	AddGroupBox(const std::string& tab, const std::string& groupbox, float relative_size = 1.f, int column = -1);

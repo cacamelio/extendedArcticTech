@@ -160,6 +160,7 @@ void CLagCompensation::OnNetUpdate() {
 					NetMessages->SendNetMessage((SharedVoiceData_t*)&msg);
 				}
 			}
+
 			while (records.size() > 64) {
 				records.pop_front();
 			}

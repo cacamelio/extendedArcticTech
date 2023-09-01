@@ -50,9 +50,9 @@ LRESULT CALLBACK hkWndProc(HWND Hwnd, UINT Message, WPARAM wParam, LPARAM lParam
 
 		Cheat.KeyStates[wParam] = !Cheat.KeyStates[wParam];
 	}
-	
-	if (Menu->IsOpened())
-		Menu->WndProc(Hwnd, Message, wParam, lParam);
+
+	if (Menu->IsOpened() && Menu->WndProc(Hwnd, Message, wParam, lParam))
+		return 0;
 
 	return CallWindowProc(oWndProc, Hwnd, Message, wParam, lParam);
 }
@@ -122,8 +122,6 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
 		callback.func();
-
-	InputSystem->EnableInput(!Menu->IsOpened());
 
 	Render->EndFrame();
 
@@ -257,7 +255,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			ctx.lc_exploit_shift = cmd->command_number;
 
 		ctx.shifted_commands.emplace_back(cmd->command_number);
-		ctx.sented_commands.emplace_back(cmd->command_number);
+		if (bSendPacket)
+			ctx.sented_commands.emplace_back(cmd->command_number);
 		ctx.teleported_last_tick = true;
 
 		verified->m_cmd = *cmd;
@@ -369,7 +368,21 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AntiAim->LegMovement();
 
 	bSendPacket = ctx.send_packet;
-	ctx.sented_commands.emplace_back(cmd->command_number);
+	if (bSendPacket) {
+		ctx.sented_commands.emplace_back(cmd->command_number);
+	} else {
+		auto net_channel = ClientState->m_NetChannel;
+
+		if (net_channel->m_nChokedPackets > 0 && !(net_channel->m_nChokedPackets % 4))
+		{
+			auto backup_choke = net_channel->m_nChokedPackets;
+			net_channel->m_nChokedPackets = 0;
+			net_channel->SendDatagram();
+			--net_channel->m_nOutSequenceNr;
+			net_channel->m_nChokedPackets = backup_choke;
+		}
+	}
+
 	ctx.teleported_last_tick = false;
 	ctx.last_tickbase = Cheat.LocalPlayer->m_nTickBase();
 
@@ -529,16 +542,6 @@ void __fastcall hkDrawModelExecute(IVModelRender* thisptr, void* edx, void* ctx,
 		return;
 
 	oDrawModelExecute(thisptr, ctx, state, pInfo, pCustomBoneToWorld);
-}
-
-int __fastcall hkGetBool(ConVar* thisptr, void* edx) {
-	static tGetBool oGetBool = (tGetBool)Hooks::ConVarVMT->GetOriginal(13);
-	static void* cameraThink = Utils::PatternScan("client.dll", "85 C0 75 30 38 87");
-
-	if (_ReturnAddress() == cameraThink)
-		return 1;
-
-	return oGetBool(thisptr, edx);
 }
 
 void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFrameStage stage) {
@@ -1083,7 +1086,6 @@ void Hooks::Initialize() {
 	PanelVMT = new VMT(VPanel);
 	EngineVMT = new VMT(EngineClient);
 	ModelRenderVMT = new VMT(ModelRender);
-	ConVarVMT = new VMT(cvars.sv_cheats);
 	ClientVMT = new VMT(Client);
 	PredictionVMT = new VMT(Prediction);
 	ModelCacheVMT = new VMT(MDLCache);
@@ -1104,7 +1106,6 @@ void Hooks::Initialize() {
 	EngineVMT->Hook(90, hkIsPaused);
 	EngineVMT->Hook(93, hkIsHLTV);
 	ModelRenderVMT->Hook(21, hkDrawModelExecute);
-	ConVarVMT->Hook(13, hkGetBool);
 	ClientVMT->Hook(37, hkFrameStageNotify);
 	ClientVMT->Hook(11, hkHudUpdate);
 	ClientVMT->Hook(22, hkCHLCCreateMove);
@@ -1145,6 +1146,8 @@ void Hooks::Initialize() {
 	oInterpolateViewmodel = HookFunction<tInterpolateViewmodel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateViewmodel);
 
 	EventListner->Register();
+
+	Memory->BytePatch(Utils::PatternScan("client.dll", "75 30 38 87"), { 0xEB }); // CameraThink sv_cheats check skip
 }
 
 void Hooks::End() {
@@ -1163,7 +1166,6 @@ void Hooks::End() {
 	EngineVMT->UnHook(90);
 	EngineVMT->UnHook(93);
 	ModelRenderVMT->UnHook(21);
-	ConVarVMT->UnHook(13);
 	ClientVMT->UnHook(37);
 	ClientVMT->UnHook(11);
 	ClientVMT->UnHook(22);

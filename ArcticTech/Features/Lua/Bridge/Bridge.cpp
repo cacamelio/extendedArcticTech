@@ -474,6 +474,10 @@ namespace api {
 			return Render->LoadImageFromMemory(mem.data(), mem.size(), size.to_vec2());
 		}
 
+		void blur(Vector start, Vector end, sol::optional<float> borderRadius, sol::optional<float> blurWeight, sol::optional<Color> blurColor) {
+			Render->Blur(start.to_vec2(), end.to_vec2(), borderRadius.value_or(0.f), blurWeight.value_or(8.f), blurColor.value_or(Color()));
+		}
+
 		void line(Vector start, Vector end, Color col) {
 			Render->Line(start.to_vec2(), end.to_vec2(), col);
 		}
@@ -1191,9 +1195,9 @@ namespace api {
 
 			for (auto& p : kv) {
 				if (p.second.get_type() == sol::type::number)
-					mat_kv->SetFloat(p.first.as<std::string>().c_str(), p.second.as<float>());
+					mat_kv->SetFloat(((std::string)"$" + p.first.as<std::string>()).c_str(), p.second.as<float>());
 				else if (p.second.get_type() == sol::type::string)
-					mat_kv->SetString(p.first.as<std::string>().c_str(), p.second.as<std::string>().c_str());
+					mat_kv->SetString(((std::string)"$" + p.first.as<std::string>()).c_str(), p.second.as<std::string>().c_str());
 			}
 
 			return MaterialSystem->CreateMaterial(mat_name.c_str(), mat_kv);
@@ -1203,12 +1207,39 @@ namespace api {
 			return MaterialSystem->FindMaterial(mat_name.c_str());
 		}
 
-		void draw_chams() {
+		void draw_chams(IMaterial* material) {
+			ModelRender->ForcedMaterialOverride(material);
 			Chams->DrawModelExecute();
+			ModelRender->ForcedMaterialOverride(nullptr);
 		}
 
-		void override_material(IMaterial* material) {
-			ModelRender->ForcedMaterialOverride(material);
+		Color mat_color_modulate(IMaterial* self, sol::optional<Color> newColor) {
+			if (newColor.has_value()) {
+				self->ColorModulate(newColor.value());
+			}
+			else {
+				float r, g, b;
+				self->GetColorModulation(&r, &g, &b);
+				return Color(r * 255.f, g * 255.f, b * 255.f);
+			}
+		}
+
+		float mat_alpha_modulate(IMaterial* self, sol::optional<float> newAlpha) {
+			if (newAlpha.has_value()) {
+				self->AlphaModulate(newAlpha.value());
+			}
+			else {
+				return self->GetAlphaModulation();
+			}
+		}
+
+		bool mat_var_flag(IMaterial* self, uint32_t varflag, sol::optional<bool> newValue) {
+			if (newValue.has_value()) {
+				self->SetMaterialVarFlag((MaterialVarFlags_t)varflag, newValue.value());
+			}
+			else {
+				return self->GetMaterialVarFlag((MaterialVarFlags_t)varflag);
+			}
 		}
 	}
 }
@@ -1495,12 +1526,9 @@ void CLua::Setup() {
 
 	lua.new_usertype<IMaterial>("material_t", sol::no_constructor,
 		"get_name", &IMaterial::GetName,
-		"get_color_modulation", &IMaterial::GetColorModulation,
-		"color_modulate", &IMaterial::_ColorModulate,
-		"get_alpha_modulation", &IMaterial::GetAlphaModulation,
-		"alpha_modulate", &IMaterial::AlphaModulate,
-		"get_material_flag", &IMaterial::GetMaterialVarFlag,
-		"material_flag", &IMaterial::SetMaterialVarFlag,
+		"color_modulate", api::materials::mat_color_modulate,
+		"alpha_modulate", api::materials::mat_alpha_modulate,
+		"var_flag", api::materials::mat_var_flag,
 		"increment_ref_count", &IMaterial::IncrementReferenceCount,
 		"decrement_ref_count", &IMaterial::DecrementReferenceCount
 	);
@@ -1582,6 +1610,7 @@ void CLua::Setup() {
 		"load_font", api::render::load_font,
 		"load_image", api::render::load_image,
 		"measure_text", api::render::measure_text,
+		"blur", api::render::blur,
 		"line", api::render::line,
 		"poly", api::render::poly,
 		"poly_line", api::render::poly_line,
@@ -1648,8 +1677,7 @@ void CLua::Setup() {
 	lua.create_named_table("materials", 
 		"create", api::materials::create,
 		"find", api::materials::find,
-		"draw_chams", api::materials::draw_chams,
-		"override_material", api::materials::override_material
+		"draw_chams", api::materials::draw_chams
 	);
 
 	RefreshScripts();

@@ -69,7 +69,12 @@ void CAnimationSystem::OnCreateMove() {
 		if (AntiAim->desyncing)
 			animstate->flGoalFeetYaw = AntiAim->realAngle;
 
-		Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw) / 120.f);
+		float maxDelta = Cheat.LocalPlayer->GetMaxDesyncDelta();
+		float goalFeetYawDelta = std::clamp(Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw), -maxDelta, maxDelta);
+
+		animstate->flGoalFeetYaw = Math::AngleNormalize(animstate->flEyeYaw - goalFeetYawDelta);
+
+		Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (goalFeetYawDelta / 120.f);
 
 		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flGoalFeetYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();

@@ -157,8 +157,24 @@ void CMenu::Draw() {
 
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-LRESULT CMenu::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    return ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
+bool CMenu::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
+
+    switch (msg)
+    {
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_MOUSEMOVE:
+    case WM_MOUSEWHEEL:
+    case WM_MOUSEHWHEEL:
+        return true;
+    default:
+        return false;
+    }
 }
 
 void CMenu::RecalculateGroupboxes() {

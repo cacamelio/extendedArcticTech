@@ -12,6 +12,7 @@ public:
 	void		DumpCallAddress(const void* returnAddress, const char* functionName);
 	std::string	ModuleName(const void* address);
 	uintptr_t	ToAbsolute(const uintptr_t at);
+	void		BytePatch(void* address, std::vector<unsigned char> bytes);
 };
 
 extern CMemory* Memory;
