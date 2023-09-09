@@ -77,10 +77,6 @@ void CPrediction::Start(CUserCmd* cmd) {
 	Prediction->FinishMove(Cheat.LocalPlayer, cmd, &moveData);
 	MoveHelper->ProcessImpacts();
 
-	GameMovement->FinishTrackPredictionErrors(Cheat.LocalPlayer);
-	MoveHelper->SetHost(nullptr);
-	GameMovement->Reset();
-
 	Prediction->bInPrediction = bOldInPrediction;
 	Prediction->bIsFirstTimePredicted = bOldIsFirstPrediction;
 
@@ -118,6 +114,10 @@ void CPrediction::End() {
 	*Cheat.LocalPlayer->GetCurrentCommand() = nullptr;
 	*predictionRandomSeed = -1;
 	*predictionEntity = nullptr;
+
+	GameMovement->FinishTrackPredictionErrors(Cheat.LocalPlayer);
+	MoveHelper->SetHost(nullptr);
+	GameMovement->Reset();
 }
 
 void CPrediction::PatchAttackPacket(CUserCmd* cmd, bool restore)

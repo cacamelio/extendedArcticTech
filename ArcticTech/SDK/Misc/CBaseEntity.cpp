@@ -97,3 +97,12 @@ void CBaseEntity::SetCollisionBounds(Vector mins, Vector maxs) {
 
 	setCollisionBounds(collidable, mins, maxs);
 }
+
+CBasePlayer* CBaseGrenade::GetThrower() {
+	CBasePlayer* result = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(m_hThrower()));
+
+	if (!result)
+		result = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(m_hOwnerEntity()));
+
+	return result;
+}

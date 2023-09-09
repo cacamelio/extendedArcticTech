@@ -47,7 +47,7 @@ void CAutoPeek::CreateMove() {
 
 	if (ctx.cmd->buttons & IN_ATTACK && Cheat.LocalPlayer->GetActiveWeapon()->ShootingWeapon() && Cheat.LocalPlayer->GetActiveWeapon()->CanShoot())
 		returning = true;
-	else if (distance_sqr < 0.25f)
+	else if (distance_sqr < 1.f)
 		returning = false;
 
 	if (returning) {

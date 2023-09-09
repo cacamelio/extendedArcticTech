@@ -8,17 +8,18 @@
 #include "../../Utils/Console.h"
 #include "../RageBot/AnimationSystem.h"
 #include "../Lua/Bridge/Bridge.h"
+#include "../Visuals/ESP.h"
 
 void CAntiAim::FakeLag() {
 	static ConVar* sv_maxusrcmdprocessticks = CVar->FindVar("sv_maxusrcmdprocessticks");
 
-	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || Cheat.freezetime)
+	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || GameRules()->IsFreezePeriod())
 		return;
 
 	if (!ctx.active_weapon)
 		return;
 
-	if (ctx.active_weapon->IsGrenade() && EnginePrediction->m_fThrowTime > 0) {
+	if (ctx.active_weapon->IsGrenade() && (EnginePrediction->m_fThrowTime > 0 || reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_flThrowTime() > 0.f || abs(ctx.grenade_throw_tick - ctx.cmd->command_number) < 7)) {
 		ctx.send_packet = true;
 		return;
 	}
@@ -66,7 +67,7 @@ void CAntiAim::FakeLag() {
 
 	static bool hasPeeked = false;
 
-	if (ctx.is_peeking) {
+	if (ctx.is_peeking && !ctx.fake_duck) {
 		if (!hasPeeked) {
 			hasPeeked = true;
 
@@ -82,16 +83,16 @@ void CAntiAim::FakeLag() {
 void CAntiAim::Angles() {
 	desyncing = false;
 
-	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || Cheat.freezetime)
+	if (GameRules()->IsFreezePeriod() || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP)
 		return;
 
 	if (!ctx.active_weapon)
 		return;
 
-	if (ctx.active_weapon->IsGrenade() && EnginePrediction->m_fThrowTime > 0)
+	if (ctx.active_weapon->IsGrenade() && (EnginePrediction->m_fThrowTime > 0 || reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_flThrowTime() > 0.f || abs(ctx.grenade_throw_tick - ctx.cmd->command_number) < 7))
 		return;
 
-	if (!ctx.active_weapon->IsGrenade() && (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->CanShoot()))
+	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && ctx.cmd->buttons & IN_ATTACK)
 		return;
 
 	target = GetNearestTarget();
@@ -210,7 +211,7 @@ CBasePlayer* CAntiAim::GetNearestTarget() {
 		if (!pl->IsPlayer() || pl->IsTeammate() || !pl->IsAlive())
 			continue;
 
-		if (GlobalVars->curtime - pl->m_flSimulationTime() > 5.f) // old dormant
+		if (EnginePrediction->curtime() - ESPInfo[i].m_flLastUpdateTime > 5.f) // old dormant
 			continue;
 
 		QAngle angleToPlayer = Math::VectorAngles(pl->m_vecOrigin() - eyePos);
@@ -285,15 +286,19 @@ void CAntiAim::SlowWalk() {
 }
 
 void CAntiAim::FakeDuck() {
-	if (!Cheat.LocalPlayer || Cheat.LocalPlayer->m_iHealth() == 0 || !config.antiaim.misc.fake_duck->get())
+	ctx.fake_duck = false;
+
+	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) || !config.antiaim.misc.fake_duck->get())
 		return;
 
 	ctx.cmd->buttons |= IN_BULLRUSH;
 
-	if (ClientState->GetChokedCommands() < 7)
+	if (ClientState->m_nChokedCommands <= 7 && !Exploits->IsShifting())
 		ctx.cmd->buttons &= ~IN_DUCK;
 	else
 		ctx.cmd->buttons |= IN_DUCK;
+
+	ctx.fake_duck = true;
 }
 
 void CAntiAim::LegMovement() {
@@ -334,10 +339,10 @@ bool CAntiAim::IsPeeking() {
 
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	if (velocity.LengthSqr() < 256.f)
+	if (velocity.LengthSqr() < 128.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 21.f;
+	Vector move_factor = velocity.Normalized() * 12.f;
 
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -367,7 +372,7 @@ bool CAntiAim::IsPeeking() {
 
 		Vector target_vel = player->m_vecVelocity();
 
-		Vector enemyShootPos = player->GetShootPosition() + target_vel * GlobalVars->interval_per_tick * 2.f;
+		Vector enemyShootPos = player->GetShootPosition() + target_vel * GlobalVars->interval_per_tick;
 		ctx.active_weapon = player->GetActiveWeapon();
 
 		if (ctx.active_weapon)
@@ -375,7 +380,7 @@ bool CAntiAim::IsPeeking() {
 
 		for (int i = 0; i < 4; i++) {
 			FireBulletData_t data;
-			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 4.f) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
 				peeked = true;
 				break;
 			}

@@ -232,7 +232,6 @@ public:
 	NETVAR_O(m_isJiggleBonesEnabled, bool, "DT_BaseAnimating", "m_hLightingOrigin", -0x18)
 	NETVAR(moveparent, unsigned long, "DT_BaseEntity", "moveparent")
 	NETVAR(m_hOwnerEntity, unsigned long, "DT_BaseEntity", "m_hOwnerEntity")
-	NETVAR(m_hOwner, unsigned long, "DT_BaseViewModel", "m_hOwner")
 	NETVAR(m_vecMins, Vector, "DT_BaseEntity", "m_vecMins")
 	NETVAR(m_vecMaxs, Vector, "DT_BaseEntity", "m_vecMaxs")
 	NETVAR(m_flC4Blow, float, "DT_PlantedC4", "m_flC4Blow")
@@ -283,6 +282,7 @@ public:
 	NETVAR( m_nAnimationParity, int, "DT_BaseViewModel", "m_nAnimationParity" )
 	NETVAR( m_nModelIndex, int, "DT_BaseViewModel", "m_nModelIndex" )
 	NETVAR( m_hWeapon, int, "DT_BaseViewModel", "m_hWeapon" )
+	NETVAR(m_hOwner, unsigned long, "DT_BaseViewModel", "m_hOwner")
 };
 
 class CEconViewItem : public CBaseEntity {
@@ -378,11 +378,14 @@ public:
 	OFFSET(m_flInfernoSpawnTime, float, 0x20)
 	NETVAR(m_nSmokeEffectTickBegin, int, "DT_SmokeGrenadeProjectile", "m_nSmokeEffectTickBegin")
 	NETVAR_O(GetCreationTime, float, "DT_BaseCSGrenadeProjectile", "m_nExplodeEffectTickBegin", 0x10)
-	NETVAR(m_hThrower, unsigned int, "DT_BaseGrenade", "m_hThrower")
+	NETVAR(m_hThrower, unsigned long, "DT_BaseGrenade", "m_hThrower")
 	NETVAR(m_flThrowTime, float, "DT_BaseCSGrenade", "m_fThrowTime")
 	NETVAR(m_bPinPulled, bool, "DT_BaseCSGrenade", "m_bPinPulled")
+	NETVAR(m_bIsHeldByPlayer, bool, "DT_BaseCSGrenade", "m_bIsHeldByPlayer")
 	NETVAR(m_flThrowStrength, float, "DT_BaseCSGrenade", "m_flThrowStrength")
-	PRED_DESC_MAP(m_bIsHeldByPlayer, bool, "m_bIsHeldByPlayer")
+	NETVAR(m_flNextPrimaryAttack, float, "DT_BaseCombatWeapon", "m_flNextPrimaryAttack")
+
+	CBasePlayer* GetThrower();
 };
 
 class CCascadeLight : public CBaseEntity {

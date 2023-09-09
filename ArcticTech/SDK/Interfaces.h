@@ -30,6 +30,7 @@
 #include "Interfaces/IEffects.h"
 #include "Interfaces/NetworkStringTable.h"
 #include "Interfaces/ISteamHTTP.h"
+#include "Interfaces/CGameRules.h"
 
 extern IClientEntityList* EntityList;
 extern IVEngineClient*	  EngineClient;

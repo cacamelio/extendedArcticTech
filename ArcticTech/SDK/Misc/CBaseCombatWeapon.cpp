@@ -36,7 +36,7 @@ bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
 	if (!owner)
 		return false;
 
-	if (Cheat.freezetime)
+	if (GameRules()->IsFreezePeriod())
 		return false;
 
 	if (owner->m_fFlags() & FL_FROZEN)
@@ -53,7 +53,7 @@ bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
 		tick_base -= ctx.tickbase_shift;
 	const float cur_time = TICKS_TO_TIME(tick_base);
 
-	if (revolver_check && (m_iItemDefinitionIndex() == Revolver && m_flPostponeFireReadyTime() > cur_time))
+	if (revolver_check && m_iItemDefinitionIndex() == Revolver && m_flPostponeFireReadyTime() > cur_time)
 		return false;
 
 	if (cur_time < m_flNextPrimaryAttack() || cur_time < owner->m_flNextAttack())

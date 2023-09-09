@@ -1,4 +1,6 @@
 #include "Misc.h"
+#include "../RageBot/Exploits.h"
+#include "Prediction.h"
 #include "../../Utils/Utils.h"
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Config.h"
@@ -59,5 +61,66 @@ void Miscelleaneus::Clantag()
 		}
 
 		removed = false;
+	}
+}
+
+void Miscelleaneus::FastThrow() {
+	static bool fast_throw_triggred = false;
+	static bool quick_switch_triggered = false;
+
+	if (!config.ragebot.aimbot.doubletap_options->get(3) || !ctx.active_weapon || !ctx.active_weapon->IsGrenade()) {
+		fast_throw_triggred = false;
+		quick_switch_triggered = false;
+		return;
+	}
+
+	CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(ctx.active_weapon);
+
+	float next_attack = max(Cheat.LocalPlayer->m_flNextAttack(), grenade->m_flNextPrimaryAttack());
+
+	if (Exploits->GetExploitType() == CExploits::E_DoubleTap) {
+		Exploits->LC_OverrideTickbase(14);
+		if (next_attack - TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) < TICKS_TO_TIME(8))
+			quick_switch_triggered = true;
+		if (EnginePrediction->m_fThrowTime > 0.f)
+			fast_throw_triggred = true;
+
+		if (quick_switch_triggered)
+			Exploits->LC_OverrideTickbase(7);
+		if (fast_throw_triggred)
+			Exploits->LC_OverrideTickbase(0);
+	}
+
+	if (ctx.grenade_throw_tick + 7 == ctx.cmd->command_number) {
+		CBaseCombatWeapon* best_weapon = nullptr;
+		auto weapons = Cheat.LocalPlayer->m_hMyWeapons();
+		int best_type = WEAPONTYPE_KNIFE;
+		for (int i = 0; i < MAX_WEAPONS; i++) {
+			auto weap = weapons[i];
+			if (weap == INVALID_EHANDLE_INDEX)
+				break;
+
+			CBaseCombatWeapon* weapon = reinterpret_cast<CBaseCombatWeapon*>(EntityList->GetClientEntityFromHandle(weap));
+
+			if (!weapon)
+				continue;
+
+			CCSWeaponData* weap_info = weapon->GetWeaponInfo();
+
+			if (!weap_info)
+				continue;
+
+			if (weap_info->nWeaponType >= WEAPONTYPE_SUBMACHINEGUN && weap_info->nWeaponType <= WEAPONTYPE_MACHINEGUN) {
+				best_weapon = weapon;
+				best_type = weap_info->nWeaponType;
+			}
+			else if (weap_info->nWeaponType == WEAPONTYPE_PISTOL && best_type == WEAPONTYPE_KNIFE) {
+				best_weapon = weapon;
+				best_type = weap_info->nWeaponType;
+			}
+		}
+
+		if (best_weapon)
+			ctx.cmd->weaponselect = best_weapon->EntIndex();
 	}
 }

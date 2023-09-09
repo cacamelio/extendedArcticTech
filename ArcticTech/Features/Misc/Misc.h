@@ -2,4 +2,5 @@
 
 namespace Miscelleaneus {
 	void Clantag();
+	void FastThrow();
 }

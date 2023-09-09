@@ -20,6 +20,15 @@ struct ESPInfo_t {
 	float			m_flAlpha = 0.f;
 	float			m_flLastUpdateTime = 0.f;
 	int				m_iActiveWeapon;
+
+	void reset() {
+		m_pEnt = nullptr;
+		m_vecOrigin = Vector();
+		m_nHealth = 0;
+		m_flLastUpdateTime = 0.f;
+		m_flAlpha = 0.f;
+		m_bValid = false;
+	}
 };
 
 enum SharedESPFlags {

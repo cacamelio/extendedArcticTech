@@ -11,10 +11,10 @@ struct CheatState_t {
 	bool KeyStates[1024];
 	bool Unloaded = false;
 	QAngle thirdpersonAngles;
+	bool holdLocalAngles = false; // fakeduck anim fix
 	float ServerTime = 0.f;
 	float weaponInaccuracy = 0.f;
 	float weaponSpread = 0.f;
-	bool freezetime = false;
 	int tickbaseshift = 0;
 };
 
@@ -41,16 +41,18 @@ struct Ctx_t {
 	bool update_remove_blood = false;
 	Vector local_sent_origin;
 	bool breaking_lag_compensation = false;
+	bool should_buy = false;
 
 	CBaseCombatWeapon* active_weapon = nullptr;
 	CCSWeaponData* weapon_info = nullptr;
 	Vector shoot_position;
+	bool fake_duck = false;
+	int grenade_throw_tick = 0;
 
-	bool lc_exploit = false; // for tickbase correction
-	bool lc_exploit_prev = false;
-	int lc_exploit_charge = 0;
-	int lc_exploit_shift = 0;
-	int last_tickbase = 0;
+	int lc_exploit = 0; // for tickbase correction
+	int lc_exploit_prev = false;
+	int lc_exploit_change = 0;
+	int lc_exploit_diff = 0;
 
 	std::vector<int> shifted_commands;
 	std::vector<int> sented_commands;
@@ -65,6 +67,8 @@ struct Ctx_t {
 		breaking_lag_compensation = false;
 		active_weapon = nullptr;
 		weapon_info = nullptr;
+		grenade_throw_tick = 0;
+		fake_duck = 0;
 	}
 };
 
@@ -91,6 +95,7 @@ struct CVars {
 	ConVar* weapon_debug_spread_show;
 	ConVar* r_drawsprites;
 	ConVar* zoom_sensitivity_ratio_mouse;
+	ConVar* mp_damage_headshot_only;
 };
 
 extern CheatState_t Cheat;

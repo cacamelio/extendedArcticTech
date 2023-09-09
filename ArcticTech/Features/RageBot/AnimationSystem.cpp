@@ -47,34 +47,29 @@ void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 void CAnimationSystem::OnCreateMove() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
-	auto backup_curtime = GlobalVars->curtime;
-	auto backup_tickcount = GlobalVars->tickcount;
-	GlobalVars->curtime = EnginePrediction->curtime();
-	GlobalVars->tickcount = EnginePrediction->tickcount();
+	//if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
+	//	const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
+	//	const float gravity = cvars.sv_gravity->GetFloat();
+	//	const float speed = Cheat.LocalPlayer->m_flFallVelocity();
 
-	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
-		const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-		const float gravity = cvars.sv_gravity->GetFloat();
-		const float speed = Cheat.LocalPlayer->m_flFallVelocity();
-
-		animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
-	}
+	//	animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
+	//}
 
 	for (auto cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
+	Cheat.LocalPlayer->UpdateAnimationState(animstate, ctx.cmd->viewangles);
+
 	if (ctx.send_packet) {
-		Cheat.LocalPlayer->UpdateAnimationState(animstate, Cheat.thirdpersonAngles);
+		//if (AntiAim->desyncing)
+		//	animstate->flGoalFeetYaw = AntiAim->realAngle;
 
-		if (AntiAim->desyncing)
-			animstate->flGoalFeetYaw = AntiAim->realAngle;
+		//float maxDelta = Cheat.LocalPlayer->GetMaxDesyncDelta();
+		//float goalFeetYawDelta = std::clamp(Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw), -maxDelta, maxDelta);
 
-		float maxDelta = Cheat.LocalPlayer->GetMaxDesyncDelta();
-		float goalFeetYawDelta = std::clamp(Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw), -maxDelta, maxDelta);
+		//animstate->flGoalFeetYaw = Math::AngleNormalize(animstate->flEyeYaw - goalFeetYawDelta);
 
-		animstate->flGoalFeetYaw = Math::AngleNormalize(animstate->flEyeYaw - goalFeetYawDelta);
-
-		Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (goalFeetYawDelta / 120.f);
+		//Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (goalFeetYawDelta / 120.f);
 
 		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flGoalFeetYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
@@ -82,11 +77,16 @@ void CAnimationSystem::OnCreateMove() {
 		for (auto cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
 			cb.func(Cheat.LocalPlayer);
 
-		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
-	}
+		//Cheat.LocalPlayer->m_BoneAccessor().m_ReadableBones = 0;
+		//Cheat.LocalPlayer->m_BoneAccessor().m_WritableBones = 0;
 
-	GlobalVars->curtime = backup_curtime;
-	GlobalVars->tickcount = backup_tickcount;
+		//Cheat.LocalPlayer->m_nOcclusionFrame() = 0;
+		//Cheat.LocalPlayer->m_nOcclusionFlags() = 0;
+
+		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
+
+		Cheat.holdLocalAngles = false;
+	}
 }
 
 void CAnimationSystem::UpdateLocalAnimations() {
@@ -111,9 +111,8 @@ void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
 	case FRAME_NET_UPDATE_END:
 		break;
 	case FRAME_RENDER_START:
-		if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive()) {
+		if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive())
 			UpdateLocalAnimations();
-		}
 		break;
 	default:
 		break;
@@ -183,6 +182,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	GlobalVars->framecount = TIME_TO_TICKS(player->m_flSimulationTime());
 
 	memcpy(record->animlayers, player->GetAnimlayers(), 13 * sizeof(AnimationLayer));
+	record->animlayers[12].m_flWeight = 0.f;
 	auto pose_params = player->m_flPoseParameter();
 
 	player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);

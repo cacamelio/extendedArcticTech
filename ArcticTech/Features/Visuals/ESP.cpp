@@ -92,7 +92,10 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 
 	CBasePlayer* player = nullptr;
 	CBasePlayer* moveparent = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(sound_source->moveparent()));
-	CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(sound_source->m_hOwner()));
+	CBasePlayer* owner = nullptr;
+		
+	if (sound_source->IsWeapon())
+		owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(reinterpret_cast<CBaseCombatWeapon*>(sound_source)->m_hOwner()));
 
 	if (sound_source->IsPlayer())
 		player = reinterpret_cast<CBasePlayer*>(sound_source);
@@ -106,7 +109,7 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 	if (!player || player == Cheat.LocalPlayer || !player->m_bDormant() || player->IsTeammate())
 		return;
 
-	if (GlobalVars->realtime - g_LastSharedESPData[player->EntIndex()] < 2.f)
+	if (abs(GlobalVars->realtime - g_LastSharedESPData[player->EntIndex()]) < 0.5f)
 		return;
 
 	Vector origin = sound.vOrigin;
@@ -116,7 +119,6 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 
 	ESPInfo_t& esp_info = ESPInfo[player->EntIndex()];
 
-	//ESPInfo[player->EntIndex()].m_vecOrigin = trace.endpos;
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
 	esp_info.m_bValid = true;
 }
@@ -163,7 +165,7 @@ void ESP::UpdatePlayer(int id) {
 		info.m_bExploiting = false;
 		info.m_bBreakingLagComp = false;
 
-		info.m_vecOrigin.Interpolate(player->m_vecOrigin(), GlobalVars->frametime * 16);
+		info.m_vecOrigin.Interpolate(player->m_vecOrigin(), GlobalVars->frametime * 32);
 	}
 
 	float playerHeight = player->m_vecMaxs().z;
@@ -420,9 +422,9 @@ void ESP::DrawGrenades() {
 		if (strstr(studioModel->szName, "thrown") || classId->m_ClassID == C_BASE_CS_GRENADE_PROJECTILE || classId->m_ClassID == C_MOLOTOV_PROJECTILE || classId->m_ClassID == C_DECOY_PROJECTILE) {
 			int weapId;
 
-			CBasePlayer* thrower = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(ent->m_hThrower()));
+			CBasePlayer* thrower = ent->GetThrower();
 
-			if (thrower && thrower->IsTeammate() && mp_friendlyfire->GetInt() == 0)
+			if (thrower && thrower->IsTeammate() && mp_friendlyfire->GetInt() == 0 && thrower != Cheat.LocalPlayer)
 				continue;
 
 			if (strstr(studioModel->szName, "fraggrenade"))

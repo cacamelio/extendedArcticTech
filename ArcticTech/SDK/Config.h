@@ -43,6 +43,8 @@ struct config_t {
         struct aimbot_t {
             CCheckBox* enabled;
             CComboBox* extrapolation;
+            CCheckBox* dormant_aim;
+            CKeyBind* dormant_aim_key;
             CCheckBox* extended_backtrack;
             CCheckBox* doubletap;
             CKeyBind* doubletap_key;

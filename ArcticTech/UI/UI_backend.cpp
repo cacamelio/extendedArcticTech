@@ -276,7 +276,7 @@ bool CKeyBind::get() {
     if (mode == 2)
         return true;
 
-    if (GetAsyncKeyState(key) & 0x8000 && !EngineClient->Con_IsVisible()) {
+    if (GetAsyncKeyState(key) & 0x8000 && !EngineClient->Con_IsVisible() && EngineClient->IsActiveApp()) {
         if (!pressed_once) {
             pressed_once = true;
             toggled = !toggled;
@@ -290,7 +290,7 @@ bool CKeyBind::get() {
         return toggled;
     }
     else {
-        return GetAsyncKeyState(key) & 0x8000;
+        return (GetAsyncKeyState(key) & 0x8000) && EngineClient->IsActiveApp();
     }
 };
 

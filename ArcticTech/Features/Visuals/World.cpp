@@ -1,13 +1,18 @@
 #include "World.h"
+
+#include <string>
+#include <unordered_map>
+
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
-#include <string>
 #include "../../Utils/Utils.h"
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/AutoWall.h"
 #include "../../Utils/Animation.h"
 
 void CWorld::Modulation() {
+	static std::unordered_map<std::string, Color> original_colors;
+
 	if (!Cheat.InGame)
 		return;
 
@@ -22,25 +27,47 @@ void CWorld::Modulation() {
 
 		if (strstr(material->GetTextureGroupName(), "World")) {
 			if (config.visuals.effects.world_color_enable->get()) {
+				float r, g, b;
+				material->GetColorModulation(&r, &g, &b);
+
+				auto it = original_colors.find(material->GetName());
+				if (it == original_colors.end()) {
+					original_colors.insert({ material->GetName(), Color().as_fraction(r, g, b) });
+					it = original_colors.find(material->GetName());
+				}
+
 				const Color clr = config.visuals.effects.world_color->get();
-				material->ColorModulate(clr);
+				material->ColorModulate(it->second * clr);
 				material->AlphaModulate(clr.a / 255.f);
 			}
 			else {
-				material->ColorModulate(Color());
+				auto it = original_colors.find(material->GetName());
+				if (it != original_colors.end())
+					material->ColorModulate(it->second);
 				material->AlphaModulate(1);
 			}
 		}
 		else if (strstr(material->GetTextureGroupName(), "StaticProp")) {
 			if (config.visuals.effects.props_color_enable->get()) {
+				float r, g, b;
+				material->GetColorModulation(&r, &g, &b);
+
+				auto it = original_colors.find(material->GetName());
+				if (it == original_colors.end()) {
+					original_colors.insert({ material->GetName(), Color().as_fraction(r, g, b) });
+					it = original_colors.find(material->GetName());
+				}
+
 				const Color clr = config.visuals.effects.props_color->get();
-				material->ColorModulate(clr);
+				material->ColorModulate(it->second * clr);
 				material->AlphaModulate(clr.a / 255.f);
 				material->SetMaterialVarFlag(MATERIAL_VAR_TRANSLUCENT, false);
 				cvars.r_DrawSpecificStaticProp->SetInt(0);
 			}
 			else {
-				material->ColorModulate(Color());
+				auto it = original_colors.find(material->GetName());
+				if (it != original_colors.end())
+					material->ColorModulate(it->second);
 				material->AlphaModulate(1);
 			}
 		}

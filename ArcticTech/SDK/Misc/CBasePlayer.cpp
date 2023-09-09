@@ -98,6 +98,11 @@ CUtlVector<matrix3x4_t> CBasePlayer::GetCachedBoneData() {
 }
 
 float CBasePlayer::ScaleDamage(int hitgroup, CCSWeaponData* weaponData, float& damage) {
+	if (hitgroup != HITGROUP_HEAD && cvars.mp_damage_headshot_only->GetInt() > 0) {
+		damage = -1.f;
+		return -1.f;
+	}
+
 	switch (hitgroup)
 	{
 	case HITGROUP_HEAD:

@@ -295,6 +295,7 @@ public:
 
 #define MAX_WEAPONS 64
 #define MAX_VIEWMODELS 2
+#define INVALID_EHANDLE_INDEX	0xFFFFFFFF
 
 class CBasePlayer : public CBaseEntity {
 public:

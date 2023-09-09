@@ -167,7 +167,7 @@ void CResolver::Apply(LagRecord* record) {
 }
 
 void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records) {
-	if (Cheat.freezetime || player->m_fFlags() & FL_FROZEN || !Cheat.LocalPlayer->IsAlive())
+	if (GameRules()->IsFreezePeriod() || player->m_fFlags() & FL_FROZEN || !Cheat.LocalPlayer->IsAlive())
 		return;
 
 	LagRecord* prevRecord = record->prev_record;

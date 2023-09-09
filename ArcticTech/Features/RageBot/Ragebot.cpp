@@ -10,6 +10,7 @@
 #include "../../Utils/Console.h"
 #include "../ShotManager/ShotManager.h"
 #include "../Visuals/Chams.h"
+#include "../Visuals/ESP.h"
 
 void CRagebot::CalcSpreadValues() {
 	for (int i = 0; i < 100; i++) {
@@ -77,7 +78,7 @@ void CRagebot::AutoStop() {
 	Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 	QAngle direction = Math::VectorAngles(vec_speed);
 
-	float target_speed = ctx.active_weapon->MaxSpeed() * 0.25f;
+	float target_speed = ctx.active_weapon->MaxSpeed() * 0.2f;
 
 	if (vec_speed.LengthSqr() < target_speed * target_speed + 9.f && !settings.auto_stop->get(0)) {
 		float cmd_speed = Math::Q_sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
@@ -321,7 +322,7 @@ std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record) {
 	points.reserve(CalcPointsCount());
 
 	for (int hitbox = 0; hitbox < HITBOX_MAX; hitbox++) {
-		if (!hitbox_enabled(hitbox))
+		if (!hitbox_enabled(hitbox) || (cvars.mp_damage_headshot_only->GetInt() > 0 && hitbox != HITBOX_HEAD))
 			continue;
 
 		float max_possible_damage = ctx.weapon_info->iDamage;
@@ -526,7 +527,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 }
 
 void CRagebot::Run() {
-	if (!config.ragebot.aimbot.enabled->get())
+	if (!config.ragebot.aimbot.enabled->get() || !ctx.active_weapon)
 		return;
 
 	AutoRevolver();
@@ -545,10 +546,10 @@ void CRagebot::Run() {
 		return;
 	}
 
-	if (Cheat.LocalPlayer->m_fFlags() & FL_FROZEN)
+	if (Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || GameRules()->IsFreezePeriod())
 		return;
 
-	if (!ctx.active_weapon || ctx.active_weapon->IsGrenade())
+	if (ctx.active_weapon->IsGrenade())
 		return;
 	
 	if (ctx.active_weapon->m_iItemDefinitionIndex() == Taser) {
@@ -560,6 +561,9 @@ void CRagebot::Run() {
 		return;
 
 	settings = GetWeaponSettings(ctx.active_weapon->m_iItemDefinitionIndex());
+
+	if (config.ragebot.aimbot.dormant_aim->get())
+		DormantAimbot();
 
 	doubletap_stop = false;
 
@@ -704,6 +708,8 @@ void CRagebot::Zeusbot() {
 		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant())
 			continue;
 
+		LagRecord* backup_record = LagCompensation->BackupData(player);
+
 		for (auto i = records.rbegin(); i != records.rend(); i = std::next(i)) {
 			const auto record = &*i;
 			if (!LagCompensation->ValidRecord(record)) {
@@ -715,16 +721,17 @@ void CRagebot::Zeusbot() {
 
 			float distance = ((record->m_vecOrigin + (record->m_vecMaxs + record->m_vecMins) * 0.5f) - ctx.shoot_position).LengthSqr();
 
-			if (distance > 170 * 170)
+			if (distance > 165 * 165)
 				continue;
 
-			record->BuildMatrix();
+			memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
+			LagCompensation->BacktrackEntity(record, true, true);
 			const Vector points[]{
-				player->GetHitboxCenter(HITBOX_STOMACH, record->clamped_matrix),
-				player->GetHitboxCenter(HITBOX_CHEST, record->clamped_matrix),
-				player->GetHitboxCenter(HITBOX_UPPER_CHEST, record->clamped_matrix),
-				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM, record->clamped_matrix),
-				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM, record->clamped_matrix)
+				player->GetHitboxCenter(HITBOX_STOMACH),
+				player->GetHitboxCenter(HITBOX_CHEST),
+				player->GetHitboxCenter(HITBOX_UPPER_CHEST),
+				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM),
+				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM)
 			};
 
 			for (const auto& point : points) {
@@ -735,9 +742,9 @@ void CRagebot::Zeusbot() {
 
 				QAngle angle = Math::VectorAngles(point - ctx.shoot_position);
 
-				float hitchance = min(7 / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
+				float hitchance = min(7.f / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
 
-				if (hitchance < 0.6f)
+				if (hitchance < 0.5f)
 					continue;
 
 				if (config.visuals.effects.client_impacts->get()) {
@@ -753,16 +760,18 @@ void CRagebot::Zeusbot() {
 
 				Console->Log(std::format("shot at {} [hc: {}] [bt: {}]", player->GetName(), (int)(hitchance * 100.f), TIME_TO_TICKS(player->m_flSimulationTime() - record->m_flSimulationTime)));
 
+				LagCompensation->BacktrackEntity(backup_record, true, false);
+				delete backup_record;
 				return;
 			}
 		}
+
+		LagCompensation->BacktrackEntity(backup_record, true, false);
+		delete backup_record;
 	}
 }
 
 void CRagebot::AutoRevolver() {
-	if (!ctx.active_weapon)
-		return;
-
 	if (ctx.cmd->buttons & IN_ATTACK)
 		return;
 
@@ -773,12 +782,66 @@ void CRagebot::AutoRevolver() {
 
 	static float next_cock_time = 0.f;
 
-	if (ctx.active_weapon->m_flPostponeFireReadyTime() > TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase())) {
+	if (ctx.active_weapon->m_flPostponeFireReadyTime() > GlobalVars->curtime) {
 		if (GlobalVars->curtime > next_cock_time)
 			ctx.cmd->buttons |= IN_ATTACK;
 	}
 	else {
 		next_cock_time = GlobalVars->curtime + 0.25f;
+	}
+}
+
+void CRagebot::DormantAimbot() {
+	const float inaccuracy_tan = std::tan(EnginePrediction->WeaponInaccuracy());
+
+	if (!ctx.active_weapon->CanShoot() && settings.auto_stop->get(2))
+		return;
+
+	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
+
+		if (!player || !player->m_bDormant() || !player->IsAlive() || player->IsTeammate())
+			continue;
+
+		if (EnginePrediction->curtime() - ESPInfo[i].m_flLastUpdateTime > 5.f)
+			continue;
+
+		Vector shoot_target = player->m_vecOrigin() + Vector(0, 0, 36);
+
+		FireBulletData_t bullet;
+		if (!AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, shoot_target, bullet) || bullet.damage < CalcMinDamage(player))
+			continue;
+
+		float hc = min(7.f / ((ctx.shoot_position - shoot_target).Q_Length() * inaccuracy_tan), 1.f);
+
+		AutoStop();
+		if (hc * 100.f < settings.hitchance->get() || !ctx.active_weapon->CanShoot())
+			continue;
+
+		ctx.cmd->viewangles = Math::VectorAngles_p(shoot_target - ctx.shoot_position) - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
+		ctx.cmd->buttons |= IN_ATTACK;
+
+		if (config.visuals.effects.client_impacts->get()) {
+			for (const auto& impact : bullet.impacts)
+				DebugOverlay->AddBoxOverlay(impact, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(),
+					config.visuals.effects.client_impacts_color->get().r,
+					config.visuals.effects.client_impacts_color->get().g,
+					config.visuals.effects.client_impacts_color->get().b,
+					config.visuals.effects.client_impacts_color->get().a,
+					config.visuals.effects.impacts_duration->get());
+		}
+
+		if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
+			Exploits->ForceTeleport();
+		else if (Exploits->GetExploitType() == CExploits::E_HideShots)
+			Exploits->HideShot();
+		if (!config.antiaim.misc.fake_duck->get())
+			ctx.send_packet = true;
+
+		AutoPeek->returning = true;
+
+		Console->Log(std::format("shot at {} [dmg: {}] [hc: {}%] [da]", player->GetName(), bullet.damage, int(hc * 100)));
+		break;
 	}
 }
 

@@ -55,6 +55,8 @@ void on_export() {};
 void CConfig::Init() {
     add(config.ragebot.aimbot.enabled);
     add(config.ragebot.aimbot.extrapolation);
+    add(config.ragebot.aimbot.dormant_aim);
+    add(config.ragebot.aimbot.dormant_aim_key);
     add(config.ragebot.aimbot.extended_backtrack);
     add(config.ragebot.aimbot.doubletap);
     add(config.ragebot.aimbot.doubletap_key);

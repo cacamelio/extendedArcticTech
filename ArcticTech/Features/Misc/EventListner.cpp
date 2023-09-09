@@ -11,6 +11,7 @@
 #include "../ShotManager/ShotManager.h"
 #include "../Visuals/PreserveKillfeed.h"
 #include "../Lua/Bridge/Bridge.h"
+#include "AutoPeek.h"
 
 CEventListner* EventListner = new CEventListner;
 
@@ -67,7 +68,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			ctx.reset();
 			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
-			config.ragebot.aimbot.peek_assist_keybind->set(false);
+			AutoPeek->returning = false;
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));
@@ -77,46 +78,20 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	}
 	else if (name == "round_start") {
 		LagCompensation->Reset();
-		Cheat.freezetime = true;
-
-		std::string buy_command = "";
-		if (config.misc.miscellaneous.auto_buy->get(0))
-			buy_command += "buy awp; ";
-		if (config.misc.miscellaneous.auto_buy->get(1))
-			buy_command += "buy ssg08; ";
-		if (config.misc.miscellaneous.auto_buy->get(2))
-			buy_command += "buy scar20; buy g3sg1; ";
-		if (config.misc.miscellaneous.auto_buy->get(3))
-			buy_command += "buy deagle; buy revolver; ";
-		if (config.misc.miscellaneous.auto_buy->get(4))
-			buy_command += "buy fn57; buy tec9; ";
-		if (config.misc.miscellaneous.auto_buy->get(5))
-			buy_command += "buy taser; ";
-		if (config.misc.miscellaneous.auto_buy->get(6))
-			buy_command += "buy vesthelm; ";
-		if (config.misc.miscellaneous.auto_buy->get(7))
-			buy_command += "buy smokegrenade; ";
-		if (config.misc.miscellaneous.auto_buy->get(8))
-			buy_command += "buy molotov; buy incgrenade; ";
-		if (config.misc.miscellaneous.auto_buy->get(9))
-			buy_command += "buy hegrenade; ";
-		if (config.misc.miscellaneous.auto_buy->get(10))
-			buy_command += "buy flashbang; ";
-		if (config.misc.miscellaneous.auto_buy->get(11))
-			buy_command += "buy defuser; ";
-
-		if (!buy_command.empty() && Cheat.LocalPlayer && Cheat.LocalPlayer->m_iAccount() >= 1000)
-			EngineClient->ExecuteClientCmd(buy_command.c_str());
+		ctx.should_buy = true;
 
 		//Utils::ForceFullUpdate();
 
 		KillFeed->ClearDeathNotice = true;
 
-		for (int i = 0; i < ClientState->m_nMaxClients; i++)
+		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+			CBasePlayer* pl = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
+			if (pl && pl->IsEnemy() && pl->m_lifeState() == LIFE_DEAD && pl->m_iTeamNum() != 1) {
+				pl->m_iHealth() = 100;
+				pl->m_lifeState() = LIFE_ALIVE;
+			}
 			ESPInfo[i].m_nHealth = 100;
-	}
-	else if (name == "round_freeze_end") {
-		Cheat.freezetime = false;
+		}
 	}
 	else if (name == "bullet_impact") {
 		if (EngineClient->GetPlayerForUserID(event->GetInt("userid")) == EngineClient->GetLocalPlayer() && config.visuals.effects.server_impacts->get() && Cheat.LocalPlayer) {
@@ -126,29 +101,19 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		}
 	}
 	else if (name == "item_equip") {
-		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
+		int pl_id = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(pl_id));
 
 		if (player && player->m_bDormant()) {
-			long new_weapon = event->GetInt("defindex");
-			unsigned long* weapons = player->m_hMyWeapons();
-
-			for (int i = 0; i < MAX_WEAPONS; i++) {
-				unsigned long weapon_handle = weapons[i];
-				CBaseCombatWeapon* weapon = reinterpret_cast<CBaseCombatWeapon*>(EntityList->GetClientEntityFromHandle(weapon_handle));
-
-				if (!weapon)
-					continue;
-
-				if (weapon->m_iItemDefinitionIndex() == new_weapon) {
-					player->m_hActiveWeapon() = weapon_handle;
-					break;
-				}
-			}
+			ESPInfo[pl_id].m_iActiveWeapon = event->GetInt("defindex");
 		}
 	}
 	else if (name == "player_disconnect") {
-		Chams->RemoveShotChams(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
-		LagCompensation->Reset(EngineClient->GetPlayerForUserID(event->GetInt("userid")));
+		int id = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
+		Chams->RemoveShotChams(id);
+		LagCompensation->Reset(id);
+		ESPInfo[id].reset();
+		AnimationSystem->InvalidateInterpolation(id);
 	}
 
 	for (auto& func : Lua->hooks.getHooks(LUA_GAMEEVENTS))

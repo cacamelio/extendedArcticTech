@@ -63,21 +63,6 @@ void CChams::LoadChams() {
 	baseMaterials[MaterialType::Glow]->IncrementReferenceCount();
 }
 
-bool CChams::IsLocalPlayerAttachment(CBaseEntity* entity) {
-	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
-		return false;
-
-	if (EntityList->GetClientEntityFromHandle(entity->moveparent()) == Cheat.LocalPlayer)
-		return true;
-
-	CBaseEntity* owner = EntityList->GetClientEntityFromHandle(entity->m_hOwner());
-
-	if (owner == Cheat.LocalPlayer)
-		return true;
-
-	return false;
-}
-
 void CChams::UpdateSettings() {
 	materials[ClassOfEntity::Enemy].enabled = config.visuals.chams.enemy->get();
 	materials[ClassOfEntity::Enemy].type = config.visuals.chams.enemy_type->get();
@@ -149,7 +134,9 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	else if (isViewModel) {
 		entType = ClassOfEntity::ViewModel;
 	}
-	else if (isWeapon && EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->moveparent()) == Cheat.LocalPlayer) {
+	else if (isWeapon && (EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->moveparent()) == Cheat.LocalPlayer || 
+		EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->m_hOwnerEntity()) == Cheat.LocalPlayer)) 
+	{
 		entType = ClassOfEntity::Attachment;
 	}
 	else if (isArms) {
@@ -224,6 +211,7 @@ void CChams::DrawModel(ChamsMaterial& cham, float alpha, matrix3x4_t* customBone
 		_boneToWorld = customBoneToWorld;
 
 	IMaterial* baseMat = baseMaterials[cham.type == MaterialType::Glow ? MaterialType::Default : cham.type];
+	RenderView->SetColorModulation(1.f, 1.f, 1.f);
 
 	if (cham.addZ) {
 		if (cham.type != MaterialType::GlowOutline) {

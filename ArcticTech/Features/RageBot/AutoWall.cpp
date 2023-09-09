@@ -242,6 +242,7 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 	
 	float currentDistance = 0.f;
 	float maxRange = ctx.weapon_info->flRange;
+	float targetRange = (end - start).LengthSqr();
 
 	int possibleHitsRemaining = 4; 
 	data.damage = ctx.weapon_info->iDamage;
@@ -266,11 +267,14 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 		const float enterSurfPenetrationModifier = enterSurfaceData->game.flPenetrationModifier;
 
 		if (data.enterTrace.fraction == 1.f)
-			break;
+			return !target;
 
 		currentDistance += data.enterTrace.fraction * maxRange;
 
 		data.damage *= std::powf(ctx.weapon_info->flRangeModifier, (currentDistance * 0.002f));
+
+		if (target == nullptr && ((currentDistance * currentDistance) > targetRange))
+			return true;
 
 		if (currentDistance > 3000.f || enterSurfPenetrationModifier < 0.1f)
 			break;

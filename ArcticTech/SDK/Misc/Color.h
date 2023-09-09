@@ -143,6 +143,10 @@ public:
 		return Color((int)(r * other), (int)(g * other), (int)(b * other), (int)a);
 	}
 
+	Color operator*(const Color& other) const {
+		return Color().as_fraction(r * other.r / 65025.f, g * other.g / 65025.f, b * other.b / 65025.f, a * other.a / 65025.f);
+	}
+
 	Color operator+(Color other) const {
 		return Color(min(max(r + other.r, 0), 255), min(max(g + other.g, 0), 255), min(max(b + other.b, 0), 255), min(max(a + other.a, 0), 255));
 	}
@@ -155,11 +159,12 @@ public:
 		*(int*)this = col32;
 	}
 
-	void as_fraction(float r_, float g_, float b_, float a_ = 255.f) {
+	Color& as_fraction(float r_, float g_, float b_, float a_ = 255.f) {
 		r = int(r_ * 255.f + 0.5f);
 		g = int(g_ * 255.f + 0.5f);
 		b = int(b_ * 255.f + 0.5f);
 		a = int(a_ * 255.f + 0.5f);
+		return *this;
 	}
 
 	float* to_fraction() {

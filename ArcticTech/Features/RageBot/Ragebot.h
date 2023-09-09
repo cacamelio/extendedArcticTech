@@ -148,6 +148,7 @@ public:
 	void				Run();
 	void				Zeusbot();
 	void				AutoRevolver();
+	void				DormantAimbot();
 };
 
 extern CRagebot* Ragebot;

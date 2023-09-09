@@ -19,6 +19,7 @@ void Miscelleaneus::AutoStrafe() {
 
 	if (!Cheat.LocalPlayer || !config.misc.movement.auto_strafe->get() || !Cheat.InGame || Cheat.LocalPlayer->m_iHealth() == 0) return;
 	if (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER) return;
+	if (ctx.cmd->buttons & IN_WALK) return;
 
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 	float velocity_len = Cheat.LocalPlayer->m_vecVelocity().Length2D();

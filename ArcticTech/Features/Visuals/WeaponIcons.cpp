@@ -265,6 +265,8 @@ DXImage& CWeaponIcon::GetIcon(int weapon_id) {
 		return weap_molotov;
 	case IncGrenade:
 		return weap_incgrenade;
+	case SmokeGrenade:
+		return weap_smokegrenade;
 	default:
 		break;
 	}

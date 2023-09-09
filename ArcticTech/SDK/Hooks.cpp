@@ -197,7 +197,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	cmd->tick_count = lua_cmd.tickcount;
 	cmd->viewangles = lua_cmd.viewangles;
 
-	if (config.misc.movement.infinity_duck->get())
+	if ((config.misc.movement.infinity_duck->get() && (cmd->buttons & IN_DUCK || Cheat.LocalPlayer->m_flDuckAmount() > 0.f)) || config.antiaim.misc.fake_duck->get())
 		ctx.cmd->buttons |= IN_BULLRUSH;
 
 	if (config.misc.movement.auto_jump->get()) {
@@ -222,6 +222,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		cmd->forwardmove = nigated_direction.x;
 	}
 
+	AutoPeek->CreateMove();
+	AntiAim->FakeDuck();
 	Miscelleaneus::AutoStrafe();
 
 	if (ClientState->m_nDeltaTick > 0)
@@ -239,7 +241,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		AntiAim->SlowWalk();
 
 		ctx.send_packet = bSendPacket = ctx.tickbase_shift == 1;
-		cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
+
+		if (ctx.active_weapon && ctx.active_weapon->ShootingWeapon())
+			cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
 
 		EnginePrediction->End();
 
@@ -249,14 +253,18 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		AntiAim->LegMovement();
 
 		ctx.lc_exploit_prev = ctx.lc_exploit;
-		ctx.lc_exploit = false;
+		if (bSendPacket)
+			ctx.lc_exploit = 0;
 
-		if (!ctx.lc_exploit && ctx.lc_exploit_prev)
-			ctx.lc_exploit_shift = cmd->command_number;
+		if (ctx.lc_exploit != ctx.lc_exploit_prev) {
+			ctx.lc_exploit_change = cmd->command_number;
+			ctx.lc_exploit_diff = ctx.lc_exploit - ctx.lc_exploit_prev;
+		}
 
 		ctx.shifted_commands.emplace_back(cmd->command_number);
-		if (bSendPacket)
+		if (bSendPacket) {
 			ctx.sented_commands.emplace_back(cmd->command_number);
+		}
 		ctx.teleported_last_tick = true;
 
 		verified->m_cmd = *cmd;
@@ -286,9 +294,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	if (ctx.local_velocity.LengthSqr() > 0.f)
-		Cheat.freezetime = false;
-
 	Miscelleaneus::CompensateThrowable();
 
 	// prediction
@@ -316,17 +321,19 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		cb.func(&AntiAim->lua_override);
 
 	AntiAim->FakeLag();
-	AntiAim->FakeDuck();
 	AntiAim->Angles();
-
-	AutoPeek->CreateMove();
 
 	Ragebot->Run();
 
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
 
 	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
-		Cheat.thirdpersonAngles = cmd->viewangles;
+		if (!Cheat.holdLocalAngles) {
+			Cheat.thirdpersonAngles = cmd->viewangles;
+			if (config.antiaim.misc.fake_duck->get() && cmd->buttons & IN_ATTACK)
+				Cheat.holdLocalAngles = true;
+		}
+
 		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) > 5)
 			AntiAim->jitter = !AntiAim->jitter;
 		ctx.should_update_local_anims = true;
@@ -335,33 +342,21 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.local_sent_origin = Cheat.LocalPlayer->m_vecOrigin();
 	}
 
+	Miscelleaneus::FastThrow();
 	AnimationSystem->OnCreateMove();
 
 	EnginePrediction->End();
 
-	// Gives shitton of pred errors
-
-	//if (!ctx.send_packet) {
-	//	auto net_channel = ClientState->m_NetChannel;
-
-	//	const auto backup_choked_packets = net_channel->m_nChokedPackets;
-
-	//	net_channel->m_nChokedPackets = 0;
-	//	net_channel->SendDatagram();
-	//	--net_channel->m_nOutSequenceNr;
-
-	//	net_channel->m_nChokedPackets = backup_choked_packets;
-	//}
-
 	// createmove
 
 	ctx.lc_exploit_prev = ctx.lc_exploit;
-	ctx.lc_exploit = Exploits->ShouldBreakLC();
+	if (ctx.send_packet) // exploit state actually changes only when sending packet, so do not update if we are choking
+		ctx.lc_exploit = Exploits->LC_TickbaseShift();
 
-	if (ctx.lc_exploit && !ctx.lc_exploit_prev)
-		ctx.lc_exploit_charge = cmd->command_number;
-	else if (!ctx.lc_exploit && ctx.lc_exploit_prev)
-		ctx.lc_exploit_shift = cmd->command_number;
+	if (ctx.lc_exploit != ctx.lc_exploit_prev) {
+		ctx.lc_exploit_change = cmd->command_number;
+		ctx.lc_exploit_diff = ctx.lc_exploit - ctx.lc_exploit_prev;
+	}
 
 	Utils::FixMovement(cmd, eyeYaw);
 
@@ -373,18 +368,49 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	} else {
 		auto net_channel = ClientState->m_NetChannel;
 
-		if (net_channel->m_nChokedPackets > 0 && !(net_channel->m_nChokedPackets % 4))
-		{
-			auto backup_choke = net_channel->m_nChokedPackets;
-			net_channel->m_nChokedPackets = 0;
-			net_channel->SendDatagram();
-			--net_channel->m_nOutSequenceNr;
-			net_channel->m_nChokedPackets = backup_choke;
-		}
+		auto backup_choke = net_channel->m_nChokedPackets;
+		net_channel->m_nChokedPackets = 0;
+		net_channel->SendDatagram();
+		--net_channel->m_nOutSequenceNr;
+		net_channel->m_nChokedPackets = backup_choke;
 	}
 
+	if (ctx.should_buy) {
+		std::string buy_command = "";
+		if (config.misc.miscellaneous.auto_buy->get(0))
+			buy_command += "buy awp; ";
+		if (config.misc.miscellaneous.auto_buy->get(1))
+			buy_command += "buy ssg08; ";
+		if (config.misc.miscellaneous.auto_buy->get(2))
+			buy_command += "buy scar20; buy g3sg1; ";
+		if (config.misc.miscellaneous.auto_buy->get(3))
+			buy_command += "buy deagle; buy revolver; ";
+		if (config.misc.miscellaneous.auto_buy->get(4))
+			buy_command += "buy fn57; buy tec9; ";
+		if (config.misc.miscellaneous.auto_buy->get(5))
+			buy_command += "buy taser; ";
+		if (config.misc.miscellaneous.auto_buy->get(6))
+			buy_command += "buy vesthelm; ";
+		if (config.misc.miscellaneous.auto_buy->get(7))
+			buy_command += "buy smokegrenade; ";
+		if (config.misc.miscellaneous.auto_buy->get(8))
+			buy_command += "buy molotov; buy incgrenade; ";
+		if (config.misc.miscellaneous.auto_buy->get(9))
+			buy_command += "buy hegrenade; ";
+		if (config.misc.miscellaneous.auto_buy->get(10))
+			buy_command += "buy flashbang; ";
+		if (config.misc.miscellaneous.auto_buy->get(11))
+			buy_command += "buy defuser; ";
+
+		if (!buy_command.empty() && Cheat.LocalPlayer && Cheat.LocalPlayer->m_iAccount() > 1000)
+			EngineClient->ExecuteClientCmd(buy_command.c_str());
+
+		ctx.should_buy = false;
+	}
+
+	//Console->Log(std::format("{}\t{}\t{}", bSendPacket, Exploits->GetDefensiveTicks(), ctx.lc_exploit > 0));
+
 	ctx.teleported_last_tick = false;
-	ctx.last_tickbase = Cheat.LocalPlayer->m_nTickBase();
 
 	verified->m_cmd = *cmd;
 	verified->m_crc = cmd->GetChecksum();
@@ -708,17 +734,13 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
-	int max_tickbase_shift = Exploits->GetExploitType() == CExploits::E_DoubleTap ? 14 : 9;
-
-	if (ctx.lc_exploit_shift == cmd->command_number)
-		player->m_nTickBase() += max_tickbase_shift;
-	if (ctx.lc_exploit_charge == cmd->command_number)
-		player->m_nTickBase() -= max_tickbase_shift;
+	if (ctx.lc_exploit_change == cmd->command_number)
+		player->m_nTickBase() -= ctx.lc_exploit_diff;
 
 	int backup_tickbase = player->m_nTickBase();
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
-	if (ctx.lc_exploit_shift == cmd->command_number)
+	if (ctx.lc_exploit_change == cmd->command_number)
 		backup_tickbase--; // wtf
 
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
@@ -802,16 +824,21 @@ void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t*
 	if (config.antiaim.angles.legacy_desync->get() || hook_info.disable_clamp_bones)
 		return;
 
-	if (thisptr->m_fFlags() & FL_FROZEN) {
-		thisptr->m_vecMaxs().z = 72.f; // abobus fix
-
-		auto collidable = thisptr->GetCollideable();
-
-		if (collidable)
-			collidable->OBBMaxs().z = 72.f;
+	auto backup_curtime = GlobalVars->curtime;
+	auto backup_tickcount = GlobalVars->tickcount;
+	if (thisptr == Cheat.LocalPlayer) {
+		GlobalVars->curtime = EnginePrediction->curtime();
+		GlobalVars->tickcount = EnginePrediction->tickcount();
 	}
 
-	return oClampBonesInBBox(thisptr, edx, bones, boneMask);
+	if (thisptr->m_fFlags() & FL_FROZEN) {
+		thisptr->SetCollisionBounds(Vector(-16, -16, 0), Vector(16, 16, 72));
+	}
+
+	oClampBonesInBBox(thisptr, edx, bones, boneMask);
+
+	GlobalVars->curtime = backup_curtime;
+	GlobalVars->tickcount = backup_tickcount;
 }
 
 void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
@@ -935,7 +962,7 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 }
 
 bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !Exploits->ShouldBreakLC())
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !ctx.lc_exploit)
 		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
 
 	if (from != -1)
@@ -947,7 +974,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	auto total_new_commands = Exploits->GetExploitType() == CExploits::E_DoubleTap ? 16 : 11;
+	auto total_new_commands = ctx.lc_exploit + 2;
 
 	from = -1;
 
@@ -1030,8 +1057,13 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 
 	// check if disabling occulusion for players ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L1491 )
 	auto base_entity = info->m_pRenderable->GetIClientUnknown()->GetBaseEntity();
-	if (!base_entity || !base_entity->IsPlayer())
+	if (!base_entity || !base_entity->IsPlayer()) {
+		if (config.visuals.effects.props_color_enable->get() && config.visuals.effects.props_color->get().a != 255) {
+			info->m_Flags &= ~0x100;
+			info->m_bRenderInFastReflection |= 0xC0;
+		}
 		return oListLeavesInBox(ecx, edx, mins, maxs, list, size);
+	}
 
 	// fix render order, force translucent group ( https://www.unknowncheats.me/forum/2429206-post15.html )
 	// AddRenderablesToRenderLists: https://i.imgur.com/hcg0NB5.png ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L2473 )
@@ -1070,6 +1102,19 @@ bool __fastcall hkInterpolateViewmodel(CBaseViewModel* vm, void* edx, float curT
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
 
 	return result;
+}
+
+void __fastcall hkThrowGrenade(CBaseGrenade* thisptr, void* edx) {
+	if (EntityList->GetClientEntityFromHandle(thisptr->m_hOwnerEntity()) == Cheat.LocalPlayer && ctx.cmd)
+		ctx.grenade_throw_tick = ctx.cmd->command_number;
+	oThrowGrenade(thisptr, edx);
+}
+
+void __fastcall hkCalcViewModel(CBaseViewModel* vm, void* edx, CBasePlayer* player, const Vector& eyePosition, const QAngle& eyeAngles) {
+	if (ctx.fake_duck && Cheat.LocalPlayer == player)
+		return oCalcViewModel(vm, edx, player, player->GetAbsOrigin() + Vector(0, 0, 64), eyeAngles);
+
+	oCalcViewModel(vm, edx, player, eyePosition, eyeAngles);
 }
 
 void Hooks::Initialize() {
@@ -1144,6 +1189,8 @@ void Hooks::Initialize() {
 	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
 	oCL_DispatchSound = HookFunction<tCL_DispatchSound>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 8B F1 8D 4D 98 E8"), hkCL_DispatchSound);
 	oInterpolateViewmodel = HookFunction<tInterpolateViewmodel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateViewmodel);
+	oThrowGrenade = HookFunction<tThrowGrenade>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 57 8B F9 80 BF ? ? ? ? ? 74 07"), hkThrowGrenade);
+	oCalcViewModel = HookFunction<tCalcViewModel>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 58 56 57"), hkCalcViewModel);
 
 	EventListner->Register();
 
@@ -1207,4 +1254,6 @@ void Hooks::End() {
 	RemoveHook(oInPrediction, hkInPrediction);
 	RemoveHook(oCL_DispatchSound, hkCL_DispatchSound);
 	RemoveHook(oInterpolateViewmodel, hkInterpolateViewmodel);
+	RemoveHook(oThrowGrenade, hkThrowGrenade);
+	RemoveHook(oCalcViewModel, hkCalcViewModel);
 }

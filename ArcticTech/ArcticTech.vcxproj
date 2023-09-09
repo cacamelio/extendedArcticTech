@@ -133,6 +133,7 @@
     <ClCompile Include="SDK\Config.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="SDK\Hooks.cpp" />
+    <ClCompile Include="SDK\Interfaces\CGameRules.cpp" />
     <ClCompile Include="SDK\Interfaces\CGlobalVarsBase.cpp" />
     <ClCompile Include="SDK\Interfaces\IClientEntityList.cpp" />
     <ClCompile Include="SDK\Interfaces\IEffects.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="Resources\hegrenade.h" />
     <ClInclude Include="Resources\inferno.h" />
     <ClInclude Include="Resources\molotov.h" />
+    <ClInclude Include="SDK\Interfaces\CGameRules.h" />
     <ClInclude Include="SDK\Interfaces\IEffects.h" />
     <ClInclude Include="SDK\Interfaces\IGameTypes.h" />
     <ClInclude Include="SDK\Interfaces\ISteamHTTP.h" />

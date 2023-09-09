@@ -48,7 +48,8 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 	if (origin == Vector())
 		eyePosition = localPlayer->GetEyePosition();
 
-	eyePosition += vel * GlobalVars->interval_per_tick;
+	if (vel.LengthSqr() > 16.f)
+		eyePosition += vel * GlobalVars->interval_per_tick;
 
 	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
 
@@ -113,6 +114,7 @@ void GrenadePrediction::Draw() {
 	}
 
 	bool hit = false;
+	std::string additional_info = "";
 
 	if (weaponId == HeGrenade) {
 		int maxDamage = 0;
@@ -127,9 +129,32 @@ void GrenadePrediction::Draw() {
 			if (dmg > maxDamage)
 				maxDamage = dmg;
 		}
+
 		if (maxDamage > 0) {
-			Render->Text(std::format("-{}hp", maxDamage), Vector2(Cheat.ScreenSize.x * 0.5f, Cheat.ScreenSize.y * 0.4f), Color(255, 255, 255), Verdana, TEXT_DROPSHADOW | TEXT_CENTERED);
+			additional_info = std::format("-{}hp", maxDamage);
 			hit = true;
+		}
+	}
+	else if (weaponId == Molotov || weaponId == IncGrenade) {
+		float minDistance = 5.f;
+
+		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
+
+			if (!player || player->IsTeammate() || !player->IsPlayer() || player->m_iHealth() == 0)
+				continue;
+
+			CGameTrace tr = EngineTrace->TraceRay(vecDetonate + Vector(0, 0, 10), player->m_vecOrigin() + Vector(0, 0, 32), 0x1, player);
+
+			if (tr.fraction == 1.f) {
+				float dist = (player->m_vecOrigin() - vecDetonate).Q_Length() * 0.0254f;
+
+				if (dist < minDistance) {
+					additional_info = std::format("{:.2f}m", dist);
+					hit = true;
+					dist = minDistance;
+				}
+			}
 		}
 	}
 
@@ -150,7 +175,7 @@ void GrenadePrediction::Draw() {
 
 		EngineTrace->TraceRay(ray, 0x1, &filter, &trace);
 
-		if ((trace.endpos - trace.startpos).Length() < 105.f) {
+		if (trace.fraction < 1.f) {
 			Render->CircleFilled(Render->WorldToScreen(vecDetonate), 3, Color(255, 0, 0));
 
 			if (config.visuals.other_esp.particles->get(0)) {
@@ -166,6 +191,9 @@ void GrenadePrediction::Draw() {
 				pMolotovParticle = nullptr;
 			}
 		}
+		else {
+			hit = false;
+		}
 	}
 	else {
 		if (pMolotovParticle) {
@@ -174,6 +202,13 @@ void GrenadePrediction::Draw() {
 		}
 
 		Render->CircleFilled(Render->WorldToScreen(vecDetonate), 3, Color(255, 0, 0));
+	}
+
+
+	if (!additional_info.empty() && hit) {
+		auto sc_pos = Render->WorldToScreen(vecDetonate);
+		if (!sc_pos.Invalid())
+			Render->Text(additional_info, sc_pos + Vector2(0, 16), Color(245, 245), Verdana, TEXT_CENTERED);
 	}
 
 	if (weaponId == SmokeGrenade && config.visuals.other_esp.particles->get(1)) {
@@ -466,7 +501,6 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	Predict(entity->m_vecOrigin(), entity->m_vecVelocity(), flThrowTime, TIME_TO_TICKS(simulationTime - flThrowTime));
 
 	float timeInAir = flExpireTime - flThrowTime;
-	float fraction = (simulationTime - flThrowTime) / timeInAir;
 
 	if (flExpireTime <= simulationTime)
 		return;
@@ -483,7 +517,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 
 		EngineTrace->TraceRay(ray, 0x1, &filter, &trace);
 
-		if ((trace.startpos - trace.endpos).Length() > 110) {
+		if (trace.fraction == 1.f) {
 			shouldDrawCircle = false;
 		}
 		else {

@@ -1114,6 +1114,10 @@ namespace api {
 			return ent->IsWeapon();
 		}
 
+		float get_dormant_last_update(CBasePlayer* pl) {
+			return ESPInfo[pl->EntIndex()].m_flLastUpdateTime;
+		}
+
 		uintptr_t ptr(CBaseEntity* ent) {
 			return reinterpret_cast<uintptr_t>(ent);
 		}
@@ -1186,6 +1190,10 @@ namespace api {
 
 		bool is_defensive_active() {
 			return Exploits->IsDefensiveActive();
+		}
+
+		int get_defensive_ticks() {
+			return Exploits->GetDefensiveTicks();
 		}
 	}
 
@@ -1413,6 +1421,7 @@ void CLua::Setup() {
 		"get_hitbox_position", &CBasePlayer::GetHitboxCenter,
 		"get_animstate", &CBasePlayer::GetAnimstate,
 		"get_animlayers", &api::entity::get_anim_layers,
+		"get_dormant_last_update", &api::entity::get_dormant_last_update,
 		"set_icon", api::entity::set_icon,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
@@ -1671,7 +1680,8 @@ void CLua::Setup() {
 	lua.create_named_table("rage",
 		"get_antiaim_target", api::rage::get_antiaim_target,
 		"get_exploit_charge", api::rage::get_exploit_charge,
-		"is_defensive_active", api::rage::is_defensive_active
+		"is_defensive_active", api::rage::is_defensive_active,
+		"get_defensive_ticks", api::rage::get_defensive_ticks
 	);
 
 	lua.create_named_table("materials", 

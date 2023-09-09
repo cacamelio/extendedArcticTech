@@ -27,8 +27,6 @@ struct ShotChams_t {
 };
 
 class CChams {
-	bool IsLocalPlayerAttachment(CBaseEntity* entity);
-
 	void* _ctx;
 	DrawModelState_t _state;
 	ModelRenderInfo_t _info;
