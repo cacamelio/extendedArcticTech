@@ -48,8 +48,6 @@ LRESULT CALLBACK hkWndProc(HWND Hwnd, UINT Message, WPARAM wParam, LPARAM lParam
 
 	if (Message == WM_KEYDOWN && !EngineClient->Con_IsVisible()) {
 		AntiAim->OnKeyPressed(wParam);
-
-		Cheat.KeyStates[wParam] = !Cheat.KeyStates[wParam];
 	}
 
 	if (Menu->IsOpened() && Menu->WndProc(Hwnd, Message, wParam, lParam))
@@ -236,11 +234,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
 
 	EnginePrediction->Start(cmd);
-	Cheat.ServerTime = GlobalVars->curtime;
 	QAngle eyeYaw = cmd->viewangles;
 
 	if (Exploits->IsShifting()) {
-		AutoPeek->CreateMove();
 		Ragebot->Run();
 
 		AntiAim->Angles();
@@ -315,8 +311,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	// prediction
 
-	Cheat.ServerTime = GlobalVars->curtime;
-
 	if (config.misc.movement.edge_jump->get() && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) && EnginePrediction->m_fFlags & FL_ONGROUND)
 		cmd->buttons |= IN_JUMP;
 
@@ -330,6 +324,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			Exploits->HideShot();
 
 		ShotManager->ProcessManualShot();
+		ctx.last_shot_time = GlobalVars->realtime;
 	}
 
 	AntiAim->lua_override.reset();
@@ -343,6 +338,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	Ragebot->Run();
 
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
+
+	if (Exploits->teleport_next_tick)
+		ctx.send_packet = false;
 
 	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
 		Cheat.thirdpersonAngles = cmd->viewangles;
@@ -380,6 +378,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (bSendPacket) {
 		ctx.sented_commands.emplace_back(cmd->command_number);
 	} else {
+		ctx.last_choke_angle = cmd->viewangles;
 		auto net_channel = ClientState->m_NetChannel;
 
 		if (net_channel->m_nChokedPackets > 0 && !(net_channel->m_nChokedPackets % 4)) {
@@ -491,6 +490,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		Ragebot->CalcSpreadValues();
 		ShotManager->Reset();
 		Resolver->Reset();
+		Exploits->BypassMaxTicks();
 
 		for (auto& callback : Lua->hooks.getHooks(LUA_LEVELINIT))
 			callback.func();
@@ -758,8 +758,8 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	int backup_tickbase = player->m_nTickBase();
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
-	if (ctx.lc_exploit_change == cmd->command_number)
-		backup_tickbase--; // wtf
+	//if (ctx.lc_exploit_change == cmd->command_number)
+	//	backup_tickbase--; // wtf
 
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
 

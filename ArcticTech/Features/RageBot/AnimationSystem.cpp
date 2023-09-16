@@ -10,19 +10,29 @@ void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 	Utils::MatrixMove(mat, size, sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
 }
 
+void FixLegMovement() {
+	if (config.antiaim.misc.leg_movement->get() != 1)
+		return;
+
+	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+		return;
+
+	if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 4096)
+		return;
+
+	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
+
+	float delta = Math::AngleDiff(ctx.cmd->viewangles.yaw, ctx.last_choke_angle.yaw);
+	float moveYaw = Math::AngleDiff(Math::VectorAngles(Cheat.LocalPlayer->m_vecVelocity()).yaw, ctx.cmd->viewangles.yaw);
+
+	Cheat.LocalPlayer->m_flPoseParameter()[STRAFE_YAW] = Math::AngleToPositive(Math::AngleNormalize(moveYaw + delta)) / 360.f;
+}
+
 void CAnimationSystem::OnCreateMove() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
 	AnimationLayer animlayers_backup[13];
 	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
-
-	//if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
-	//	const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
-	//	const float gravity = cvars.sv_gravity->GetFloat();
-	//	const float speed = Cheat.LocalPlayer->m_flFallVelocity();
-
-	//	animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
-	//}
 
 	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
@@ -31,15 +41,7 @@ void CAnimationSystem::OnCreateMove() {
 	animstate->bHitGroundAnimation = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 
 	if (ctx.send_packet && !Exploits->IsHidingShot()) {
-		//if (AntiAim->desyncing)
-		//	animstate->flGoalFeetYaw = AntiAim->realAngle;
-
-		//float maxDelta = Cheat.LocalPlayer->GetMaxDesyncDelta();
-		//float goalFeetYawDelta = std::clamp(Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw), -maxDelta, maxDelta);
-
-		//animstate->flGoalFeetYaw = Math::AngleNormalize(animstate->flEyeYaw - goalFeetYawDelta);
-
-		//Cheat.LocalPlayer->m_flPoseParameter()[BODY_YAW] = 0.5f + (goalFeetYawDelta / 120.f);
+		FixLegMovement();
 
 		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flGoalFeetYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
@@ -144,6 +146,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	
 	record->player = player;
 	record->unupdated_animstate = *animstate;
+	record->m_vecAbsOrigin = player->m_vecOrigin();
 
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;

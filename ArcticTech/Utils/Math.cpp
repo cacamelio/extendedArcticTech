@@ -50,6 +50,10 @@ float Math::AngleDiff(float next, float cur) {
 	return delta;
 }
 
+float Math::AngleToPositive(float angle) {
+	return angle > 0.f ? angle : 360.f + angle;
+}
+
 void Math::AngleVectors(const QAngle& angles, Vector& forward, Vector& right, Vector& up) {
 	float sr, sp, sy, cr, cp, cy;
 

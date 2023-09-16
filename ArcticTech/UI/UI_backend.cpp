@@ -434,6 +434,17 @@ std::vector<IBaseWidget*> CMenu::GetKeyBinds() {
 void CMenu::RemoveItem(IBaseWidget* widget) {
     CMenuGroupbox* gb = widget->parent;
 
+    if (widget->GetType() == WidgetType::KeyBind) {
+        for (auto it = m_KeyBinds.begin(); it != m_KeyBinds.end();) {
+            if (*it == widget) {
+                it = m_KeyBinds.erase(it);
+                continue;
+            }
+
+            it++;
+        }
+    }
+
     for (auto it = gb->widgets.begin(); it != gb->widgets.end(); it++) {
         if (*it == widget) {
             if (widget->GetType() == WidgetType::MultiCombo || widget->GetType() == WidgetType::Combo) {

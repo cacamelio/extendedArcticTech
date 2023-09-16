@@ -54,6 +54,7 @@ weapon_settings_t CRagebot::GetWeaponSettings(int weaponId) {
 	case Glock:
 	case Usp_s:
 	case Tec9:
+	case P250:
 		settings = config.ragebot.weapons.pistol;
 		break;
 	}
@@ -550,8 +551,9 @@ void CRagebot::Run() {
 
 	if (ctx.active_weapon->IsGrenade())
 		return;
-	
-	if (ctx.active_weapon->m_iItemDefinitionIndex() == Taser) {
+
+	int weapon_id = ctx.active_weapon->m_iItemDefinitionIndex();
+	if (weapon_id == Taser) {
 		Zeusbot();
 		return;
 	}
@@ -559,7 +561,7 @@ void CRagebot::Run() {
 	if (!ctx.active_weapon->ShootingWeapon())
 		return;
 
-	settings = GetWeaponSettings(ctx.active_weapon->m_iItemDefinitionIndex());
+	settings = GetWeaponSettings(weapon_id);
 
 	if (config.ragebot.aimbot.dormant_aim->get())
 		DormantAimbot();
@@ -599,24 +601,31 @@ void CRagebot::Run() {
 		min_jump_inaccuracy_tan = std::tan(ctx.weapon_info->flInaccuracyStand[m_nWeaponMode] + ctx.weapon_info->flInaccuracyJump[m_nWeaponMode] + flAirSpeedInaccuracy);
 	}
 
+	float hitchance = settings.hitchance->get() * 0.01f;
+	if (!settings.strict_hitchance->get()) {
+		if ((weapon_id == Ssg08 && !local_on_ground) ||
+			((weapon_id == Scar20 || weapon_id == G3SG1) && GlobalVars->realtime - Exploits->last_teleport_time < TICKS_TO_TIME(16)))
+			hitchance *= 0.8f;
+	}
+
 	for (const auto& target : scanned_targets) {
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
-			if (target.hitchance > settings.hitchance->get() * 0.01f) {
+			if (target.hitchance > hitchance) {
 				best_target = target;
 				break;
 			}
 			else {
-				if (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.009f)) {
+				if (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= hitchance * 0.09f)) {
 					should_autostop = true;
 				}
 			}
 		}
 
-		if (target.hitchance > settings.hitchance->get() * 0.01f && target.best_point.damage > max(best_target.best_point.damage, target.minimum_damage))
+		if (target.hitchance > hitchance && target.best_point.damage > max(best_target.best_point.damage, target.minimum_damage))
 			best_target = target;
 
 		if (target.best_point.damage > target.minimum_damage) {
-			if (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.009f)) {
+			if (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= hitchance * 0.09f)) {
 				should_autostop = true;
 			}
 
@@ -625,7 +634,7 @@ void CRagebot::Run() {
 		}
 
 		if (target.best_point.damage > 15) {
-			if (settings.auto_stop->get(1) && (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= settings.hitchance->get() * 0.01f))) {
+			if (settings.auto_stop->get(1) && (local_on_ground || (settings.auto_stop->get(3) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= hitchance))) {
 				should_autostop = true;
 			}
 			Exploits->block_charge = true;
@@ -723,8 +732,7 @@ void CRagebot::Zeusbot() {
 			if (distance > 165 * 165)
 				continue;
 
-			memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
-			LagCompensation->BacktrackEntity(record, true, true);
+			LagCompensation->BacktrackEntity(record);
 			const Vector points[]{
 				player->GetHitboxCenter(HITBOX_STOMACH),
 				player->GetHitboxCenter(HITBOX_CHEST),
@@ -739,11 +747,9 @@ void CRagebot::Zeusbot() {
 				if (trace.hit_entity != player)
 					continue;
 
-				QAngle angle = Math::VectorAngles(point - ctx.shoot_position);
+				float hitchance = min(12.f / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
 
-				float hitchance = min(7.f / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
-
-				if (hitchance < 0.5f)
+				if (hitchance < 0.6f)
 					continue;
 
 				if (config.visuals.effects.client_impacts->get()) {
@@ -751,7 +757,7 @@ void CRagebot::Zeusbot() {
 					DebugOverlay->AddBoxOverlay(point, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
 				}
 
-				ctx.cmd->viewangles = angle;
+				ctx.cmd->viewangles = Math::VectorAngles(point - ctx.shoot_position);
 				ctx.cmd->buttons |= IN_ATTACK;
 				ctx.cmd->tick_count = TIME_TO_TICKS(record->m_flSimulationTime + LagCompensation->GetLerpTime());
 
@@ -759,13 +765,13 @@ void CRagebot::Zeusbot() {
 
 				Console->Log(std::format("shot at {} [hc: {}] [bt: {}]", player->GetName(), (int)(hitchance * 100.f), TIME_TO_TICKS(player->m_flSimulationTime() - record->m_flSimulationTime)));
 
-				LagCompensation->BacktrackEntity(backup_record, true, false);
+				LagCompensation->BacktrackEntity(backup_record);
 				delete backup_record;
 				return;
 			}
 		}
 
-		LagCompensation->BacktrackEntity(backup_record, true, false);
+		LagCompensation->BacktrackEntity(backup_record);
 		delete backup_record;
 	}
 }

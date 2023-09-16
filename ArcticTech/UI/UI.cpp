@@ -44,6 +44,7 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.extended_backtrack = aimbot->AddCheckBox("Extended backtrack");
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
+	config.ragebot.aimbot.doubletap_speed = aimbot->AddComboBox("Double tap speed", {"Reliable", "Fast", "Extreme"});
 	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport", "Fast throw"});
 	config.ragebot.aimbot.hide_shots = aimbot->AddCheckBox("Hide Shots");
 	config.ragebot.aimbot.hide_shots_key = aimbot->AddKeyBind("Hide Shots");
@@ -70,7 +71,8 @@ void CMenu::SetupUI() {
 		settings.minimum_damage_override = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage override"), 1, 130, 10);
 		settings.auto_stop = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Full stop", "Early", "Move between shots", "In Air" });
 		settings.auto_scope = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Auto scope"));
-		settings.delay_shot = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Delay shot"), 0, 16, 0);
+		settings.delay_shot = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Delay shot"), 0, 32, 0);
+		settings.strict_hitchance = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Strict hitchance"));
 	};
 
 	setup_weapon_config(config.ragebot.weapons.global);

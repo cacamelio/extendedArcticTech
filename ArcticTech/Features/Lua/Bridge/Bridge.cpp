@@ -1202,6 +1202,10 @@ namespace api {
 		int get_defensive_ticks() {
 			return Exploits->GetDefensiveTicks();
 		}
+
+		void force_teleport() {
+			Exploits->ForceTeleport();
+		}
 	}
 
 	namespace materials {
@@ -1689,7 +1693,8 @@ void CLua::Setup() {
 		"get_antiaim_target", api::rage::get_antiaim_target,
 		"get_exploit_charge", api::rage::get_exploit_charge,
 		"is_defensive_active", api::rage::is_defensive_active,
-		"get_defensive_ticks", api::rage::get_defensive_ticks
+		"get_defensive_ticks", api::rage::get_defensive_ticks,
+		"force_teleport", api::rage::force_teleport
 	);
 
 	lua.create_named_table("materials", 

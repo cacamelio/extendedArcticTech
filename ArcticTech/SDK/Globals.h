@@ -8,13 +8,8 @@ struct CheatState_t {
 	CBasePlayer* LocalPlayer = nullptr;
 	bool InGame = false;
 	Vector2 ScreenSize;
-	bool KeyStates[1024];
 	bool Unloaded = false;
 	QAngle thirdpersonAngles;
-	float ServerTime = 0.f;
-	float weaponInaccuracy = 0.f;
-	float weaponSpread = 0.f;
-	int tickbaseshift = 0;
 };
 
 struct HooksInfo_t {
@@ -41,6 +36,8 @@ struct Ctx_t {
 	Vector local_sent_origin;
 	bool breaking_lag_compensation = false;
 	bool should_buy = false;
+	QAngle last_choke_angle;
+	float last_shot_time = 0.f;
 
 	CBaseCombatWeapon* active_weapon = nullptr;
 	CCSWeaponData* weapon_info = nullptr;
@@ -70,6 +67,7 @@ struct Ctx_t {
 		weapon_info = nullptr;
 		grenade_throw_tick = 0;
 		fake_duck = 0;
+		last_shot_time = 0.f;
 	}
 };
 

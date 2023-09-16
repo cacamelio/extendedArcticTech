@@ -23,6 +23,7 @@ struct LagRecord {
 	Vector m_vecMins = Vector(0, 0, 0);
 	Vector m_vecMaxs = Vector(0, 0, 0);
 	QAngle m_vecAbsAngles;
+	Vector m_vecAbsOrigin;
 
 	QAngle m_angEyeAngles;
 

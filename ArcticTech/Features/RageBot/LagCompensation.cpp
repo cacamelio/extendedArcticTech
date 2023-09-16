@@ -14,6 +14,7 @@ LagRecord* CLagCompensation::BackupData(CBasePlayer* player) {
 	LagRecord* record = new LagRecord;
 
 	record->player = player;
+	record->m_vecAbsOrigin = player->GetAbsOrigin();
 	RecordDataIntoTrack(player, record);
 
 	return record;
@@ -30,8 +31,8 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 	record->m_nSequence = player->m_nSequence();
 	record->m_flDuckAmout = player->m_flDuckAmount();
 	record->m_flDuckSpeed = player->m_flDuckSpeed();
-	record->m_vecMaxs = player->m_vecMaxs();
-	record->m_vecMins = player->m_vecMins();
+	record->m_vecMaxs = player->GetCollideable()->OBBMaxs();
+	record->m_vecMins = player->GetCollideable()->OBBMins();
 	record->m_vecVelocity = player->m_vecVelocity();
 	record->m_vecAbsAngles = player->GetAbsAngles();
 
@@ -53,17 +54,17 @@ void CLagCompensation::BacktrackEntity(LagRecord* record, bool copy_matrix, bool
 
 	player->m_flSimulationTime() = record->m_flSimulationTime;
 	player->m_vecOrigin() = record->m_vecOrigin;
-	player->SetAbsOrigin(record->m_vecOrigin);
+	player->SetAbsOrigin(record->m_vecAbsOrigin);
 	player->m_fFlags() = record->m_fFlags;
 	player->m_flCycle() = record->m_flCycle;
 	player->m_nSequence() = record->m_nSequence;
 	player->m_flDuckAmount() = record->m_flDuckAmout;
 	player->m_flDuckSpeed() = record->m_flDuckSpeed;
-	player->m_vecMins() = record->m_vecMins;
-	player->m_vecMaxs() = record->m_vecMaxs;
 	player->m_vecVelocity() = record->m_vecVelocity;
 	player->SetAbsAngles(record->m_vecAbsAngles);
 	player->ForceBoneCache();
+
+	player->SetCollisionBounds(record->m_vecMins, record->m_vecMaxs);
 
 	if (copy_matrix) {
 		if (use_aim_matrix) {
@@ -84,16 +85,7 @@ void LagRecord::BuildMatrix() {
 	auto backup_curtime = GlobalVars->curtime;
 	auto backup_eye_angle = player->m_angEyeAngles();
 
-	player->m_vecMins() = m_vecMins;
-	player->m_vecMaxs() = m_vecMaxs;
 	auto collidable = player->GetCollideable();
-
-	if (collidable) {
-		collidable->OBBMaxs() = m_vecMaxs;
-		collidable->OBBMins() = m_vecMins;
-	}
-
-	player->SetCollisionBounds(m_vecMins, m_vecMaxs);
 
 	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 

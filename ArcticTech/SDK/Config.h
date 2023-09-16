@@ -20,6 +20,7 @@ struct weapon_settings_t {
     CMultiCombo* auto_stop{ nullptr };
     CCheckBox* auto_scope{ nullptr };
     CSliderInt* delay_shot{ nullptr };
+    CCheckBox* strict_hitchance{ nullptr };
 
     weapon_settings_t() {}
     weapon_settings_t(const std::string& name) : weapon_name(name) {}
@@ -35,6 +36,7 @@ struct weapon_settings_t {
         auto_stop->SetVisible(visible);
         auto_scope->SetVisible(visible);
         delay_shot->SetVisible(visible);
+        strict_hitchance->SetVisible(visible);
     };
 };
 
@@ -49,6 +51,7 @@ struct config_t {
             CCheckBox* doubletap;
             CKeyBind* doubletap_key;
             CMultiCombo* doubletap_options;
+            CComboBox* doubletap_speed;
             CCheckBox* hide_shots;
             CKeyBind* hide_shots_key;
             CKeyBind* force_teleport;

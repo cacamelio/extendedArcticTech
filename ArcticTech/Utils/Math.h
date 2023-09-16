@@ -29,6 +29,7 @@ namespace Math {
 	float           NormalizeYaw(float f);
 	float			AngleNormalizePositive(float angle);
 	float			AngleDiff(float next, float cur);
+	float			AngleToPositive(float angle);
 	void			AngleVectors(const QAngle& angles, Vector& forward, Vector& right, Vector& up);
 	void			AngleVectors(const QAngle& angles, Vector& forward);
 	Vector			AngleVectors(const QAngle& angles);

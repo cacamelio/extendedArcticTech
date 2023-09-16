@@ -34,7 +34,7 @@ void CAntiAim::FakeLag() {
 	fakelag_limit = min(sv_maxusrcmdprocessticks->GetInt(), config.antiaim.fakelag.limit->get());
 
 	if (ctx.tickbase_shift > 0) {
-		fakelag_limit = max((sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 0);
+		fakelag_limit = max((sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 1);
 	}
 
 	if (config.antiaim.fakelag.enabled->get()) {
@@ -169,12 +169,7 @@ void CAntiAim::Desync() {
 	if (lua_override.override_bits & lua_override.OverrideDesyncSide)
 		inverter = lua_override.desync_side == 1;
 
-	desync_limit = 0.f;
-
-	if (config.antiaim.angles.body_yaw_limit->get() < 58)
-		desync_limit = config.antiaim.angles.body_yaw_limit->get();
-	else
-		desync_limit = 120.f;
+	desync_limit = config.antiaim.angles.body_yaw_limit->get() * 2.f;
 
 	if (lua_override.override_bits & lua_override.OverrideDesyncAngle)
 		desync_limit = lua_override.desync_angle;
@@ -296,7 +291,7 @@ void CAntiAim::FakeDuck() {
 
 	ctx.cmd->buttons |= IN_BULLRUSH;
 
-	if (ClientState->m_nChokedCommands <= 7 && !Exploits->IsShifting())
+	if (ClientState->m_nChokedCommands < 7 && !Exploits->IsShifting())
 		ctx.cmd->buttons &= ~IN_DUCK;
 	else
 		ctx.cmd->buttons |= IN_DUCK;
@@ -311,29 +306,21 @@ void CAntiAim::LegMovement() {
 	ctx.cmd->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVERIGHT | IN_MOVELEFT);
 
 	int target_type = config.antiaim.misc.leg_movement->get();
-	if (target_type == 1 && !ctx.send_packet)
+	if (target_type == 1 && ctx.send_packet)
 		target_type = 2;
 
 	switch (target_type) {
 	case 0:
-		if (ctx.cmd->forwardmove > 0)
-			ctx.cmd->buttons |= IN_FORWARD;
-		else if (ctx.cmd->forwardmove < 0)
-			ctx.cmd->buttons |= IN_BACK;
-		if (ctx.cmd->sidemove > 0)
-			ctx.cmd->buttons |= IN_MOVERIGHT;
-		else if (ctx.cmd->sidemove < 0)
-			ctx.cmd->buttons |= IN_MOVELEFT;
+		if (ctx.cmd->forwardmove != 0)
+			ctx.cmd->buttons |= ctx.cmd->forwardmove > 0 ? IN_FORWARD : IN_BACK;
+		if (ctx.cmd->sidemove != 0)
+			ctx.cmd->buttons |= ctx.cmd->sidemove > 0 ? IN_MOVERIGHT : IN_MOVELEFT;
 		break;
 	case 1:
-		if (ctx.cmd->forwardmove < 0)
-			ctx.cmd->buttons |= IN_FORWARD;
-		else if (ctx.cmd->forwardmove > 0)
-			ctx.cmd->buttons |= IN_BACK;
-		if (ctx.cmd->sidemove < 0)
-			ctx.cmd->buttons |= IN_MOVERIGHT;
-		else if (ctx.cmd->sidemove > 0)
-			ctx.cmd->buttons |= IN_MOVELEFT;
+		if (ctx.cmd->forwardmove != 0)
+			ctx.cmd->buttons |= ctx.cmd->forwardmove < 0 ? IN_FORWARD : IN_BACK;
+		if (ctx.cmd->sidemove != 0)
+			ctx.cmd->buttons |= ctx.cmd->sidemove < 0 ? IN_MOVERIGHT : IN_MOVELEFT;
 		break;
 	default:
 		break;

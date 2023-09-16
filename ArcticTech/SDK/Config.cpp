@@ -61,6 +61,7 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.doubletap);
     add(config.ragebot.aimbot.doubletap_key);
     add(config.ragebot.aimbot.doubletap_options);
+    add(config.ragebot.aimbot.doubletap_speed);
     add(config.ragebot.aimbot.hide_shots);
     add(config.ragebot.aimbot.hide_shots_key);
     add(config.ragebot.aimbot.force_teleport);
@@ -83,6 +84,7 @@ void CConfig::Init() {
     add(config.ragebot.weapons.global.auto_stop);
     add(config.ragebot.weapons.global.auto_scope);
     add(config.ragebot.weapons.global.delay_shot);
+    add(config.ragebot.weapons.global.strict_hitchance);
     add(config.ragebot.weapons.awp.hitboxes);
     add(config.ragebot.weapons.awp.multipoints);
     add(config.ragebot.weapons.awp.head_point_scale);
@@ -93,6 +95,7 @@ void CConfig::Init() {
     add(config.ragebot.weapons.awp.auto_stop);
     add(config.ragebot.weapons.awp.auto_scope);
     add(config.ragebot.weapons.awp.delay_shot);
+    add(config.ragebot.weapons.awp.strict_hitchance);
     add(config.ragebot.weapons.autosniper.hitboxes);
     add(config.ragebot.weapons.autosniper.multipoints);
     add(config.ragebot.weapons.autosniper.head_point_scale);
@@ -103,6 +106,7 @@ void CConfig::Init() {
     add(config.ragebot.weapons.autosniper.auto_stop);
     add(config.ragebot.weapons.autosniper.auto_scope);
     add(config.ragebot.weapons.autosniper.delay_shot);
+    add(config.ragebot.weapons.autosniper.strict_hitchance);
     add(config.ragebot.weapons.scout.hitboxes);
     add(config.ragebot.weapons.scout.multipoints);
     add(config.ragebot.weapons.scout.head_point_scale);
@@ -113,6 +117,7 @@ void CConfig::Init() {
     add(config.ragebot.weapons.scout.auto_stop);
     add(config.ragebot.weapons.scout.auto_scope);
     add(config.ragebot.weapons.scout.delay_shot);
+    add(config.ragebot.weapons.scout.strict_hitchance);
     add(config.ragebot.weapons.deagle.hitboxes);
     add(config.ragebot.weapons.deagle.multipoints);
     add(config.ragebot.weapons.deagle.head_point_scale);
@@ -123,6 +128,7 @@ void CConfig::Init() {
     add(config.ragebot.weapons.deagle.auto_stop);
     add(config.ragebot.weapons.deagle.auto_scope);
     add(config.ragebot.weapons.deagle.delay_shot);
+    add(config.ragebot.weapons.deagle.strict_hitchance);
     add(config.ragebot.weapons.revolver.hitboxes);
     add(config.ragebot.weapons.revolver.multipoints);
     add(config.ragebot.weapons.revolver.head_point_scale);
@@ -133,6 +139,7 @@ void CConfig::Init() {
     add(config.ragebot.weapons.revolver.auto_stop);
     add(config.ragebot.weapons.revolver.auto_scope);
     add(config.ragebot.weapons.revolver.delay_shot);
+    add(config.ragebot.weapons.revolver.strict_hitchance);
     add(config.ragebot.weapons.pistol.hitboxes);
     add(config.ragebot.weapons.pistol.multipoints);
     add(config.ragebot.weapons.pistol.head_point_scale);
@@ -143,6 +150,7 @@ void CConfig::Init() {
     add(config.ragebot.weapons.pistol.auto_stop);
     add(config.ragebot.weapons.pistol.auto_scope);
     add(config.ragebot.weapons.pistol.delay_shot);
+    add(config.ragebot.weapons.pistol.strict_hitchance);
     add(config.antiaim.angles.pitch);
     add(config.antiaim.angles.yaw);
     add(config.antiaim.angles.yaw_jitter);

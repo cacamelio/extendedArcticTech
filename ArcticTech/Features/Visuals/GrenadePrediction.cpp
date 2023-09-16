@@ -71,7 +71,7 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 	if (vel.LengthSqr() < 20)
 		vel = Vector();
 
-	Predict(trace.endpos - direction * 6.f, direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (flThrowStrength * 0.7f + 0.3f)) + vel * 1.25f, Cheat.ServerTime, 0);
+	Predict(trace.endpos - direction * 6.f, direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (flThrowStrength * 0.7f + 0.3f)) + vel * 1.25f, TICKS_TO_TIME(ctx.corrected_tickbase), 0);
 }
 
 void GrenadePrediction::Draw() {
@@ -531,7 +531,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	for (int i = 1; i < pathPoints.size(); i++) {
 		Vector start = pathPoints[i - 1];
 		Vector end = pathPoints[i];
-		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.5, -0.5), Vector((start - end).Q_Length(), 0.5, 0.5), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 2.5f);
+		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.5, -0.5), Vector((start - end).Q_Length(), 0.5, 0.5), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 3.f);
 	}
 
 	//for (int i = 0; i < pathPoints.size(); i++) {
