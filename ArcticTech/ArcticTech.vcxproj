@@ -144,6 +144,7 @@
     <ClCompile Include="SDK\Misc\CBaseEntity.cpp" />
     <ClCompile Include="SDK\Misc\CBasePlayer.cpp" />
     <ClCompile Include="SDK\Misc\checksum_crc.cpp" />
+    <ClCompile Include="SDK\Misc\CUserCmd.cpp" />
     <ClCompile Include="SDK\Misc\KeyValues.cpp" />
     <ClCompile Include="SDK\Misc\UtlReference.h" />
     <ClCompile Include="SDK\Misc\UtlStringList.h" />
@@ -243,6 +244,7 @@
     <ClInclude Include="SDK\Misc\CUserCmd.h" />
     <ClInclude Include="SDK\Misc\KeyValues.h" />
     <ClInclude Include="SDK\Misc\Matrix.h" />
+    <ClInclude Include="SDK\Misc\MoveMsg.h" />
     <ClInclude Include="SDK\Misc\platform.h" />
     <ClInclude Include="SDK\Misc\QAngle.h" />
     <ClInclude Include="SDK\Misc\Studio.h" />

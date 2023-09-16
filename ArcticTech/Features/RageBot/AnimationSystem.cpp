@@ -2,43 +2,9 @@
 #include "LagCompensation.h"
 #include "../AntiAim/AntiAim.h"
 #include "Resolver.h"
+#include "Exploits.h"
 #include "../Lua/Bridge/Bridge.h"
 #include "../Misc/Prediction.h"
-
-void CAnimationSystem::StoreLocalAnims() {
-	auto animstate = Cheat.LocalPlayer->GetAnimstate();
-
-	stored_local_anims.bOnGround = animstate->bOnGround;
-	stored_local_anims.flAffectedFraction = animstate->flAffectedFraction;
-	stored_local_anims.flDurationInAir = animstate->flDurationInAir;
-	stored_local_anims.flEyePitch = animstate->flEyePitch;
-	stored_local_anims.flEyeYaw = animstate->flEyeYaw;
-	stored_local_anims.flGoalFeetYaw = animstate->flGoalFeetYaw;
-	stored_local_anims.flJumpFallVelocity = animstate->flJumpFallVelocity;
-	stored_local_anims.flLeanAmount = animstate->flLeanAmount;
-	stored_local_anims.flMoveYaw = animstate->flMoveYaw;
-	stored_local_anims.poseparams = Cheat.LocalPlayer->m_flPoseParameter();
-	stored_local_anims.filled = true;
-}
-
-void CAnimationSystem::RestoreLocalAnims() {
-	if (!stored_local_anims.filled)
-		return;
-
-	auto animstate = Cheat.LocalPlayer->GetAnimstate();
-
-	animstate->bOnGround = stored_local_anims.bOnGround;
-	animstate->flAffectedFraction = stored_local_anims.flAffectedFraction;
-	animstate->flDurationInAir = stored_local_anims.flDurationInAir;
-	animstate->flEyePitch = stored_local_anims.flEyePitch;
-	animstate->flEyeYaw = stored_local_anims.flEyeYaw;
-	animstate->flGoalFeetYaw = stored_local_anims.flGoalFeetYaw;
-	animstate->flJumpFallVelocity = stored_local_anims.flJumpFallVelocity;
-	animstate->flLeanAmount = stored_local_anims.flLeanAmount;
-	animstate->flMoveYaw = stored_local_anims.flMoveYaw;
-	Cheat.LocalPlayer->m_flPoseParameter() = stored_local_anims.poseparams;
-	Cheat.LocalPlayer->SetAbsAngles(QAngle(0, stored_local_anims.flGoalFeetYaw, 0));
-}
 
 void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 	Utils::MatrixMove(mat, size, sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
@@ -46,6 +12,9 @@ void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 
 void CAnimationSystem::OnCreateMove() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
+
+	AnimationLayer animlayers_backup[13];
+	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	//if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 	//	const float jumpImpulse = cvars.sv_jump_impulse->GetFloat();
@@ -55,12 +24,13 @@ void CAnimationSystem::OnCreateMove() {
 	//	animstate->flDurationInAir = (jumpImpulse - speed) / gravity;
 	//}
 
-	for (auto cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
+	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, ctx.cmd->viewangles);
+	animstate->bHitGroundAnimation = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 
-	if (ctx.send_packet) {
+	if (ctx.send_packet && !Exploits->IsHidingShot()) {
 		//if (AntiAim->desyncing)
 		//	animstate->flGoalFeetYaw = AntiAim->realAngle;
 
@@ -74,19 +44,35 @@ void CAnimationSystem::OnCreateMove() {
 		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flGoalFeetYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
-		for (auto cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
+		for (auto& cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
 			cb.func(Cheat.LocalPlayer);
 
-		//Cheat.LocalPlayer->m_BoneAccessor().m_ReadableBones = 0;
-		//Cheat.LocalPlayer->m_BoneAccessor().m_WritableBones = 0;
-
-		//Cheat.LocalPlayer->m_nOcclusionFrame() = 0;
-		//Cheat.LocalPlayer->m_nOcclusionFlags() = 0;
-
-		BuildMatrix(Cheat.LocalPlayer, sent_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
-
-		Cheat.holdLocalAngles = false;
+		BuildMatrix(Cheat.LocalPlayer, local_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
 	}
+
+	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayers_backup, sizeof(AnimationLayer) * 13);
+}
+
+void CAnimationSystem::UpdatePredictionAnimation() {
+	CCSGOPlayerAnimationState* original_animstate = Cheat.LocalPlayer->GetAnimstate();
+	if (!original_animstate)
+		return;
+
+	memcpy(prediction_animstate, original_animstate, sizeof(CCSGOPlayerAnimationState));
+
+	AnimationLayer animlayers_backup[13];
+	std::array<float, 24> poseparam_backup;
+
+	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
+	poseparam_backup = Cheat.LocalPlayer->m_flPoseParameter();
+
+	Cheat.LocalPlayer->UpdateAnimationState(prediction_animstate, ctx.cmd->viewangles, true);
+	prediction_animstate->bHitGroundAnimation = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && prediction_animstate->bOnGround; // fuck valve broken code that sets bLanding to false
+
+	BuildMatrix(Cheat.LocalPlayer, prediction_matrix, 128, BONE_USED_BY_HITBOX, nullptr);
+
+	Cheat.LocalPlayer->m_flPoseParameter() = poseparam_backup;
+	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayers_backup, sizeof(AnimationLayer) * 13);
 }
 
 void CAnimationSystem::UpdateLocalAnimations() {

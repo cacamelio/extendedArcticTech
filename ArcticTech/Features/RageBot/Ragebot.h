@@ -9,6 +9,7 @@
 #include <queue>
 
 #define MAX_RAGEBOT_THREADS 6
+
 inline int GetRagebotThreads() {
 	int threads = std::thread::hardware_concurrency() - 2;
 	if (threads > MAX_RAGEBOT_THREADS)
@@ -73,7 +74,7 @@ private:
 	std::condition_variable scan_condition;
 	std::condition_variable result_condition;
 
-	std::vector<CBasePlayer*> targets;
+	std::queue<CBasePlayer*> targets;
 	std::vector<ScannedTarget_t> scanned_targets;
 	std::array<int, 64> delayed_ticks;
 
@@ -123,6 +124,11 @@ private:
 	}
 
 public:
+	inline void ClearTargets() {
+		while (targets.size() > 0)
+			targets.pop();
+	};
+
 	void				CalcSpreadValues();
 	void				AutoStop();
 	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);
@@ -134,7 +140,7 @@ public:
 	int					CalcPointsCount();
 	void				GetMultipoints(LagRecord* record, int hitbox, float scale, std::vector<AimPoint_t>& points);
 	void				FindTargets();
-	std::vector<LagRecord*> SelectRecords(CBasePlayer* player);
+	std::queue<LagRecord*> SelectRecords(CBasePlayer* player);
 	std::vector<AimPoint_t> SelectPoints(LagRecord* record);
 	bool				CompareRecords(LagRecord* a, LagRecord* b);
 

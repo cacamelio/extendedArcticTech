@@ -6,6 +6,7 @@
 #include "../RageBot/Exploits.h"
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/LagCompensation.h"
+#include "../RageBot/Ragebot.h"
 #include "../Visuals/ESP.h"
 #include "../Visuals/Chams.h"
 #include "../ShotManager/ShotManager.h"
@@ -69,6 +70,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
 			AutoPeek->returning = false;
+			Ragebot->ClearTargets();
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));

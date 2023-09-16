@@ -5,7 +5,7 @@
 #include "../../Features/RageBot/AnimationSystem.h"
 
 bool CBasePlayer::IsTeammate() {
-	if (!Cheat.LocalPlayer)
+	if (!Cheat.LocalPlayer || !this)
 		return false;
 	return Cheat.LocalPlayer->m_iTeamNum() == m_iTeamNum();
 }
@@ -182,7 +182,7 @@ void CBasePlayer::UpdateClientSideAnimation() {
 }
 
 void CBasePlayer::UpdateAnimationState(CCSGOPlayerAnimationState* state, const QAngle& angles, bool bForce) {
-	static auto fn = (void(__vectorcall*)(void*, void*, float, float, float, void*))(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 18 56 57 8B F9 F3 0F 11 54 24"));
+	static auto fn = Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 18 56 57 8B F9 F3 0F 11 54 24");
 
 	// xmm2 eye yaw
 	// xmm1 eye pitch
@@ -315,13 +315,11 @@ std::string CBasePlayer::GetName() {
 }
 
 Vector CBasePlayer::GetShootPosition() {
-	Vector shoot_position = GetEyePosition();
-
 	if (this != Cheat.LocalPlayer)
-		return shoot_position;
+		return m_vecOrigin() + Vector(0, 0, m_vecMaxs().z - 8.f);
 
+	Vector shoot_position = GetEyePosition();
 	ModifyEyePosition(shoot_position);
-
 	return shoot_position;
 }
 
@@ -343,19 +341,12 @@ inline float SimpleSplineRemapValClamped(float val, float A, float B, float C, f
 }
 
 void CBasePlayer::ModifyEyePosition(Vector& eye_position) {
-	CCSGOPlayerAnimationState* animstate = GetAnimstate();
-
-	if (!animstate)
-		return;
+	CCSGOPlayerAnimationState* animstate = AnimationSystem->GetPredictionAnimstate();
 
 	if (!animstate->bHitGroundAnimation)
 		return;
 
-	matrix3x4_t local_matrix[128];
-	memcpy(local_matrix, AnimationSystem->GetLocalBoneMatrix(), sizeof(matrix3x4_t) * 128);
-	AnimationSystem->CorrectLocalMatrix(local_matrix, 128);
-
-	auto head_position = GetHitboxCenter(HITBOX_HEAD, local_matrix);
+	auto head_position = GetHitboxCenter(HITBOX_HEAD, AnimationSystem->GetPredictionMatrix());
 	head_position.z += 1.7f;
 
 	if (head_position.z >= eye_position.z)

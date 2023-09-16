@@ -171,6 +171,8 @@ bool CMenu::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_MOUSEMOVE:
     case WM_MOUSEWHEEL:
     case WM_MOUSEHWHEEL:
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDBLCLK:
         return true;
     default:
         return false;
@@ -258,7 +260,8 @@ void CMenuGroupbox::Render() {
     ImGui::BeginGroup();
     ImGui::BeginChild(name.c_str(), size);
 
-    for (auto el : widgets) {
+    for (int i = 0; i < widgets.size(); i++) {
+        auto el = widgets[i];
         if (!el || !el->visible || el->GetType() == WidgetType::ColorPicker || el->GetType() == WidgetType::KeyBind)
             continue;
 

@@ -79,3 +79,5 @@ struct C_CommandContext {
 	CUserCmd		cmd;
 	int				command_number;
 };
+
+void WriteUserCmd(void* buf, const CUserCmd* to, const CUserCmd* from);

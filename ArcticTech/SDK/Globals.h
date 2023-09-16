@@ -11,7 +11,6 @@ struct CheatState_t {
 	bool KeyStates[1024];
 	bool Unloaded = false;
 	QAngle thirdpersonAngles;
-	bool holdLocalAngles = false; // fakeduck anim fix
 	float ServerTime = 0.f;
 	float weaponInaccuracy = 0.f;
 	float weaponSpread = 0.f;
@@ -48,6 +47,8 @@ struct Ctx_t {
 	Vector shoot_position;
 	bool fake_duck = false;
 	int grenade_throw_tick = 0;
+
+	int corrected_tickbase = 0;
 
 	int lc_exploit = 0; // for tickbase correction
 	int lc_exploit_prev = false;

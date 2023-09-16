@@ -2,6 +2,8 @@
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
 
+#include "../RageBot/AnimationSystem.h"
+
 void CPrediction::StartCommand(CBasePlayer* player, CUserCmd* cmd) {
 	*Cheat.LocalPlayer->GetCurrentCommand() = cmd;
 	Cheat.LocalPlayer->GetLastCommand() = *cmd;
@@ -57,9 +59,9 @@ void CPrediction::Start(CUserCmd* cmd) {
 	const bool bOldInPrediction = Prediction->bInPrediction;
 	const float backup_velocity_modifier = Cheat.LocalPlayer->m_flVelocityModifier();
 
-	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift);
+	GlobalVars->curtime = TICKS_TO_TIME(ctx.corrected_tickbase);
 	GlobalVars->frametime = Prediction->bEnginePaused ? 0.f : GlobalVars->interval_per_tick;
-	GlobalVars->tickcount = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift;
+	GlobalVars->tickcount = ctx.corrected_tickbase;
 
 	Prediction->bIsFirstTimePredicted = false;
 	Prediction->bInPrediction = true;
@@ -100,6 +102,7 @@ void CPrediction::Start(CUserCmd* cmd) {
 		//Cheat.LocalPlayer->m_iEFlags() = backup_flags;
 	}
 
+	AnimationSystem->UpdatePredictionAnimation();
 	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();
 }
 

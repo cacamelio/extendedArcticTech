@@ -114,6 +114,7 @@ void CLagCompensation::OnNetUpdate() {
 		return;
 
 	INetChannel* nc = ClientState->m_NetChannel;
+	auto nci = EngineClient->GetNetChannelInfo();
 
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 		CBasePlayer* pl = (CBasePlayer*)EntityList->GetClientEntity(i);
@@ -132,7 +133,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = (GlobalVars->tickcount - TIME_TO_TICKS(pl->m_flSimulationTime())) > 12;
+			new_record->exploiting = GlobalVars->curtime - pl->m_flSimulationTime() > TICKS_TO_TIME(10.f);
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;
@@ -199,13 +200,9 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	const float latency = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
 
 	const int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(latency);
-	int tick_base = Cheat.LocalPlayer->m_nTickBase();
-
-	if (!ctx.lc_exploit)
-		tick_base -= ctx.tickbase_shift;
 
 	const float lerp_time = GetLerpTime();
-	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(tick_base) - record->m_flSimulationTime);
+	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(ctx.corrected_tickbase) - record->m_flSimulationTime);
 
 	if (fabs(delta_time) > 0.2f)
 		return false;

@@ -12,7 +12,7 @@ struct LuaAntiAim_t {
 		OverrideYawOffset = (1 << 2),
 		OverrideFakeLag = (1 << 3),
 		OverrideDesync = (1 << 4),
-		OverrideDesyncLimit = (1 << 5),
+		OverrideDesyncAngle = (1 << 5),
 		OverrideDesyncSide = (1 << 6),
 	};
 
@@ -23,7 +23,7 @@ struct LuaAntiAim_t {
 	float yaw_offset = 0.f;
 	int fakelag = 0;
 	bool desync = false;
-	float desync_limit = 0.f;
+	float desync_angle = 0.f;
 	int desync_side = 0;
 
 	void override_pitch(float p) {
@@ -51,9 +51,9 @@ struct LuaAntiAim_t {
 		desync = d;
 	}
 
-	void override_desync_limit(float l) {
-		override_bits |= OverrideDesyncLimit;
-		desync_limit = l;
+	void override_desync_angle(float l) {
+		override_bits |= OverrideDesyncAngle;
+		desync_angle = l;
 	}
 
 	void override_desync_side(int s) {
@@ -68,7 +68,7 @@ struct LuaAntiAim_t {
 		yaw_offset = 0.f;
 		fakelag = 0.f;
 		desync = false;
-		desync_limit = 0.f;
+		desync_angle = 0.f;
 		desync_side = 0;
 	}
 };
@@ -102,6 +102,7 @@ public:
 	void Desync();
 	void SlowWalk();
 	void FakeDuck();
+	void JitterMove();
 
 	bool IsPeeking();
 

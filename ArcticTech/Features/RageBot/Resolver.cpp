@@ -235,12 +235,9 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	}
 
 	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
-	if (bf_data->use && record->resolver_data.antiaim_type != R_AntiAimType::JITTER && GlobalVars->realtime - bf_data->last_shot < 4.f) { // don't bruteforce if data is too old or player using jitter antiaim
+	if (bf_data->use && record->resolver_data.antiaim_type != R_AntiAimType::JITTER && GlobalVars->realtime - bf_data->last_shot < 6.f) { // don't bruteforce if data is too old or player using jitter antiaim
 		record->resolver_data.side = bf_data->current_side;
 		record->resolver_data.resolver_type = ResolverType::BRUTEFORCE;
-	}
-	else {
-		bf_data->use = false;
 	}
 
 	if (record->resolver_data.side != 0) {

@@ -47,7 +47,7 @@ void CAutoPeek::CreateMove() {
 
 	if (ctx.cmd->buttons & IN_ATTACK && Cheat.LocalPlayer->GetActiveWeapon()->ShootingWeapon() && Cheat.LocalPlayer->GetActiveWeapon()->CanShoot())
 		returning = true;
-	else if (distance_sqr < 1.f)
+	else if (distance_sqr < 4.f)
 		returning = false;
 
 	if (returning) {
@@ -57,9 +57,11 @@ void CAutoPeek::CreateMove() {
 		ang.yaw = vang.yaw - ang.yaw;
 		ang.Normalize();
 
+		float distance = Math::Q_sqrt(distance_sqr);
+
 		Vector dir;
 		Utils::AngleVectors(ang, dir);
-		dir *= 450;
+		dir *= (distance > 5.f) ? 450 : (15.f + 47.f * distance);
 		ctx.cmd->forwardmove = dir.x;
 		ctx.cmd->sidemove = dir.y;
 	}

@@ -102,6 +102,7 @@ struct config_t {
             CKeyBind* fake_duck;
             CKeyBind* slow_walk;
             CComboBox* leg_movement;
+            CCheckBox* jitter_move;
         } misc;
     } antiaim;
 

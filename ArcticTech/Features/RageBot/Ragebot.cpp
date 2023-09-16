@@ -155,15 +155,13 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup)
 }
 
 void CRagebot::FindTargets() {
-	targets.clear();
-
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
 
 		if (!player || !player->IsAlive() || player->IsTeammate() || player->m_bDormant() || player->m_bGunGameImmunity())
 			continue;
 
-		targets.emplace_back(player);
+		targets.push(player);
 	}
 }
 
@@ -191,8 +189,8 @@ bool CRagebot::CompareRecords(LagRecord* a, LagRecord* b) {
 	return true;
 }
 
-std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
-	std::vector<LagRecord*> target_records;
+std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
+	std::queue<LagRecord*> target_records;
 	auto& records = LagCompensation->records(player->EntIndex());
 
 	if (records.empty())
@@ -209,29 +207,29 @@ std::vector<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 		}
 
 		if (config.ragebot.aimbot.extended_backtrack->get()) {
-			target_records.emplace_back(record);
+			target_records.push(record);
 			continue;
 		}
 
 		if (target_records.empty()) {
-			target_records.emplace_back(record);
+			target_records.push(record);
 		} else {
 			if (record->shooting)
-				target_records.emplace_back(record);
+				target_records.push(record);
 
 			last_valid_record = record;
 		}
 	}
 
 	if (!config.ragebot.aimbot.extended_backtrack->get() && last_valid_record && last_valid_record != &records.back()) {
-		target_records.emplace_back(last_valid_record);
+		target_records.push(last_valid_record);
 	}
 
 	if (target_records.empty()) {
 		// TODO: should be extrapolation here
 
 		if (!records.back().shifting_tickbase)
-			target_records.push_back(&records.back());
+			target_records.push(&records.back());
 	}
 
 	return target_records;
@@ -426,8 +424,8 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 			break;
 		}
 
-		CBasePlayer* target = Ragebot->targets.back();
-		Ragebot->targets.pop_back();
+		CBasePlayer* target = Ragebot->targets.front();
+		Ragebot->targets.pop();
 		scan_lock.unlock();
 		
 		Ragebot->scan_condition.notify_one();
@@ -445,7 +443,7 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 }
 
 ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
-	std::vector<LagRecord*> records = SelectRecords(target);
+	std::queue<LagRecord*> records = SelectRecords(target);
 
 	if (records.empty())
 		return ScannedTarget_t{};
@@ -458,8 +456,9 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 
 	LagRecord* backup_record = LagCompensation->BackupData(target);
 
-	for (int i = 0; i < records.size(); i++) {
-		LagRecord* record = records[i];
+	while (records.size() > 0) {
+		LagRecord* record = records.front();
+		records.pop();
 
 		LagCompensation->BacktrackEntity(record, false);
 		record->BuildMatrix();
@@ -649,7 +648,7 @@ void CRagebot::Run() {
 	ctx.cmd->viewangles = best_target.angle - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
 	ctx.cmd->buttons |= IN_ATTACK;
 
-	if (!settings.auto_stop->get(2) && ctx.tickbase_shift > 0) {
+	if (!settings.auto_stop->get(2) && ctx.tickbase_shift > 0 && !(config.ragebot.aimbot.peek_assist->get() && config.ragebot.aimbot.peek_assist_keybind->get())) {
 		doubletap_stop = true;
 		doubletap_stop_speed = ctx.active_weapon->MaxSpeed() * 0.25f;
 	}

@@ -228,6 +228,9 @@
     <ClCompile Include="SDK\Interfaces\CGameRules.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="SDK\Misc\CUserCmd.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\Utils.h">
@@ -543,6 +546,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="SDK\Interfaces\CGameRules.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Misc\MoveMsg.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

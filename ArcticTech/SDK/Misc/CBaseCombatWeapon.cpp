@@ -49,7 +49,7 @@ bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
 		return false;
 
 	int tick_base = owner->m_nTickBase();
-	if (owner == Cheat.LocalPlayer && m_iItemDefinitionIndex() != Revolver)
+	if (owner == Cheat.LocalPlayer && m_iItemDefinitionIndex() != Revolver && !ctx.lc_exploit)
 		tick_base -= ctx.tickbase_shift;
 	const float cur_time = TICKS_TO_TIME(tick_base);
 

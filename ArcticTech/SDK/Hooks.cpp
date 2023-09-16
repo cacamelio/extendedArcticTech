@@ -6,6 +6,7 @@
 #include <intrin.h>
 #include "../Utils/Console.h"
 #include "../UI/UI.h"
+#include "Misc/MoveMsg.h"
 
 #include "../Features/Misc/AutoStrafe.h"
 #include "../Features/Visuals/ESP.h"
@@ -174,6 +175,10 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (!cmd || !cmd->command_number)
 		return;
 
+	ctx.corrected_tickbase = Cheat.LocalPlayer->m_nTickBase();
+	if (!ctx.lc_exploit)
+		ctx.corrected_tickbase -= ctx.tickbase_shift;
+
 	ctx.cmd = cmd;
 	ctx.send_packet = true;
 
@@ -224,6 +229,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	AutoPeek->CreateMove();
 	AntiAim->FakeDuck();
+	AntiAim->JitterMove();
 	Miscelleaneus::AutoStrafe();
 
 	if (ClientState->m_nDeltaTick > 0)
@@ -264,6 +270,17 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.shifted_commands.emplace_back(cmd->command_number);
 		if (bSendPacket) {
 			ctx.sented_commands.emplace_back(cmd->command_number);
+		}
+		else {
+			auto net_channel = ClientState->m_NetChannel;
+
+			if (net_channel->m_nChokedPackets > 0 && !(net_channel->m_nChokedPackets % 4)) {
+				auto backup_choke = net_channel->m_nChokedPackets;
+				net_channel->m_nChokedPackets = 0;
+				net_channel->SendDatagram();
+				--net_channel->m_nOutSequenceNr;
+				net_channel->m_nChokedPackets = backup_choke;
+			}
 		}
 		ctx.teleported_last_tick = true;
 
@@ -328,19 +345,20 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
 
 	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
-		if (!Cheat.holdLocalAngles) {
-			Cheat.thirdpersonAngles = cmd->viewangles;
-			if (config.antiaim.misc.fake_duck->get() && cmd->buttons & IN_ATTACK)
-				Cheat.holdLocalAngles = true;
-		}
+		Cheat.thirdpersonAngles = cmd->viewangles;
 
 		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) > 5)
 			AntiAim->jitter = !AntiAim->jitter;
+
 		ctx.should_update_local_anims = true;
 
 		ctx.breaking_lag_compensation = (ctx.local_sent_origin - Cheat.LocalPlayer->m_vecOrigin()).LengthSqr() > 4096;
 		ctx.local_sent_origin = Cheat.LocalPlayer->m_vecOrigin();
 	}
+
+	Utils::FixMovement(cmd, eyeYaw);
+
+	AntiAim->LegMovement();
 
 	Miscelleaneus::FastThrow();
 	AnimationSystem->OnCreateMove();
@@ -358,21 +376,19 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.lc_exploit_diff = ctx.lc_exploit - ctx.lc_exploit_prev;
 	}
 
-	Utils::FixMovement(cmd, eyeYaw);
-
-	AntiAim->LegMovement();
-
 	bSendPacket = ctx.send_packet;
 	if (bSendPacket) {
 		ctx.sented_commands.emplace_back(cmd->command_number);
 	} else {
 		auto net_channel = ClientState->m_NetChannel;
 
-		auto backup_choke = net_channel->m_nChokedPackets;
-		net_channel->m_nChokedPackets = 0;
-		net_channel->SendDatagram();
-		--net_channel->m_nOutSequenceNr;
-		net_channel->m_nChokedPackets = backup_choke;
+		if (net_channel->m_nChokedPackets > 0 && !(net_channel->m_nChokedPackets % 4)) {
+			auto backup_choke = net_channel->m_nChokedPackets;
+			net_channel->m_nChokedPackets = 0;
+			net_channel->SendDatagram();
+			--net_channel->m_nOutSequenceNr;
+			net_channel->m_nChokedPackets = backup_choke;
+		}
 	}
 
 	if (ctx.should_buy) {
@@ -457,6 +473,8 @@ char* __fastcall hk_get_halloween_mask_model_addon( void* ecx, void* edx )
 }
 
 bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count, const void* msg) {
+	static ConVar* cl_threaded_bone_setup = CVar->FindVar("cl_threaded_bone_setup");
+
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
 	if (state == 6) { // SIGNONSTATE_FULL
@@ -466,8 +484,6 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		World->SkyBox();
 		World->Fog();
 		World->Smoke();
-
-		static ConVar* cl_threaded_bone_setup = CVar->FindVar("cl_threaded_bone_setup");
 
 		cl_threaded_bone_setup->SetInt(1);
 
@@ -487,10 +503,12 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 	static auto oLevelShutdown = (void(__thiscall*)(IBaseClientDLL*))Hooks::ClientVMT->GetOriginal(7);
 
 	Exploits->target_tickbase_shift = ctx.tickbase_shift = 0;
+	ctx.lc_exploit = ctx.lc_exploit_prev = ctx.lc_exploit_diff = 0;
 	ctx.reset();
 	LagCompensation->Reset();
 	AnimationSystem->ResetInterpolation();
 	ShotManager->Reset();
+	Ragebot->ClearTargets();
 
 	oLevelShutdown(thisptr);
 }
@@ -962,36 +980,24 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 }
 
 bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !ctx.lc_exploit)
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !ctx.lc_exploit || !ctx.tickbase_shift)
 		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
 
 	if (from != -1)
 		return true;
 
-	auto p_new_commands = (int*)((DWORD)buf - 0x2C);
-	auto p_backup_commands = (int*)((DWORD)buf - 0x30);
-	auto new_commands = *p_new_commands;
+	uintptr_t* stack_pointer;
+	__asm mov stack_pointer, ebp;
 
+	CCLCMsg_Move_t* moveMsg = reinterpret_cast<CCLCMsg_Move_t*>(*stack_pointer - 0x58);
+
+	auto new_commands = moveMsg->new_commands;
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	auto total_new_commands = ctx.lc_exploit + 2;
+	moveMsg->new_commands += ctx.lc_exploit;
+	moveMsg->backup_commands = 0;
 
-	from = -1;
-
-	// ������ ��� CL_SendMove ��� ���� ��(��� �� ����� CL_SendMove ����� ���� ��������� ���� ������� ��� �� ��������)
-	auto CL_SendMove = [ ] ( )
-	{
-		using CL_SendMove_t = void( __fastcall* )( void );
-		static CL_SendMove_t CL_SendMoveF = ( CL_SendMove_t )Utils::PatternScan( "engine.dll", "55 8B EC A1 ? ? ? ? 81 EC ? ? ? ? B9 ? ? ? ? 53 8B 98" );
-
-		CL_SendMoveF( );
-	};
-
-	*p_new_commands = total_new_commands;
-	*p_backup_commands = 0;
-
-	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++)
-	{
+	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++) {
 		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, true))
 			return false;
 
@@ -1001,28 +1007,19 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	CUserCmd* last_real_cmd = Input->GetUserCmd(slot, from);
 	CUserCmd from_cmd;
 
-	if (last_real_cmd)
-		memcpy(&from_cmd, last_real_cmd, sizeof(CUserCmd));
+	if (!last_real_cmd)
+		return true;
 
 	CUserCmd to_cmd;
 	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
 
 	to_cmd.command_number++;
-	to_cmd.tick_count += 200;
+	to_cmd.tick_count += 256;
 
-	for (int i = new_commands; i <= total_new_commands; i++)
-	{
-		static void* write_user_cmd = Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 51 53 56 8B D9 8B 0D");
+	for (int i = new_commands; i <= moveMsg->new_commands; i++) {
+		WriteUserCmd(buf, &to_cmd, &from_cmd);
 
-		__asm
-		{
-			mov     ecx, buf
-			mov     edx, to_cmd
-			push    from_cmd
-			call    write_user_cmd
-			add     esp, 4
-		}
-		memcpy(&from_cmd, &to_cmd, sizeof(CUserCmd));
+		from_cmd = to_cmd;
 		to_cmd.command_number++;
 		to_cmd.tick_count++;
 	}

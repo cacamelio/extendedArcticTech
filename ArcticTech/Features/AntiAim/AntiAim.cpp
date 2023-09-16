@@ -176,6 +176,9 @@ void CAntiAim::Desync() {
 	else
 		desync_limit = 120.f;
 
+	if (lua_override.override_bits & lua_override.OverrideDesyncAngle)
+		desync_limit = lua_override.desync_angle;
+
 	float desync_angle = desync_limit * (inverter ? 1 : -1);
 
 	if (!ctx.send_packet) {
@@ -192,7 +195,7 @@ void CAntiAim::Desync() {
 	desyncing = true;
 
 	if (ctx.local_velocity.LengthSqr() < 5.f) {
-		ctx.cmd->sidemove = ctx.cmd->buttons & IN_DUCK ? (ctx.cmd->tick_count % 2 == 0 ? -3.01f : 3.01f) : (ctx.cmd->tick_count % 2 == 0 ? -1.01f : 1.01f);
+		ctx.cmd->sidemove = ctx.cmd->buttons & IN_DUCK ? (ctx.cmd->tick_count % 2 == 0 ? -3.3f : 3.3f) : (ctx.cmd->tick_count % 2 == 0 ? -1.1f : 1.1f);
 	}
 }
 
@@ -307,7 +310,11 @@ void CAntiAim::LegMovement() {
 
 	ctx.cmd->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVERIGHT | IN_MOVELEFT);
 
-	switch (config.antiaim.misc.leg_movement->get()) {
+	int target_type = config.antiaim.misc.leg_movement->get();
+	if (target_type == 1 && !ctx.send_packet)
+		target_type = 2;
+
+	switch (target_type) {
 	case 0:
 		if (ctx.cmd->forwardmove > 0)
 			ctx.cmd->buttons |= IN_FORWARD;
@@ -333,17 +340,41 @@ void CAntiAim::LegMovement() {
 	}
 }
 
+void CAntiAim::JitterMove() {
+	if (!config.antiaim.misc.jitter_move->get())
+		return;
+
+	if (!Cheat.LocalPlayer || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+		return;
+
+	if (ctx.active_weapon && ctx.active_weapon->IsGrenade())
+		return;
+
+	if (abs(ctx.cmd->sidemove) + abs(ctx.cmd->forwardmove) < 10.f)
+		return;
+
+	if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 140.f * 140.f)
+		return;
+
+	float factor = 0.95f + fmodf(GlobalVars->curtime, 0.2f) * 0.25f;
+
+	ctx.cmd->sidemove = std::clamp(ctx.cmd->sidemove, -250.f, 250.f) * factor;
+	ctx.cmd->forwardmove = std::clamp(ctx.cmd->forwardmove, -250.f, 250.f) * factor;
+}
+
 bool CAntiAim::IsPeeking() {
 	if (Exploits->GetExploitType() == CExploits::E_HideShots)
 		return false;
 
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	if (velocity.LengthSqr() < 128.f)
+	if (velocity.LengthSqr() < 64.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 12.f;
+	bool low_fps_mode = EnginePrediction->frametime() < 0.01f;
 
+	Vector move_factor = velocity.Normalized() * 10.f + (velocity * TICKS_TO_TIME(4.f));
+	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
 
@@ -380,7 +411,7 @@ bool CAntiAim::IsPeeking() {
 
 		for (int i = 0; i < 4; i++) {
 			FireBulletData_t data;
-			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage >= 2.f) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage > 1.f) {
 				peeked = true;
 				break;
 			}

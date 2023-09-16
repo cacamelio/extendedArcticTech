@@ -125,7 +125,7 @@ void CWorld::ProcessCamera(CViewSetup* view_setup) {
 		CGameTrace trace;
 		CTraceFilterWorldOnly filter;
 		Ray_t ray;
-		Vector eyePos = Cheat.LocalPlayer->m_vecViewOffset() + Cheat.LocalPlayer->GetAbsOrigin();
+		Vector eyePos = (ctx.fake_duck ? Vector(0, 0, 64) : Cheat.LocalPlayer->m_vecViewOffset()) + Cheat.LocalPlayer->GetAbsOrigin();
 		ray.Init(eyePos, eyePos - cameraDirection * config.visuals.effects.thirdperson_distance->get(), Vector(-16, -16, -16), Vector(16, 16, 16));
 
 		EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &trace);
@@ -218,7 +218,7 @@ void CWorld::Crosshair() {
 	if (!activeWeapon || !activeWeapon->ShootingWeapon())
 		return;
 
-	Vector eyePos = Cheat.LocalPlayer->GetEyePosition();
+	Vector eyePos = (ctx.fake_duck ? Vector(0, 0, 64) : Cheat.LocalPlayer->m_vecViewOffset()) + Cheat.LocalPlayer->GetAbsOrigin();
 
 	QAngle viewAngle;
 	EngineClient->GetViewAngles(&viewAngle);

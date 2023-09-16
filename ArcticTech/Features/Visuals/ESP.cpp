@@ -309,8 +309,10 @@ void ESP::DrawFlags(ESPInfo_t info) {
 			flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
 	}
 
-	if (config.visuals.esp.flags->get(3) && record && (record->shifting_tickbase || record->exploiting) && !dormant)
-		flags.push_back({ "E", record->shifting_tickbase ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(240, 240, 240, 255 * info.m_flAlpha) });
+	bool shifting = record && (record->shifting_tickbase || (record->prev_record && record->prev_record->shifting_tickbase));
+
+	if (config.visuals.esp.flags->get(3) && record && (shifting || record->exploiting) && !dormant)
+		flags.push_back({ "E", shifting ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(240, 240, 240, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });

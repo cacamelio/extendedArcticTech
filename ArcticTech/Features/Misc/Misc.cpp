@@ -20,7 +20,7 @@ void Miscelleaneus::Clantag()
 		static auto time = -1;
 
 		auto ticks = TIME_TO_TICKS(nci->GetAvgLatency(FLOW_OUTGOING)) + (float)GlobalVars->tickcount; //-V807
-		auto intervals = 0.2f / GlobalVars->interval_per_tick;
+		auto intervals = 0.3f / GlobalVars->interval_per_tick;
 
 		auto main_time = (int)(ticks / intervals) % 28;
 

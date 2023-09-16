@@ -1008,6 +1008,13 @@ namespace api {
 			return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetLocalPlayer()));
 		}
 
+		sol::table get_simulation_time(sol::this_state state, CBasePlayer* pl) {
+			sol::table result(state, sol::new_table{});
+			result[1] = pl->m_flSimulationTime();
+			result[2] = pl->m_flOldSimulationTime();
+			return result;
+		}
+
 		sol::object get_prop(sol::this_state state, CBaseEntity* ent, std::string prop_name) {
 			static auto recvproxy_int32_to_int8 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 8A 48 08 8B 45 10");
 			static auto recvproxy_int32_to_int16 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 66 8B 48 08 8B 45 10 66 89 08");
@@ -1421,6 +1428,7 @@ void CLua::Setup() {
 		"get_hitbox_position", &CBasePlayer::GetHitboxCenter,
 		"get_animstate", &CBasePlayer::GetAnimstate,
 		"get_animlayers", &api::entity::get_anim_layers,
+		"get_simulation_time", api::entity::get_simulation_time,
 		"get_dormant_last_update", &api::entity::get_dormant_last_update,
 		"set_icon", api::entity::set_icon,
 		"__index", api::entity::get_prop,
@@ -1556,7 +1564,7 @@ void CLua::Setup() {
 		"yaw_offset", &LuaAntiAim_t::override_yaw_offset,
 		"fakelag", &LuaAntiAim_t::override_fakelag,
 		"desync", &LuaAntiAim_t::override_desync,
-		"desync_limit", &LuaAntiAim_t::override_desync_limit,
+		"desync_angle", &LuaAntiAim_t::override_desync_angle,
 		"desync_side", &LuaAntiAim_t::override_desync_side
 	);
 

@@ -161,6 +161,7 @@ void CConfig::Init() {
     add(config.antiaim.misc.fake_duck);
     add(config.antiaim.misc.slow_walk);
     add(config.antiaim.misc.leg_movement);
+    add(config.antiaim.misc.jitter_move);
     add(config.visuals.esp.enable);
     add(config.visuals.esp.dormant);
     add(config.visuals.esp.dormant_color);

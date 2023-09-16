@@ -101,6 +101,7 @@ void CMenu::SetupUI() {
 	config.antiaim.misc.fake_duck = aa_other->AddKeyBind("Fake duck");
 	config.antiaim.misc.slow_walk = aa_other->AddKeyBind("Slow walk");
 	config.antiaim.misc.leg_movement = aa_other->AddComboBox("Leg movement", { "Default", "Sliding", "Walking" });
+	config.antiaim.misc.jitter_move = aa_other->AddCheckBox("Jitter move");
 
 	config.visuals.esp.enable = player_esp->AddCheckBox("Enable");
 	config.visuals.esp.dormant = player_esp->AddCheckBox("Dormant");

@@ -29,7 +29,7 @@ void CShotManager::DetectUnregisteredShots() {
 		m_fLastShotTime = fShotTime;
 	}
 
-	if (m_fLastShotTime - fShotTime < GlobalVars->interval_per_tick * 3.f) {
+	if (m_fLastShotTime - fShotTime < TICKS_TO_TIME(16)) {
 		m_fLastShotTime = fShotTime;
 		return;
 	}
