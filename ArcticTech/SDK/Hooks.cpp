@@ -324,7 +324,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			Exploits->HideShot();
 
 		ShotManager->ProcessManualShot();
-		ctx.last_shot_time = GlobalVars->realtime;
 	}
 
 	AntiAim->lua_override.reset();
@@ -362,6 +361,10 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AnimationSystem->OnCreateMove();
 
 	EnginePrediction->End();
+
+	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
+		ctx.last_shot_time = GlobalVars->realtime;
+	}
 
 	// createmove
 
@@ -490,7 +493,6 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		Ragebot->CalcSpreadValues();
 		ShotManager->Reset();
 		Resolver->Reset();
-		Exploits->BypassMaxTicks();
 
 		for (auto& callback : Lua->hooks.getHooks(LUA_LEVELINIT))
 			callback.func();

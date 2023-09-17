@@ -31,8 +31,8 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 	record->m_nSequence = player->m_nSequence();
 	record->m_flDuckAmout = player->m_flDuckAmount();
 	record->m_flDuckSpeed = player->m_flDuckSpeed();
-	record->m_vecMaxs = player->GetCollideable()->OBBMaxs();
-	record->m_vecMins = player->GetCollideable()->OBBMins();
+	record->m_vecMaxs = player->m_vecMaxs();
+	record->m_vecMins = player->m_vecMins();
 	record->m_vecVelocity = player->m_vecVelocity();
 	record->m_vecAbsAngles = player->GetAbsAngles();
 
@@ -51,6 +51,8 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 
 void CLagCompensation::BacktrackEntity(LagRecord* record, bool copy_matrix, bool use_aim_matrix) {
 	CBasePlayer* player = record->player;
+
+	player->UpdateCollisionBounds();
 
 	player->m_flSimulationTime() = record->m_flSimulationTime;
 	player->m_vecOrigin() = record->m_vecOrigin;
@@ -82,10 +84,7 @@ void LagRecord::BuildMatrix() {
 	if (config.antiaim.angles.legacy_desync->get())
 		return;
 
-	auto backup_curtime = GlobalVars->curtime;
 	auto backup_eye_angle = player->m_angEyeAngles();
-
-	auto collidable = player->GetCollideable();
 
 	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 
@@ -97,7 +96,6 @@ void LagRecord::BuildMatrix() {
 
 	player->ClampBonesInBBox(clamped_matrix, BONE_USED_BY_ANYTHING);
 
-	GlobalVars->curtime = backup_curtime;
 	player->m_angEyeAngles() = backup_eye_angle;
 }
 

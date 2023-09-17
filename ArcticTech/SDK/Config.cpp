@@ -61,7 +61,6 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.doubletap);
     add(config.ragebot.aimbot.doubletap_key);
     add(config.ragebot.aimbot.doubletap_options);
-    add(config.ragebot.aimbot.doubletap_speed);
     add(config.ragebot.aimbot.hide_shots);
     add(config.ragebot.aimbot.hide_shots_key);
     add(config.ragebot.aimbot.force_teleport);

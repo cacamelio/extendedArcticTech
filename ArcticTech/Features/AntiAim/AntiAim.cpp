@@ -99,7 +99,7 @@ void CAntiAim::Angles() {
 	pitch = ctx.cmd->viewangles.pitch;
 	base_yaw = ctx.cmd->viewangles.yaw;
 
-	if (!(ctx.cmd->buttons & IN_USE)) {
+	if (!(ctx.cmd->buttons & IN_USE) || ctx.planting_bomb) {
 		switch (config.antiaim.angles.pitch->get()) {
 		case 0:
 			break;

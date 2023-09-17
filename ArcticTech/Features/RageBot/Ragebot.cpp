@@ -558,6 +558,11 @@ void CRagebot::Run() {
 		return;
 	}
 
+	if (ctx.weapon_info->nWeaponType == WEAPONTYPE_KNIFE) {
+		Knifebot();
+		return;
+	}
+
 	if (!ctx.active_weapon->ShootingWeapon())
 		return;
 
@@ -604,7 +609,8 @@ void CRagebot::Run() {
 	float hitchance = settings.hitchance->get() * 0.01f;
 	if (!settings.strict_hitchance->get()) {
 		if ((weapon_id == Ssg08 && !local_on_ground) ||
-			((weapon_id == Scar20 || weapon_id == G3SG1) && GlobalVars->realtime - Exploits->last_teleport_time < TICKS_TO_TIME(16)))
+			((weapon_id == Scar20 || weapon_id == G3SG1) && GlobalVars->realtime - Exploits->last_teleport_time < TICKS_TO_TIME(16)) ||
+			(weapon_id == Awp && Cheat.LocalPlayer->GetAnimstate() && Cheat.LocalPlayer->GetAnimstate()->bHitGroundAnimation))
 			hitchance *= 0.8f;
 	}
 
@@ -713,7 +719,7 @@ void CRagebot::Zeusbot() {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
 		auto& records = LagCompensation->records(i);
 
-		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant())
+		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant() || player->m_bGunGameImmunity())
 			continue;
 
 		LagRecord* backup_record = LagCompensation->BackupData(player);
@@ -729,7 +735,7 @@ void CRagebot::Zeusbot() {
 
 			float distance = ((record->m_vecOrigin + (record->m_vecMaxs + record->m_vecMins) * 0.5f) - ctx.shoot_position).LengthSqr();
 
-			if (distance > 165 * 165)
+			if (distance > 160 * 160)
 				continue;
 
 			LagCompensation->BacktrackEntity(record);
@@ -744,8 +750,17 @@ void CRagebot::Zeusbot() {
 			for (const auto& point : points) {
 				CGameTrace trace = EngineTrace->TraceRay(ctx.shoot_position, point, MASK_SHOT | CONTENTS_GRATE, Cheat.LocalPlayer);
 
-				if (trace.hit_entity != player)
-					continue;
+				if (trace.hit_entity != player) {
+					CGameTrace clip_trace;
+					Ray_t ray(ctx.shoot_position, point);
+					if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT | CONTENTS_GRATE, player, &clip_trace))
+						continue;
+
+					if (clip_trace.fraction < trace.fraction)
+						trace = clip_trace;
+					else
+						continue;
+				}
 
 				float hitchance = min(12.f / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
 
@@ -761,6 +776,9 @@ void CRagebot::Zeusbot() {
 				ctx.cmd->buttons |= IN_ATTACK;
 				ctx.cmd->tick_count = TIME_TO_TICKS(record->m_flSimulationTime + LagCompensation->GetLerpTime());
 
+				if (!config.antiaim.misc.fake_duck->get())
+					ctx.send_packet = true;
+
 				Chams->AddShotChams(record);
 
 				Console->Log(std::format("shot at {} [hc: {}] [bt: {}]", player->GetName(), (int)(hitchance * 100.f), TIME_TO_TICKS(player->m_flSimulationTime() - record->m_flSimulationTime)));
@@ -769,6 +787,160 @@ void CRagebot::Zeusbot() {
 				delete backup_record;
 				return;
 			}
+		}
+
+		LagCompensation->BacktrackEntity(backup_record);
+		delete backup_record;
+	}
+}
+
+void FindHullIntersection(const Vector& vecSrc, trace_t& tr, const Vector& mins, const Vector& maxs, CBaseEntity* pEntity)
+{
+	int			i, j, k;
+	float		distance;
+	Vector minmaxs[2] = { mins, maxs };
+	trace_t tmpTrace;
+	Vector		vecHullEnd = tr.endpos;
+	Vector		vecEnd;
+
+	distance = 1e6f;
+
+	vecHullEnd = vecSrc + ((vecHullEnd - vecSrc) * 2);
+	tmpTrace = EngineTrace->TraceRay(vecSrc, vecHullEnd, MASK_SOLID, pEntity);
+	if (tmpTrace.fraction < 1.0)
+	{
+		tr = tmpTrace;
+		return;
+	}
+
+	for (i = 0; i < 2; i++)
+	{
+		for (j = 0; j < 2; j++)
+		{
+			for (k = 0; k < 2; k++)
+			{
+				vecEnd.x = vecHullEnd.x + minmaxs[i][0];
+				vecEnd.y = vecHullEnd.y + minmaxs[j][1];
+				vecEnd.z = vecHullEnd.z + minmaxs[k][2];
+
+				tmpTrace = EngineTrace->TraceRay(vecSrc, vecEnd, MASK_SOLID, pEntity);
+				if (tmpTrace.fraction < 1.0)
+				{
+					float thisDistance = (tmpTrace.endpos - vecSrc).Q_Length();
+					if (thisDistance < distance)
+					{
+						tr = tmpTrace;
+						distance = thisDistance;
+					}
+				}
+			}
+		}
+	}
+}
+
+void CRagebot::Knifebot() {
+	const float inaccuracy_tan = std::tan(EnginePrediction->WeaponInaccuracy());
+
+	if (!ctx.active_weapon->CanShoot())
+		return;
+
+	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
+		auto& records = LagCompensation->records(i);
+
+		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant() || player->m_bGunGameImmunity())
+			continue;
+
+		LagRecord* backup_record = LagCompensation->BackupData(player);
+
+		for (auto i = records.rbegin(); i != records.rend(); i = std::next(i)) {
+			const auto record = &*i;
+			if (!LagCompensation->ValidRecord(record)) {
+				if (record->breaking_lag_comp)
+					break;
+
+				continue;
+			}
+
+			Vector target_position = EngineTrace->ClosestPoint(record->m_vecOrigin, Vector(record->m_vecOrigin.x, record->m_vecOrigin.y, record->m_vecOrigin.z + record->m_vecMaxs.z + 18.f), ctx.shoot_position);
+
+			float distance = (target_position - ctx.shoot_position).LengthSqr();
+
+			if (distance > 4096) { // out of range
+				if (distance < 16384)
+					Exploits->block_charge = true;
+				continue;
+			}
+
+			Exploits->block_charge = true;
+
+			Vector vTragetForward = Math::AngleVectors(record->m_vecAbsAngles);
+			vTragetForward.z = 0.f;
+
+			Vector vecLOS = (record->m_vecOrigin - Cheat.LocalPlayer->GetAbsOrigin());
+			vecLOS.z = 0.f;
+			vecLOS.Normalize();
+
+			float flDot = vecLOS.Dot(vTragetForward);
+
+			bool can_backstab = false;
+			if (flDot > 0.475f)
+				can_backstab = true;
+
+			int health = player->m_iHealth();
+			bool first_swing = ctx.active_weapon->m_flNextPrimaryAttack() + 0.4f < GlobalVars->curtime;
+
+			int left_click_dmg = 25;
+			int right_click_dmg = 65;
+
+			if (can_backstab) {
+				left_click_dmg = 90;
+				right_click_dmg = 180;
+			}
+			else if (first_swing) {
+				left_click_dmg = 40;
+			}
+
+			bool should_right_click = false;
+
+			if (right_click_dmg >= health && left_click_dmg < health)
+				should_right_click = true;
+
+			float knife_range = should_right_click ? 32 : 48;
+
+			LagCompensation->BacktrackEntity(record);
+
+			CGameTrace trace = EngineTrace->TraceRay(ctx.shoot_position, target_position, MASK_SOLID, Cheat.LocalPlayer);
+			Vector vecEnd = trace.endpos;
+
+			if (trace.fraction >= 1.f) {
+				trace = EngineTrace->TraceHull(ctx.shoot_position, target_position, Vector(-16, -16, -18), Vector(16, 16, 18), MASK_SOLID, Cheat.LocalPlayer);
+				if (trace.fraction < 1.f) {
+					CBaseEntity* pHit = trace.hit_entity;
+					if (!pHit || !pHit->IsPlayer())
+						FindHullIntersection(ctx.shoot_position, trace, Vector(-16, -16, 0), Vector(16, 16, 36), Cheat.LocalPlayer);
+					vecEnd = trace.endpos;
+				}
+			}
+
+			if (trace.fraction >= 1.f || ((vecEnd - ctx.shoot_position).LengthSqr() > knife_range * knife_range))
+				continue;
+
+			ctx.cmd->viewangles = Math::VectorAngles(target_position - ctx.shoot_position);
+			ctx.cmd->buttons |= should_right_click ? IN_ATTACK2 : IN_ATTACK;
+			ctx.cmd->tick_count = TIME_TO_TICKS(record->m_flSimulationTime + LagCompensation->GetLerpTime());
+
+			if ((should_right_click ? right_click_dmg : left_click_dmg) < health && Exploits->GetExploitType() == CExploits::E_DoubleTap)
+				Exploits->ForceTeleport();
+
+			ctx.last_shot_time = GlobalVars->realtime;
+
+			memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
+			Chams->AddShotChams(record);
+
+			LagCompensation->BacktrackEntity(backup_record);
+			delete backup_record;
+			return;
 		}
 
 		LagCompensation->BacktrackEntity(backup_record);

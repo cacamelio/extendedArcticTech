@@ -51,7 +51,6 @@ struct config_t {
             CCheckBox* doubletap;
             CKeyBind* doubletap_key;
             CMultiCombo* doubletap_options;
-            CComboBox* doubletap_speed;
             CCheckBox* hide_shots;
             CKeyBind* hide_shots_key;
             CKeyBind* force_teleport;

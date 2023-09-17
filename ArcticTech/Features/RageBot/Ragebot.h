@@ -153,6 +153,7 @@ public:
 
 	void				Run();
 	void				Zeusbot();
+	void				Knifebot();
 	void				AutoRevolver();
 	void				DormantAimbot();
 };

@@ -44,7 +44,6 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.extended_backtrack = aimbot->AddCheckBox("Extended backtrack");
 	config.ragebot.aimbot.doubletap = aimbot->AddCheckBox("Double Tap");
 	config.ragebot.aimbot.doubletap_key = aimbot->AddKeyBind("Double Tap");
-	config.ragebot.aimbot.doubletap_speed = aimbot->AddComboBox("Double tap speed", {"Reliable", "Fast", "Extreme"});
 	config.ragebot.aimbot.doubletap_options = aimbot->AddMultiCombo("Double Tap options", { "Break LC", "Lag Peek", "Immediate teleport", "Fast throw"});
 	config.ragebot.aimbot.hide_shots = aimbot->AddCheckBox("Hide Shots");
 	config.ragebot.aimbot.hide_shots_key = aimbot->AddKeyBind("Hide Shots");

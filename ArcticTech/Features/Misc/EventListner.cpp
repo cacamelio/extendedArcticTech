@@ -41,10 +41,13 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 	bool skip_hurt = ShotManager->OnEvent(event);
 
+	int local_id = EngineClient->GetLocalPlayer();
+	int user_id_pl = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
+
 	if (name == "player_hurt") {
 		CBasePlayer* victim = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
 
-		if (EngineClient->GetPlayerForUserID(event->GetInt("attacker")) == EngineClient->GetLocalPlayer()) {
+		if (EngineClient->GetPlayerForUserID(event->GetInt("attacker")) == local_id) {
 			if (config.visuals.esp.hitsound->get())
 				EngineClient->ExecuteClientCmd("play buttons/arena_switch_press_02.wav");
 
@@ -63,9 +66,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		}
 	}
 	else if (name == "player_death") {
-		int userid = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
-
-		if (userid == EngineClient->GetLocalPlayer()) {
+		if (user_id_pl == local_id) {
 			ctx.reset();
 			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
@@ -73,14 +74,15 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			Ragebot->ClearTargets();
 		}
 
-		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(userid));
-		AnimationSystem->InvalidateInterpolation(userid);
-		LagCompensation->Invalidate(userid);
-		ESPInfo[userid].m_nHealth = 0;
+		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(user_id_pl));
+		AnimationSystem->InvalidateInterpolation(user_id_pl);
+		LagCompensation->Invalidate(user_id_pl);
+		ESPInfo[user_id_pl].m_nHealth = 0;
 	}
 	else if (name == "round_start") {
 		LagCompensation->Reset();
 		ctx.should_buy = true;
+		ctx.planting_bomb = false;
 
 		//Utils::ForceFullUpdate();
 
@@ -96,26 +98,35 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		}
 	}
 	else if (name == "bullet_impact") {
-		if (EngineClient->GetPlayerForUserID(event->GetInt("userid")) == EngineClient->GetLocalPlayer() && config.visuals.effects.server_impacts->get() && Cheat.LocalPlayer) {
+		if (user_id_pl == local_id && config.visuals.effects.server_impacts->get() && Cheat.LocalPlayer) {
 			Vector pos = Vector(event->GetFloat("x"), event->GetFloat("y"), event->GetFloat("z"));
 			Color col = config.visuals.effects.server_impacts_color->get();
 			DebugOverlay->AddBoxOverlay(pos, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
 		}
 	}
 	else if (name == "item_equip") {
-		int pl_id = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
-		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(pl_id));
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(user_id_pl));
 
 		if (player && player->m_bDormant()) {
-			ESPInfo[pl_id].m_iActiveWeapon = event->GetInt("defindex");
+			ESPInfo[user_id_pl].m_iActiveWeapon = event->GetInt("defindex");
 		}
 	}
 	else if (name == "player_disconnect") {
-		int id = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
-		Chams->RemoveShotChams(id);
-		LagCompensation->Reset(id);
-		ESPInfo[id].reset();
-		AnimationSystem->InvalidateInterpolation(id);
+		Chams->RemoveShotChams(user_id_pl);
+		LagCompensation->Reset(user_id_pl);
+		ESPInfo[user_id_pl].reset();
+		AnimationSystem->InvalidateInterpolation(user_id_pl);
+	}
+	else if (name == "bomb_beginplant") {
+		if (user_id_pl == local_id)
+			ctx.planting_bomb = true;
+	}
+	else if (name == "bomb_abortplant") {
+		if (user_id_pl == local_id)
+			ctx.planting_bomb = false;
+	}
+	else if (name == "bomb_planted") {
+		ctx.planting_bomb = false;
 	}
 
 	for (auto& func : Lua->hooks.getHooks(LUA_GAMEEVENTS))

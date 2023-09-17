@@ -38,6 +38,7 @@ struct Ctx_t {
 	bool should_buy = false;
 	QAngle last_choke_angle;
 	float last_shot_time = 0.f;
+	bool planting_bomb = false;
 
 	CBaseCombatWeapon* active_weapon = nullptr;
 	CCSWeaponData* weapon_info = nullptr;
@@ -68,6 +69,7 @@ struct Ctx_t {
 		grenade_throw_tick = 0;
 		fake_duck = 0;
 		last_shot_time = 0.f;
+		planting_bomb = false;
 	}
 };
 

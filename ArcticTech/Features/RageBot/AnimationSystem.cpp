@@ -110,7 +110,6 @@ void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
 void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld, int maxBones, int mask, AnimationLayer* animlayers) {
 	hook_info.setup_bones = true;
 
-	player->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
 	player->InvalidateBoneCache();
 
 	if (animlayers != nullptr)
@@ -246,8 +245,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	memcpy(player->GetAnimlayers(), record->animlayers, sizeof(AnimationLayer) * 13);
 	memcpy(player->GetCachedBoneData().Base(), record->bone_matrix, sizeof(matrix3x4_t) * player->GetCachedBoneData().Count());
 	player->m_flPoseParameter() = pose_params;
-
-	player->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
 }
 
 Vector CAnimationSystem::GetInterpolated(CBasePlayer* player) {
