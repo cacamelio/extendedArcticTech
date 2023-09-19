@@ -183,7 +183,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	CUserCmd_lua lua_cmd;
 	lua_cmd.command_number = cmd->command_number;
 	lua_cmd.tickcount = cmd->tick_count;
-	lua_cmd.hasbeenpredicted = cmd->hasbeenpredicted;
 	lua_cmd.move = Vector(cmd->sidemove, cmd->forwardmove, cmd->upmove);
 	lua_cmd.viewangles = cmd->viewangles;
 	lua_cmd.random_seed = cmd->random_seed;
@@ -264,20 +263,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		}
 
 		ctx.shifted_commands.emplace_back(cmd->command_number);
-		if (bSendPacket) {
+		if (bSendPacket)
 			ctx.sented_commands.emplace_back(cmd->command_number);
-		}
-		else {
-			auto net_channel = ClientState->m_NetChannel;
 
-			if (net_channel->m_nChokedPackets > 0 && !(net_channel->m_nChokedPackets % 4)) {
-				auto backup_choke = net_channel->m_nChokedPackets;
-				net_channel->m_nChokedPackets = 0;
-				net_channel->SendDatagram();
-				--net_channel->m_nOutSequenceNr;
-				net_channel->m_nChokedPackets = backup_choke;
-			}
-		}
 		ctx.teleported_last_tick = true;
 
 		verified->m_cmd = *cmd;
@@ -338,7 +326,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
 
-	if (Exploits->teleport_next_tick)
+	if (Exploits->TeleportThisTick())
 		ctx.send_packet = false;
 
 	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
@@ -384,7 +372,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.last_choke_angle = cmd->viewangles;
 		auto net_channel = ClientState->m_NetChannel;
 
-		if (net_channel->m_nChokedPackets > 0 && !(net_channel->m_nChokedPackets % 4)) {
+		if (net_channel->m_nChokedPackets > 0) {
 			auto backup_choke = net_channel->m_nChokedPackets;
 			net_channel->m_nChokedPackets = 0;
 			net_channel->SendDatagram();
@@ -518,8 +506,29 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setup) {
 	static tOverrideView oOverrideView = (tOverrideView)Hooks::ClientModeVMT->GetOriginal(18);
 
-	if (setup->fov == 90 || config.visuals.effects.removals->get(5)) {
-		setup->fov = config.visuals.effects.fov->get();
+	if (!Cheat.InGame || !Cheat.LocalPlayer)
+		return oOverrideView(thisptr, edx, setup);
+
+	if (config.visuals.effects.fov->get() != 90) {
+		float fov = config.visuals.effects.fov->get();;
+
+		if (Cheat.LocalPlayer->IsAlive() && Cheat.LocalPlayer->m_bIsScoped()) {
+			CBaseCombatWeapon* weap = Cheat.LocalPlayer->GetActiveWeapon();
+
+			if (weap) {
+				switch (weap->m_zoomLevel())
+				{
+				case 1:
+					fov -= (setup->fov - fov) * config.visuals.effects.fov_zoom->get() * 0.01f;
+				case 2:
+					fov -= (setup->fov - fov) * config.visuals.effects.fov_second_zoom->get() * 0.01f;
+				default:
+					break;
+				}
+			}
+		}
+
+		setup->fov = fov;
 	}
 
 	World->ProcessCamera(setup);
@@ -754,18 +763,18 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
+	if (cmd->tick_count == INT_MAX) {
+		player->m_nTickBase()++;
+		return;
+	}
+
 	if (ctx.lc_exploit_change == cmd->command_number)
 		player->m_nTickBase() -= ctx.lc_exploit_diff;
 
 	int backup_tickbase = player->m_nTickBase();
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
-	//if (ctx.lc_exploit_change == cmd->command_number)
-	//	backup_tickbase--; // wtf
-
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
-
-	//EnginePrediction->PatchAttackPacket(cmd, true);
 
 	player->m_flVelocityModifier() = backup_velocity_modifier;
 
@@ -784,8 +793,6 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 		++i;
 	}
 
-	//EnginePrediction->PatchAttackPacket(cmd, false);
-
 	MoveHelper = moveHelper;
 }
 
@@ -801,6 +808,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 	if (c_ctx->command_number == Exploits->charged_command + 1) {
 		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick + 1;
 		//EnginePrediction->RestoreNetvars(last_simulated_tick % 150);
+
 	}
 
 	oPhysicsSimulate(thisptr, edx);
@@ -823,7 +831,7 @@ void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_seq
 		std::remove_if(
 			ctx.sented_commands.begin(),
 			ctx.sented_commands.end(),
-			[&](auto const& command) { return command < outgoing_acknowledged; }),
+			[&](auto const& command) { return std::abs(command - outgoing_acknowledged) >= 150 || command < outgoing_acknowledged; }),
 		ctx.sented_commands.end());
 }
 
@@ -877,7 +885,7 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 
 	oCL_Move(accamulatedExtraSamples, bFinalTick);
 
-	Exploits->HandleTeleport(oCL_Move, accamulatedExtraSamples);
+	Exploits->HandleTeleport(oCL_Move);
 }
 
 QAngle* __fastcall hkGetEyeAngles(CBasePlayer* thisptr, void* edx) {
@@ -1006,17 +1014,19 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 		from = to;
 	}
 
-	CUserCmd* last_real_cmd = Input->GetUserCmd(slot, from);
-	CUserCmd from_cmd;
+	CUserCmd* user_cmd = Input->GetUserCmd(slot, from);
 
-	if (!last_real_cmd)
+	if (!user_cmd)
 		return true;
 
+	CUserCmd from_cmd;
 	CUserCmd to_cmd;
-	memcpy(&to_cmd, &from_cmd, sizeof(CUserCmd));
+
+	from_cmd = *user_cmd;
+	to_cmd = from_cmd;
 
 	to_cmd.command_number++;
-	to_cmd.tick_count += 256;
+	to_cmd.tick_count += 200;
 
 	for (int i = new_commands; i <= moveMsg->new_commands; i++) {
 		WriteUserCmd(buf, &to_cmd, &from_cmd);
@@ -1078,8 +1088,14 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 
 bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
 	static auto setup_bones = Utils::PatternScan("client.dll", "84 C0 74 0A F3 0F 10 05 ? ? ? ? EB 05");
+	static auto apply_shake = Utils::PatternScan("client.dll", "84 C0 75 0B 8B 0D ? ? ? ? 8B 01 FF 50 4C");
 
-	if (_ReturnAddress() == setup_bones)
+	void* ret = _ReturnAddress();
+
+	if (config.visuals.effects.removals->get(7) && ret == apply_shake)
+		return true;
+
+	if (ret == setup_bones)
 		return false;
 
 	return oInPrediction(ecx, edx);
@@ -1106,6 +1122,7 @@ bool __fastcall hkInterpolateViewmodel(CBaseViewModel* vm, void* edx, float curT
 void __fastcall hkThrowGrenade(CBaseGrenade* thisptr, void* edx) {
 	if (EntityList->GetClientEntityFromHandle(thisptr->m_hOwnerEntity()) == Cheat.LocalPlayer && ctx.cmd)
 		ctx.grenade_throw_tick = ctx.cmd->command_number;
+
 	oThrowGrenade(thisptr, edx);
 }
 
@@ -1114,6 +1131,16 @@ void __fastcall hkCalcViewModel(CBaseViewModel* vm, void* edx, CBasePlayer* play
 		return oCalcViewModel(vm, edx, player, player->GetAbsOrigin() + Vector(0, 0, 64), eyeAngles);
 
 	oCalcViewModel(vm, edx, player, eyePosition, eyeAngles);
+}
+
+bool __fastcall hkSVCMsg_TempEntities(CClientState* thisptr, void* edx, const void* msg) {
+	auto old_maxclients = thisptr->m_nMaxClients;
+
+	// nope https://github.com/perilouswithadollarsign/cstrike15_src/blob/HEAD/engine/servermsghandler.cpp#L817
+	thisptr->m_nMaxClients = 1;
+	bool result = oSVCMsg_TempEntities(thisptr, edx, msg);
+	thisptr->m_nMaxClients = old_maxclients;
+	return result;
 }
 
 void Hooks::Initialize() {
@@ -1190,6 +1217,7 @@ void Hooks::Initialize() {
 	oInterpolateViewmodel = HookFunction<tInterpolateViewmodel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateViewmodel);
 	oThrowGrenade = HookFunction<tThrowGrenade>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 57 8B F9 80 BF ? ? ? ? ? 74 07"), hkThrowGrenade);
 	oCalcViewModel = HookFunction<tCalcViewModel>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 58 56 57"), hkCalcViewModel);
+	oSVCMsg_TempEntities = HookFunction<tSVCMsg_TempEntities>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 83 EC 4C A1 ? ? ? ? 80"), hkSVCMsg_TempEntities);
 
 	EventListner->Register();
 
@@ -1255,4 +1283,5 @@ void Hooks::End() {
 	RemoveHook(oInterpolateViewmodel, hkInterpolateViewmodel);
 	RemoveHook(oThrowGrenade, hkThrowGrenade);
 	RemoveHook(oCalcViewModel, hkCalcViewModel);
+	RemoveHook(oSVCMsg_TempEntities, hkSVCMsg_TempEntities);
 }

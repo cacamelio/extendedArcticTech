@@ -30,15 +30,24 @@ struct CUserCmd_lua {
 	int tickcount = 0;
 	Vector move;
 	QAngle viewangles;
-
 	int buttons = 0;
-
 	int random_seed = false;
-	bool hasbeenpredicted = false;
-
 	sol::object override_defensive = sol::nil;
 	bool allow_defensive = true;
-	int pre_prediction_flags;
+
+	void set_move(float yaw, sol::optional<float> speed) {
+		float sp = 0.f;
+		if (speed.has_value()) {
+			sp = speed.value();
+		} else {
+			sp = move.Q_Length();
+		}
+
+		float view_yaw = viewangles.yaw;
+		float diff_yaw = Math::AngleDiff(yaw, view_yaw);
+
+		move = Math::AngleVectors(QAngle(0.f, diff_yaw, 0.f));
+	}
 };
 
 template <typename T>

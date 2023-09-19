@@ -51,14 +51,14 @@ Vector CBaseEntity::GetAbsOrigin() {
 	if (!this)
 		return Vector();
 
-	return CallVFunction<Vector& (__thiscall*)(CBaseEntity*)>(this, 10)(this);
+	return CallVFunction<Vector&(__thiscall*)(CBaseEntity*)>(this, 10)(this);
 }
 
 QAngle CBaseEntity::GetAbsAngles() {
 	if (!this)
 		return QAngle();
 
-	return CallVFunction<QAngle& (__thiscall*)(void*)>(this, 11)(this);
+	return CallVFunction<QAngle&(__thiscall*)(CBaseEntity*)>(this, 11)(this);
 }
 
 Vector CBaseEntity::GetWorldPosition() {

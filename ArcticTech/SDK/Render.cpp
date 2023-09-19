@@ -310,63 +310,66 @@ void CRender::RenderDrawData() {
 			device->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, object);
 			break;
 		}
-		//case EDrawType::BLUR: {
-		//	static IDirect3DSurface9* rtBackup = nullptr;
-		//	static IDirect3DTexture9* blurTexture = nullptr;
-		//	static int backbufferWidth = 0;
-		//	static int backbufferHeight = 0;
+		case EDrawType::BLUR: {
+			static IDirect3DSurface9* rtBackup = nullptr;
+			static IDirect3DTexture9* blurTexture = nullptr;
+			static int backbufferWidth = 0;
+			static int backbufferHeight = 0;
 
-		//	const auto& object = std::any_cast<blur_command_t>(data.object);
+			const auto& object = std::any_cast<blur_command_t>(data.object);
 
-		//	IDirect3DSurface9* backBuffer;
-		//	device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer);
-		//	D3DSURFACE_DESC desc;
-		//	backBuffer->GetDesc(&desc);
+			IDirect3DPixelShader9* shader;
+			device->GetPixelShader(&shader);
 
-		//	if (backbufferWidth != desc.Width || backbufferHeight != desc.Height)
-		//	{
-		//		if (blurTexture)
-		//			blurTexture->Release();
+			IDirect3DSurface9* backBuffer;
+			device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer);
+			D3DSURFACE_DESC desc;
+			backBuffer->GetDesc(&desc);
 
-		//		backbufferWidth = desc.Width;
-		//		backbufferHeight = desc.Height;
-		//		device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &blurTexture, nullptr);
-		//	}
+			if (backbufferWidth != desc.Width || backbufferHeight != desc.Height)
+			{
+				if (blurTexture)
+					blurTexture->Release();
 
-		//	device->GetRenderTarget(0, &rtBackup);
+				backbufferWidth = desc.Width;
+				backbufferHeight = desc.Height;
+				device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &blurTexture, nullptr);
+			}
 
-		//	{
-		//		IDirect3DSurface9* surface;
-		//		blurTexture->GetSurfaceLevel(0, &surface);
-		//		device->StretchRect(backBuffer, NULL, surface, NULL, D3DTEXF_NONE);
-		//		device->SetRenderTarget(0, surface);
-		//		surface->Release();
-		//	}
+			device->GetRenderTarget(0, &rtBackup);
 
-		//	backBuffer->Release();
+			{
+				IDirect3DSurface9* surface;
+				blurTexture->GetSurfaceLevel(0, &surface);
+				device->StretchRect(backBuffer, NULL, surface, NULL, D3DTEXF_NONE);
+				device->SetRenderTarget(0, surface);
+				surface->Release();
+			}
 
-		//	//device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-		//	//device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
+			backBuffer->Release();
 
-		//	device->SetPixelShader(blurShader);
+			device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+			device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 
-		//	constantTable->SetFloat(device, "screen_width", backbufferWidth);
-		//	constantTable->SetFloat(device, "screen_height", backbufferHeight);
+			device->SetPixelShader(blurShader);
 
-		//	D3DXVECTOR3 pos(0, 0, 0);
-		//	sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
-		//	sprite->Flush();
-		//	device->SetTexture(0, 0);
+			constantTable->SetFloat(device, "screen_width", backbufferWidth);
+			constantTable->SetFloat(device, "screen_height", backbufferHeight);
 
-		//	device->SetRenderTarget(0, rtBackup);
-		//	rtBackup->Release();
+			D3DXVECTOR3 pos(0, 0, 0);
+			sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
 
-		//	device->SetPixelShader(nullptr);
+			device->SetRenderTarget(0, rtBackup);
+			rtBackup->Release();
 
-		//	sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
-		//	sprite->Flush();
-		//	device->SetTexture(0, 0);
-		//}
+			device->SetPixelShader(nullptr);
+			sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
+
+			sprite->Flush();
+			device->SetTexture(0, 0);
+
+			device->SetPixelShader(shader);
+		}
 		}
 	};
 

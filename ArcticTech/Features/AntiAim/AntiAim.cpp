@@ -358,9 +358,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 64.f)
 		return false;
 
-	bool low_fps_mode = EnginePrediction->frametime() < 0.01f;
-
-	Vector move_factor = velocity.Normalized() * 10.f + (velocity * TICKS_TO_TIME(4.f));
+	Vector move_factor = velocity.Normalized() * 9.5f + (velocity * TICKS_TO_TIME(2.5f));
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

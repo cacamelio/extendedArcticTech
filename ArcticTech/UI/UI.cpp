@@ -182,7 +182,9 @@ void CMenu::SetupUI() {
 	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov", "Smoke" });
 
 	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
-	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Blood", "Sprites" });
+	config.visuals.effects.fov_zoom = effects->AddSliderInt("FOV - Zoom", 0, 100, 10, "%d%%");
+	config.visuals.effects.fov_second_zoom = effects->AddSliderInt("FOV - Second zoom", 0, 100, 0, "%d%%");
+	config.visuals.effects.removals = effects->AddMultiCombo("Removals", { "Post effects", "Fog", "Shadows", "Smoke", "Flashbang", "Blood", "Sprites", "Recoil" });
 	config.visuals.effects.remove_scope = effects->AddComboBox("Remove scope", { "Disabled", "Remove overlay", "Remove all" });
 	config.visuals.effects.world_color_enable = effects->AddCheckBox("World color");
 	config.visuals.effects.world_color = effects->AddColorPicker("World color");
@@ -621,6 +623,10 @@ void CMenu::SetupUI() {
 		config.visuals.chams.viewmodel_type->SetVisible(config.visuals.chams.chams_selector->get() == 4);
 		config.visuals.chams.viewmodel_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 4);
 		config.visuals.chams.viewmodel_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+	});
 
+	config.visuals.effects.fov->SetCallback([]() {
+		config.visuals.effects.fov_zoom->SetVisible(config.visuals.effects.fov->get() != 90);
+		config.visuals.effects.fov_second_zoom->SetVisible(config.visuals.effects.fov->get() != 90);
 	});
 }

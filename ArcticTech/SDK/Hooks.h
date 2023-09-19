@@ -57,6 +57,7 @@ typedef void(__fastcall* tCL_DispatchSound)(const SoundInfo_t&, void*);
 typedef bool(__fastcall* tInterpolateViewmodel)(CBaseViewModel*, void*, float);
 typedef void(__fastcall* tThrowGrenade)(CBaseGrenade*, void*);
 typedef void(__fastcall* tCalcViewModel)(CBaseViewModel*, void*, CBasePlayer*, const Vector&, const QAngle&);
+typedef bool(__fastcall* tSVCMsg_TempEntities)(CClientState*, void*, const void*);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -93,6 +94,7 @@ inline tCL_DispatchSound oCL_DispatchSound;
 inline tInterpolateViewmodel oInterpolateViewmodel;
 inline tThrowGrenade oThrowGrenade;
 inline tCalcViewModel oCalcViewModel;
+inline tSVCMsg_TempEntities oSVCMsg_TempEntities;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

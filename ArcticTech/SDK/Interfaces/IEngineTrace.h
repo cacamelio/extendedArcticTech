@@ -449,7 +449,7 @@ struct Ray_t
     }
 
     Ray_t(Vector const& start, Vector const& end, Vector const& mins, Vector const& maxs) {
-        Init(start, end);
+        Init(start, end, mins, maxs);
     }
 
     void Init(Vector const& start, Vector const& end)

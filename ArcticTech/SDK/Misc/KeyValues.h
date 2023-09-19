@@ -266,7 +266,7 @@ public:
 	void Clear(void);
 
 	// Data type
-	enum types_t
+	enum types_t : char
 	{
 		TYPE_NONE = 0,
 		TYPE_STRING,
@@ -281,8 +281,7 @@ public:
 		TYPE_COMPILED_INT_1,			// hack to collapse 1 in the compiled format
 		TYPE_NUMTYPES,
 	};
-	types_t GetDataType(const char* keyName = NULL);
-	types_t GetDataType() const;
+	types_t GetDataType() const { return (types_t)m_iDataType; };
 
 	// for backward compat
 	void deleteThis();
@@ -362,6 +361,7 @@ private:
 	uint32_t m_iKeyName : 24;	// keyname is a symbol defined in KeyValuesSystem
 	uint32_t m_iKeyNameCaseSensitive1 : 8;	// 1st part of case sensitive symbol defined in KeyValueSystem
 
+public:
 	// These are needed out of the union because the API returns string pointers
 	char* m_sValue;
 	wchar_t* m_wsValue;
@@ -374,6 +374,7 @@ private:
 		void* m_pValue;
 		unsigned char m_Color[4];
 	};
+private:
 
 	char	   m_iDataType;
 	char	   m_bHasEscapeSequences; // true, if while parsing this KeyValue, Escape Sequences are used (default false)

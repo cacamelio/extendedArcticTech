@@ -298,7 +298,7 @@ public:
 		}
 	}
 
-	float w;
+	float w = 0.f;
 };
 
 struct Vector4D {

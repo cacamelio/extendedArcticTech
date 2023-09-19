@@ -200,6 +200,8 @@ struct config_t {
 
         struct effects_t {
             CSliderInt* fov;
+            CSliderInt* fov_zoom;
+            CSliderInt* fov_second_zoom;
             CMultiCombo* removals;
             CComboBox* remove_scope;
             CCheckBox* world_color_enable;

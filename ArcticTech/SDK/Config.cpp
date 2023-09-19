@@ -240,6 +240,8 @@ void CConfig::Init() {
     add(config.visuals.other_esp.grenade_predict_color);
     add(config.visuals.other_esp.particles);
     add(config.visuals.effects.fov);
+    add(config.visuals.effects.fov_zoom);
+    add(config.visuals.effects.fov_second_zoom);
     add(config.visuals.effects.removals);
     add(config.visuals.effects.remove_scope);
     add(config.visuals.effects.world_color_enable);
@@ -342,7 +344,7 @@ void CConfig::parse(nlohmann::json& cfg) {
             for (auto cb : e->callbacks)
                 cb();
 
-            for (auto lcb : e->lua_callbacks)
+            for (auto& lcb : e->lua_callbacks)
                 lcb.func();
         }
         catch (nlohmann::json::exception& e) {

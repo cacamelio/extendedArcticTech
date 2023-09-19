@@ -37,6 +37,9 @@ void CAnimationSystem::OnCreateMove() {
 	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
+	if (animstate->iLastUpdateFrame >= GlobalVars->framecount)
+		animstate->iLastUpdateFrame = GlobalVars->framecount - 1;
+
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, ctx.cmd->viewangles);
 	animstate->bHitGroundAnimation = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 

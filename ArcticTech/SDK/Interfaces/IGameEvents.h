@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../Utils/VitualFunction.h"
+#include "../Misc/KeyValues.h"
 
 class IGameEvent
 {

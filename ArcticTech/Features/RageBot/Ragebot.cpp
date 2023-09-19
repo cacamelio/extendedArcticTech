@@ -735,7 +735,7 @@ void CRagebot::Zeusbot() {
 
 			float distance = ((record->m_vecOrigin + (record->m_vecMaxs + record->m_vecMins) * 0.5f) - ctx.shoot_position).LengthSqr();
 
-			if (distance > 160 * 160)
+			if (distance > 155 * 155)
 				continue;
 
 			LagCompensation->BacktrackEntity(record);
@@ -764,12 +764,12 @@ void CRagebot::Zeusbot() {
 
 				float hitchance = min(12.f / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
 
-				if (hitchance < 0.6f)
+				if (hitchance < 0.7f)
 					continue;
 
 				if (config.visuals.effects.client_impacts->get()) {
 					Color col = config.visuals.effects.client_impacts_color->get();
-					DebugOverlay->AddBoxOverlay(point, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
+					DebugOverlay->AddBoxOverlay(trace.endpos, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
 				}
 
 				ctx.cmd->viewangles = Math::VectorAngles(point - ctx.shoot_position);
@@ -791,50 +791,6 @@ void CRagebot::Zeusbot() {
 
 		LagCompensation->BacktrackEntity(backup_record);
 		delete backup_record;
-	}
-}
-
-void FindHullIntersection(const Vector& vecSrc, trace_t& tr, const Vector& mins, const Vector& maxs, CBaseEntity* pEntity)
-{
-	int			i, j, k;
-	float		distance;
-	Vector minmaxs[2] = { mins, maxs };
-	trace_t tmpTrace;
-	Vector		vecHullEnd = tr.endpos;
-	Vector		vecEnd;
-
-	distance = 1e6f;
-
-	vecHullEnd = vecSrc + ((vecHullEnd - vecSrc) * 2);
-	tmpTrace = EngineTrace->TraceRay(vecSrc, vecHullEnd, MASK_SOLID, pEntity);
-	if (tmpTrace.fraction < 1.0)
-	{
-		tr = tmpTrace;
-		return;
-	}
-
-	for (i = 0; i < 2; i++)
-	{
-		for (j = 0; j < 2; j++)
-		{
-			for (k = 0; k < 2; k++)
-			{
-				vecEnd.x = vecHullEnd.x + minmaxs[i][0];
-				vecEnd.y = vecHullEnd.y + minmaxs[j][1];
-				vecEnd.z = vecHullEnd.z + minmaxs[k][2];
-
-				tmpTrace = EngineTrace->TraceRay(vecSrc, vecEnd, MASK_SOLID, pEntity);
-				if (tmpTrace.fraction < 1.0)
-				{
-					float thisDistance = (tmpTrace.endpos - vecSrc).Q_Length();
-					if (thisDistance < distance)
-					{
-						tr = tmpTrace;
-						distance = thisDistance;
-					}
-				}
-			}
-		}
 	}
 }
 
@@ -862,12 +818,13 @@ void CRagebot::Knifebot() {
 				continue;
 			}
 
-			Vector target_position = EngineTrace->ClosestPoint(record->m_vecOrigin, Vector(record->m_vecOrigin.x, record->m_vecOrigin.y, record->m_vecOrigin.z + record->m_vecMaxs.z + 18.f), ctx.shoot_position);
+			Vector target_position = record->m_vecOrigin;
+			target_position.z = std::clamp(ctx.shoot_position.z, record->m_vecOrigin.z, record->m_vecOrigin.z + record->m_vecMaxs.z) - 0.01f; // shitty valve tracer is broken if start.z == end.z
 
 			float distance = (target_position - ctx.shoot_position).LengthSqr();
 
-			if (distance > 4096) { // out of range
-				if (distance < 16384)
+			if (distance > 6400.f) { // out of range
+				if (distance < 32768.f)
 					Exploits->block_charge = true;
 				continue;
 			}
@@ -906,24 +863,22 @@ void CRagebot::Knifebot() {
 			if (right_click_dmg >= health && left_click_dmg < health)
 				should_right_click = true;
 
-			float knife_range = should_right_click ? 32 : 48;
+			float knife_range = should_right_click ? 32.f : 48.f;
+
+			Vector vecDelta = (target_position - ctx.shoot_position).Normalized();
+			Vector vecEnd = ctx.shoot_position + vecDelta * knife_range;
 
 			LagCompensation->BacktrackEntity(record);
 
-			CGameTrace trace = EngineTrace->TraceRay(ctx.shoot_position, target_position, MASK_SOLID, Cheat.LocalPlayer);
-			Vector vecEnd = trace.endpos;
+			CGameTrace trace = EngineTrace->TraceHull(ctx.shoot_position, vecEnd, Vector(-16, -16, -18), Vector(16, 16, 18), MASK_SOLID, Cheat.LocalPlayer);
 
-			if (trace.fraction >= 1.f) {
-				trace = EngineTrace->TraceHull(ctx.shoot_position, target_position, Vector(-16, -16, -18), Vector(16, 16, 18), MASK_SOLID, Cheat.LocalPlayer);
-				if (trace.fraction < 1.f) {
-					CBaseEntity* pHit = trace.hit_entity;
-					if (!pHit || !pHit->IsPlayer())
-						FindHullIntersection(ctx.shoot_position, trace, Vector(-16, -16, 0), Vector(16, 16, 36), Cheat.LocalPlayer);
-					vecEnd = trace.endpos;
-				}
+			if (trace.hit_entity != player || trace.fraction == 1.f) {
+				CGameTrace clipped_trace;
+				if (EngineTrace->ClipRayToPlayer(Ray_t(ctx.shoot_position, vecEnd + vecDelta * 16.f), MASK_SHOT | CONTENTS_GRATE, player, &clipped_trace) && clipped_trace.fraction < trace.fraction)
+					trace = clipped_trace;
 			}
 
-			if (trace.fraction >= 1.f || ((vecEnd - ctx.shoot_position).LengthSqr() > knife_range * knife_range))
+			if (trace.hit_entity != player || ((trace.endpos - ctx.shoot_position).LengthSqr() > (knife_range * knife_range)))
 				continue;
 
 			ctx.cmd->viewangles = Math::VectorAngles(target_position - ctx.shoot_position);
@@ -933,7 +888,7 @@ void CRagebot::Knifebot() {
 			if ((should_right_click ? right_click_dmg : left_click_dmg) < health && Exploits->GetExploitType() == CExploits::E_DoubleTap)
 				Exploits->ForceTeleport();
 
-			ctx.last_shot_time = GlobalVars->realtime;
+			ctx.last_shot_time = GlobalVars->realtime + 0.5f; // prevent from charging
 
 			memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
 			Chams->AddShotChams(record);

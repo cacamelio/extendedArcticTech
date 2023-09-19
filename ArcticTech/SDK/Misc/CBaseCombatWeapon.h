@@ -191,6 +191,7 @@ public:
     NETVAR(m_hWeaponWorldModel, unsigned long, "DT_BaseCombatWeapon", "m_hWeaponWorldModel")
     NETVAR(m_fLastShotTime, float, "DT_WeaponCSBase", "m_fLastShotTime")
     NETVAR(m_flPostponeFireReadyTime, float, "DT_WeaponCSBase", "m_flPostponeFireReadyTime")
+	NETVAR(m_zoomLevel, int, "DT_WeaponCSBaseGun", "m_zoomLevel")
 
     inline bool IsGrenade() {
         if (!this)

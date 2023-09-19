@@ -94,8 +94,11 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 	CBasePlayer* moveparent = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(sound_source->moveparent()));
 	CBasePlayer* owner = nullptr;
 		
-	if (sound_source->IsWeapon())
+	if (sound_source->IsWeapon()) {
 		owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(reinterpret_cast<CBaseCombatWeapon*>(sound_source)->m_hOwner()));
+		if (!owner)
+			owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(reinterpret_cast<CBaseCombatWeapon*>(sound_source)->m_hOwnerEntity()));
+	}
 
 	if (sound_source->IsPlayer())
 		player = reinterpret_cast<CBasePlayer*>(sound_source);

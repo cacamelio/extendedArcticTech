@@ -120,7 +120,7 @@ void LuaLoadConfig(LuaScript_t* script) {
 			for (auto cb : e->callbacks)
 				cb();
 
-			for (auto lcb : e->lua_callbacks)
+			for (auto& lcb : e->lua_callbacks)
 				lcb.func();
 		}
 		catch (nlohmann::json::exception& ex) {
@@ -305,6 +305,33 @@ namespace api {
 				Lua->hooks.registerHook(LUA_DRAW_CHAMS, script_id, func);
 			else
 				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
+		}
+
+		sol::object event_index(sol::this_state state, IGameEvent* event, std::string key) {
+			KeyValues* val_k = (*reinterpret_cast<KeyValues**>(reinterpret_cast<uintptr_t>(event) + 0x8))->FindKey(key.c_str());
+
+			if (!val_k)
+				return sol::nil;
+
+			switch (val_k->GetDataType())
+			{
+			case KeyValues::TYPE_STRING:
+				return sol::make_object(state, val_k->m_sValue);
+			case KeyValues::TYPE_INT:
+				return sol::make_object(state, val_k->m_iValue);
+			case KeyValues::TYPE_FLOAT:
+				return sol::make_object(state, val_k->m_flValue);
+			case KeyValues::TYPE_PTR:
+				return sol::make_object(state, val_k->m_pValue);
+			case KeyValues::TYPE_WSTRING:
+				return sol::make_object(state, val_k->m_wsValue);
+			case KeyValues::TYPE_COLOR:
+				return sol::make_object(state, Color(val_k->m_Color[0], val_k->m_Color[1], val_k->m_Color[2], val_k->m_Color[3]));
+			case KeyValues::TYPE_UINT64:
+				return sol::make_object(state, val_k->m_iValue);
+			default:
+				return sol::make_object(state, val_k->m_pValue);
+			}
 		}
 
 		void unload_script(sol::this_state state) {
@@ -1353,6 +1380,8 @@ void CLua::Setup() {
 		"shooting_weapon", &CBaseCombatWeapon::ShootingWeapon,
 		"can_shoot", &CBaseCombatWeapon::CanShoot,
 		"get_icon", &CBaseCombatWeapon::GetIcon,
+		"is_grenade", &CBaseCombatWeapon::IsGrenade,
+		"get_weapon_info", &CBaseCombatWeapon::GetWeaponInfo,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
@@ -1509,10 +1538,9 @@ void CLua::Setup() {
 		"viewangles", &CUserCmd_lua::viewangles,
 		"buttons", &CUserCmd_lua::buttons,
 		"random_seed", &CUserCmd_lua::random_seed,
-		"hasbeenpredicted", &CUserCmd_lua::hasbeenpredicted,
 		"override_defensive", &CUserCmd_lua::override_defensive,
 		"allow_defensive", &CUserCmd_lua::allow_defensive,
-		"pre_prediction_flags", &CUserCmd_lua::pre_prediction_flags
+		"set_move", &CUserCmd_lua::set_move
 	);
 
 	lua.new_usertype<CGameTrace>("trace_t", sol::no_constructor,
@@ -1559,7 +1587,8 @@ void CLua::Setup() {
 		"get_int", &IGameEvent::GetInt,
 		"get_float", &IGameEvent::GetFloat,
 		"get_bool", &IGameEvent::GetBool,
-		"get_string", &IGameEvent::GetString
+		"get_string", &IGameEvent::GetString,
+		"__index", api::client::event_index
 	);
 
 	lua.new_usertype<LuaAntiAim_t>("antiaim_context_t", sol::no_constructor, 

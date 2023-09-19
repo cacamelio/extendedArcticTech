@@ -121,6 +121,8 @@ void CWorld::ProcessCamera(CViewSetup* view_setup) {
 		QAngle backAngle = QAngle(angles.yaw - 180, -angles.pitch, 0);
 		backAngle.Normalize();
 		Vector cameraDirection = Math::AngleVectors(angles);
+		if (cameraDirection.z == 0.f) // fuck valve shitcode
+			cameraDirection.z = 0.01f;
 
 		CGameTrace trace;
 		CTraceFilterWorldOnly filter;
@@ -224,6 +226,9 @@ void CWorld::Crosshair() {
 	EngineClient->GetViewAngles(&viewAngle);
 
 	Vector direction = Math::AngleVectors(viewAngle);
+
+	if (direction.z == 0.f)
+		direction.z = 0.01f;
 
 	FireBulletData_t fb_data;
 	bool hit = AutoWall->FireBullet(Cheat.LocalPlayer, eyePos, eyePos + direction * 8192, fb_data);
