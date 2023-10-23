@@ -195,55 +195,85 @@ class CBaseCombatWeapon;
 
 struct CCSGOPlayerAnimationState
 {
-    char	pad0[0x60]; // 0x00
-    CBasePlayer* pEntity; // 0x60
-    CBaseCombatWeapon* pActiveWeapon; // 0x64
-    CBaseCombatWeapon* pLastActiveWeapon; // 0x68
-    float		flLastUpdateTime; // 0x6C
-    int			iLastUpdateFrame; // 0x70
-    float		flLastUpdateIncrement; // 0x74
-    float		flEyeYaw; // 0x78
-    float		flEyePitch; // 0x7C
-    float		flGoalFeetYaw; // 0x80
-    float		flLastFeetYaw; // 0x84
-    float		flMoveYaw; // 0x88
-    float		flLastMoveYaw; // 0x8C // changes when moving/jumping/hitting ground
-    float		flLeanAmount; // 0x90
-    char	pad1[0x4]; // 0x94
-    float		flFeetCycle; // 0x98 0 to 1
-    float		flMoveWeight; // 0x9C 0 to 1
-    float		flMoveWeightSmoothed; // 0xA0
-    float		flDuckAmount; // 0xA4
-    float		flHitGroundCycle; // 0xA8
-    float		flRecrouchWeight; // 0xAC
-    Vector		vecOrigin; // 0xB0
-    Vector		vecLastOrigin;// 0xBC
-    Vector		vecVelocity; // 0xC8
-    Vector		vecVelocityNormalized; // 0xD4
-    Vector		vecVelocityNormalizedNonZero; // 0xE0
-    float		flVelocityLenght2D; // 0xEC
-    float		flJumpFallVelocity; // 0xF0
-    float		flSpeedNormalized; // 0xF4 // clamped velocity from 0 to 1 
-    float		flRunningSpeed; // 0xF8
-    float		flDuckingSpeed; // 0xFC
-    float		flDurationMoving; // 0x100
-    float		flDurationStill; // 0x104
-    bool		bOnGround; // 0x108
-    bool		bHitGroundAnimation; // 0x109
-    char	pad2[0x2]; // 0x10A
-    float		flNextLowerBodyYawUpdateTime; // 0x10C
-    float		flDurationInAir; // 0x110
-    float		flLeftGroundHeight; // 0x114
-    float		flHitGroundWeight; // 0x118 // from 0 to 1, is 1 when standing
-    float		flWalkToRunTransition; // 0x11C // from 0 to 1, doesnt change when walking or crouching, only running
-    char	pad3[0x4]; // 0x120
-    float		flAffectedFraction; // 0x124 // affected while jumping and running, or when just jumping, 0 to 1
-    char	pad4[0x208]; // 0x128
-    float		flMinBodyYaw; // 0x330
-    float		flMaxBodyYaw; // 0x334
-    float		flMinPitch; //0x338
-    float		flMaxPitch; // 0x33C
-    int			iAnimsetVersion; // 0x340
+    char	pad0[0x60];
+    CBasePlayer* pEntity;
+    CBaseCombatWeapon* pWeapon;
+    CBaseCombatWeapon* pWeaponLast;
+    float		flLastUpdateTime;
+    int			nLastUpdateFrame;
+    float		flLastUpdateIncrement;
+    float		flEyeYaw;
+    float		flEyePitch;
+    float		flFootYaw;
+    float		flLastFootYaw;
+    float		flMoveYaw;
+    float		flMoveYawIdeal;
+    float		flMoveYawCurrentToIdeal;
+    float       flTimeToAlignLowerBody;
+    float		flPrimaryCycle;
+    float		flMoveWeight;
+    float		flMoveWeightSmoothed;
+    float		flDuckAmount;
+    float		flDuckAdditional;
+    float		flRecrouchWeight;
+    Vector		vecOrigin;
+    Vector		vecLastOrigin;
+    Vector		vecVelocity;
+    Vector		vecVelocityNormalized;
+    Vector		vecVelocityNormalizedNonZero;
+    float		flVelocityLenght2D;
+    float		flVelocityZ;
+    float		flRunSpeedNormalized;
+    float		flWalkSpeedNormalized;
+    float		flCrouchSpeedNormalized;
+    float		flDurationMoving;
+    float		flDurationStill;
+    bool		bOnGround;
+    bool		bLanding;
+    float       flJumpToFall;
+    float		flDurationInAir;
+    float		flLeftGroundHeight;
+    float		flHitGroundWeight;
+    float		flWalkToRunTransition;
+    char	    __pad3[0x4];
+    float		flInAirSmoothValue;
+    bool        bOnLadder;
+    float       flLadderWeights;
+    float       flLadderSpeed;
+    bool        bWalkToRunTransitionState;
+    bool        bDefuseStarted;
+    bool        bPlantAnimStarted;
+    bool        bTwitchAnimStarted;
+    bool        bAdjustStarted;
+    char        vecActivityModifiers[20];
+    float       flNextTwitchTime;
+    float       flTimeOfLastKnownInjury;
+    float       flLastVelocityTestTime;
+    Vector      vecVelocityLast;
+    Vector      vecTargetAcceleration;
+    Vector      vecAcceleration;
+    float       flAccelerationWeight;
+    float       flAimMatrixTransition;
+    float       flAimMatrixTransitionDelay;
+    bool        bFlashed;
+    float       flStrafeChangeWeight;
+    float       flStrafeChangeTargetWeight;
+    float       flStrafeChangeCycle;
+    int         nStrafeSequence;
+    bool        bStrafeChanging;
+    float       flDurationStrafing;
+    float       flFootLerp;
+    bool        bFeetCrossed;
+    bool        bPlayerIsAccelerating;
+    char        __pad4[0x178];
+    float       flCameraSmoothHeight;
+    bool        bSmoothHeightValid;
+    float		flLastTimeVelocityOverTen;
+    float		flAimYawMin;
+    float		flAimYawMax;
+    float		flAimPitchMin;
+    float		flAimPitchMax;
+    int         iAnimsetVersion;
 
     float& YawDesyncAdjustement()
     {
@@ -251,13 +281,14 @@ struct CCSGOPlayerAnimationState
     }
 
     void SetTickInterval() {
-        if (iLastUpdateFrame > GlobalVars->framecount - 1)
-            iLastUpdateFrame = GlobalVars->framecount - 1;
+        if (nLastUpdateFrame > GlobalVars->framecount - 1)
+            nLastUpdateFrame = GlobalVars->framecount - 1;
 
         if (flLastUpdateTime >= GlobalVars->curtime)
             flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
     }
 };
+static_assert(sizeof(CCSGOPlayerAnimationState) == 0x348);
 
 struct AnimationLayer {
     bool m_bClientBlend;		 //0x0000
@@ -329,6 +360,7 @@ public:
     NETVAR(m_iObserverMode, int, "DT_BasePlayer", "m_iObserverMode")
     NETVAR(m_nSequence, int, "DT_BaseAnimating", "m_nSequence")
     NETVAR(m_flThirdpersonRecoil, float, "DT_CSPlayer", "m_flThirdpersonRecoil")
+    NETVAR(m_bStrafing, bool, "DT_CSPlayer", "m_bStrafing")
     NETVAR(m_nNextThinkTick, int, "DT_BasePlayer", "m_nNextThinkTick")
     NETVAR(m_flCycle, float, "DT_BaseAnimating", "m_flCycle")
     NETVAR(m_bGunGameImmunity, bool, "DT_CSPlayer", "m_bGunGameImmunity")
@@ -358,6 +390,7 @@ public:
     PRED_DESC_MAP(m_nBody, int, "m_nBody")
     NETVAR_O(m_surfaceFriction, float, "DT_BasePlayer", "m_flWaterJumpTime", 17)
     NETVAR(m_iAccount, int, "DT_CSPlayer", "m_iAccount")
+    PRED_DESC_MAP(m_vecNetworkOrigin, Vector, "m_vecNetworkOrigin")
 
     bool& m_bMaintainSequenceTransitions();
 

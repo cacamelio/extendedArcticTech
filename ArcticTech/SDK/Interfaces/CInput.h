@@ -12,8 +12,8 @@ class bf_read;
 class CVerifiedUserCmd
 {
 public:
-    CUserCmd m_cmd;
-    CRC32_t  m_crc;
+    CUserCmd cmd;
+    CRC32_t  crc;
 };
 
 class CInput

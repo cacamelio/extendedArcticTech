@@ -23,9 +23,9 @@ struct ScannedPoint_t {
 	LagRecord* record = nullptr;
 	Vector point;
 	int hitbox = -1;
-	int priotity = 0;
+	int priority = 0;
 	float damage = 0.f;
-	bool jitter_safe = false;
+	bool safe_point = false;
 	std::vector<Vector> impacts;
 };
 
@@ -60,6 +60,9 @@ private:
 	weapon_settings_t settings;
 	bool doubletap_stop = false;
 	float doubletap_stop_speed = 0.f;
+
+	float last_frametime_check = 0.f;
+	bool frametime_issues = false;
 
 	CBasePlayer* last_target = nullptr;
 	int last_target_shot = 0;

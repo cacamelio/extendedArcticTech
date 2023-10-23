@@ -31,6 +31,7 @@
 #include "Interfaces/NetworkStringTable.h"
 #include "Interfaces/ISteamHTTP.h"
 #include "Interfaces/CGameRules.h"
+#include "Interfaces/CStaticPropManager.h"
 
 extern IClientEntityList* EntityList;
 extern IVEngineClient*	  EngineClient;
@@ -67,6 +68,7 @@ extern IEngineSound*	  EngineSound;
 extern IEffects*          Effects;
 extern INetworkStringTableContainer* NetworkStringTableContainer;
 extern ISteamHTTP*		  SteamHTTP;
+extern CStaticPropMgr*	  StaticPropMgr;
 
 namespace Interfaces {
 	void Initialize();

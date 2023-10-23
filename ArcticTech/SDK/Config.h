@@ -21,6 +21,7 @@ struct weapon_settings_t {
     CCheckBox* auto_scope{ nullptr };
     CSliderInt* delay_shot{ nullptr };
     CCheckBox* strict_hitchance{ nullptr };
+    CSliderFloat* accuracy_boost{ nullptr };
 
     weapon_settings_t() {}
     weapon_settings_t(const std::string& name) : weapon_name(name) {}
@@ -37,6 +38,7 @@ struct weapon_settings_t {
         auto_scope->SetVisible(visible);
         delay_shot->SetVisible(visible);
         strict_hitchance->SetVisible(visible);
+        accuracy_boost->SetVisible(visible);
     };
 };
 
@@ -246,7 +248,7 @@ struct config_t {
         struct movement_t {
             CCheckBox* auto_jump;
             CCheckBox* auto_strafe;
-            CCheckBox* compensate_throwable;
+            CMultiCombo* compensate_throwable;
             CSliderInt* auto_strafe_smooth;
             CCheckBox* edge_jump;
             CKeyBind* edge_jump_key;

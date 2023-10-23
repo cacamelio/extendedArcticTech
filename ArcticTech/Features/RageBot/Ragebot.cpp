@@ -134,8 +134,8 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup)
 		float a = s_val.a;
 		float c = s_val.c;
 
-		float inaccuracy = a * EnginePrediction->WeaponInaccuracy();
-		float spread = c * EnginePrediction->WeaponSpread();
+		float inaccuracy = a * EnginePrediction->WeaponInaccuracy() * settings.accuracy_boost->get();
+		float spread = c * EnginePrediction->WeaponSpread() * settings.accuracy_boost->get();
 
 		if (ctx.active_weapon->m_iItemDefinitionIndex() == 64)
 		{
@@ -160,6 +160,9 @@ void CRagebot::FindTargets() {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
 
 		if (!player || !player->IsAlive() || player->IsTeammate() || player->m_bDormant() || player->m_bGunGameImmunity())
+			continue;
+
+		if (frametime_issues && (i + ctx.cmd->command_number % 2) % 2 == 0)
 			continue;
 
 		targets.push(player);
@@ -345,11 +348,11 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 
 	for (const auto& point : target.points) {
 		if (point.hitbox == HITBOX_HEAD) {
-			if (best_head_point.damage < target.minimum_damage || (point.priotity > best_head_point.priotity && point.damage > target.minimum_damage))
+			if (best_head_point.damage < target.minimum_damage || (point.priority > best_head_point.priority && point.damage > target.minimum_damage))
 				best_head_point = point;
 		}
 		else if (point.hitbox != HITBOX_HEAD) {
-			if (best_body_point.damage < target.minimum_damage || (point.priotity > best_body_point.priotity && point.damage > target.minimum_damage))
+			if (best_body_point.damage < target.minimum_damage || (point.priority > best_body_point.priority && point.damage > target.minimum_damage))
 				best_body_point = point;
 		}
 	}
@@ -518,7 +521,13 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 	}
 
 	result.angle = Math::VectorAngles_p(result.best_point.point - ctx.shoot_position);
-	result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
+
+	if (frametime_issues) { // fast hitchance approx
+		result.hitchance = min(10.f / ((ctx.shoot_position - result.best_point.point).Q_Length() * std::tan(EnginePrediction->WeaponInaccuracy() * settings.accuracy_boost->get())), 1.f);
+	}
+	else {
+		result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
+	}
 
 	LagCompensation->BacktrackEntity(backup_record);
 	delete backup_record;
@@ -563,6 +572,11 @@ void CRagebot::Run() {
 		return;
 	}
 
+	if (GlobalVars->realtime - last_frametime_check > 5.f) {
+		last_frametime_check = GlobalVars->realtime;
+		frametime_issues = EnginePrediction->frametime() > GlobalVars->interval_per_tick; // fps is below tickrate, limit targets to increase it
+	}
+
 	if (!ctx.active_weapon->ShootingWeapon())
 		return;
 
@@ -590,7 +604,7 @@ void CRagebot::Run() {
 		float flInaccuracyJumpInitial = ctx.weapon_info->_flInaccuracyUnknown;
 
 		float fSqrtMaxJumpSpeed = Math::Q_sqrt(cvars.sv_jump_impulse->GetFloat());
-		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.3f);
+		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.5f);
 
 		float flAirSpeedInaccuracy = Math::RemapVal(fSqrtVerticalSpeed,
 			fSqrtMaxJumpSpeed * 0.25f,
@@ -610,7 +624,7 @@ void CRagebot::Run() {
 	if (!settings.strict_hitchance->get()) {
 		if ((weapon_id == Ssg08 && !local_on_ground) ||
 			((weapon_id == Scar20 || weapon_id == G3SG1) && GlobalVars->realtime - Exploits->last_teleport_time < TICKS_TO_TIME(16)) ||
-			(weapon_id == Awp && Cheat.LocalPlayer->GetAnimstate() && Cheat.LocalPlayer->GetAnimstate()->bHitGroundAnimation))
+			(weapon_id == Awp && Cheat.LocalPlayer->GetAnimstate() && Cheat.LocalPlayer->GetAnimstate()->bLanding))
 			hitchance *= 0.8f;
 	}
 
@@ -659,9 +673,11 @@ void CRagebot::Run() {
 		return;
 	}
 
-	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime + LagCompensation->GetLerpTime());
+	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime) + TIME_TO_TICKS(LagCompensation->GetLerpTime());
 	ctx.cmd->viewangles = best_target.angle - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
 	ctx.cmd->buttons |= IN_ATTACK;
+
+	ctx.was_unregistered_shot = false;
 
 	if (!settings.auto_stop->get(2) && ctx.tickbase_shift > 0 && !(config.ragebot.aimbot.peek_assist->get() && config.ragebot.aimbot.peek_assist_keybind->get())) {
 		doubletap_stop = true;
@@ -697,9 +713,9 @@ void CRagebot::Run() {
 			GetHitboxName(best_target.best_point.hitbox), 
 			static_cast<int>(best_target.best_point.damage), 
 			static_cast<int>(best_target.hitchance * 100), 
-			TIME_TO_TICKS(best_target.player->m_flSimulationTime() - record->m_flSimulationTime),
+			max(TIME_TO_TICKS(best_target.player->m_flSimulationTime() - record->m_flSimulationTime), 0),
 			record->resolver_data.side * best_target.player->GetMaxDesyncDelta(),
-			best_target.best_point.jitter_safe
+			best_target.best_point.safe_point
 		));
 	}
 
@@ -779,6 +795,7 @@ void CRagebot::Zeusbot() {
 				if (!config.antiaim.misc.fake_duck->get())
 					ctx.send_packet = true;
 
+				memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
 				Chams->AddShotChams(record);
 
 				Console->Log(std::format("shot at {} [hc: {}] [bt: {}]", player->GetName(), (int)(hitchance * 100.f), TIME_TO_TICKS(player->m_flSimulationTime() - record->m_flSimulationTime)));
@@ -831,7 +848,7 @@ void CRagebot::Knifebot() {
 
 			Exploits->block_charge = true;
 
-			Vector vTragetForward = Math::AngleVectors(record->m_vecAbsAngles);
+			Vector vTragetForward = Math::AngleVectors(QAngle(0, record->m_angEyeAngles.yaw));
 			vTragetForward.z = 0.f;
 
 			Vector vecLOS = (record->m_vecOrigin - Cheat.LocalPlayer->GetAbsOrigin());

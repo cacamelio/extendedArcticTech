@@ -72,6 +72,7 @@ void CMenu::SetupUI() {
 		settings.auto_scope = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Auto scope"));
 		settings.delay_shot = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Delay shot"), 0, 32, 0);
 		settings.strict_hitchance = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Strict hitchance"));
+		settings.accuracy_boost = aim_settings->AddSliderFloat(std::format("[{}] {}", settings.weapon_name, "Accuracy boost"), 1.f, 3.f, 1.f, "%.2f");
 	};
 
 	setup_weapon_config(config.ragebot.weapons.global);
@@ -91,13 +92,13 @@ void CMenu::SetupUI() {
 	config.antiaim.angles.manual_options = aa_angles->AddMultiCombo("Manual options", {"Disable jitters", "Freestand"});
 	config.antiaim.angles.body_yaw = aa_angles->AddCheckBox("Body yaw");
 	config.antiaim.angles.body_yaw_options = aa_angles->AddMultiCombo("Body yaw options", { "Jitter", "Random jitter", "Extended", "Freestand" });
-	config.antiaim.angles.body_yaw_limit = aa_angles->AddSliderInt("Limit", 0, 58, 58);
+	config.antiaim.angles.body_yaw_limit = aa_angles->AddSliderInt("Limit", 0, 60, 60);
 	config.antiaim.angles.inverter = aa_angles->AddKeyBind("Inverter");
 	config.antiaim.angles.legacy_desync = aa_angles->AddCheckBox("Legacy Desync");
 
 	config.antiaim.fakelag.enabled = fake_lag->AddCheckBox("Enabled");
 	config.antiaim.fakelag.limit = fake_lag->AddSliderInt("Limit", 1, 15, 13);
-	config.antiaim.fakelag.variability = fake_lag->AddSliderInt("Variabaility", 1, 14, 1);
+	config.antiaim.fakelag.variability = fake_lag->AddSliderInt("Variabaility", 0, 14, 1);
 
 	config.antiaim.misc.fake_duck = aa_other->AddKeyBind("Fake duck");
 	config.antiaim.misc.slow_walk = aa_other->AddKeyBind("Slow walk");
@@ -223,7 +224,7 @@ void CMenu::SetupUI() {
 	config.misc.movement.auto_jump = movement->AddCheckBox("Auto jump");
 	config.misc.movement.auto_strafe = movement->AddCheckBox("Auto strafe");
 	config.misc.movement.auto_strafe_smooth = movement->AddSliderInt("Auto strafe smooth", 0, 100, 50, "%d%%");
-	config.misc.movement.compensate_throwable = movement->AddCheckBox("Compensate throwable");
+	config.misc.movement.compensate_throwable = movement->AddMultiCombo("Compensate throwable", {"Velocity yaw jitter", "Velocity Z"});
 	config.misc.movement.edge_jump = movement->AddCheckBox("Edge jump");
 	config.misc.movement.edge_jump_key = movement->AddKeyBind("Edge jump");
 	config.misc.movement.infinity_duck = movement->AddCheckBox("Infinity duck");

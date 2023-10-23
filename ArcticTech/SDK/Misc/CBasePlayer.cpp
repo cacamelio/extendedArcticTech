@@ -262,20 +262,20 @@ float CBasePlayer::GetMaxDesyncDelta() {
 	if (!animstate)
 		return 0.0f;
 
-	auto speedfactor = max(min(animstate->flRunningSpeed, 1.0f), 0.0f);
+	auto speedfactor = max(min(animstate->flWalkSpeedNormalized, 1.0f), 0.0f);
 	auto avg_speedfactor = (animstate->flWalkToRunTransition * -0.3f - 0.2f) * speedfactor + 1.0f;
 
 	auto duck_amount = animstate->flDuckAmount;
 
 	if (duck_amount)
 	{
-		auto max_velocity = max(min(animstate->flDuckingSpeed, 1.0f), 0.0f);
+		auto max_velocity = max(min(animstate->flCrouchSpeedNormalized, 1.0f), 0.0f);
 		auto duck_speed = duck_amount * max_velocity;
 
 		avg_speedfactor += duck_speed * (0.5f - avg_speedfactor);
 	}
 
-	return -animstate->flMaxBodyYaw * avg_speedfactor;
+	return -animstate->flAimYawMax * avg_speedfactor;
 }
 
 float& CBasePlayer::m_flLastBoneSetupTime()
@@ -343,7 +343,7 @@ inline float SimpleSplineRemapValClamped(float val, float A, float B, float C, f
 void CBasePlayer::ModifyEyePosition(Vector& eye_position) {
 	CCSGOPlayerAnimationState* animstate = AnimationSystem->GetPredictionAnimstate();
 
-	if (!animstate->bHitGroundAnimation)
+	if (!animstate->bLanding)
 		return;
 
 	auto head_position = GetHitboxCenter(HITBOX_HEAD, AnimationSystem->GetPredictionMatrix());

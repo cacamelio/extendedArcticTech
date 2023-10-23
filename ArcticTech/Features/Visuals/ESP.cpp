@@ -124,6 +124,9 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
 	esp_info.m_bValid = true;
+
+	if (esp_info.m_nHealth <= 0)
+		esp_info.m_nHealth = 100;
 }
 
 void ESP::UpdatePlayer(int id) {
@@ -131,7 +134,32 @@ void ESP::UpdatePlayer(int id) {
 	ESPInfo_t& info = ESPInfo[id];
 
 	info.m_pEnt = player;
-	if (!player || player->IsTeammate() || !player->IsAlive()) {
+	if (!player) {
+		info.m_bValid = false;
+		return;
+	}
+
+	if (player->m_iTeamNum() == 1) {
+		info.m_bValid = false;
+		info.m_nHealth = 0;
+
+		if (player->m_iObserverMode() != OBS_MODE_IN_EYE || player->m_iObserverMode() != OBS_MODE_CHASE)
+			return;
+
+		CBasePlayer* spec_pl = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(player->m_hObserverTarget()));
+		if (!spec_pl)
+			return;
+
+		if (spec_pl->IsTeammate())
+			return;
+
+		ESPInfo_t& spec_info = ESPInfo[spec_pl->EntIndex()];
+		spec_info.m_vecOrigin = spec_pl->m_vecOrigin();
+		spec_info.m_flLastUpdateTime = GlobalVars->curtime;
+		return;
+	}
+
+	if (player->IsTeammate()) {
 		info.m_bValid = false;
 		return;
 	}
@@ -142,6 +170,14 @@ void ESP::UpdatePlayer(int id) {
 
 	if (records.empty()) {
 		info.m_bDormant = true;
+	}
+
+	if (!info.m_bDormant)
+		info.m_nHealth = player->m_iHealth();
+
+	if (info.m_nHealth <= 0) {
+		info.m_bValid = false;
+		return;
 	}
 
 	if (!info.m_bDormant) {
@@ -156,7 +192,6 @@ void ESP::UpdatePlayer(int id) {
 		info.m_bFakeDuck = info.m_nFakeDuckTicks > 14;
 		info.m_bExploiting = latestRecord->shifting_tickbase;
 		info.m_bBreakingLagComp = latestRecord->breaking_lag_comp;
-		info.m_nHealth = player->m_iHealth();
 	}
 	else {
 		if (info.m_nHealth == 0) {
@@ -172,6 +207,11 @@ void ESP::UpdatePlayer(int id) {
 	}
 
 	float playerHeight = player->m_vecMaxs().z;
+	if (playerHeight == 0) {
+		info.m_bValid = false;
+		return;
+	}
+
 	Vector2 head = Render->WorldToScreen(info.m_vecOrigin + Vector(0, 0, playerHeight));
 	Vector2 feet = Render->WorldToScreen(info.m_vecOrigin);
 	int h = feet.y - head.y;
@@ -247,9 +287,9 @@ void ESP::DrawHealth(ESPInfo_t info) {
 	Color clr = Color(0, 255, 0);
 
 	int health = info.m_nHealth;
-	clr.r = std::clamp(health < 50 ? 250 : (100 - health) / 50.f * 250, 130.f, 230.f);
-	clr.g = std::clamp(health > 50 ? 250 : health / 50.f * 250, 100.f, 230.f);
-	clr.b = 140;
+	clr.r = std::clamp(health < 50 ? 250 : (100 - health) / 50.f * 250.f, 120.f, 230.f);
+	clr.g = std::clamp(health > 50 ? 250 : health / 50.f * 250.f, 120.f, 230.f);
+	clr.b = 120;
 
 	if (config.visuals.esp.custom_health->get())
 		clr = config.visuals.esp.custom_health_color->get();
@@ -264,17 +304,17 @@ void ESP::DrawHealth(ESPInfo_t info) {
 	Vector2 health_box_start = info.m_BoundingBox[0] - Vector2(7, 1);
 	Vector2 health_box_end(info.m_BoundingBox[0].x - 3, info.m_BoundingBox[1].y + 1);
 
-	Render->BoxFilled(health_box_start, health_box_end, Color(15, 15, 15, 160 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(health_box_start, health_box_end, Color(16, 16, 16, 220 * info.m_flAlpha * clr_a));
 
-	Render->BoxFilled(health_box_start + Vector2(0, 1), Vector2(health_box_start.x + 1, health_box_end.y - 1), Color(10, 10, 10, 255 * info.m_flAlpha * clr_a));
-	Render->BoxFilled(Vector2(health_box_end.x - 1, health_box_start.y + 1), Vector2(health_box_end.x, health_box_end.y - 1), Color(10, 10, 10, 255 * info.m_flAlpha * clr_a));
-	Render->BoxFilled(health_box_start, Vector2(health_box_end.x, health_box_start.y + 1), Color(10, 10, 10, 255 * info.m_flAlpha * clr_a));
-	Render->BoxFilled(Vector2(health_box_start.x, health_box_end.y - 1), health_box_end, Color(10, 10, 10, 255 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(health_box_start + Vector2(0, 1), Vector2(health_box_start.x + 1, health_box_end.y - 1), Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(Vector2(health_box_end.x - 1, health_box_start.y + 1), Vector2(health_box_end.x, health_box_end.y - 1), Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(health_box_start, Vector2(health_box_end.x, health_box_start.y + 1), Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(Vector2(health_box_start.x, health_box_end.y - 1), health_box_end, Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
 
 	Render->BoxFilled(health_box_start + Vector2(1, 1 + h * health_fraction), health_box_end - Vector2(1, 1), clr);
 
 	if (health < 92)
-		Render->Text(std::to_string(health), info.m_BoundingBox[0] - Vector2(7.f, -health_fraction * h + 5), Color(230, 230, 230, 255 * info.m_flAlpha * clr_a), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+		Render->Text(std::to_string(health), info.m_BoundingBox[0] - Vector2(7.f, -health_fraction * h + 5), Color(240, 240, 240, 255 * info.m_flAlpha * clr_a), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
 }
 
 void ESP::DrawName(ESPInfo_t info) {
@@ -288,7 +328,7 @@ void ESP::DrawName(ESPInfo_t info) {
 
 	clr.a *= info.m_flAlpha;
 
-	Render->Text(info.m_pEnt->GetName(), Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) * 0.5f, info.m_BoundingBox[0].y - 14), clr, Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
+	Render->Text(info.m_pEnt->GetName(), Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) * 0.5f, info.m_BoundingBox[0].y - 13), clr, Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
 }
 
 void ESP::DrawFlags(ESPInfo_t info) {
@@ -312,10 +352,10 @@ void ESP::DrawFlags(ESPInfo_t info) {
 			flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
 	}
 
-	bool shifting = record && (record->shifting_tickbase || (record->prev_record && record->prev_record->shifting_tickbase));
+	bool shifting = record && record->shifting_tickbase;
 
 	if (config.visuals.esp.flags->get(3) && record && (shifting || record->exploiting) && !dormant)
-		flags.push_back({ "E", shifting ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(240, 240, 240, 255 * info.m_flAlpha) });
+		flags.push_back({ "E", shifting ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(205, 205, 205, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
@@ -328,6 +368,9 @@ void ESP::DrawFlags(ESPInfo_t info) {
 
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
 		flags.push_back({ "LC", Color(230, 80, 80, 255 * info.m_flAlpha) });
+
+	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.antiaim_type == R_AntiAimType::JITTER && !dormant)
+		flags.push_back({ "J", Color(240, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.resolver_type == ResolverType::ANIM && !dormant)
 		flags.push_back({ "ANIM", Color(165, 230, 14, 255 * info.m_flAlpha) });

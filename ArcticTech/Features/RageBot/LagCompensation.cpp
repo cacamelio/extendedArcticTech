@@ -92,7 +92,9 @@ void LagRecord::BuildMatrix() {
 		player->m_angEyeAngles() = prev_record->m_angEyeAngles;
 	}
 
-	player->m_angEyeAngles().roll = roll;
+	if (config.ragebot.aimbot.roll_resolver->get()) {
+		player->m_angEyeAngles().roll = config.ragebot.aimbot.roll_angle->get() * (resolver_data.side != 0 ? resolver_data.side : 1);
+	}
 
 	player->ClampBonesInBBox(clamped_matrix, BONE_USED_BY_ANYTHING);
 
@@ -123,7 +125,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = GlobalVars->curtime - pl->m_flSimulationTime() > TICKS_TO_TIME(10.f);
+			new_record->exploiting = GlobalVars->curtime - pl->m_flSimulationTime() > TICKS_TO_TIME(10.f) || (prev_record && prev_record->shifting_tickbase);
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;

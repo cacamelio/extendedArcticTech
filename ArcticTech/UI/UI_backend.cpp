@@ -421,7 +421,7 @@ IBaseWidget* CMenu::FindItem(const std::string& tab, const std::string& groupbox
         return nullptr;
 
     for (auto item : gb->widgets)
-        if (item->name == name && (type == WidgetType::Any || type == item->GetType()))
+        if (item->name == name && ((type == WidgetType::Any && item->GetType() != WidgetType::Label) || type == item->GetType()))
             return item;
 
     return nullptr;

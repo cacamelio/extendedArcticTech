@@ -79,7 +79,9 @@ class CAntiAim {
 
 	// Anti aim builder
 	float pitch = 0.f;
+public:
 	float base_yaw = 0.f;
+private:
 	float yaw_offset = 0.f;
 
 	int fakelag_limit = 0;

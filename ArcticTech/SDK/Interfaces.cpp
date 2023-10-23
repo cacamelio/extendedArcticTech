@@ -38,6 +38,7 @@ IEngineSound* EngineSound;
 IEffects* Effects;
 INetworkStringTableContainer* NetworkStringTableContainer;
 ISteamHTTP* SteamHTTP;
+CStaticPropMgr* StaticPropMgr;
 
 void Interfaces::Initialize() {
 	EntityList = (IClientEntityList*)Utils::CreateInterface("client.dll", "VClientEntityList003");
@@ -63,6 +64,7 @@ void Interfaces::Initialize() {
 	EngineSound = (IEngineSound*)Utils::CreateInterface("engine.dll", "IEngineSoundClient003");
 	Effects = (IEffects*)Utils::CreateInterface("client.dll", "IEffects001");
 	NetworkStringTableContainer = (INetworkStringTableContainer*)Utils::CreateInterface("engine.dll", "VEngineClientStringTable001");
+	StaticPropMgr = (CStaticPropMgr*)Utils::CreateInterface("engine.dll", "StaticPropMgrClient005");
 	GlobalVars = **(CGlobalVarsBase***)(Utils::PatternScan("client.dll", "A1 ? ? ? ? 5E 8B 40 10", 0x1));
 	DirectXDevice = **(IDirect3DDevice9***)(Utils::PatternScan("shaderapidx9.dll", "A1 ? ? ? ? 50 8B 08 FF 51 0C", 0x1));
 	PlayerResource = **(CCSPlayerResource***)(Utils::PatternScan("client.dll", "8B 3D ? ? ? ? 85 FF 0F 84 ? ? ? ? 81 C7", 0x2));

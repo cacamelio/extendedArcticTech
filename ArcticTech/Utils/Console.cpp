@@ -6,7 +6,7 @@
 CGameConsole* Console = new CGameConsole;
 
 void CGameConsole::ArcticTag() {
-	CVar->ConsoleColorPrintf(Color(176, 209, 245), "[arctictech] ");
+	CVar->ConsoleColorPrintf(Color(130, 185, 245), "[arctictech] ");
 }
 
 void CGameConsole::Print(const std::string& msg) {
@@ -18,7 +18,7 @@ void CGameConsole::ColorPrint(const std::string& msg, const Color& color) {
 }
 
 void CGameConsole::Log(const std::string& msg) {
-	CVar->ConsoleColorPrintf(Color(176, 209, 245), "[arctictech] ");
+	CVar->ConsoleColorPrintf(Color(130, 185, 245), "[arctictech] ");
 	CVar->ConsoleColorPrintf(Color(240, 240, 240), msg.c_str());
 	CVar->ConsolePrintf("\n");
 }

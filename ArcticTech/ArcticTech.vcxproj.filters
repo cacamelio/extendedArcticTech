@@ -551,6 +551,9 @@
     <ClInclude Include="SDK\Misc\MoveMsg.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="SDK\Interfaces\CStaticPropManager.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="detours.lib" />

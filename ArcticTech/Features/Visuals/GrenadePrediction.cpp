@@ -8,11 +8,10 @@
 
 void GrenadePrediction::PrecacheParticles() {
 	Effects->PrecacheParticleSystem("env_fire_tiny_b");
-	Effects->PrecacheParticleSystem("explosion_child_snow04b");
 }
 
 void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !config.visuals.other_esp.grenade_trajecotry->get()) {
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || (GameRules() && GameRules()->IsFreezePeriod()) || !config.visuals.other_esp.grenade_trajecotry->get()) {
 		runningPrediction = false;
 		return;
 	}
@@ -40,8 +39,13 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 		return;
 	}
 
+	if (grenade->m_flThrowTime() > 0 && grenade->m_flThrowTime() < TICKS_TO_TIME(ctx.corrected_tickbase)) {
+		runningPrediction = false;
+		return;
+	}
+
 	Vector vel = Cheat.LocalPlayer->m_vecVelocity();
-	if (config.misc.movement.compensate_throwable->get() && config.misc.movement.auto_strafe->get() && !(localPlayer->m_fFlags() & FL_ONGROUND))
+	if (config.misc.movement.compensate_throwable->get(0) && !(localPlayer->m_fFlags() & FL_ONGROUND))
 		vel = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
 	Vector eyePosition = origin;
@@ -52,6 +56,21 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 		eyePosition += vel * GlobalVars->interval_per_tick;
 
 	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
+
+	if (config.misc.movement.compensate_throwable->get(1) && !(localPlayer->m_fFlags() & FL_ONGROUND)) {
+		Vector vel = Cheat.LocalPlayer->m_vecVelocity();
+		Vector ideal_vel = vel;
+		ideal_vel.z = std::clamp(vel.z, -120.f, 120.f);
+
+		float diff = vel.z - ideal_vel.z;
+
+		float ang_diff = RAD2DEG(std::acosf(vel.Dot(ideal_vel) / (vel.Q_Length() * ideal_vel.Q_Length())));
+
+		if (diff < 0.f)
+			ang_diff = -ang_diff;
+
+		viewAngles.pitch += ang_diff;
+	}
 
 	Vector direction;
 	Utils::AngleVectors(viewAngles, direction);
@@ -75,29 +94,12 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 }
 
 void GrenadePrediction::Draw() {
-	if (!runningPrediction) {
+	if (!runningPrediction || pathPoints.size() < 2u) {
 		if (pMolotovParticle) {
 			pMolotovParticle->Stop();
 			pMolotovParticle = nullptr;
 		}
 
-		if (pSmokeParticle) {
-			pSmokeParticle->Stop();
-			pSmokeParticle = nullptr;
-		}
-		return;
-	}
-
-	if (pathPoints.size() < 2u) {
-		if (pMolotovParticle) {
-			pMolotovParticle->Stop();
-			pMolotovParticle = nullptr;
-		}
-
-		if (pSmokeParticle) {
-			pSmokeParticle->Stop();
-			pSmokeParticle = nullptr;
-		}
 		return;
 	}
 
@@ -209,19 +211,6 @@ void GrenadePrediction::Draw() {
 		auto sc_pos = Render->WorldToScreen(vecDetonate);
 		if (!sc_pos.Invalid())
 			Render->Text(additional_info, sc_pos + Vector2(0, 16), Color(245, 245), Verdana, TEXT_CENTERED);
-	}
-
-	if (weaponId == SmokeGrenade && config.visuals.other_esp.particles->get(1)) {
-		if (!pSmokeParticle) {
-			pSmokeParticle = Effects->DispatchParticleEffect("explosion_child_snow04b", vecDetonate, QAngle());
-		}
-		else {
-			pSmokeParticle->SetOrigin(vecDetonate, 0);
-		}
-	}
-	else if (pSmokeParticle) {
-		pSmokeParticle->Stop();
-		pSmokeParticle = nullptr;
 	}
 }
 

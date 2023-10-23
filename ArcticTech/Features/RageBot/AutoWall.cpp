@@ -258,16 +258,15 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 		ray.Init(eyePosition, end);
 		EngineTrace->TraceRay(ray, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &data.enterTrace);
 
-		//TraceLine(eyePosition, end, MASK_SHOT_HULL | CONTENTS_HITBOX, attacker, &data.enterTrace)
 		ClipTraceToPlayers(eyePosition, end + direction * 40.f, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &data.enterTrace, target);
 
 		data.impacts.emplace_back(data.enterTrace.endpos);
 
-		surfacedata_t* enterSurfaceData = PhysicSurfaceProps->GetSurfaceData(data.enterTrace.surface.surfaceProps);
-		const float enterSurfPenetrationModifier = enterSurfaceData->game.flPenetrationModifier;
-
 		if (data.enterTrace.fraction == 1.f)
 			return !target;
+
+		surfacedata_t* enterSurfaceData = PhysicSurfaceProps->GetSurfaceData(data.enterTrace.surface.surfaceProps);
+		const float enterSurfPenetrationModifier = enterSurfaceData->game.flPenetrationModifier;
 
 		currentDistance += data.enterTrace.fraction * maxRange;
 

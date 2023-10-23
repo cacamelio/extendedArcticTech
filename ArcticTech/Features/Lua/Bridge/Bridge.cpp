@@ -467,6 +467,10 @@ namespace api {
 		std::string tostring(Vector self) {
 			return std::format("vector({}, {}, {})", self.x, self.y, self.z);
 		}
+
+		QAngle angles(Vector self) {
+			return Math::VectorAngles(self);
+		}
 	}
 
 	namespace render {
@@ -1233,6 +1237,14 @@ namespace api {
 		void force_teleport() {
 			Exploits->ForceTeleport();
 		}
+
+		float get_antiaim_yaw() {
+			return AntiAim->base_yaw;
+		}
+
+		void override_tickbase_shift(int tb) {
+			Exploits->LC_OverrideTickbase(tb);
+		}
 	}
 
 	namespace materials {
@@ -1297,6 +1309,8 @@ void CLua::Setup() {
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
 	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::jit, sol::lib::ffi, sol::lib::bit32);
 
+	lua["math"]["angle_diff"] = Math::AngleDiff;
+
 	// usertypes
 	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor, 
 		"set_callback", api::ui::element_set_callback,
@@ -1338,13 +1352,14 @@ void CLua::Setup() {
 		"length_sqr", &Vector::LengthSqr,
 		"length2d", &Vector::Q_Length2D,
 		"length2d_sqr", &Vector::Length2DSqr,
-		"closest_ray_point", &api::vector::closes_ray_point,
-		"dist_to_ray", &api::vector::dist_to_ray,
+		"closest_ray_point", api::vector::closes_ray_point,
+		"dist_to_ray", api::vector::dist_to_ray,
 		"dot", &Vector::Dot,
 		"cross", &Vector::Cross,
 		"dist", &Vector::DistTo,
-		"lerp", &api::vector::lerp,
-		"to_screen", &api::vector::to_screen
+		"lerp", api::vector::lerp,
+		"angles", api::vector::angles,
+		"to_screen", api::vector::to_screen
 	);
 
 	lua.new_usertype<player_info_t>("player_info_t", sol::no_constructor,
@@ -1388,23 +1403,23 @@ void CLua::Setup() {
 
 	lua.new_usertype<CCSGOPlayerAnimationState>("animstate_t", sol::no_constructor,
 		"entity", &CCSGOPlayerAnimationState::pEntity,
-		"active_weapon", &CCSGOPlayerAnimationState::pActiveWeapon,
-		"last_active_weapon", &CCSGOPlayerAnimationState::pLastActiveWeapon,
+		"active_weapon", &CCSGOPlayerAnimationState::pWeapon,
+		"last_active_weapon", &CCSGOPlayerAnimationState::pWeaponLast,
 		"last_update_time", &CCSGOPlayerAnimationState::flLastUpdateTime,
-		"last_update_frame", &CCSGOPlayerAnimationState::iLastUpdateFrame,
+		"last_update_frame", &CCSGOPlayerAnimationState::nLastUpdateFrame,
 		"last_update_increment", &CCSGOPlayerAnimationState::flLastUpdateIncrement,
 		"eye_yaw", &CCSGOPlayerAnimationState::flEyeYaw,
 		"eye_pitch", &CCSGOPlayerAnimationState::flEyePitch,
-		"goal_feet_yaw", &CCSGOPlayerAnimationState::flGoalFeetYaw,
-		"last_feet_yaw", &CCSGOPlayerAnimationState::flLastFeetYaw,
+		"foot_yaw", &CCSGOPlayerAnimationState::flFootYaw,
+		"last_foot_yaw", &CCSGOPlayerAnimationState::flLastFootYaw,
 		"move_yaw", &CCSGOPlayerAnimationState::flMoveYaw,
-		"last_move_yaw", &CCSGOPlayerAnimationState::flLastMoveYaw,
-		"lean_amount", &CCSGOPlayerAnimationState::flLeanAmount,
-		"feet_cycle", &CCSGOPlayerAnimationState::flFeetCycle,
+		"move_yaw_ideal", &CCSGOPlayerAnimationState::flMoveYawIdeal,
+		"move_yaw_current_to_ideal", &CCSGOPlayerAnimationState::flMoveYawCurrentToIdeal,
+		"primary_cycle", &CCSGOPlayerAnimationState::flPrimaryCycle,
 		"move_weight", &CCSGOPlayerAnimationState::flMoveWeight,
 		"move_weight_smoothed", &CCSGOPlayerAnimationState::flMoveWeightSmoothed,
 		"duck_amount", &CCSGOPlayerAnimationState::flDuckAmount,
-		"hit_ground_cycle", &CCSGOPlayerAnimationState::flHitGroundCycle,
+		"duck_additional", &CCSGOPlayerAnimationState::flDuckAdditional,
 		"recrouch_weight", &CCSGOPlayerAnimationState::flRecrouchWeight,
 		"origin", &CCSGOPlayerAnimationState::vecOrigin,
 		"last_origin", &CCSGOPlayerAnimationState::vecLastOrigin,
@@ -1412,24 +1427,23 @@ void CLua::Setup() {
 		"velocity_normalized", &CCSGOPlayerAnimationState::vecVelocityNormalized,
 		"velocity_normalized_non_zero", &CCSGOPlayerAnimationState::vecVelocityNormalizedNonZero,
 		"velocity_length_2d", &CCSGOPlayerAnimationState::flVelocityLenght2D,
-		"jump_fall_velocity", &CCSGOPlayerAnimationState::flJumpFallVelocity,
-		"speed_normalized", &CCSGOPlayerAnimationState::flSpeedNormalized,
-		"running_speed", &CCSGOPlayerAnimationState::flRunningSpeed,
-		"ducking_speed", &CCSGOPlayerAnimationState::flDuckingSpeed,
+		"velocity_z", &CCSGOPlayerAnimationState::flVelocityZ,
+		"speed_normalized", &CCSGOPlayerAnimationState::flRunSpeedNormalized,
+		"running_speed", &CCSGOPlayerAnimationState::flWalkSpeedNormalized,
+		"ducking_speed", &CCSGOPlayerAnimationState::flCrouchSpeedNormalized,
 		"duration_moving", &CCSGOPlayerAnimationState::flDurationMoving,
 		"duration_still", &CCSGOPlayerAnimationState::flDurationStill,
 		"on_ground", &CCSGOPlayerAnimationState::bOnGround,
-		"hit_ground_animation", &CCSGOPlayerAnimationState::bHitGroundAnimation,
-		"next_lower_body_yaw_update_time", &CCSGOPlayerAnimationState::flNextLowerBodyYawUpdateTime,
+		"landing", &CCSGOPlayerAnimationState::bLanding,
 		"duration_in_air", &CCSGOPlayerAnimationState::flDurationInAir,
 		"left_ground_height", &CCSGOPlayerAnimationState::flLeftGroundHeight,
 		"hit_ground_weight", &CCSGOPlayerAnimationState::flHitGroundWeight,
 		"walk_to_run_transition", &CCSGOPlayerAnimationState::flWalkToRunTransition,
-		"affected_fraction", &CCSGOPlayerAnimationState::flAffectedFraction,
-		"min_body_yaw", &CCSGOPlayerAnimationState::flMinBodyYaw,
-		"max_body_yaw", &CCSGOPlayerAnimationState::flMaxBodyYaw,
-		"min_pitch", &CCSGOPlayerAnimationState::flMinPitch,
-		"max_pitch", &CCSGOPlayerAnimationState::flMaxPitch,
+		"in_air_smooth_value", &CCSGOPlayerAnimationState::flInAirSmoothValue,
+		"min_aim_yaw", &CCSGOPlayerAnimationState::flAimYawMin,
+		"max_aim_yaw", &CCSGOPlayerAnimationState::flAimYawMax,
+		"min_pitch", &CCSGOPlayerAnimationState::flAimPitchMin,
+		"max_pitch", &CCSGOPlayerAnimationState::flAimPitchMax,
 		"animset_version", &CCSGOPlayerAnimationState::iAnimsetVersion
 	);
 
@@ -1723,7 +1737,9 @@ void CLua::Setup() {
 		"get_exploit_charge", api::rage::get_exploit_charge,
 		"is_defensive_active", api::rage::is_defensive_active,
 		"get_defensive_ticks", api::rage::get_defensive_ticks,
-		"force_teleport", api::rage::force_teleport
+		"force_teleport", api::rage::force_teleport,
+		"override_tickbase_shift", api::rage::override_tickbase_shift,
+		"get_antiaim_yaw", api::rage::get_antiaim_yaw
 	);
 
 	lua.create_named_table("materials", 

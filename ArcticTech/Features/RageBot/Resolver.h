@@ -38,10 +38,6 @@ struct ResolverData_t {
 	float delta_negative = 0.f;
 	float delta_center = 0.f;
 
-	//matrix3x4_t matrix_middle[MAXSTUDIOBONES];
-	//matrix3x4_t matrix_left[MAXSTUDIOBONES];
-	//matrix3x4_t matrix_right[MAXSTUDIOBONES];
-
 	int side = 0;
 };
 
@@ -58,27 +54,22 @@ struct BruteForceData_t {
 };
 
 class CResolver {
-	float m_CachedRollAngle[64];
 	BruteForceData_t brute_force_data[64];
 public:
 	CResolver() {
 		for (int i = 0; i < 64; ++i) {
-			m_CachedRollAngle[i] = 0.f;
 			brute_force_data[i].reset();
 		}
 	}	
 
 	void			Reset(CBasePlayer* pl = nullptr);
 
-	float			GetRollAngle(CBasePlayer* player);
-	void			SetRollAngle(CBasePlayer* player, float angle);
-
 	R_PlayerState	DetectPlayerState(CBasePlayer* player, AnimationLayer* animlayers);
 	R_AntiAimType	DetectAntiAim(CBasePlayer* player, const std::deque<LagRecord>& records);
 
 	void			SetupResolverLayers(CBasePlayer* player, LagRecord* record);
 
-	void			DetectFreestand(CBasePlayer* player, LagRecord* record);
+	void			DetectFreestand(CBasePlayer* player, LagRecord* record, const std::deque<LagRecord>& records);
 
 	void			Apply(LagRecord* record);
 	void			Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records);

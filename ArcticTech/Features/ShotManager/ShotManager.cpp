@@ -29,7 +29,7 @@ void CShotManager::DetectUnregisteredShots() {
 		m_fLastShotTime = fShotTime;
 	}
 
-	if (m_fLastShotTime - fShotTime < TICKS_TO_TIME(16)) {
+	if (m_fLastShotTime - fShotTime < TICKS_TO_TIME(3.f) || (weapon->m_iItemDefinitionIndex() != Ssg08 && weapon->m_iItemDefinitionIndex() != Awp)){
 		m_fLastShotTime = fShotTime;
 		return;
 	}
@@ -53,7 +53,8 @@ void CShotManager::DetectUnregisteredShots() {
 		for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
 			callback.func(*it);
 
-		weapon->m_flNextPrimaryAttack() = TICKS_TO_TIME(it->shot_tick) - 0.1f; // so we can shoot again immediately
+		weapon->m_flNextPrimaryAttack() = TICKS_TO_TIME(it->shot_tick) - 0.2f; // so we can shoot again immediately
+		ctx.was_unregistered_shot = true;
 
 		break;
 	}
@@ -100,6 +101,7 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 		shot->ack_tick = GlobalVars->tickcount;
 		shot->damage = event->GetInt("dmg_health");
 		shot->damagegroup = HitgroupToDamagegroup(event->GetInt("hitgroup"));
+		shot->health = event->GetInt("health");
 
 		return true;
 	}
@@ -224,7 +226,7 @@ void CShotManager::OnNetUpdate() {
 			Console->ArcticTag();
 			if (shot->damage > 0) {
 				Resolver->OnHit(player, shot->record);
-				Console->ColorPrint(std::format("hit {}'s {}({}) for {}({}) ({} remaining) [mismatch: ", player->GetName(), GetDamagegroupName(shot->damagegroup), GetDamagegroupName(shot->wanted_damagegroup), shot->damage, shot->wanted_damage, player->m_iHealth()), Color(240, 240, 240));
+				Console->ColorPrint(std::format("hit {}'s {}({}) for {}({}) ({} remaining) [mismatch: ", player->GetName(), GetDamagegroupName(shot->damagegroup), GetDamagegroupName(shot->wanted_damagegroup), shot->damage, shot->wanted_damage, shot->health), Color(240, 240, 240));
 
 				if (config.visuals.esp.hitmarker->get())
 					ESP::AddHitmarker(shot->hit_point);
@@ -274,7 +276,7 @@ void CShotManager::OnNetUpdate() {
 					Console->ColorPrint("occlusion\n", Color(255, 200, 0));
 				}
 				else if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
-					if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f) {
+					if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f || shot->hitchance == 1.f) {
 						it->miss_reason = "prediction error";
 						Console->ColorPrint("pred. error", Color(255, 200, 0));
 						Console->ColorPrint(std::format(" [diff: {:.4f}]\n", (shot->shoot_pos - shot->client_shoot_pos).Q_Length()), Color(240, 240, 240));

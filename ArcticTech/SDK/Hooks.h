@@ -23,7 +23,6 @@ typedef void(__fastcall* tUpdateClientSideAnimation)(CBasePlayer*, void*);
 typedef bool(__fastcall* tShouldSkipAnimationFrame)(void*, void*);
 typedef bool(__fastcall* tShouldInterpolate)(CBasePlayer*, void*);
 typedef void(__fastcall* tDoExtraBoneProcessing)(CBaseEntity*, void*, CStudioHdr*, Vector*, Quaternion*, const matrix3x4_t&, uint8_t*, void*);
-typedef void(__fastcall* tStandardBlendingRules)(void*, void*, void*, void*, void*, float, int);
 typedef bool(__fastcall* tIsHLTV)(IVEngineClient*, void*);
 typedef void(__fastcall* tBuildTransformations)(CBaseEntity*, void*, void*, void*, void*, const void*, int, void*);
 typedef bool(__fastcall* tSetupBones)(CBaseEntity*, void*, matrix3x4_t*, int, int, float);
@@ -54,10 +53,13 @@ typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vec
 typedef bool(__fastcall* tInPrediction)(IPrediction*, void*);
 typedef void(__fastcall* tTraceBlood)(CGameTrace*, int);
 typedef void(__fastcall* tCL_DispatchSound)(const SoundInfo_t&, void*);
-typedef bool(__fastcall* tInterpolateViewmodel)(CBaseViewModel*, void*, float);
+typedef bool(__fastcall* tInterpolateEntity)(CBaseEntity*, void*, float);
 typedef void(__fastcall* tThrowGrenade)(CBaseGrenade*, void*);
 typedef void(__fastcall* tCalcViewModel)(CBaseViewModel*, void*, CBasePlayer*, const Vector&, const QAngle&);
 typedef bool(__fastcall* tSVCMsg_TempEntities)(CClientState*, void*, const void*);
+typedef void(__fastcall* tResetLatched)(CBasePlayer*, void*);
+typedef void(__fastcall* tGetExposureRange)(float*, float*);
+typedef bool(__fastcall* tInterpolatePlayer)(CBasePlayer*, void*, float);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -65,7 +67,6 @@ inline tPresent oPresent;
 inline tUpdateClientSideAnimation oUpdateClientSideAnimation;
 inline tShouldSkipAnimationFrame oShouldSkipAnimationFrame;
 inline tDoExtraBoneProcessing oDoExtraBoneProcessing;
-inline tStandardBlendingRules oStandardBlendingRules;
 inline tBuildTransformations oBuildTransformations;
 inline tSetupBones oSetupBones;
 inline tCL_Move oCL_Move;
@@ -91,10 +92,13 @@ inline tListLeavesInBox oListLeavesInBox;
 inline tInPrediction oInPrediction;
 inline tTraceBlood oTraceBlood;
 inline tCL_DispatchSound oCL_DispatchSound;
-inline tInterpolateViewmodel oInterpolateViewmodel;
+inline tInterpolateEntity oInterpolateEntity;
 inline tThrowGrenade oThrowGrenade;
 inline tCalcViewModel oCalcViewModel;
 inline tSVCMsg_TempEntities oSVCMsg_TempEntities;
+inline tResetLatched oResetLatched;
+inline tGetExposureRange oGetExposureRange;
+inline tInterpolatePlayer oInterpolatePlayer;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

@@ -22,7 +22,9 @@ std::string CBaseCombatWeapon::GetName(CCSWeaponData* data) {
 		return "";
 
 	const wchar_t* name = Localize->FindSafe(data->szHudName);
-	return Localize->utf16le_to_utf8(name);
+	std::string s = Localize->utf16le_to_utf8(name);
+	std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+	return s;
 }
 
 bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
@@ -48,9 +50,13 @@ bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
 	if (owner->m_iShotsFired() > 0 && !data->bFullAuto)
 		return false;
 
+	if (ctx.was_unregistered_shot)
+		return true;
+
 	int tick_base = owner->m_nTickBase();
 	if (owner == Cheat.LocalPlayer && m_iItemDefinitionIndex() != Revolver && !ctx.lc_exploit)
 		tick_base -= ctx.tickbase_shift;
+
 	const float cur_time = TICKS_TO_TIME(tick_base);
 
 	if (revolver_check && m_iItemDefinitionIndex() == Revolver && m_flPostponeFireReadyTime() > cur_time)

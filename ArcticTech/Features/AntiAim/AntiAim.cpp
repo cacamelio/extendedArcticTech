@@ -30,6 +30,9 @@ void CAntiAim::FakeLag() {
 		}
 	}
 
+	if (Exploits->GetExploitType() == CExploits::E_DoubleTap && ctx.tickbase_shift && ctx.cmd->buttons & IN_USE)
+		return;
+
 	fakelag = 0;
 	fakelag_limit = min(sv_maxusrcmdprocessticks->GetInt(), config.antiaim.fakelag.limit->get());
 
@@ -37,33 +40,37 @@ void CAntiAim::FakeLag() {
 		fakelag_limit = max((sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 1);
 	}
 
+	if (config.ragebot.aimbot.doubletap->get() && (GlobalVars->realtime - ctx.last_shot_time) < 0.5f) {
+		fakelag_limit = 2;
+	}
+
 	if (config.antiaim.fakelag.enabled->get()) {
-		if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 256.f) {
+		if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 4096.f) {
 			fakelag = 2;
 		}
 		else {
 			fakelag = fakelag_limit;
 
-			if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+			if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 				fakelag = int(64.0f / (Cheat.LocalPlayer->m_vecVelocity().Q_Length() * GlobalVars->interval_per_tick) + 1);
+			} else {
+				if (config.antiaim.fakelag.variability->get() > 0)
+					fakelag -= Utils::RandomInt(0, config.antiaim.fakelag.variability->get());
+			}
 		}
 	}
-
-	if (config.antiaim.fakelag.variability->get() > 0)
-		fakelag += abs(rand() % config.antiaim.fakelag.variability->get());
 
 	if (lua_override.override_bits & LuaAntiAim_t::OverrideFakeLag)
 		fakelag = lua_override.fakelag;
 
-	if (config.antiaim.misc.fake_duck->get())
+	if (config.antiaim.misc.fake_duck->get()) {
 		fakelag = 14;
+		fakelag_limit = 14;
+	}
 
 	fakelag = std::clamp(fakelag, 0, fakelag_limit);
 	
-	if (ctx.teleported_last_tick)
-		ctx.send_packet = true;
-	else
-		ctx.send_packet = ClientState->m_nChokedCommands >= fakelag;
+	ctx.send_packet = ClientState->m_nChokedCommands >= fakelag;
 
 	static bool hasPeeked = false;
 
@@ -291,7 +298,7 @@ void CAntiAim::FakeDuck() {
 
 	ctx.cmd->buttons |= IN_BULLRUSH;
 
-	if (ClientState->m_nChokedCommands < 7 && !Exploits->IsShifting())
+	if (ClientState->m_nChokedCommands < 7 && !(Exploits->IsShifting() || (GlobalVars->realtime - Exploits->last_teleport_time) < TICKS_TO_TIME(14)))
 		ctx.cmd->buttons &= ~IN_DUCK;
 	else
 		ctx.cmd->buttons |= IN_DUCK;
@@ -306,8 +313,12 @@ void CAntiAim::LegMovement() {
 	ctx.cmd->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVERIGHT | IN_MOVELEFT);
 
 	int target_type = config.antiaim.misc.leg_movement->get();
-	if (target_type == 1 && ctx.send_packet)
+	if (target_type == 1 && ctx.send_packet && !(ctx.cmd->buttons & IN_USE && ctx.tickbase_shift == 13)) {
 		target_type = 2;
+	}
+	else if (target_type == 1) {
+		ctx.leg_slide_angle = ctx.cmd->viewangles;
+	}
 
 	switch (target_type) {
 	case 0:
@@ -358,7 +369,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 64.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 9.5f + (velocity * TICKS_TO_TIME(2.5f));
+	Vector move_factor = velocity.Normalized() * 9.5f + (velocity * TICKS_TO_TIME(3.2f));
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

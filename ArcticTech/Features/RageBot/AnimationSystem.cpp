@@ -10,7 +10,7 @@ void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 	Utils::MatrixMove(mat, size, sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
 }
 
-void FixLegMovement() {
+void FixLegMovement(AnimationLayer* server_layers) {
 	if (config.antiaim.misc.leg_movement->get() != 1)
 		return;
 
@@ -22,10 +22,15 @@ void FixLegMovement() {
 
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
-	float delta = Math::AngleDiff(ctx.cmd->viewangles.yaw, ctx.last_choke_angle.yaw);
+	float delta = Math::AngleDiff(ctx.cmd->viewangles.yaw, ctx.leg_slide_angle.yaw);
 	float moveYaw = Math::AngleDiff(Math::VectorAngles(Cheat.LocalPlayer->m_vecVelocity()).yaw, ctx.cmd->viewangles.yaw);
 
 	Cheat.LocalPlayer->m_flPoseParameter()[STRAFE_YAW] = Math::AngleToPositive(Math::AngleNormalize(moveYaw + delta)) / 360.f;
+
+	AnimationLayer* layers = Cheat.LocalPlayer->GetAnimlayers();
+
+	if (server_layers[ANIMATION_LAYER_MOVEMENT_STRAFECHANGE].m_flWeight > layers[ANIMATION_LAYER_MOVEMENT_STRAFECHANGE].m_flWeight)
+		layers[ANIMATION_LAYER_MOVEMENT_STRAFECHANGE].m_flWeight = server_layers[ANIMATION_LAYER_MOVEMENT_STRAFECHANGE].m_flWeight;
 }
 
 void CAnimationSystem::OnCreateMove() {
@@ -37,20 +42,28 @@ void CAnimationSystem::OnCreateMove() {
 	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
-	if (animstate->iLastUpdateFrame >= GlobalVars->framecount)
-		animstate->iLastUpdateFrame = GlobalVars->framecount - 1;
+	QAngle vangle = ctx.cmd->viewangles;
+	if (ctx.send_packet && ctx.force_shot_angle) {
+		vangle = ctx.shot_angles;
+		ctx.force_shot_angle = false;
+	}	
 
-	Cheat.LocalPlayer->UpdateAnimationState(animstate, ctx.cmd->viewangles);
-	animstate->bHitGroundAnimation = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
+	if (animstate->nLastUpdateFrame >= GlobalVars->framecount)
+		animstate->nLastUpdateFrame = GlobalVars->framecount - 1;
 
-	if (ctx.send_packet && !Exploits->IsHidingShot()) {
-		FixLegMovement();
+	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
+	animstate->bLanding = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 
-		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flGoalFeetYaw, 0));
+	if (ctx.send_packet && !Exploits->IsHidingShot() && animstate->nLastUpdateFrame == GlobalVars->framecount) {
+		FixLegMovement(animlayers_backup);
+
+		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flFootYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
 		for (auto& cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
 			cb.func(Cheat.LocalPlayer);
+
+		ctx.setup_bones_angle = vangle;
 
 		BuildMatrix(Cheat.LocalPlayer, local_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
 	}
@@ -72,20 +85,12 @@ void CAnimationSystem::UpdatePredictionAnimation() {
 	poseparam_backup = Cheat.LocalPlayer->m_flPoseParameter();
 
 	Cheat.LocalPlayer->UpdateAnimationState(prediction_animstate, ctx.cmd->viewangles, true);
-	prediction_animstate->bHitGroundAnimation = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && prediction_animstate->bOnGround; // fuck valve broken code that sets bLanding to false
+	prediction_animstate->bLanding = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && prediction_animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 
 	BuildMatrix(Cheat.LocalPlayer, prediction_matrix, 128, BONE_USED_BY_HITBOX, nullptr);
 
 	Cheat.LocalPlayer->m_flPoseParameter() = poseparam_backup;
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayers_backup, sizeof(AnimationLayer) * 13);
-}
-
-void CAnimationSystem::UpdateLocalAnimations() {
-	static int last_update_tick = 0;
-	static float old_sim_time = 0.f;
-
-	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
-	animstate->iLastUpdateFrame = GlobalVars->framecount;
 }
 
 void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
@@ -102,8 +107,6 @@ void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
 	case FRAME_NET_UPDATE_END:
 		break;
 	case FRAME_RENDER_START:
-		if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive())
-			UpdateLocalAnimations();
 		break;
 	default:
 		break;
@@ -192,17 +195,12 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 		*animstate = record->unupdated_animstate;
 		player->UpdateClientSideAnimation();
-
-		Resolver->Apply(record);
 	}
 	else {
 		player->UpdateClientSideAnimation();
 	}
 
-	if (player->m_fFlags() & FL_ONGROUND) {
-		animstate->flDurationInAir = 0;
-	}
-	else {
+	if (!(player->m_fFlags() & FL_ONGROUND)) {
 		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat();
 	}
 
@@ -211,7 +209,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	hook_info.disable_clamp_bones = false;
 
 	interpolate_data_t* lerp_data = &interpolate_data[idx];
-
 	lerp_data->net_origin = player->m_vecOrigin();
 
 	memcpy(record->bone_matrix, record->aim_matrix, sizeof(matrix3x4_t) * 128);
@@ -221,11 +218,10 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	record->bone_matrix_filled = true;
 
 	if (player->IsEnemy()) {
-		float deltaOriginal = Math::AngleDiff(animstate->flEyeYaw, animstate->flGoalFeetYaw);
+		float deltaOriginal = Math::AngleDiff(animstate->flEyeYaw, animstate->flFootYaw);
 		float eyeYawNew = Math::AngleNormalize(animstate->flEyeYaw + deltaOriginal);
 		player->SetAbsAngles(QAngle(0, eyeYawNew, 0));
 		player->m_flPoseParameter()[BODY_YAW] = 1.f - player->m_flPoseParameter()[BODY_YAW]; // opposite side
-		Resolver->SetRollAngle(player, 0.f);
 		BuildMatrix(player, record->opposite_matrix, 128, BONE_USED_BY_HITBOX, record->animlayers);
 	}
 
@@ -269,8 +265,13 @@ void CAnimationSystem::RunInterpolation() {
 			continue;
 		}
 
+		float lerp_amt = 24.f;
+
+		if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && player->IsEnemy())
+			lerp_amt = 36.f; // speed up interpolation
+
 		data->valid = true;
-		data->origin += (data->net_origin - data->origin) * std::clamp(GlobalVars->frametime * 32, 0.f, 0.8f);
+		data->origin += (data->net_origin - data->origin) * std::clamp(GlobalVars->frametime * lerp_amt, 0.f, 0.8f);
 	}
 }
 

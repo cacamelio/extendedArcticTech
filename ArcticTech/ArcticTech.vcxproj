@@ -207,6 +207,7 @@
     <ClInclude Include="Resources\inferno.h" />
     <ClInclude Include="Resources\molotov.h" />
     <ClInclude Include="SDK\Interfaces\CGameRules.h" />
+    <ClInclude Include="SDK\Interfaces\CStaticPropManager.h" />
     <ClInclude Include="SDK\Interfaces\IEffects.h" />
     <ClInclude Include="SDK\Interfaces\IGameTypes.h" />
     <ClInclude Include="SDK\Interfaces\ISteamHTTP.h" />

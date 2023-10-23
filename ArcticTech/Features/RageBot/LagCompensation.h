@@ -31,7 +31,6 @@ struct LagRecord {
 	float m_flDuckAmout = 0.f;
 	float m_flDuckSpeed = 0.f;
 	float m_flCycle = 0.f;
-	float roll = 0.f;
 
 	int m_nSequence = 0;
 	int m_fFlags = 0;

@@ -24,7 +24,6 @@ class CAnimationSystem {
 public:
 	void	FrameStageNotify(EClientFrameStage stage);
 	void	OnCreateMove();
-	void	UpdateLocalAnimations();
 
 	matrix3x4_t* GetLocalBoneMatrix() { return local_matrix; };
 	void	CorrectLocalMatrix(matrix3x4_t* mat, int size);

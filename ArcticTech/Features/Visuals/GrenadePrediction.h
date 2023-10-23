@@ -8,7 +8,6 @@
 class GrenadePrediction {
 private:
 	CNewParticleEffect* pMolotovParticle = nullptr;
-	CNewParticleEffect* pSmokeParticle = nullptr;
 
 protected:
 	int nTick = 0;

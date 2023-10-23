@@ -229,8 +229,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AntiAim->JitterMove();
 	Miscelleaneus::AutoStrafe();
 
-	if (ClientState->m_nDeltaTick > 0)
-		Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
+	Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
 
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
@@ -246,9 +245,11 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		if (ctx.active_weapon && ctx.active_weapon->ShootingWeapon())
 			cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
 
+		cmd->viewangles.Normalize();
+		AnimationSystem->OnCreateMove();
+
 		EnginePrediction->End();
 
-		cmd->viewangles.Normalize();
 		Utils::FixMovement(cmd, eyeYaw);
 
 		AntiAim->LegMovement();
@@ -268,8 +269,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 		ctx.teleported_last_tick = true;
 
-		verified->m_cmd = *cmd;
-		verified->m_crc = cmd->GetChecksum();
+		verified->cmd = *cmd;
+		verified->crc = cmd->GetChecksum();
 		return;
 	}
 
@@ -330,12 +331,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.send_packet = false;
 
 	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
-		Cheat.thirdpersonAngles = cmd->viewangles;
-
-		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) > 5)
+		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) >= 5)
 			AntiAim->jitter = !AntiAim->jitter;
-
-		ctx.should_update_local_anims = true;
 
 		ctx.breaking_lag_compensation = (ctx.local_sent_origin - Cheat.LocalPlayer->m_vecOrigin()).LengthSqr() > 4096;
 		ctx.local_sent_origin = Cheat.LocalPlayer->m_vecOrigin();
@@ -346,13 +343,18 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AntiAim->LegMovement();
 
 	Miscelleaneus::FastThrow();
-	AnimationSystem->OnCreateMove();
-
-	EnginePrediction->End();
 
 	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
 		ctx.last_shot_time = GlobalVars->realtime;
+		ctx.shot_angles = cmd->viewangles;
+
+		if (!ctx.send_packet) // fix incorrect thirdperson angle when shooting in fakelag
+			ctx.force_shot_angle = true;
 	}
+
+	AnimationSystem->OnCreateMove();
+
+	EnginePrediction->End();
 
 	// createmove
 
@@ -368,8 +370,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	bSendPacket = ctx.send_packet;
 	if (bSendPacket) {
 		ctx.sented_commands.emplace_back(cmd->command_number);
+		ctx.sent_angles = cmd->viewangles;
 	} else {
-		ctx.last_choke_angle = cmd->viewangles;
 		auto net_channel = ClientState->m_NetChannel;
 
 		if (net_channel->m_nChokedPackets > 0) {
@@ -418,8 +420,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	ctx.teleported_last_tick = false;
 
-	verified->m_cmd = *cmd;
-	verified->m_crc = cmd->GetChecksum();
+	verified->cmd = *cmd;
+	verified->crc = cmd->GetChecksum();
 }
 
 __declspec(naked) void __fastcall hkCHLCCreateMove(IBaseClientDLL* thisptr, void*, int sequence_number, float input_sample_frametime, bool active) {
@@ -468,6 +470,8 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
 	if (state == 6) { // SIGNONSTATE_FULL
+		Cheat.InGame = true;
+
 		ctx.update_nightmode = true;
 		ctx.update_remove_blood = true;
 
@@ -481,6 +485,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		Ragebot->CalcSpreadValues();
 		ShotManager->Reset();
 		Resolver->Reset();
+		SkinChanger->InitCustomModels();
 
 		for (auto& callback : Lua->hooks.getHooks(LUA_LEVELINIT))
 			callback.func();
@@ -519,9 +524,11 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 				switch (weap->m_zoomLevel())
 				{
 				case 1:
-					fov -= (setup->fov - fov) * config.visuals.effects.fov_zoom->get() * 0.01f;
+					fov -= (fov - setup->fov) * config.visuals.effects.fov_zoom->get() * 0.01f;
+					break;
 				case 2:
-					fov -= (setup->fov - fov) * config.visuals.effects.fov_second_zoom->get() * 0.01f;
+					fov -= (fov - setup->fov) * config.visuals.effects.fov_second_zoom->get() * 0.01f;
+					break;
 				default:
 					break;
 				}
@@ -651,9 +658,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	}
 
-	if (Cheat.InGame && Cheat.LocalPlayer && Exploits->ShouldCharge())
-		GlobalVars->interpolation_amount = 0.f;
-
 	AnimationSystem->FrameStageNotify(stage);
 
 	oFrameStageNotify(thisptr, edx, stage);
@@ -662,10 +666,24 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
 	if (hook_info.update_csa)
 		return oUpdateClientSideAnimation(thisptr, edx);
-	if (thisptr == Cheat.LocalPlayer)
-		oUpdateClientSideAnimation(thisptr, edx);
 	if (!thisptr->IsPlayer())
 		return oUpdateClientSideAnimation(thisptr, edx);
+
+	if (thisptr == Cheat.LocalPlayer) {
+		CCSGOPlayerAnimationState* animstate = thisptr->GetAnimstate();
+
+		int backup_last_update = 0;
+		if (animstate) {
+			backup_last_update = animstate->nLastUpdateFrame;
+			animstate->nLastUpdateFrame = GlobalVars->framecount;
+		}
+
+		oUpdateClientSideAnimation(thisptr, edx);
+
+		if (animstate) {
+			animstate->nLastUpdateFrame = backup_last_update;
+		}
+	}
 }
 
 bool __fastcall hkShouldSkipAnimationFrame(void* thisptr, void* edx) {
@@ -685,14 +703,6 @@ void __fastcall hkDoExtraBoneProcessing(CBaseEntity* player, void* edx, CStudioH
 
 }
 
-void __fastcall hkStandardBlendingRules(CBasePlayer* thisptr, void* edx, void* hdr, void* pos, void* q, float current_time, int bone_mask) {
-	if (thisptr == Cheat.LocalPlayer)
-		thisptr->m_fEffects() |= EF_NOINTERP;
-	oStandardBlendingRules(thisptr, edx, hdr, pos, q, current_time, bone_mask);
-	if (thisptr == Cheat.LocalPlayer)
-		thisptr->m_fEffects() &= ~EF_NOINTERP;
-}
-
 bool __fastcall hkIsHLTV(IVEngineClient* thisptr, void* edx) {
 	static auto oIsHLTV = (tIsHLTV)Hooks::EngineVMT->GetOriginal(93);
 
@@ -701,8 +711,9 @@ bool __fastcall hkIsHLTV(IVEngineClient* thisptr, void* edx) {
 
 	static const auto setup_velocity = Utils::PatternScan("client.dll", "84 C0 75 38 8B 0D ? ? ? ? 8B 01 8B 80 ? ? ? ? FF D0");
 	static const auto accumulate_layers = Utils::PatternScan("client.dll", "84 C0 75 0D F6 87");
+	static const auto reevalute_anim_lod = Utils::PatternScan("client.dll", "84 C0 0F 85 ? ? ? ? A1 ? ? ? ? 8B B7");
 
-	if (_ReturnAddress() == setup_velocity || _ReturnAddress() == accumulate_layers)
+	if (_ReturnAddress() == setup_velocity || _ReturnAddress() == accumulate_layers || _ReturnAddress() == reevalute_anim_lod)
 		return true;
 
 	return oIsHLTV(thisptr, edx);
@@ -741,13 +752,8 @@ bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBone
 	if (!hook_info.disable_interpolation && mask & BONE_USED_BY_ATTACHMENT) {
 		AnimationSystem->InterpolateModel(ent, ent->GetCachedBoneData().Base());
 
-		//const auto backup_abs_origin = ent->GetAbsOrigin();
 		ent->SetAbsOrigin(AnimationSystem->GetInterpolated(ent));
-		//ent->m_BoneAccessor().m_ReadableBones |= BONE_USED_BY_ATTACHMENT;
-		//ent->m_BoneAccessor().m_WritableBones |= BONE_USED_BY_ATTACHMENT;
-		//ent->CopyBones(ent->m_BoneAccessor().m_pBones);
 		ent->SetupBones_AttachmentHelper();
-		//ent->SetAbsOrigin(backup_abs_origin);
 	}
 
 	if (pBoneToWorld && maxBones != -1) {
@@ -786,9 +792,8 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 			continue;
 		}
 
-		if (command == cmd->command_number) {
+		if (command == cmd->command_number)
 			player->m_nTickBase() = backup_tickbase;
-		}
 
 		++i;
 	}
@@ -803,17 +808,14 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 	if (thisptr != Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || thisptr->m_nSimulationTick() == GlobalVars->tickcount || !c_ctx->needsprocessing)
 		return oPhysicsSimulate(thisptr, edx);
 
-	auto& local_data = EnginePrediction->GetLocalData(c_ctx->command_number);
+	auto& local_data = EnginePrediction->GetLocalData(c_ctx->cmd.command_number);
 
-	if (c_ctx->command_number == Exploits->charged_command + 1) {
-		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick + 1;
-		//EnginePrediction->RestoreNetvars(last_simulated_tick % 150);
-
-	}
+	if (c_ctx->cmd.command_number == Exploits->charged_command + 1)
+		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick;
 
 	oPhysicsSimulate(thisptr, edx);
 
-	EnginePrediction->StoreNetvars(c_ctx->command_number % 150);
+	EnginePrediction->StoreNetvars(c_ctx->cmd.command_number);
 }
 
 void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_sequence, int outgoing_acknowledged) {
@@ -836,14 +838,11 @@ void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_seq
 }
 
 void __fastcall hkPacketEnd(CClientState* thisptr, void* edx) {
-	if (!Cheat.LocalPlayer || ClientState->m_ClockDriftMgr.m_nServerTick != ClientState->m_nDeltaTick)
+	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return oPacketEnd(thisptr, edx);
 
-	//const auto& local_data = EnginePrediction->GetLocalData(ClientState->m_nCommandAck % 150);
-	//if (local_data.shift_amount > 0 && local_data.m_nTickBase > Cheat.LocalPlayer->m_nTickBase())
-	//	Cheat.LocalPlayer->m_nTickBase() = local_data.m_nTickBase + 1;
-
-	//ESP::ProcessSounds();
+	if (ClientState->m_ClockDriftMgr.m_nServerTick == ClientState->m_nDeltaTick)
+		EnginePrediction->RestoreNetvars(ClientState->m_nLastOutgoingCommand);
 
 	oPacketEnd(thisptr, edx);
 }
@@ -853,10 +852,8 @@ void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t*
 		return;
 
 	auto backup_curtime = GlobalVars->curtime;
-	auto backup_tickcount = GlobalVars->tickcount;
 	if (thisptr == Cheat.LocalPlayer) {
 		GlobalVars->curtime = EnginePrediction->curtime();
-		GlobalVars->tickcount = EnginePrediction->tickcount();
 	}
 
 	if (thisptr->m_fFlags() & FL_FROZEN) {
@@ -866,7 +863,6 @@ void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t*
 	oClampBonesInBBox(thisptr, edx, bones, boneMask);
 
 	GlobalVars->curtime = backup_curtime;
-	GlobalVars->tickcount = backup_tickcount;
 }
 
 void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
@@ -880,6 +876,7 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	if (Exploits->ShouldCharge()) {
 		ctx.tickbase_shift++;
 		ctx.shifted_last_tick++;
+
 		return;
 	}
 
@@ -892,14 +889,12 @@ QAngle* __fastcall hkGetEyeAngles(CBasePlayer* thisptr, void* edx) {
 	if (thisptr != Cheat.LocalPlayer)
 		return oGetEyeAngles(thisptr, edx);
 
-	static void* EyeAnglesPitch = Utils::PatternScan("client.dll", "8B CE F3 0F 10 00 8B 06 F3 0F 11 45 ? FF 90 ? ? ? ? F3 0F 10 55 ?");
-	static void* EyeAnglesYaw = Utils::PatternScan("client.dll", "F3 0F 10 55 ? 51 8B 8E ? ? ? ?");
 	static void* ShitAnimRoll = Utils::PatternScan("client.dll", "8B 55 0C 8B C8 E8 ? ? ? ? 83 C4 08 5E 8B E5");
 
-	if (_ReturnAddress() != EyeAnglesPitch && _ReturnAddress() != EyeAnglesYaw && _ReturnAddress() != ShitAnimRoll)
+	if (_ReturnAddress() != ShitAnimRoll)
 		return oGetEyeAngles(thisptr, edx);
 
-	return &Cheat.thirdpersonAngles;
+	return &ctx.setup_bones_angle;
 }
 
 bool __fastcall hkSendNetMsg(INetChannel* thisptr, void* edx, INetMessage& msg, bool bForceReliable, bool bVoice) {
@@ -1026,14 +1021,12 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	to_cmd = from_cmd;
 
 	to_cmd.command_number++;
-	to_cmd.tick_count += 200;
+	to_cmd.tick_count = INT_MAX;
 
-	for (int i = new_commands; i <= moveMsg->new_commands; i++) {
+	for (int i = 0; i < ctx.lc_exploit; i++) {
 		WriteUserCmd(buf, &to_cmd, &from_cmd);
 
-		from_cmd = to_cmd;
 		to_cmd.command_number++;
-		to_cmd.tick_count++;
 	}
 
 	return true;
@@ -1066,13 +1059,8 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 
 	// check if disabling occulusion for players ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L1491 )
 	auto base_entity = info->m_pRenderable->GetIClientUnknown()->GetBaseEntity();
-	if (!base_entity || !base_entity->IsPlayer()) {
-		if (config.visuals.effects.props_color_enable->get() && config.visuals.effects.props_color->get().a != 255) {
-			info->m_Flags &= ~0x100;
-			info->m_bRenderInFastReflection |= 0xC0;
-		}
+	if (!base_entity || !base_entity->IsPlayer())
 		return oListLeavesInBox(ecx, edx, mins, maxs, list, size);
-	}
 
 	// fix render order, force translucent group ( https://www.unknowncheats.me/forum/2429206-post15.html )
 	// AddRenderablesToRenderLists: https://i.imgur.com/hcg0NB5.png ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L2473 )
@@ -1088,14 +1076,8 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 
 bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
 	static auto setup_bones = Utils::PatternScan("client.dll", "84 C0 74 0A F3 0F 10 05 ? ? ? ? EB 05");
-	static auto apply_shake = Utils::PatternScan("client.dll", "84 C0 75 0B 8B 0D ? ? ? ? 8B 01 FF 50 4C");
 
-	void* ret = _ReturnAddress();
-
-	if (config.visuals.effects.removals->get(7) && ret == apply_shake)
-		return true;
-
-	if (ret == setup_bones)
+	if (_ReturnAddress() == setup_bones)
 		return false;
 
 	return oInPrediction(ecx, edx);
@@ -1106,15 +1088,23 @@ void __fastcall hkCL_DispatchSound(const SoundInfo_t& snd, void* edx) {
 	oCL_DispatchSound(snd, edx);
 }
 
-bool __fastcall hkInterpolateViewmodel(CBaseViewModel* vm, void* edx, float curTime) {
-	if (EntityList->GetClientEntityFromHandle(vm->m_hOwner()) != Cheat.LocalPlayer)
-		return oInterpolateViewmodel(vm, edx, curTime);
+bool __fastcall hkInterpolateEntity(CBaseEntity* ent, void* edx, float curTime) {
+	CBaseViewModel* vm = reinterpret_cast<CBaseViewModel*>(ent);
+
+	if (EntityList->GetClientEntityFromHandle(vm->m_hOwner()) != Cheat.LocalPlayer && ent != Cheat.LocalPlayer)
+		return oInterpolateEntity(vm, edx, curTime);
 
 	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
+	auto backup_lerp_amt = GlobalVars->interpolation_amount;
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = EnginePrediction->tickcount(); // fix lag while defensive
-	auto result = oInterpolateViewmodel(vm, edx, curTime);
+	if (Exploits->ShouldCharge()) // fix lag when charging
+		GlobalVars->interpolation_amount = 0.f;
+
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = ctx.corrected_tickbase; // fix lag while defensive; may be -ctx.tickbase_shift?
+	auto result = oInterpolateEntity(vm, edx, curTime);
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
+
+	GlobalVars->interpolation_amount = backup_lerp_amt;
 
 	return result;
 }
@@ -1141,6 +1131,18 @@ bool __fastcall hkSVCMsg_TempEntities(CClientState* thisptr, void* edx, const vo
 	bool result = oSVCMsg_TempEntities(thisptr, edx, msg);
 	thisptr->m_nMaxClients = old_maxclients;
 	return result;
+}
+
+void __fastcall hkResetLatched(CBasePlayer* thisptr, void* edx) {
+	if (!Cheat.LocalPlayer || thisptr != Cheat.LocalPlayer || EnginePrediction->HasPredictionErrors())
+		return oResetLatched(thisptr, edx);
+}
+
+void __fastcall hkGetExposureRange(float* min, float* max) {
+	*min = 1.f;
+	*max = 1.f;
+
+	oGetExposureRange(min, max);
 }
 
 void Hooks::Initialize() {
@@ -1188,7 +1190,6 @@ void Hooks::Initialize() {
 	oUpdateClientSideAnimation = HookFunction<tUpdateClientSideAnimation>(Utils::PatternScan("client.dll", "55 8B EC 51 56 8B F1 80 BE ? ? ? ? ? 74"), hkUpdateClientSideAnimation);
 	oDoExtraBoneProcessing = HookFunction<tDoExtraBoneProcessing>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 8B F1 57 89 74 24 1C"), hkDoExtraBoneProcessing);
 	oShouldSkipAnimationFrame = HookFunction<tShouldSkipAnimationFrame>(Utils::PatternScan("client.dll", "57 8B F9 8B 07 8B 80 ? ? ? ? FF D0 84 C0 75 02"), hkShouldSkipAnimationFrame);
-	oStandardBlendingRules = HookFunction<tStandardBlendingRules>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 8B 75 08 57 8B F9 85 F6"), hkStandardBlendingRules);
 	oBuildTransformations = HookFunction<tBuildTransformations>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 81 ? ? ? ? ? 56 57 8B F9 8B"), hkBuildTransformations);
 	oSetupBones = HookFunction<tSetupBones>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 B8 ? ? ? ? E8 ? ? ? ? 56 57"), hkSetupBones);
 	oCL_Move = HookFunction<tCL_Move>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 53 56 8A F9 F3 0F 11 45 ? 8B 4D 04"), hkCL_Move);
@@ -1214,10 +1215,12 @@ void Hooks::Initialize() {
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
 	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
 	oCL_DispatchSound = HookFunction<tCL_DispatchSound>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 8B F1 8D 4D 98 E8"), hkCL_DispatchSound);
-	oInterpolateViewmodel = HookFunction<tInterpolateViewmodel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateViewmodel);
+	oInterpolateEntity = HookFunction<tInterpolateEntity>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateEntity);
 	oThrowGrenade = HookFunction<tThrowGrenade>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 57 8B F9 80 BF ? ? ? ? ? 74 07"), hkThrowGrenade);
 	oCalcViewModel = HookFunction<tCalcViewModel>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 58 56 57"), hkCalcViewModel);
 	oSVCMsg_TempEntities = HookFunction<tSVCMsg_TempEntities>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 83 EC 4C A1 ? ? ? ? 80"), hkSVCMsg_TempEntities);
+	oResetLatched = HookFunction<tResetLatched>(Utils::PatternScan("client.dll", "56 8B F1 57 8B BE ? ? ? ? 85 FF 74 ? 8B CF E8 ? ? ? ? 68"), hkResetLatched);
+	oGetExposureRange = HookFunction<tGetExposureRange>(Utils::PatternScan("client.dll", "55 8B EC 51 80 3D ? ? ? ? ? 0F 57"), hkGetExposureRange);
 
 	EventListner->Register();
 
@@ -1254,7 +1257,6 @@ void Hooks::End() {
 	RemoveHook(oUpdateClientSideAnimation, hkUpdateClientSideAnimation);
 	RemoveHook(oDoExtraBoneProcessing, hkDoExtraBoneProcessing);
 	RemoveHook(oShouldSkipAnimationFrame, hkShouldSkipAnimationFrame);
-	RemoveHook(oStandardBlendingRules, hkStandardBlendingRules);
 	RemoveHook(oBuildTransformations, hkBuildTransformations);
 	RemoveHook(oSetupBones, hkSetupBones);
 	RemoveHook(oCL_Move, hkCL_Move);
@@ -1280,8 +1282,10 @@ void Hooks::End() {
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
 	RemoveHook(oInPrediction, hkInPrediction);
 	RemoveHook(oCL_DispatchSound, hkCL_DispatchSound);
-	RemoveHook(oInterpolateViewmodel, hkInterpolateViewmodel);
+	RemoveHook(oInterpolateEntity, hkInterpolateEntity);
 	RemoveHook(oThrowGrenade, hkThrowGrenade);
 	RemoveHook(oCalcViewModel, hkCalcViewModel);
 	RemoveHook(oSVCMsg_TempEntities, hkSVCMsg_TempEntities);
+	RemoveHook(oResetLatched, hkResetLatched);
+	RemoveHook(oGetExposureRange, hkGetExposureRange);
 }

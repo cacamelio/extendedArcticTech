@@ -47,29 +47,58 @@ void CWorld::Modulation() {
 				material->AlphaModulate(1);
 			}
 		}
-		else if (strstr(material->GetTextureGroupName(), "StaticProp")) {
-			if (config.visuals.effects.props_color_enable->get()) {
-				float r, g, b;
-				material->GetColorModulation(&r, &g, &b);
+		//else if (strstr(material->GetTextureGroupName(), "StaticProp")) {
+		//	if (config.visuals.effects.props_color_enable->get()) {
+		//		float r, g, b;
+		//		material->GetColorModulation(&r, &g, &b);
 
-				auto it = original_colors.find(material->GetName());
-				if (it == original_colors.end()) {
-					original_colors.insert({ material->GetName(), Color().as_fraction(r, g, b) });
-					it = original_colors.find(material->GetName());
-				}
+		//		auto it = original_colors.find(material->GetName());
+		//		if (it == original_colors.end()) {
+		//			original_colors.insert({ material->GetName(), Color().as_fraction(r, g, b) });
+		//			it = original_colors.find(material->GetName());
+		//		}
 
-				const Color clr = config.visuals.effects.props_color->get();
-				material->ColorModulate(it->second * clr);
-				material->AlphaModulate(clr.a / 255.f);
-				material->SetMaterialVarFlag(MATERIAL_VAR_TRANSLUCENT, false);
-				cvars.r_DrawSpecificStaticProp->SetInt(0);
-			}
-			else {
-				auto it = original_colors.find(material->GetName());
-				if (it != original_colors.end())
-					material->ColorModulate(it->second);
-				material->AlphaModulate(1);
-			}
+		//		const Color clr = config.visuals.effects.props_color->get();
+		//		material->ColorModulate(it->second * clr);
+		//		material->AlphaModulate(clr.a / 255.f);
+		//		material->SetMaterialVarFlag(MATERIAL_VAR_TRANSLUCENT, false);
+		//		cvars.r_DrawSpecificStaticProp->SetInt(0);
+		//	}
+		//	else {
+		//		auto it = original_colors.find(material->GetName());
+		//		if (it != original_colors.end())
+		//			material->ColorModulate(it->second);
+		//		material->AlphaModulate(1);
+		//	}
+		//}
+	}
+
+	for (int i = 0; i < StaticPropMgr->m_StaticProps.Count(); i++) {
+		CStaticProp* prop = &StaticPropMgr->m_StaticProps[i];
+
+		if (!prop)
+			continue;
+
+		if (config.visuals.effects.props_color_enable->get()) {
+			Color clr = config.visuals.effects.props_color->get();
+			prop->m_DiffuseModulation[0] = clr.r / 255.f;
+			prop->m_DiffuseModulation[1] = clr.g / 255.f;
+			prop->m_DiffuseModulation[2] = clr.b / 255.f;
+			prop->m_DiffuseModulation[3] = 1.f;
+
+			auto alpha_prop = prop->m_pClientAlphaProperty;
+			if (alpha_prop)
+				alpha_prop->SetAlphaModulation(clr.a);
+		}
+		else {
+			prop->m_DiffuseModulation[0] = 1.f;
+			prop->m_DiffuseModulation[1] = 1.f;
+			prop->m_DiffuseModulation[2] = 1.f;
+			prop->m_DiffuseModulation[3] = 1.f;
+
+			auto alpha_prop = prop->m_pClientAlphaProperty;
+			if (alpha_prop)
+				alpha_prop->SetAlphaModulation(255);
 		}
 	}
 }

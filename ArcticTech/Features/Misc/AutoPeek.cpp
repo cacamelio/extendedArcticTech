@@ -38,17 +38,19 @@ void CAutoPeek::Draw() {
 }
 
 void CAutoPeek::CreateMove() {
-	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !Cheat.InGame || !(config.ragebot.aimbot.peek_assist_keybind->get() && config.ragebot.aimbot.peek_assist->get())) {
+	if (!(config.ragebot.aimbot.peek_assist_keybind->get() && config.ragebot.aimbot.peek_assist->get()) || !ctx.active_weapon) {
 		returning = false;
 		return;
 	}
 
 	float distance_sqr = (Cheat.LocalPlayer->m_vecOrigin() - position).LengthSqr();
 
-	if (ctx.cmd->buttons & IN_ATTACK && Cheat.LocalPlayer->GetActiveWeapon()->ShootingWeapon() && Cheat.LocalPlayer->GetActiveWeapon()->CanShoot())
+	if (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot()) {
 		returning = true;
-	else if (distance_sqr < 4.f)
-		returning = false;
+	} else if (distance_sqr < 4.f) {
+		if (ctx.active_weapon->m_flNextPrimaryAttack() - 0.15f < TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()))
+			returning = false;
+	}
 
 	if (returning) {
 		QAngle ang = Utils::VectorToAngle(Cheat.LocalPlayer->m_vecOrigin(), position);
@@ -57,11 +59,13 @@ void CAutoPeek::CreateMove() {
 		ang.yaw = vang.yaw - ang.yaw;
 		ang.Normalize();
 
-		float distance = Math::Q_sqrt(distance_sqr);
+		float vel = (distance_sqr > 25.f) ? 450 : (5.f + 3.f * distance_sqr);
+		if (distance_sqr < 1.f)
+			vel = 0.f;
 
 		Vector dir;
 		Utils::AngleVectors(ang, dir);
-		dir *= (distance > 5.f) ? 450 : (15.f + 47.f * distance);
+		dir *= vel;
 		ctx.cmd->forwardmove = dir.x;
 		ctx.cmd->sidemove = dir.y;
 	}

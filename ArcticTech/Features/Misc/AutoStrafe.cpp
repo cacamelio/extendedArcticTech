@@ -118,36 +118,48 @@ void Miscelleaneus::AutoStrafe() {
 }
 
 void Miscelleaneus::CompensateThrowable() {
-	if (!config.misc.movement.compensate_throwable->get() ||
-		!config.misc.movement.auto_strafe->get() ||
-		Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)
-	{
+	if (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)
 		return;
-	}
 
 	auto weapon = Cheat.LocalPlayer->GetActiveWeapon();
 
 	if (!weapon->IsGrenade())
 		return;
 
-	CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(weapon);
-	auto weaponData = weapon->GetWeaponInfo();
+	if (config.misc.movement.compensate_throwable->get(0)) {
+		CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(weapon);
+		auto weaponData = weapon->GetWeaponInfo();
 
-	Vector direction = Math::AngleVectors(ctx.cmd->viewangles);
+		Vector direction = Math::AngleVectors(ctx.cmd->viewangles);
 
-	Vector smoothed_velocity = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
+		Vector smoothed_velocity = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
-	Vector base_vel = direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (grenade->m_flThrowStrength() * 0.7f + 0.3f));
-	Vector smoothed_grenade_vel = base_vel + smoothed_velocity * 1.25f;
-	Vector current_grenade_vel = base_vel + ctx.local_velocity * 1.25f;
+		Vector base_vel = direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (grenade->m_flThrowStrength() * 0.7f + 0.3f));
+		Vector smoothed_grenade_vel = base_vel + smoothed_velocity * 1.25f;
+		Vector current_grenade_vel = base_vel + ctx.local_velocity * 1.25f;
 
-	QAngle smoothed_angle = Math::VectorAngles(smoothed_grenade_vel);
-	QAngle vel_angle = Math::VectorAngles(current_grenade_vel);
+		QAngle smoothed_angle = Math::VectorAngles(smoothed_grenade_vel);
+		QAngle vel_angle = Math::VectorAngles(current_grenade_vel);
 
-	float angle_diff = Math::AngleDiff(smoothed_angle.yaw, vel_angle.yaw);
+		float angle_diff = Math::AngleDiff(smoothed_angle.yaw, vel_angle.yaw);
 
-	if (angle_diff > 30.f)
-		return;
+		float sign = angle_diff < 0.f ? -1 : 1;
+		if (abs(angle_diff) < 45.f)
+			ctx.cmd->viewangles.yaw += angle_diff + std::tan(DEG2RAD(angle_diff)) * angle_diff * sign;
+	}
 
-	ctx.cmd->viewangles.yaw += angle_diff;
+	if (config.misc.movement.compensate_throwable->get(1)) {
+		Vector vel = Cheat.LocalPlayer->m_vecVelocity();
+		Vector ideal_vel = vel;
+		ideal_vel.z = std::clamp(vel.z, -120.f, 120.f);
+
+		float diff = vel.z - ideal_vel.z;
+
+		float ang_diff = RAD2DEG(std::acosf(vel.Dot(ideal_vel) / (vel.Q_Length() * ideal_vel.Q_Length())));
+
+		if (diff < 0.f)
+			ang_diff = -ang_diff;
+
+		ctx.cmd->viewangles.pitch += ang_diff;
+	}
 }

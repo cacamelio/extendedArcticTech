@@ -574,30 +574,27 @@ void CSkinChanger::MaskChanger()
 
 	auto mask = mask_models[config.skins.mask_changer_models->get()];
 
+	if (!config.skins.mask_changer->get()) {
+		if (Cheat.LocalPlayer->m_iAddonBits() & mask_flags)
+			Cheat.LocalPlayer->m_iAddonBits() &= ~mask_flags;
+		return;
+	}
+
 	if (!LoadModel(default_mask) || !LoadModel(mask))
 		return;
 
-	if (config.skins.mask_changer->get())
-	{
-		Cheat.LocalPlayer->m_iAddonBits() |= mask_flags;
+	Cheat.LocalPlayer->m_iAddonBits() |= mask_flags;
 
-		if (oldMask != config.skins.mask_changer_models->get())
-		{
-			*currentMask = (char*)mask;
-			pUpdateAddonModels(Cheat.LocalPlayer, true);
-			oldMask = config.skins.mask_changer_models->get();
-		}
-	}
-	else
+	if (oldMask != config.skins.mask_changer_models->get())
 	{
-		if (Cheat.LocalPlayer->m_iAddonBits() & mask_flags)
-			Cheat.LocalPlayer->m_iAddonBits() &= ~mask_flags;
+		*currentMask = (char*)mask;
+		pUpdateAddonModels(Cheat.LocalPlayer, true);
+		oldMask = config.skins.mask_changer_models->get();
 	}
 }
 
 void CSkinChanger::AgentChanger( ) {
 	static int originalIdx = 0;
-	InitCustomModels( );
 
 	if (!config.skins.override_agent->get()) {
 		if (Cheat.LocalPlayer && originalIdx) {

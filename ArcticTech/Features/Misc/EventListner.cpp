@@ -89,11 +89,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		KillFeed->ClearDeathNotice = true;
 
 		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
-			CBasePlayer* pl = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
-			if (pl && pl->IsEnemy() && pl->m_lifeState() == LIFE_DEAD && pl->m_iTeamNum() != 1) {
-				pl->m_iHealth() = 100;
-				pl->m_lifeState() = LIFE_ALIVE;
-			}
 			ESPInfo[i].m_nHealth = 100;
 		}
 	}
