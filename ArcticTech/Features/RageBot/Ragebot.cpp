@@ -514,7 +514,7 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 	}
 
 	result.best_point = SelectBestPoint(result);
-	if (!result.best_point.record || result.best_point.damage < 5) {
+	if (!result.best_point.record || result.best_point.damage < 2) {
 		LagCompensation->BacktrackEntity(backup_record);
 		delete backup_record;
 		return result;
@@ -696,13 +696,10 @@ void CRagebot::Run() {
 	last_target_shot = ctx.cmd->command_number;
 
 	if (config.visuals.effects.client_impacts->get()) {
+		Color face_col = config.visuals.effects.client_impacts_color->get();
+
 		for (const auto& impact : best_target.best_point.impacts)
-			DebugOverlay->AddBoxOverlay(impact, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(),
-				config.visuals.effects.client_impacts_color->get().r,
-				config.visuals.effects.client_impacts_color->get().g,
-				config.visuals.effects.client_impacts_color->get().b,
-				config.visuals.effects.client_impacts_color->get().a,
-				config.visuals.effects.impacts_duration->get());
+			DebugOverlay->AddBoxOverlay(impact, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), face_col.r, face_col.g, face_col.b, face_col.a, config.visuals.effects.impacts_duration->get());
 	}
 
 	LagRecord* record = best_target.best_point.record;

@@ -59,7 +59,7 @@ typedef void(__fastcall* tCalcViewModel)(CBaseViewModel*, void*, CBasePlayer*, c
 typedef bool(__fastcall* tSVCMsg_TempEntities)(CClientState*, void*, const void*);
 typedef void(__fastcall* tResetLatched)(CBasePlayer*, void*);
 typedef void(__fastcall* tGetExposureRange)(float*, float*);
-typedef bool(__fastcall* tInterpolatePlayer)(CBasePlayer*, void*, float);
+typedef void(__fastcall* tSceneEnd)(void*, void*);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -98,7 +98,7 @@ inline tCalcViewModel oCalcViewModel;
 inline tSVCMsg_TempEntities oSVCMsg_TempEntities;
 inline tResetLatched oResetLatched;
 inline tGetExposureRange oGetExposureRange;
-inline tInterpolatePlayer oInterpolatePlayer;
+inline tSceneEnd oSceneEnd;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

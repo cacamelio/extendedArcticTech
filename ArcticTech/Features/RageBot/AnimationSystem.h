@@ -18,6 +18,7 @@ class CAnimationSystem {
 
 	matrix3x4_t local_matrix[128];
 	matrix3x4_t prediction_matrix[128];
+	AnimationLayer local_layers[13];
 	CCSGOPlayerAnimationState* prediction_animstate = new CCSGOPlayerAnimationState;
 
 	Vector sent_abs_origin;

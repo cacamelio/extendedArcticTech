@@ -191,7 +191,10 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 
 	const float latency = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
 
-	const int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(latency);
+	int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(latency);
+
+	if (ctx.fake_duck)
+		server_tickcount += 14 - ClientState->m_nChokedCommands;
 
 	const float lerp_time = GetLerpTime();
 	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(ctx.corrected_tickbase) - record->m_flSimulationTime);

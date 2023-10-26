@@ -43,12 +43,12 @@ struct ResolverData_t {
 
 struct BruteForceData_t {
 	bool use = false;
-	int current_side = -1;
+	int current_side = 0;
 	float last_shot = 0.f;
 
 	void reset() {
 		use = false;
-		current_side = -1;
+		current_side = 0;
 		last_shot = 0.f;
 	}
 };

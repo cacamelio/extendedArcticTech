@@ -51,6 +51,8 @@ void Initialize(HMODULE hModule) {
     SkinChanger->FixViewModelSequence();
     SkinChanger->GetPaintKits();
 
+
+#ifdef _DEBUG
     while (!GetAsyncKeyState(VK_END)) {
         Sleep(1000);
     }
@@ -58,21 +60,20 @@ void Initialize(HMODULE hModule) {
     Cheat.Unloaded = true;
     Hooks::End();
 
-#ifdef _DEBUG
     fclose(filePointer);
     FreeConsole();
     const auto wnd = GetConsoleWindow();
     if (wnd)
         PostMessageW(wnd, WM_CLOSE, 0, 0);
-#endif
 
     //RemoveVectoredExceptionHandler(exceptionHandle);
     FreeLibraryAndExitThread(hModule, 0);
+#endif
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 {
     if (dwReason == DLL_PROCESS_ATTACH)
-        CloseHandle(CreateThread(0, 0, (LPTHREAD_START_ROUTINE)Initialize, hModule, 0, 0));
+        CreateThread(0, 0, (LPTHREAD_START_ROUTINE)Initialize, hModule, 0, 0);
     return TRUE;
 }

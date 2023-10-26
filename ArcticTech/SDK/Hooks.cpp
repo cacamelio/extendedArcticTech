@@ -159,6 +159,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	Miscelleaneus::Clantag();
 
 	Exploits->DefenseiveThisTick() = false;
+	Exploits->force_charge = false;
 
 	ctx.active_weapon = nullptr;
 
@@ -173,9 +174,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (!cmd || !cmd->command_number)
 		return;
 
-	ctx.corrected_tickbase = Cheat.LocalPlayer->m_nTickBase();
-	if (!ctx.lc_exploit)
-		ctx.corrected_tickbase -= ctx.tickbase_shift;
+	ctx.corrected_tickbase = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift + ctx.lc_exploit;
 
 	ctx.cmd = cmd;
 	ctx.send_packet = true;

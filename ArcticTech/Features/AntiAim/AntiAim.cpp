@@ -216,12 +216,21 @@ CBasePlayer* CAntiAim::GetNearestTarget() {
 		if (!pl->IsPlayer() || pl->IsTeammate() || !pl->IsAlive())
 			continue;
 
-		if (EnginePrediction->curtime() - ESPInfo[i].m_flLastUpdateTime > 5.f) // old dormant
+		if (EnginePrediction->curtime() - ESPInfo[i].m_flLastUpdateTime > 10.f) // old dormant
 			continue;
 
 		QAngle angleToPlayer = Math::VectorAngles(pl->m_vecOrigin() - eyePos);
 
 		float fov = Utils::GetFOV(viewAngle, angleToPlayer);
+
+		CTraceFilterWorldAndPropsOnly filter;
+		CGameTrace trace;
+		Ray_t ray(pl->GetEyePosition(), Cheat.LocalPlayer->GetEyePosition());
+
+		EngineTrace->TraceRay(ray, MASK_SOLID, &filter, &trace);
+
+		if (trace.fraction == 1.f)
+			fov /= 180.f;
 
 		if (fov < nearestFov) {
 			nearestFov = fov;

@@ -1238,6 +1238,10 @@ namespace api {
 			Exploits->ForceTeleport();
 		}
 
+		void force_charge() {
+			Exploits->ForceCharge();
+		}
+
 		float get_antiaim_yaw() {
 			return AntiAim->base_yaw;
 		}
@@ -1738,6 +1742,7 @@ void CLua::Setup() {
 		"is_defensive_active", api::rage::is_defensive_active,
 		"get_defensive_ticks", api::rage::get_defensive_ticks,
 		"force_teleport", api::rage::force_teleport,
+		"force_charge", api::rage::force_charge,
 		"override_tickbase_shift", api::rage::override_tickbase_shift,
 		"get_antiaim_yaw", api::rage::get_antiaim_yaw
 	);

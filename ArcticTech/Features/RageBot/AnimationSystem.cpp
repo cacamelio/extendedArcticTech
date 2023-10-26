@@ -53,6 +53,7 @@ void CAnimationSystem::OnCreateMove() {
 
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
 	animstate->bLanding = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
+	memcpy(local_layers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	if (ctx.send_packet && !Exploits->IsHidingShot() && animstate->nLastUpdateFrame == GlobalVars->framecount) {
 		FixLegMovement(animlayers_backup);
@@ -72,25 +73,20 @@ void CAnimationSystem::OnCreateMove() {
 }
 
 void CAnimationSystem::UpdatePredictionAnimation() {
-	CCSGOPlayerAnimationState* original_animstate = Cheat.LocalPlayer->GetAnimstate();
-	if (!original_animstate)
-		return;
+	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
-	memcpy(prediction_animstate, original_animstate, sizeof(CCSGOPlayerAnimationState));
+	std::array<float, 24> poseparam_backup = Cheat.LocalPlayer->m_flPoseParameter();
+	AnimationLayer animlayer_backup[13];
 
-	AnimationLayer animlayers_backup[13];
-	std::array<float, 24> poseparam_backup;
+	memcpy(animlayer_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
-	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
-	poseparam_backup = Cheat.LocalPlayer->m_flPoseParameter();
+	Cheat.LocalPlayer->m_flPoseParameter()[12] = (ctx.cmd->viewangles.pitch + 90.f) / 180.f;
+	Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flFootYaw));
 
-	Cheat.LocalPlayer->UpdateAnimationState(prediction_animstate, ctx.cmd->viewangles, true);
-	prediction_animstate->bLanding = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && prediction_animstate->bOnGround; // fuck valve broken code that sets bLanding to false
-
-	BuildMatrix(Cheat.LocalPlayer, prediction_matrix, 128, BONE_USED_BY_HITBOX, nullptr);
+	BuildMatrix(Cheat.LocalPlayer, prediction_matrix, 128, BONE_USED_BY_HITBOX, local_layers);
 
 	Cheat.LocalPlayer->m_flPoseParameter() = poseparam_backup;
-	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayers_backup, sizeof(AnimationLayer) * 13);
+	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayer_backup, sizeof(AnimationLayer) * 13);
 }
 
 void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
@@ -127,7 +123,7 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 	player->m_fEffects() |= EF_NOINTERP;
 	player->m_bMaintainSequenceTransitions() = false;
 
-	player->SetupBones(boneToWorld, maxBones, mask, player->m_flSimulationTime());
+	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer ? GlobalVars->curtime : player->m_flSimulationTime());
 
 	player->m_fEffects() = backupEffects;
 	player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
@@ -222,7 +218,11 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		float eyeYawNew = Math::AngleNormalize(animstate->flEyeYaw + deltaOriginal);
 		player->SetAbsAngles(QAngle(0, eyeYawNew, 0));
 		player->m_flPoseParameter()[BODY_YAW] = 1.f - player->m_flPoseParameter()[BODY_YAW]; // opposite side
+
 		BuildMatrix(player, record->opposite_matrix, 128, BONE_USED_BY_HITBOX, record->animlayers);
+
+		if (config.ragebot.aimbot.show_aimpoints->get())
+			DebugOverlay->AddBoxOverlay(player->GetHitboxCenter(HITBOX_HEAD, record->opposite_matrix), Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), 12, 255, 12, 160, 0.1f);
 	}
 
 	player->m_nOcclusionFrame() = nOcclusionFrame;

@@ -278,7 +278,7 @@ void CChams::AddShotChams(LagRecord* record) {
 	auto& hit = shot_chams.emplace_back();
 
 	std::memcpy(hit.pBoneToWorld, record->clamped_matrix, 128 * sizeof(matrix3x4_t));
-	hit.end_time = GlobalVars->curtime + config.visuals.chams.shot_chams_duration->get();
+	hit.end_time = GlobalVars->realtime + config.visuals.chams.shot_chams_duration->get();
 
 	hit.info.origin = record->m_vecOrigin;
 	hit.info.angles = record->m_vecAbsAngles;
@@ -321,8 +321,8 @@ void CChams::AddShotChams(LagRecord* record) {
 
 	if (config.visuals.chams.shot_chams_options->get(1)) {
 		for (auto it = shot_chams.begin(); it != shot_chams.end(); it++) {
-			if (it->end_time != hit.end_time && GlobalVars->curtime < it->end_time) {
-				it->end_time = GlobalVars->curtime;
+			if (it->end_time != hit.end_time && GlobalVars->realtime < it->end_time) {
+				it->end_time = GlobalVars->realtime;
 			}
 		}
 	}
@@ -340,7 +340,7 @@ void CChams::RenderShotChams() {
 		return;
 
 	for (auto it = shot_chams.begin(); it != shot_chams.end();) {
-		if (GlobalVars->curtime - it->end_time > 0.5f) {
+		if (GlobalVars->realtime - it->end_time > 0.5f) {
 			it = shot_chams.erase(it);
 			continue;
 		}
@@ -360,7 +360,7 @@ void CChams::RenderShotChams() {
 			continue;
 		}
 
-		float alpha = 1.f - std::clamp((GlobalVars->curtime - it->end_time) * 2.f, 0.f, 1.f);
+		float alpha = 1.f - std::clamp((GlobalVars->realtime - it->end_time) * 2.f, 0.f, 1.f);
 
 		_ctx = ctx;
 		_info = it->info;

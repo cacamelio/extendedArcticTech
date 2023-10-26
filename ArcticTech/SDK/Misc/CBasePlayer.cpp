@@ -341,9 +341,9 @@ inline float SimpleSplineRemapValClamped(float val, float A, float B, float C, f
 }
 
 void CBasePlayer::ModifyEyePosition(Vector& eye_position) {
-	CCSGOPlayerAnimationState* animstate = AnimationSystem->GetPredictionAnimstate();
+	CCSGOPlayerAnimationState* animstate = GetAnimstate();
 
-	if (!animstate->bLanding)
+	if (!(animstate->bLanding || animstate->flDuckAmount != 0.f))
 		return;
 
 	auto head_position = GetHitboxCenter(HITBOX_HEAD, AnimationSystem->GetPredictionMatrix());

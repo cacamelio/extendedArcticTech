@@ -99,10 +99,8 @@ void CPrediction::Start(CUserCmd* cmd) {
 	if (ctx.active_weapon)
 		ctx.active_weapon->UpdateAccuracyPenality();
 
-	if (!Exploits->IsShifting()) {
-		AnimationSystem->UpdatePredictionAnimation();
-		ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();
-	}
+	AnimationSystem->UpdatePredictionAnimation();
+	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();
 }
 
 void CPrediction::End() {
