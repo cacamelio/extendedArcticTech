@@ -72,7 +72,7 @@ void CShotManager::ProcessManualShot() {
 	Color col = config.visuals.effects.client_impacts_color->get();
 
 	for (auto& impact : bullet.impacts)
-		DebugOverlay->AddBoxOverlay(impact, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
+		DebugOverlay->AddBox(impact, Vector(-1, -1, -1), Vector(1, 1, 1), col, config.visuals.effects.impacts_duration->get());
 }
 
 bool CShotManager::OnEvent(IGameEvent* event) {

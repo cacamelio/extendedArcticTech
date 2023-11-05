@@ -231,6 +231,9 @@
     <ClCompile Include="SDK\Misc\CUserCmd.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="SDK\Interfaces\DebugOverlay.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\Utils.h">

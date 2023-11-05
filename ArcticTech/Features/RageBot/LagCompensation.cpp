@@ -52,9 +52,7 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 void CLagCompensation::BacktrackEntity(LagRecord* record, bool copy_matrix, bool use_aim_matrix) {
 	CBasePlayer* player = record->player;
 
-	player->UpdateCollisionBounds();
-
-	player->m_flSimulationTime() = record->m_flSimulationTime;
+	//player->m_flSimulationTime() = record->m_flSimulationTime;
 	player->m_vecOrigin() = record->m_vecOrigin;
 	player->SetAbsOrigin(record->m_vecAbsOrigin);
 	player->m_fFlags() = record->m_fFlags;
@@ -88,9 +86,11 @@ void LagRecord::BuildMatrix() {
 
 	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 
-	if (player->m_flSimulationTime() == m_flSimulationTime && nci && nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING) > TICKS_TO_TIME(m_nChokedTicks)) {
+	if (prev_record && 
+		resolver_data.antiaim_type == R_AntiAimType::JITTER && 
+		std::abs(Math::AngleDiff(backup_eye_angle.yaw, prev_record->m_angEyeAngles.yaw)) > 32.f &&
+		std::abs(Math::AngleDiff(backup_eye_angle.yaw, m_angEyeAngles.yaw)) < 32.f) // retarded jitter fix
 		player->m_angEyeAngles() = prev_record->m_angEyeAngles;
-	}
 
 	if (config.ragebot.aimbot.roll_resolver->get()) {
 		player->m_angEyeAngles().roll = config.ragebot.aimbot.roll_angle->get() * (resolver_data.side != 0 ? resolver_data.side : 1);
@@ -121,7 +121,8 @@ void CLagCompensation::OnNetUpdate() {
 			LagRecord* new_record = &records.emplace_back();
 
 			new_record->prev_record = prev_record;
-			new_record->m_nChokedTicks = GlobalVars->tickcount - last_update_tick[i] - 1;
+			new_record->update_tick = GlobalVars->tickcount;
+			new_record->m_nChokedTicks = new_record->update_tick - (prev_record ? prev_record->update_tick : new_record->update_tick) - 1;
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;

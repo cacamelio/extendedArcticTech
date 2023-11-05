@@ -52,9 +52,6 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 	if (origin == Vector())
 		eyePosition = localPlayer->GetEyePosition();
 
-	if (vel.LengthSqr() > 16.f)
-		eyePosition += vel * GlobalVars->interval_per_tick;
-
 	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
 
 	if (config.misc.movement.compensate_throwable->get(1) && !(localPlayer->m_fFlags() & FL_ONGROUND)) {
@@ -123,7 +120,7 @@ void GrenadePrediction::Draw() {
 		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
 
-			if (!player || player->IsTeammate() || !player->IsPlayer() || player->m_iHealth() == 0)
+			if (!player || player->IsTeammate() || !player->IsPlayer() || !player->IsAlive() || player->m_bDormant())
 				continue;
 
 			int dmg = CalcDamage(vecDetonate, player);
@@ -135,6 +132,11 @@ void GrenadePrediction::Draw() {
 		if (maxDamage > 0) {
 			additional_info = std::format("-{}hp", maxDamage);
 			hit = true;
+
+			int rel_dmg = config.misc.miscellaneous.automatic_grenade_release->get();
+
+			if (maxDamage > rel_dmg && rel_dmg > 0)
+				ctx.should_release_grenade = true;
 		}
 	}
 	else if (weaponId == Molotov || weaponId == IncGrenade) {
@@ -143,7 +145,7 @@ void GrenadePrediction::Draw() {
 		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
 
-			if (!player || player->IsTeammate() || !player->IsPlayer() || player->m_iHealth() == 0)
+			if (!player || player->IsTeammate() || !player->IsPlayer() || !player->IsAlive() || player->m_bDormant())
 				continue;
 
 			CGameTrace tr = EngineTrace->TraceRay(vecDetonate + Vector(0, 0, 10), player->m_vecOrigin() + Vector(0, 0, 32), 0x1, player);
@@ -158,6 +160,9 @@ void GrenadePrediction::Draw() {
 				}
 			}
 		}
+
+		if (minDistance < 3.f && config.misc.miscellaneous.automatic_grenade_release->get() > 0)
+			ctx.should_release_grenade = true;
 	}
 
 	Render->PolyLine(scrPoints, hit ? config.visuals.other_esp.grenade_trajectory_hit_color->get() : config.visuals.other_esp.grenade_trajectory_color->get());

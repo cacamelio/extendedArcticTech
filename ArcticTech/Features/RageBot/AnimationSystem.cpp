@@ -39,6 +39,9 @@ void CAnimationSystem::OnCreateMove() {
 	AnimationLayer animlayers_backup[13];
 	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
+	auto backup_curtime = GlobalVars->curtime;
+	GlobalVars->curtime = TICKS_TO_TIME(ctx.corrected_tickbase);
+
 	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
@@ -70,6 +73,8 @@ void CAnimationSystem::OnCreateMove() {
 	}
 
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayers_backup, sizeof(AnimationLayer) * 13);
+
+	GlobalVars->curtime = backup_curtime;
 }
 
 void CAnimationSystem::UpdatePredictionAnimation() {
@@ -190,6 +195,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		Resolver->Run(player, record, records);
 
 		*animstate = record->unupdated_animstate;
+
+		Resolver->Apply(record);
 		player->UpdateClientSideAnimation();
 	}
 	else {

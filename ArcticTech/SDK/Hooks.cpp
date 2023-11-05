@@ -118,6 +118,7 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	NadePrediction.Draw();
 	AutoPeek->Draw();
 	World->Crosshair();
+	DebugOverlay->RenderOverlays();
 
 	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
 		callback.func();
@@ -227,6 +228,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AntiAim->FakeDuck();
 	AntiAim->JitterMove();
 	Miscelleaneus::AutoStrafe();
+
+	if (ctx.should_release_grenade && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled())
+		ctx.cmd->buttons &= ~IN_ATTACK;
 
 	Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
 
@@ -418,6 +422,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	//Console->Log(std::format("{}\t{}\t{}", bSendPacket, Exploits->GetDefensiveTicks(), ctx.lc_exploit > 0));
 
 	ctx.teleported_last_tick = false;
+	ctx.should_release_grenade = false;
 
 	verified->cmd = *cmd;
 	verified->crc = cmd->GetChecksum();
@@ -552,11 +557,6 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 void __fastcall hkPaintTraverse(IPanel* thisptr, void* edx, unsigned int panel, bool bForceRepaint, bool bForce) {
 	static tPaintTraverse oPaintTraverse = (tPaintTraverse)Hooks::PanelVMT->GetOriginal(41);
 	static unsigned int hud_zoom_panel = 0;
-
-	if (!Cheat.LocalPlayer->IsAlive())
-	{
-		KillFeed->ClearDeathNotice = true;
-	}
 
 	if (!hud_zoom_panel) {
 		std::string panelName = VPanel->GetName(panel);
@@ -809,8 +809,12 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 
 	auto& local_data = EnginePrediction->GetLocalData(c_ctx->cmd.command_number);
 
-	if (c_ctx->cmd.command_number == Exploits->charged_command + 1)
-		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick;
+	if (c_ctx->cmd.command_number == Exploits->charged_command + 1) {
+		int fix_tickbase = local_data.m_nTickBase;
+		if (ctx.lc_exploit_change == c_ctx->cmd.command_number)
+			fix_tickbase -= ctx.lc_exploit_diff;
+		thisptr->m_nTickBase() = fix_tickbase + ctx.shifted_last_tick;
+	}
 
 	oPhysicsSimulate(thisptr, edx);
 
@@ -1002,13 +1006,13 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	moveMsg->backup_commands = 0;
 
 	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++) {
-		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, true))
+		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, to == next_cmd_nr))
 			return false;
 
 		from = to;
 	}
 
-	CUserCmd* user_cmd = Input->GetUserCmd(slot, from);
+	CUserCmd* user_cmd = Input->GetUserCmd(from);
 
 	if (!user_cmd)
 		return true;
@@ -1020,12 +1024,14 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	to_cmd = from_cmd;
 
 	to_cmd.command_number++;
-	to_cmd.tick_count = INT_MAX;
+	to_cmd.tick_count += 200;
 
 	for (int i = 0; i < ctx.lc_exploit; i++) {
 		WriteUserCmd(buf, &to_cmd, &from_cmd);
 
+		from_cmd = to_cmd;
 		to_cmd.command_number++;
+		to_cmd.tick_count++;
 	}
 
 	return true;
@@ -1090,7 +1096,9 @@ void __fastcall hkCL_DispatchSound(const SoundInfo_t& snd, void* edx) {
 bool __fastcall hkInterpolateEntity(CBaseEntity* ent, void* edx, float curTime) {
 	CBaseViewModel* vm = reinterpret_cast<CBaseViewModel*>(ent);
 
-	if (EntityList->GetClientEntityFromHandle(vm->m_hOwner()) != Cheat.LocalPlayer && ent != Cheat.LocalPlayer)
+	bool is_vm = EntityList->GetClientEntityFromHandle(vm->m_hOwner()) == Cheat.LocalPlayer;
+
+	if (!is_vm && ent != Cheat.LocalPlayer)
 		return oInterpolateEntity(vm, edx, curTime);
 
 	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
@@ -1099,7 +1107,7 @@ bool __fastcall hkInterpolateEntity(CBaseEntity* ent, void* edx, float curTime) 
 	if (Exploits->ShouldCharge()) // fix lag when charging
 		GlobalVars->interpolation_amount = 0.f;
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = ctx.corrected_tickbase; // fix lag while defensive; may be -ctx.tickbase_shift?
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = GlobalVars->tickcount - ctx.tickbase_shift; // fix lag while defensive; may be -ctx.tickbase_shift?
 	auto result = oInterpolateEntity(vm, edx, curTime);
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
 
@@ -1142,6 +1150,20 @@ void __fastcall hkGetExposureRange(float* min, float* max) {
 	*max = 1.f;
 
 	oGetExposureRange(min, max);
+}
+
+void __fastcall hkEstimateAbsVelocity(CBaseEntity* ent, void* edx, Vector& vel) {
+	if (ent && ent->IsPlayer()) {
+		auto pl = reinterpret_cast<CBasePlayer*>(ent);
+		if (pl->IsTeammate())
+			return oEstimateAbsVelocity(ent, edx, vel);
+
+		vel = pl->m_vecVelocity();
+
+		return;
+	}
+
+	oEstimateAbsVelocity(ent, edx, vel);
 }
 
 void Hooks::Initialize() {
@@ -1208,7 +1230,7 @@ void Hooks::Initialize() {
 	oCreateNewParticleEffect = HookFunction<tCreateNewParticleEffect>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 0C 53 56 8B F2 89 75 F8 57"), hkCreateNewParticleEffect_proxy);
 	oSVCMsg_VoiceData = HookFunction<tSVCMsg_VoiceData>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 81 EC ? ? ? ? 53 56 8B F1 B9 ? ? ? ? 57 FF 50 34 8B 7D 08 85 C0 74 13 8B 47 08 40 50"), hkSVCMsg_VoiceData);
 	oDrawStaticProps = HookFunction<tDrawStaticProps>(Utils::PatternScan("engine.dll", "55 8B EC 56 57 8B F9 8B 0D ? ? ? ? 8B B1 ? ? ? ? 85 F6 74 16 6A 04 6A 00 68"), hkDrawStaticProps);
-	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 68 53 56 8B D9 C7 45 ? ? ? ? ? 57 8D 4D 98"), hkWriteUserCmdDeltaToBuffer);
+	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC B9 ? ? ? ? A1 ? ? ? ? 8B 40 14"), hkWriteUserCmdDeltaToBuffer);
 	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
@@ -1220,6 +1242,7 @@ void Hooks::Initialize() {
 	oSVCMsg_TempEntities = HookFunction<tSVCMsg_TempEntities>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 83 EC 4C A1 ? ? ? ? 80"), hkSVCMsg_TempEntities);
 	oResetLatched = HookFunction<tResetLatched>(Utils::PatternScan("client.dll", "56 8B F1 57 8B BE ? ? ? ? 85 FF 74 ? 8B CF E8 ? ? ? ? 68"), hkResetLatched);
 	oGetExposureRange = HookFunction<tGetExposureRange>(Utils::PatternScan("client.dll", "55 8B EC 51 80 3D ? ? ? ? ? 0F 57"), hkGetExposureRange);
+	oEstimateAbsVelocity = HookFunction<tEstimateAbsVelocity>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 ? 83 EC ? 56 8B F1 85 F6 74 ? 8B 06 8B 80 ? ? ? ? FF D0 84 C0 74 ? 8A 86"), hkEstimateAbsVelocity);
 
 	EventListner->Register();
 
@@ -1287,4 +1310,5 @@ void Hooks::End() {
 	RemoveHook(oSVCMsg_TempEntities, hkSVCMsg_TempEntities);
 	RemoveHook(oResetLatched, hkResetLatched);
 	RemoveHook(oGetExposureRange, hkGetExposureRange);
+	RemoveHook(oEstimateAbsVelocity, hkEstimateAbsVelocity);
 }

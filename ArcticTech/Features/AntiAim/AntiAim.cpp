@@ -223,14 +223,16 @@ CBasePlayer* CAntiAim::GetNearestTarget() {
 
 		float fov = Utils::GetFOV(viewAngle, angleToPlayer);
 
-		CTraceFilterWorldAndPropsOnly filter;
-		CGameTrace trace;
-		Ray_t ray(pl->GetEyePosition(), Cheat.LocalPlayer->GetEyePosition());
+		if (!pl->m_bDormant()) {
+			CTraceFilterWorldAndPropsOnly filter;
+			CGameTrace trace;
+			Ray_t ray(pl->GetEyePosition(), Cheat.LocalPlayer->GetEyePosition());
 
-		EngineTrace->TraceRay(ray, MASK_SOLID, &filter, &trace);
+			EngineTrace->TraceRay(ray, MASK_SHOT | CONTENTS_GRATE, &filter, &trace);
 
-		if (trace.fraction == 1.f)
-			fov /= 180.f;
+			if (trace.fraction == 1.f)
+				fov /= 180.f;
+		}
 
 		if (fov < nearestFov) {
 			nearestFov = fov;
@@ -378,7 +380,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 64.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 9.5f + (velocity * TICKS_TO_TIME(3.2f));
+	Vector move_factor = velocity.Normalized() * 9.5f + (velocity * TICKS_TO_TIME(2.5f));
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

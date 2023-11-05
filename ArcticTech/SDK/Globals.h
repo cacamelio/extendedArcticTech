@@ -38,6 +38,7 @@ struct Ctx_t {
 	float last_shot_time = 0.f;
 	bool planting_bomb = false;
 	bool was_unregistered_shot = true;
+	bool should_release_grenade = false;
 
 	QAngle sent_angles;
 	QAngle shot_angles;

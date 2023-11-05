@@ -278,6 +278,7 @@ void CConfig::Init() {
     add(config.visuals.effects.scope_blend);
     add(config.visuals.effects.viewmodel_scope_alpha);
     add(config.misc.miscellaneous.anti_untrusted);
+    add(config.misc.miscellaneous.automatic_grenade_release);
     add(config.misc.miscellaneous.logs);
     add(config.misc.miscellaneous.auto_buy);
     add(config.misc.miscellaneous.filter_console);

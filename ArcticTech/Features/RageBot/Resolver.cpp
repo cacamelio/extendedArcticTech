@@ -128,9 +128,12 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record, const st
 	Vector negPos = eyePos - right * 20.f;
 	Vector posPos = eyePos + right * 20.f;
 
+	Vector local_eye_pos = Cheat.LocalPlayer->GetEyePosition();
+	local_eye_pos.z -= 0.5f;
+
 	CTraceFilterWorldAndPropsOnly filter;
-	Ray_t rayNeg(negPos, Cheat.LocalPlayer->GetShootPosition());
-	Ray_t rayPos(posPos, Cheat.LocalPlayer->GetShootPosition());
+	Ray_t rayNeg(negPos, local_eye_pos);
+	Ray_t rayPos(posPos, local_eye_pos);
 	CGameTrace negTrace, posTrace;
 
 	EngineTrace->TraceRay(rayNeg, MASK_SHOT_HULL | CONTENTS_GRATE, &filter, &negTrace);
@@ -171,7 +174,7 @@ void CResolver::Apply(LagRecord* record) {
 }
 
 void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records) {
-	if (GameRules()->IsFreezePeriod() || player->m_fFlags() & FL_FROZEN || !Cheat.LocalPlayer->IsAlive())
+	if (GameRules()->IsFreezePeriod() || player->m_fFlags() & FL_FROZEN || !Cheat.LocalPlayer->IsAlive() || record->shooting)
 		return;
 
 	LagRecord* prevRecord = record->prev_record;
@@ -189,7 +192,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 
 	record->resolver_data.resolver_type = ResolverType::NONE;
 
-	record->resolver_data.delta_center = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[0][ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1000.f;
+	record->resolver_data.delta_center = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[0][ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1500.f;
 	record->resolver_data.delta_positive = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[1][ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1000.f;
 	record->resolver_data.delta_negative = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[2][ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1000.f;
 
@@ -213,7 +216,10 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 		flLastDelta = record->resolver_data.delta_negative;
 	}
 
-	if (player->m_vecVelocity().LengthSqr() < 64.f || 
+
+	float vel_sqr = player->m_vecVelocity().LengthSqr();
+
+	if (vel_sqr < 64.f || 
 		player->GetAnimstate()->flWalkToRunTransition < 0.8f || 
 		record->resolver_data.resolver_type == ResolverType::NONE || 
 		!(player->m_fFlags() & FL_ONGROUND)
@@ -224,7 +230,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 			float prevEyeYaw = FindAvgYaw(records);
 			float delta = Math::AngleDiff(eyeYaw, prevEyeYaw);
 
-			if (delta > 0.f)
+			if (delta < 0.f)
 				record->resolver_data.side = -1;
 			else
 				record->resolver_data.side = 1;
@@ -237,10 +243,13 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	}
 
 	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
-	if (bf_data->use && GlobalVars->realtime - bf_data->last_shot < 5.f && record->resolver_data.resolver_type != ResolverType::ANIM && record->resolver_data.resolver_type != ResolverType::LOGIC) {
+	if (bf_data->use && GlobalVars->realtime - bf_data->last_shot < 5.f && record->resolver_data.resolver_type != ResolverType::ANIM && record->resolver_data.resolver_type != ResolverType::LOGIC && bf_data->current_side != 0) {
 		record->resolver_data.side = bf_data->current_side;
 		record->resolver_data.resolver_type = ResolverType::BRUTEFORCE;
 	}
+
+	if (vel_sqr > 0.64f && vel_sqr < 4.f && record->resolver_data.antiaim_type == R_AntiAimType::STATIC && record->resolver_data.side == 0)
+		record->resolver_data.side = -1;
 
 	Apply(record);
 }
@@ -248,13 +257,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 void CResolver::OnMiss(CBasePlayer* player, LagRecord* record) {
 	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
 
-	if (!bf_data->use || GlobalVars->realtime - bf_data->last_shot > 5.f) {
-		bf_data->current_side = (record->resolver_data.side == 0) ? 1 : -record->resolver_data.side;
-	}
-	else {
-		bf_data->current_side = (bf_data->current_side == 0) ? 1 : -bf_data->current_side;
-	}
-
+	bf_data->current_side = (record->resolver_data.side == 0) ? 1 : -record->resolver_data.side;
 	bf_data->use = true;
 	bf_data->last_shot = GlobalVars->realtime;
 }

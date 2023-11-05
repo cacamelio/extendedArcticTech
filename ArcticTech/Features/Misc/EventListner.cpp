@@ -96,7 +96,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		if (user_id_pl == local_id && config.visuals.effects.server_impacts->get() && Cheat.LocalPlayer) {
 			Vector pos = Vector(event->GetFloat("x"), event->GetFloat("y"), event->GetFloat("z"));
 			Color col = config.visuals.effects.server_impacts_color->get();
-			DebugOverlay->AddBoxOverlay(pos, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
+			DebugOverlay->AddBox(pos, Vector(-1, -1, -1), Vector(1, 1, 1), col, config.visuals.effects.impacts_duration->get());
 		}
 	}
 	else if (name == "item_equip") {

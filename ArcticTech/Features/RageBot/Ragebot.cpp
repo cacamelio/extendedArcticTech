@@ -463,11 +463,12 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 	while (records.size() > 0) {
 		LagRecord* record = records.front();
 		records.pop();
-
+		
 		LagCompensation->BacktrackEntity(record, false);
 		record->BuildMatrix();
 
-		memcpy(record->player->GetCachedBoneData().Base(), record->clamped_matrix, sizeof(matrix3x4_t) * record->player->GetCachedBoneData().Count());
+		memcpy(target->GetCachedBoneData().Base(), record->clamped_matrix, sizeof(matrix3x4_t) * target->GetCachedBoneData().Count());
+		target->ForceBoneCache();
 
 		std::vector<AimPoint_t> points = SelectPoints(record);
 
@@ -497,6 +498,8 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 
 			if (record->shooting)
 				priority += 2;
+			else if (record->m_angEyeAngles.pitch < 10.f) // aim at shitty defensive aa
+				priority += 1;
 
 			result.points.emplace_back(ScannedPoint_t{
 				record,
@@ -661,19 +664,19 @@ void CRagebot::Run() {
 		}
 	}
 
-	if (settings.auto_stop->get(2) && !ctx.active_weapon->CanShoot() && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
+	if (settings.auto_stop->get(2) && !(ctx.active_weapon->CanShoot() || ctx.was_unregistered_shot) && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
 	if (should_autostop)
 		AutoStop();
 
-	if (!best_target.player || !ctx.active_weapon->CanShoot()) {
+	if (!best_target.player || !(ctx.active_weapon->CanShoot() || ctx.was_unregistered_shot)) {
 		if (best_target.player && ctx.active_weapon->m_iItemDefinitionIndex() == Revolver)
 			ctx.cmd->buttons |= IN_ATTACK;
 		return;
 	}
 
-	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime) + TIME_TO_TICKS(LagCompensation->GetLerpTime());
+	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime + LagCompensation->GetLerpTime());
 	ctx.cmd->viewangles = best_target.angle - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
 	ctx.cmd->buttons |= IN_ATTACK;
 
@@ -699,20 +702,21 @@ void CRagebot::Run() {
 		Color face_col = config.visuals.effects.client_impacts_color->get();
 
 		for (const auto& impact : best_target.best_point.impacts)
-			DebugOverlay->AddBoxOverlay(impact, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), face_col.r, face_col.g, face_col.b, face_col.a, config.visuals.effects.impacts_duration->get());
+			DebugOverlay->AddBox(impact, Vector(-1, -1, -1), Vector(1, 1, 1), face_col, config.visuals.effects.impacts_duration->get());
 	}
 
 	LagRecord* record = best_target.best_point.record;
 
 	if (config.misc.miscellaneous.logs->get(1)) {
-		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}] [bt: {}] [res: {:.1f}deg safe: {}]", 
+		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}] [bt: {}] [res: {:.1f}deg safe: {} priority: {}]", 
 			best_target.player->GetName(), 
 			GetHitboxName(best_target.best_point.hitbox), 
 			static_cast<int>(best_target.best_point.damage), 
 			static_cast<int>(best_target.hitchance * 100), 
 			max(TIME_TO_TICKS(best_target.player->m_flSimulationTime() - record->m_flSimulationTime), 0),
 			record->resolver_data.side * best_target.player->GetMaxDesyncDelta(),
-			best_target.best_point.safe_point
+			best_target.best_point.safe_point,
+			best_target.best_point.priority
 		));
 	}
 
@@ -782,7 +786,7 @@ void CRagebot::Zeusbot() {
 
 				if (config.visuals.effects.client_impacts->get()) {
 					Color col = config.visuals.effects.client_impacts_color->get();
-					DebugOverlay->AddBoxOverlay(trace.endpos, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), col.r, col.g, col.b, col.a, config.visuals.effects.impacts_duration->get());
+					DebugOverlay->AddBox(trace.endpos, Vector(-1, -1, -1), Vector(1, 1, 1), col, config.visuals.effects.impacts_duration->get());
 				}
 
 				ctx.cmd->viewangles = Math::VectorAngles(point - ctx.shoot_position);
@@ -888,7 +892,7 @@ void CRagebot::Knifebot() {
 
 			if (trace.hit_entity != player || trace.fraction == 1.f) {
 				CGameTrace clipped_trace;
-				if (EngineTrace->ClipRayToPlayer(Ray_t(ctx.shoot_position, vecEnd + vecDelta * 16.f), MASK_SHOT | CONTENTS_GRATE, player, &clipped_trace) && clipped_trace.fraction < trace.fraction)
+				if (EngineTrace->ClipRayToPlayer(Ray_t(ctx.shoot_position, vecEnd + vecDelta * 18.f), MASK_SHOT | CONTENTS_GRATE, player, &clipped_trace) && clipped_trace.fraction < trace.fraction)
 					trace = clipped_trace;
 			}
 

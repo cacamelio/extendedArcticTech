@@ -35,6 +35,7 @@ struct LagRecord {
 	int m_nSequence = 0;
 	int m_fFlags = 0;
 	int m_nChokedTicks = 0;
+	int update_tick = 0;
 
 	bool shifting_tickbase = false;
 	bool breaking_lag_comp = false;

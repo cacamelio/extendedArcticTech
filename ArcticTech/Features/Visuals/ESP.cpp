@@ -354,23 +354,23 @@ void ESP::DrawFlags(ESPInfo_t info) {
 
 	bool shifting = record && record->shifting_tickbase;
 
-	if (config.visuals.esp.flags->get(3) && record && (shifting || record->exploiting) && !dormant)
-		flags.push_back({ "E", shifting ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(205, 205, 205, 255 * info.m_flAlpha) });
+	if (config.visuals.esp.flags->get(4) && info.m_pEnt->EntIndex() == PlayerResource->m_iPlayerC4())
+		flags.push_back({ "BOMB", Color(230, 80, 80, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck && !dormant)
-		flags.push_back({ "FD", Color(240, 240, 240, 255 * info.m_flAlpha) });
+	if (config.visuals.esp.flags->get(3) && record && (shifting || record->exploiting) && !dormant)
+		flags.push_back({ "X", shifting ? Color(230, 60, 60, 255 * info.m_flAlpha) : Color(215, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(4) && info.m_pEnt->EntIndex() == PlayerResource->m_iPlayerC4())
-		flags.push_back({ "BOMB", Color(230, 80, 80, 255 * info.m_flAlpha) });
+	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck && !dormant)
+		flags.push_back({ "FD", Color(215, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
 		flags.push_back({ "LC", Color(230, 80, 80, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.antiaim_type == R_AntiAimType::JITTER && !dormant)
-		flags.push_back({ "J", Color(240, 255 * info.m_flAlpha) });
+		flags.push_back({ "J", Color(215, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.resolver_type == ResolverType::ANIM && !dormant)
 		flags.push_back({ "ANIM", Color(165, 230, 14, 255 * info.m_flAlpha) });

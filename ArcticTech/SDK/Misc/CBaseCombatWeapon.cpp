@@ -50,12 +50,9 @@ bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
 	if (owner->m_iShotsFired() > 0 && !data->bFullAuto)
 		return false;
 
-	if (ctx.was_unregistered_shot)
-		return true;
-
 	int tick_base = owner->m_nTickBase();
-	if (owner == Cheat.LocalPlayer && m_iItemDefinitionIndex() != Revolver && !ctx.lc_exploit)
-		tick_base -= ctx.tickbase_shift;
+	if (owner == Cheat.LocalPlayer && m_iItemDefinitionIndex() != Revolver)
+		tick_base = ctx.corrected_tickbase;
 
 	const float cur_time = TICKS_TO_TIME(tick_base);
 

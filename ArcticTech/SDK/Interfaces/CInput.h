@@ -49,7 +49,6 @@ public:
 	CVerifiedUserCmd* pVerifiedCommands;
 
 	inline CUserCmd* GetUserCmd(int sequence_number);
-	inline CUserCmd* GetUserCmd(int nSlot, int sequence_number);
 	inline CVerifiedUserCmd* GetVerifiedCmd(int sequence_number);
 };
 
@@ -57,12 +56,6 @@ CUserCmd* CInput::GetUserCmd(int sequence_number)
 {
 	using OriginalFn = CUserCmd * (__thiscall*)(void*, int, int);
 	return CallVFunction<OriginalFn>(this, 8)(this, 0, sequence_number);
-}
-
-CUserCmd* CInput::GetUserCmd(int nSlot, int sequence_number)
-{
-	typedef CUserCmd* (__thiscall* GetUserCmd_t)(void*, int, int);
-	return CallVFunction<GetUserCmd_t>(this, 8)(this, nSlot, sequence_number);
 }
 
 CVerifiedUserCmd* CInput::GetVerifiedCmd(int sequence_number)

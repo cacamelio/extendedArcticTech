@@ -5,6 +5,14 @@
 #include "../Misc/Color.h"
 
 class OverlayText_t;
+struct OverlayBox_t {
+	Vector origin;
+	Vector mins;
+	Vector maxs;
+	Color col;
+	float end_time;
+};
+
 class IVDebugOverlay
 {
 public:
@@ -33,4 +41,7 @@ public:
 	virtual void			PurgeTextOverlays() = 0;
 	virtual void			AddCapsuleOverlay(const Vector& vecAbsMin, const Vector& vecAbsMax, const float& flRadius, int r, int g, int b, int a, float flDuration) = 0;
 	virtual void			DrawPill(Vector& vecAbsMin, Vector& vecAbsMax, float flRadius, int r, int g, int b, int a, float flDuration) = 0;
+
+	void AddBox(const Vector& origin, const Vector& mins, const Vector& maxs, Color col, float duration);
+	void RenderOverlays();
 };

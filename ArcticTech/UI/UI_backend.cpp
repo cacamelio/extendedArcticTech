@@ -331,6 +331,9 @@ void CSliderFloat::Render() {
 
 void CKeyBind::Render() {
     if (ImGui::Keybind(name.c_str(), &key, &mode, false)) {
+        if (key == VK_ESCAPE)
+            key = 0;
+
         for (auto& cb : callbacks)
             cb();
         for (auto lcb : lua_callbacks)

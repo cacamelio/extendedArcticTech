@@ -59,17 +59,12 @@ void CPrediction::Start(CUserCmd* cmd) {
 
 	local_data[cmd->command_number % MULTIPLAYER_BACKUP].init(cmd);
 
-	if (ctx.active_weapon) {
-		weaponInaccuracy = ctx.active_weapon->GetInaccuracy();
-		weaponSpread = ctx.active_weapon->GetSpread();
-	}
-
 	BackupData();
 	StartCommand(Cheat.LocalPlayer, cmd);
 
 	const float backup_velocity_modifier = Cheat.LocalPlayer->m_flVelocityModifier();
 
-	GlobalVars->curtime = TICKS_TO_TIME(ctx.corrected_tickbase);
+	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 	GlobalVars->frametime = Prediction->bEnginePaused ? 0.f : GlobalVars->interval_per_tick;
 
 	Prediction->bIsFirstTimePredicted = false;
@@ -96,8 +91,11 @@ void CPrediction::Start(CUserCmd* cmd) {
 
 	Cheat.LocalPlayer->m_flVelocityModifier() = backup_velocity_modifier;
 
-	if (ctx.active_weapon)
+	if (ctx.active_weapon) {
 		ctx.active_weapon->UpdateAccuracyPenality();
+		weaponInaccuracy = ctx.active_weapon->GetInaccuracy();
+		weaponSpread = ctx.active_weapon->GetSpread();
+	}
 
 	AnimationSystem->UpdatePredictionAnimation();
 	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();

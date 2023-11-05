@@ -135,6 +135,7 @@
     <ClCompile Include="SDK\Hooks.cpp" />
     <ClCompile Include="SDK\Interfaces\CGameRules.cpp" />
     <ClCompile Include="SDK\Interfaces\CGlobalVarsBase.cpp" />
+    <ClCompile Include="SDK\Interfaces\DebugOverlay.cpp" />
     <ClCompile Include="SDK\Interfaces\IClientEntityList.cpp" />
     <ClCompile Include="SDK\Interfaces\IEffects.cpp" />
     <ClCompile Include="SDK\Interfaces\IEngineTrace.cpp" />
