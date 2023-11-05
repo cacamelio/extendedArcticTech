@@ -1104,10 +1104,12 @@ bool __fastcall hkInterpolateEntity(CBaseEntity* ent, void* edx, float curTime) 
 	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
 	auto backup_lerp_amt = GlobalVars->interpolation_amount;
 
-	if (Exploits->ShouldCharge()) // fix lag when charging
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = EnginePrediction->tickcount();
+	if (Exploits->ShouldCharge())
 		GlobalVars->interpolation_amount = 0.f;
+	else
+		Cheat.LocalPlayer->m_nFinalPredictedTick() -= ctx.tickbase_shift;
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = GlobalVars->tickcount - ctx.tickbase_shift; // fix lag while defensive; may be -ctx.tickbase_shift?
 	auto result = oInterpolateEntity(vm, edx, curTime);
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
 

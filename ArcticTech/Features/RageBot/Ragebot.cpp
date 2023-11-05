@@ -367,7 +367,7 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 		delay = 0;
 	}
 
-	if (best_body_point.damage < target.player->m_iHealth() && best_head_point.damage > best_body_point.damage && best_head_point.record->shooting)
+	if (best_body_point.damage < target.player->m_iHealth() && best_head_point.damage > best_body_point.damage && (best_head_point.record->shooting || (settings.aim_head_if_safe->get() && best_head_point.safe_point)))
 		return best_head_point;
 
 	if ((target.player != last_target && ctx.tickbase_shift == 0 && config.ragebot.aimbot.doubletap->get() && !config.ragebot.aimbot.force_teleport->get())) {
