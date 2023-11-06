@@ -1242,6 +1242,10 @@ namespace api {
 			Exploits->ForceCharge();
 		}
 
+		bool is_shifting() {
+			return Exploits->IsShifting();
+		}
+
 		float get_antiaim_yaw() {
 			return AntiAim->base_yaw;
 		}
@@ -1743,6 +1747,7 @@ void CLua::Setup() {
 		"get_defensive_ticks", api::rage::get_defensive_ticks,
 		"force_teleport", api::rage::force_teleport,
 		"force_charge", api::rage::force_charge,
+		"is_shifting", api::rage::is_shifting,
 		"override_tickbase_shift", api::rage::override_tickbase_shift,
 		"get_antiaim_yaw", api::rage::get_antiaim_yaw
 	);

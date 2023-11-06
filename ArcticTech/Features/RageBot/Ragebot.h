@@ -11,9 +11,14 @@
 #define MAX_RAGEBOT_THREADS 6
 
 inline int GetRagebotThreads() {
-	int threads = std::thread::hardware_concurrency() - 2;
+	int cpu_threads = std::thread::hardware_concurrency();
+	if (cpu_threads <= 4)
+		return 1;
+
+	int threads = cpu_threads - 2;
 	if (threads > MAX_RAGEBOT_THREADS)
 		threads = MAX_RAGEBOT_THREADS;
+
 	return threads;
 }
 

@@ -810,10 +810,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 	auto& local_data = EnginePrediction->GetLocalData(c_ctx->cmd.command_number);
 
 	if (c_ctx->cmd.command_number == Exploits->charged_command + 1) {
-		int fix_tickbase = local_data.m_nTickBase;
-		if (ctx.lc_exploit_change == c_ctx->cmd.command_number)
-			fix_tickbase -= ctx.lc_exploit_diff;
-		thisptr->m_nTickBase() = fix_tickbase + ctx.shifted_last_tick;
+		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick + 1;
 	}
 
 	oPhysicsSimulate(thisptr, edx);
@@ -1002,7 +999,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	auto new_commands = moveMsg->new_commands;
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	moveMsg->new_commands += ctx.lc_exploit;
+	moveMsg->new_commands == std::clamp(moveMsg->new_commands + ctx.lc_exploit, 0, 15);
 	moveMsg->backup_commands = 0;
 
 	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++) {
@@ -1026,7 +1023,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	to_cmd.command_number++;
 	to_cmd.tick_count += 200;
 
-	for (int i = 0; i < ctx.lc_exploit; i++) {
+	for (int i = new_commands; i < moveMsg->new_commands; i++) {
 		WriteUserCmd(buf, &to_cmd, &from_cmd);
 
 		from_cmd = to_cmd;
@@ -1107,8 +1104,6 @@ bool __fastcall hkInterpolateEntity(CBaseEntity* ent, void* edx, float curTime) 
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = EnginePrediction->tickcount();
 	if (Exploits->ShouldCharge())
 		GlobalVars->interpolation_amount = 0.f;
-	else
-		Cheat.LocalPlayer->m_nFinalPredictedTick() -= ctx.tickbase_shift;
 
 	auto result = oInterpolateEntity(vm, edx, curTime);
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
