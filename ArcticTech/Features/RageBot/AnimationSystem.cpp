@@ -39,6 +39,8 @@ void CAnimationSystem::OnCreateMove() {
 	AnimationLayer animlayers_backup[13];
 	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
+	GlobalVars->curtime = TICKS_TO_TIME( Cheat.LocalPlayer->m_nTickBase() );
+
 	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
