@@ -271,11 +271,6 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale, std
 		Vector(0, 0, -width * scale),
 	};
 
-	//if (hitbox_id == HITBOX_HEAD) {
-	//	verts[2].z = radius * scale;
-	//	verts[3].z = -radius * scale;
-	//}
-
 	for (const auto& vert : verts)
 		points.push_back(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
 
