@@ -200,6 +200,8 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 	if (records.empty())
 		return target_records;
 
+	bool ex_back = config.ragebot.aimbot.extended_backtrack->get() && !frametime_issues;
+
 	LagRecord* last_valid_record{ nullptr };
 	for (auto i = records.rbegin(); i != records.rend(); i = std::next(i)) {
 		const auto record = &*i;
@@ -210,7 +212,7 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 			continue;
 		}
 
-		if (config.ragebot.aimbot.extended_backtrack->get()) {
+		if (ex_back) {
 			target_records.push(record);
 			continue;
 		}
@@ -225,7 +227,7 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 		}
 	}
 
-	if (!config.ragebot.aimbot.extended_backtrack->get() && last_valid_record && last_valid_record != &records.back()) {
+	if (!ex_back && last_valid_record && last_valid_record != &records.back()) {
 		target_records.push(last_valid_record);
 	}
 

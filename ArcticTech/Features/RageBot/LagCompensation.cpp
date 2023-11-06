@@ -192,7 +192,7 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 
 	const float latency = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
 
-	int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(latency);
+	int server_tickcount = ctx.corrected_tickbase + TIME_TO_TICKS(latency);
 
 	if (ctx.fake_duck)
 		server_tickcount += 14 - ClientState->m_nChokedCommands;

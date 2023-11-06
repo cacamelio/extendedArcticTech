@@ -419,7 +419,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.should_buy = false;
 	}
 
-	//Console->Log(std::format("{}\t{}\t{}", bSendPacket, Exploits->GetDefensiveTicks(), ctx.lc_exploit > 0));
+	//Console->Log(std::format("{}\t{}\t{}\t{}", bSendPacket, ctx.lc_exploit_change, ctx.lc_exploit, Exploits->charged_command));
 
 	ctx.teleported_last_tick = false;
 	ctx.should_release_grenade = false;
@@ -768,15 +768,20 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
+	int& tickbase = player->m_nTickBase();
+
 	if (cmd->tick_count == INT_MAX) {
-		player->m_nTickBase()++;
+		tickbase++;
 		return;
 	}
 
 	if (ctx.lc_exploit_change == cmd->command_number)
-		player->m_nTickBase() -= ctx.lc_exploit_diff;
+		tickbase -= ctx.lc_exploit_diff;
 
-	int backup_tickbase = player->m_nTickBase();
+	if (cmd->command_number == Exploits->charged_command + 1)
+		tickbase += ctx.shifted_last_tick;
+
+	const int backup_tickbase = tickbase;
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
@@ -792,7 +797,7 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 		}
 
 		if (command == cmd->command_number)
-			player->m_nTickBase() = backup_tickbase;
+			tickbase = backup_tickbase;
 
 		++i;
 	}
@@ -806,12 +811,6 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 
 	if (thisptr != Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || thisptr->m_nSimulationTick() == GlobalVars->tickcount || !c_ctx->needsprocessing)
 		return oPhysicsSimulate(thisptr, edx);
-
-	auto& local_data = EnginePrediction->GetLocalData(c_ctx->cmd.command_number);
-
-	if (c_ctx->cmd.command_number == Exploits->charged_command + 1) {
-		thisptr->m_nTickBase() = local_data.m_nTickBase + ctx.shifted_last_tick + 1;
-	}
 
 	oPhysicsSimulate(thisptr, edx);
 
@@ -999,7 +998,7 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	auto new_commands = moveMsg->new_commands;
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	moveMsg->new_commands == std::clamp(moveMsg->new_commands + ctx.lc_exploit, 0, 15);
+	moveMsg->new_commands = std::clamp(moveMsg->new_commands + ctx.lc_exploit, 0, 15);
 	moveMsg->backup_commands = 0;
 
 	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++) {
