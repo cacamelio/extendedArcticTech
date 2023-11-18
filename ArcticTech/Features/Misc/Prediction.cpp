@@ -5,6 +5,8 @@
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/Exploits.h"
 
+#include "../../Utils/Console.h"
+
 void CPrediction::StartCommand(CBasePlayer* player, CUserCmd* cmd) {
 	*Cheat.LocalPlayer->GetCurrentCommand() = cmd;
 	Cheat.LocalPlayer->GetLastCommand() = *cmd;
@@ -57,6 +59,8 @@ void CPrediction::Start(CUserCmd* cmd) {
 	if (!MoveHelper)
 		return;
 
+	Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
+
 	local_data[cmd->command_number % MULTIPLAYER_BACKUP].init(cmd);
 
 	BackupData();
@@ -73,18 +77,19 @@ void CPrediction::Start(CUserCmd* cmd) {
 	GameMovement->StartTrackPredictionErrors(Cheat.LocalPlayer);
 
 	Cheat.LocalPlayer->UpdateButtonState(cmd->buttons);
-	MoveHelper->SetHost(Cheat.LocalPlayer);
-	
+	memset(&moveData, 0, sizeof(moveData));
+
+	Prediction->CheckMovingGround(Cheat.LocalPlayer, GlobalVars->frametime);
 	Prediction->SetLocalViewAngles(cmd->viewangles);
 
 	RunPreThink(Cheat.LocalPlayer);
 	RunThink(Cheat.LocalPlayer);
 
+	MoveHelper->SetHost(Cheat.LocalPlayer);
 	Prediction->SetupMove(Cheat.LocalPlayer, cmd, MoveHelper, &moveData);
-
 	GameMovement->ProcessMovement(Cheat.LocalPlayer, &moveData);
-
 	Prediction->FinishMove(Cheat.LocalPlayer, cmd, &moveData);
+
 	MoveHelper->ProcessImpacts();
 
 	Cheat.LocalPlayer->PostThink();

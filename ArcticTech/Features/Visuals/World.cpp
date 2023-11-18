@@ -264,7 +264,7 @@ void CWorld::Crosshair() {
 
 	Color crosshairColor(255, 20, 20);
 
-	if (fb_data.impacts.size() > 1) {
+	if (fb_data.num_impacts > 1) {
 		crosshairColor = Color(20, 255, 20);
 	}
 

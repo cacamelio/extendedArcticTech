@@ -126,6 +126,17 @@
 #define CHAR_TEX_WOOD			'W'
 #define CHAR_TEX_GLASS			'Y'
 #define CHAR_TEX_WARPSHIELD		'Z'
+#define CHAR_TEX_CLAY			1 	// L4D addition
+#define CHAR_TEX_PLASTER		2	// L4D addition
+#define CHAR_TEX_ROCK			3	// L4D addition
+#define CHAR_TEX_RUBBER			4	// L4D addition
+#define CHAR_TEX_SHEETROCK		5	// L4D addition
+#define CHAR_TEX_CLOTH			6	// L4D addition
+#define CHAR_TEX_CARPET			7	// L4D addition
+#define CHAR_TEX_PAPER			8	// L4D addition
+#define CHAR_TEX_UPHOLSTERY		9	// L4D addition
+#define CHAR_TEX_PUDDLE			10	// L4D addition
+#define CHAR_TEX_MUD			11	// L4D addition
 #pragma endregion
 
 enum EHitGroupIndex : int

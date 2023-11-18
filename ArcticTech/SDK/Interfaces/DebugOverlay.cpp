@@ -162,13 +162,14 @@ void IVDebugOverlay::RenderOverlays() {
 
         Vector verts[] = {
             it->origin + it->mins,
-            it->origin + it->maxs,
-            it->origin + Vector(it->maxs.x, it->maxs.y, it->mins.z),
-            it->origin + Vector(it->maxs.x, it->mins.y, it->maxs.z),
-            it->origin + Vector(it->mins.x, it->maxs.y, it->maxs.z),
-            it->origin + Vector(it->mins.x, it->mins.y, it->maxs.z),
             it->origin + Vector(it->mins.x, it->maxs.y, it->mins.z),
-            it->origin + Vector(it->maxs.x, it->mins.y, it->mins.z)
+            it->origin + Vector(it->maxs.x, it->maxs.y, it->mins.z),
+            it->origin + Vector(it->maxs.x, it->mins.y, it->mins.z),
+
+            it->origin + Vector(it->mins.x, it->mins.y, it->maxs.z),
+            it->origin + Vector(it->mins.x, it->maxs.y, it->maxs.z),
+            it->origin + it->maxs,
+            it->origin + Vector(it->maxs.x, it->mins.y, it->maxs.z),
         };
 
         Vector2 scr_verts[8];
@@ -190,18 +191,20 @@ void IVDebugOverlay::RenderOverlays() {
             continue;
         }
 
-        auto background = convexHull(scr_verts, 8);
+        Vector2 cpy_scr[8];
+        memcpy(cpy_scr, scr_verts, sizeof(Vector2) * 8);
+        auto background = convexHull(cpy_scr, 8);
 
         Render->PolyFilled(background, it->col);
 
-        Color edge_color = it->col.alpha_modulate(255);
+        Color edge_color = it->col.alpha_modulate(min((int)(it->col.a * 1.8f), 255));
 
-        Render->PolyLine({ scr_verts[0], scr_verts[6], scr_verts[2], scr_verts[7], scr_verts[0] }, edge_color);
-        Render->PolyLine({ scr_verts[4], scr_verts[1], scr_verts[3], scr_verts[5], scr_verts[4] }, edge_color);
+        Render->PolyLine({ scr_verts[0], scr_verts[1], scr_verts[2], scr_verts[3], scr_verts[0] }, edge_color);
+        Render->PolyLine({ scr_verts[4], scr_verts[5], scr_verts[6], scr_verts[7], scr_verts[4] }, edge_color);
         Render->Line(scr_verts[0], scr_verts[4], edge_color);
-        Render->Line(scr_verts[2], scr_verts[1], edge_color);
-        Render->Line(scr_verts[6], scr_verts[5], edge_color);
-        Render->Line(scr_verts[7], scr_verts[3], edge_color);
+        Render->Line(scr_verts[1], scr_verts[5], edge_color);
+        Render->Line(scr_verts[2], scr_verts[6], edge_color);
+        Render->Line(scr_verts[3], scr_verts[7], edge_color);
 
         it++;
     }

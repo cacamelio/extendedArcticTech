@@ -155,7 +155,7 @@ void CLagCompensation::OnNetUpdate() {
 				}
 			}
 
-			while (records.size() > 64) {
+			while (records.size() > (TIME_TO_TICKS(0.4f) + 13)) { // super puper proper lagcomp
 				records.pop_front();
 			}
 		}

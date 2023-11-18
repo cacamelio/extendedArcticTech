@@ -13,7 +13,7 @@ inline bool CGameTrace::DidHitNonWorldEntity() const
 	return hit_entity != NULL && !DidHitWorld();
 }
 
-void CAutoWall::TraceLine(const Vector& absStart, const Vector& absEnd, unsigned int mask, void* ignore, CGameTrace* ptr)
+inline void TraceLine(const Vector& absStart, const Vector& absEnd, unsigned int mask, void* ignore, CGameTrace* ptr)
 {
 	Ray_t ray;
 	ray.Init(absStart, absEnd);
@@ -80,11 +80,33 @@ void CAutoWall::ClipTraceToPlayers(const Vector& start, const Vector& end, const
 	}
 }
 
-bool CAutoWall::TraceToExit(CGameTrace& enterTrace, CGameTrace& exitTrace, const Vector& startPosition, const Vector& direction)
+bool CAutoWall::TraceToExit(CGameTrace& enterTrace, CGameTrace& exitTrace, const Vector& startPosition, const Vector& direction, int enterMaterial)
 {
 	Vector start;
-	float maxDistance = 90.f, rayExtension = 4.f, currentDistance = 0;
+	float currentDistance = 0;
 	int firstContents = 0;
+
+	float maxDistance = 80.f;
+	float rayExtension = 4.f;
+
+	// heavy optimization
+	switch (enterMaterial) {
+	case CHAR_TEX_PLASTER:
+		maxDistance = 50.f;
+		rayExtension = 6.f;
+		break;
+	case CHAR_TEX_ROCK:
+	case CHAR_TEX_CONCRETE:
+		maxDistance = 40.f;
+		rayExtension = 6.f;
+		break;
+	case CHAR_TEX_METAL:
+		maxDistance = 30.f;
+		break;
+	}
+
+	CTraceFilter filter;
+	Ray_t ray;
 
 	while (currentDistance <= maxDistance)
 	{
@@ -92,21 +114,25 @@ bool CAutoWall::TraceToExit(CGameTrace& enterTrace, CGameTrace& exitTrace, const
 
 		start = startPosition + direction * currentDistance;
 
-		int pointContents = EngineTrace->GetPointContents(start, MASK_SHOT_HULL | CONTENTS_HITBOX, nullptr);
+		int pointContents = EngineTrace->GetPointContents_WorldOnly(start, MASK_SHOT_HULL | CONTENTS_HITBOX);
 
 		if (!firstContents)
-		{
 			firstContents = pointContents;
-		}
 
 		if (pointContents & MASK_SHOT_HULL && (!(pointContents & CONTENTS_HITBOX) || pointContents == firstContents))
 			continue;
 
-		TraceLine(start, start - (direction * rayExtension), MASK_SHOT_HULL | CONTENTS_HITBOX, nullptr, &exitTrace);
+		ray.Init(start, start - (direction * rayExtension));
+		filter.pSkip = nullptr;
+
+		EngineTrace->TraceRay(ray, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &exitTrace);
 
 		if (exitTrace.startsolid && exitTrace.surface.flags & SURF_HITBOX)
 		{
-			TraceLine(start, startPosition, MASK_SHOT_HULL, exitTrace.hit_entity, &exitTrace);
+			ray.Init(start, startPosition);
+			filter.pSkip = exitTrace.hit_entity;
+
+			EngineTrace->TraceRay(ray, MASK_SHOT_HULL, &filter, &exitTrace);
 
 			if (exitTrace.DidHit() && !exitTrace.startsolid)
 			{
@@ -154,14 +180,11 @@ bool CAutoWall::HandleBulletPenetration(CBasePlayer* attacker, CCSWeaponData* we
 
 	int enterMaterial = enterSurfaceData->game.material;
 
-	if (possibleHitsRemaining == 0 && enterMaterial != CHAR_TEX_GRATE && enterMaterial != CHAR_TEX_GLASS && !(enterTrace.surface.flags & SURF_NODRAW))
-		return false;
-
-	if (weaponData->flPenetration <= 0.0f || possibleHitsRemaining <= 0)
+	if ((possibleHitsRemaining == 0 && enterMaterial != CHAR_TEX_GRATE && enterMaterial != CHAR_TEX_GLASS && !(enterTrace.surface.flags & SURF_NODRAW)) || weaponData->flPenetration <= 0.0f || possibleHitsRemaining <= 0)
 		return false;
 
 	CGameTrace exitTrace;
-	if (!TraceToExit(enterTrace, exitTrace, enterTrace.endpos, direction) && !(EngineTrace->GetPointContents(enterTrace.endpos, MASK_SHOT_HULL, nullptr) & MASK_SHOT_HULL))
+	if (!TraceToExit(enterTrace, exitTrace, enterTrace.endpos, direction, enterMaterial) && !(EngineTrace->GetPointContents(enterTrace.endpos, MASK_SHOT_HULL, nullptr) & MASK_SHOT_HULL))
 		return false;
 
 	float finalDamageModifier = 0.16f;
@@ -260,7 +283,7 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 
 		ClipTraceToPlayers(eyePosition, end + direction * 40.f, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &data.enterTrace, target);
 
-		data.impacts.emplace_back(data.enterTrace.endpos);
+		data.impacts[data.num_impacts++] = data.enterTrace.endpos;
 
 		if (data.enterTrace.fraction == 1.f)
 			return !target;

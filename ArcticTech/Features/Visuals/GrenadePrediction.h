@@ -8,6 +8,7 @@
 class GrenadePrediction {
 private:
 	CNewParticleEffect* pMolotovParticle = nullptr;
+	Vector lerped_velocity;
 
 protected:
 	int nTick = 0;
@@ -32,7 +33,7 @@ protected:
 public:
 	static void PrecacheParticles();
 
-	void Start(QAngle viewAngles, Vector origin = Vector());
+	void Start();
 	void Draw();
 	void Predict(const Vector& orign, const Vector& velocity, float throwTime, int offset);
 	bool PhysicsSimulate();

@@ -228,6 +228,7 @@ public:
 	NETVAR(m_nModelIndex, int, "DT_BaseEntity", "m_nModelIndex")
 	PRED_DESC_MAP(m_iEFlags, int, "m_iEFlags")
 	OFFSET(EntIndex, int, 0x64)
+	OFFSET(m_EntClientFlags, unsigned short, 0x68)
 	NETVAR_O(m_flSpawnTime, float, "DT_BaseEntity", "m_flUseLookAtAngle", 0x5)
 	NETVAR_O(m_isJiggleBonesEnabled, bool, "DT_BaseAnimating", "m_hLightingOrigin", -0x18)
 	NETVAR(moveparent, unsigned long, "DT_BaseEntity", "moveparent")

@@ -109,7 +109,7 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 	else
 		return;
 
-	if (!player || player == Cheat.LocalPlayer || !player->m_bDormant() || player->IsTeammate())
+	if (!player || player == Cheat.LocalPlayer || !player->m_bDormant() || player->IsTeammate() || !player->IsAlive())
 		return;
 
 	if (abs(GlobalVars->realtime - g_LastSharedESPData[player->EntIndex()]) < 0.5f)
@@ -159,7 +159,8 @@ void ESP::UpdatePlayer(int id) {
 		return;
 	}
 
-	if (player->IsTeammate()) {
+	if (player->IsTeammate() || !player->IsAlive()) {
+		info.m_flLastUpdateTime = GlobalVars->curtime - 12.f;
 		info.m_bValid = false;
 		return;
 	}
@@ -174,11 +175,6 @@ void ESP::UpdatePlayer(int id) {
 
 	if (!info.m_bDormant)
 		info.m_nHealth = player->m_iHealth();
-
-	if (info.m_nHealth <= 0) {
-		info.m_bValid = false;
-		return;
-	}
 
 	if (!info.m_bDormant) {
 		LagRecord* latestRecord = &records.back();

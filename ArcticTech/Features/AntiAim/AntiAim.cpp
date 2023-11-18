@@ -90,7 +90,7 @@ void CAntiAim::FakeLag() {
 void CAntiAim::Angles() {
 	desyncing = false;
 
-	if (GameRules()->IsFreezePeriod() || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP)
+	if (GameRules()->IsFreezePeriod() || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER && ctx.cmd->buttons & (IN_MOVELEFT | IN_MOVERIGHT | IN_FORWARD | IN_BACK)) || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP)
 		return;
 
 	if (!ctx.active_weapon)
@@ -226,7 +226,12 @@ CBasePlayer* CAntiAim::GetNearestTarget() {
 		if (!pl->m_bDormant()) {
 			CTraceFilterWorldAndPropsOnly filter;
 			CGameTrace trace;
-			Ray_t ray(pl->GetEyePosition(), Cheat.LocalPlayer->GetEyePosition());
+			Vector v1 = pl->GetEyePosition();
+			Vector v2 = Cheat.LocalPlayer->GetEyePosition();
+			if (std::abs(v1.z - v2.z) < 0.01f)
+				v2.z -= 1.f;
+
+			Ray_t ray(v1, v2);
 
 			EngineTrace->TraceRay(ray, MASK_SHOT | CONTENTS_GRATE, &filter, &trace);
 
@@ -380,7 +385,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 64.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 9.f + (velocity * TICKS_TO_TIME(2.4f));
+	Vector move_factor = velocity.Normalized() * 9.4f + (velocity * TICKS_TO_TIME(3.4f));
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

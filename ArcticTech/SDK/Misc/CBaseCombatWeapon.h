@@ -205,7 +205,7 @@ public:
     }
 
     inline float GetInaccuracy() {
-        return CallVFunction<float(__thiscall*)(CBaseCombatWeapon*)>(this, 483)(this);
+		return CallVFunction<float(__thiscall*)(CBaseCombatWeapon*)>(this, 483)(this);
     }
 
     inline float GetSpread() {

@@ -241,16 +241,18 @@ std::array<float, 24>& CBasePlayer::m_flPoseParameter() {
 }
 
 bool CBasePlayer::IsAlive() {
-	if (!this)
+	if (!this || !PlayerResource)
 		return false;
 
-	if (m_iTeamNum() != 2 && m_iTeamNum() != 3)
-		return false;
+	return PlayerResource->m_bAlive()[EntIndex()];
 
-	if (m_lifeState() != LIFE_ALIVE)
-		return false;
+	//if (m_iTeamNum() != 2 && m_iTeamNum() != 3)
+	//	return false;
 
-	return true;
+	//if (m_lifeState() != LIFE_ALIVE)
+	//	return false;
+
+	//return true;
 }
 
 float CBasePlayer::GetMaxDesyncDelta() {

@@ -434,7 +434,8 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 		ScannedTarget_t scan = Ragebot->ScanTarget(target);
 
 		std::unique_lock<std::mutex> lock(Ragebot->scan_mutex);
-		Ragebot->scanned_targets.push_back(scan);
+		Ragebot->scanned_targets.emplace_back(scan);
+		lock.unlock();
 
 		if (Ragebot->scanned_targets.size() >= Ragebot->selected_targets)
 			Ragebot->result_condition.notify_one();
@@ -497,28 +498,30 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 				priority += 2;
 			else if (record->m_angEyeAngles.pitch < 10.f) // aim at shitty defensive aa
 				priority += 1;
+			
+			ScannedPoint_t sc_point;
+			sc_point.damage = bullet.damage;
+			sc_point.hitbox = point.hitbox;
+			std::memcpy(sc_point.impacts, bullet.impacts, sizeof(Vector) * 5);
+			sc_point.num_impacts = bullet.num_impacts;
+			sc_point.point = point.point;
+			sc_point.priority = priority;
+			sc_point.record = record;
+			sc_point.safe_point = jitter_safe;
 
-			result.points.emplace_back(ScannedPoint_t{
-				record,
-				point.point,
-				point.hitbox,
-				priority,
-				bullet.damage,
-				jitter_safe,
-				bullet.impacts
-			});
+			result.points.emplace_back(sc_point);
 
 			if (bullet.damage > 5.f)
 				Exploits->block_charge = true;
 		}
 	}
 
+	LagCompensation->BacktrackEntity(backup_record);
+	delete backup_record;
+
 	result.best_point = SelectBestPoint(result);
-	if (!result.best_point.record || result.best_point.damage < 2) {
-		LagCompensation->BacktrackEntity(backup_record);
-		delete backup_record;
+	if (!result.best_point.record || result.best_point.damage < 2)
 		return result;
-	}
 
 	result.angle = Math::VectorAngles_p(result.best_point.point - ctx.shoot_position);
 
@@ -528,9 +531,6 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 	else {
 		result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
 	}
-
-	LagCompensation->BacktrackEntity(backup_record);
-	delete backup_record;
 
 	return result;
 }
@@ -604,7 +604,7 @@ void CRagebot::Run() {
 		float flInaccuracyJumpInitial = ctx.weapon_info->_flInaccuracyUnknown;
 
 		float fSqrtMaxJumpSpeed = Math::Q_sqrt(cvars.sv_jump_impulse->GetFloat());
-		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.5f);
+		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.65f);
 
 		float flAirSpeedInaccuracy = Math::RemapVal(fSqrtVerticalSpeed,
 			fSqrtMaxJumpSpeed * 0.25f,
@@ -629,7 +629,7 @@ void CRagebot::Run() {
 	}
 
 	for (const auto& target : scanned_targets) {
-		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 150 && target.player == last_target) {
+		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 256 && target.player == last_target) {
 			if (target.hitchance > hitchance) {
 				best_target = target;
 				break;
@@ -698,8 +698,8 @@ void CRagebot::Run() {
 	if (config.visuals.effects.client_impacts->get()) {
 		Color face_col = config.visuals.effects.client_impacts_color->get();
 
-		for (const auto& impact : best_target.best_point.impacts)
-			DebugOverlay->AddBox(impact, Vector(-1, -1, -1), Vector(1, 1, 1), face_col, config.visuals.effects.impacts_duration->get());
+		for (int i = 0; i < best_target.best_point.num_impacts; i++)
+			DebugOverlay->AddBox(best_target.best_point.impacts[i], Vector(-1, -1, -1), Vector(1, 1, 1), face_col, config.visuals.effects.impacts_duration->get());
 	}
 
 	LagRecord* record = best_target.best_point.record;

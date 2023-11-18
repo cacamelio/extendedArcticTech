@@ -232,7 +232,6 @@ void CMenu::SetupUI() {
 	config.misc.movement.infinity_duck = movement->AddCheckBox("Infinity duck");
 	config.misc.movement.quick_stop = movement->AddCheckBox("Quick stop");
 
-
 	config.skins.paint_kits = skins->AddComboBox("Paint kits", SkinChanger->GetUIPaintKits());
 	config.skins.glove_paint_kits = skins->AddComboBox("Glove Paint kits", SkinChanger->GetUIPaintKitsGloves());
 

@@ -71,8 +71,8 @@ void CShotManager::ProcessManualShot() {
 
 	Color col = config.visuals.effects.client_impacts_color->get();
 
-	for (auto& impact : bullet.impacts)
-		DebugOverlay->AddBox(impact, Vector(-1, -1, -1), Vector(1, 1, 1), col, config.visuals.effects.impacts_duration->get());
+	for (int i = 0; i < bullet.num_impacts; i++)
+		DebugOverlay->AddBox(bullet.impacts[i], Vector(-1, -1, -1), Vector(1, 1, 1), col, config.visuals.effects.impacts_duration->get());
 }
 
 bool CShotManager::OnEvent(IGameEvent* event) {

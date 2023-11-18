@@ -79,14 +79,14 @@ void Miscelleaneus::FastThrow() {
 	float next_attack = max(Cheat.LocalPlayer->m_flNextAttack(), grenade->m_flNextPrimaryAttack());
 
 	if (Exploits->GetExploitType() == CExploits::E_DoubleTap) {
-		Exploits->LC_OverrideTickbase(14);
-		if (next_attack - TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) < TICKS_TO_TIME(8))
+		Exploits->LC_OverrideTickbase(13);
+		if (next_attack - TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) < TICKS_TO_TIME(4))
 			quick_switch_triggered = true;
 		if (EnginePrediction->m_fThrowTime > 0.f)
 			fast_throw_triggred = true;
 
 		if (quick_switch_triggered)
-			Exploits->LC_OverrideTickbase(7);
+			Exploits->LC_OverrideTickbase(9);
 		if (fast_throw_triggred)
 			Exploits->LC_OverrideTickbase(0);
 	}

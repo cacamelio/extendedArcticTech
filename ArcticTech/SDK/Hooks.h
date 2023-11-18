@@ -53,13 +53,14 @@ typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vec
 typedef bool(__fastcall* tInPrediction)(IPrediction*, void*);
 typedef void(__fastcall* tTraceBlood)(CGameTrace*, int);
 typedef void(__fastcall* tCL_DispatchSound)(const SoundInfo_t&, void*);
-typedef bool(__fastcall* tInterpolateEntity)(CBaseEntity*, void*, float);
+typedef bool(__fastcall* tInterpolateViewModel)(CBaseEntity*, void*, float);
 typedef void(__fastcall* tThrowGrenade)(CBaseGrenade*, void*);
 typedef void(__fastcall* tCalcViewModel)(CBaseViewModel*, void*, CBasePlayer*, const Vector&, const QAngle&);
 typedef bool(__fastcall* tSVCMsg_TempEntities)(CClientState*, void*, const void*);
 typedef void(__fastcall* tResetLatched)(CBasePlayer*, void*);
 typedef void(__fastcall* tGetExposureRange)(float*, float*);
 typedef void(__fastcall* tEstimateAbsVelocity)(CBaseEntity*, void*, Vector&);
+typedef bool(__fastcall* tInterpolatePlayer)(CBasePlayer*, void*, float);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -92,13 +93,14 @@ inline tListLeavesInBox oListLeavesInBox;
 inline tInPrediction oInPrediction;
 inline tTraceBlood oTraceBlood;
 inline tCL_DispatchSound oCL_DispatchSound;
-inline tInterpolateEntity oInterpolateEntity;
+inline tInterpolateViewModel oInterpolateViewModel;
 inline tThrowGrenade oThrowGrenade;
 inline tCalcViewModel oCalcViewModel;
 inline tSVCMsg_TempEntities oSVCMsg_TempEntities;
 inline tResetLatched oResetLatched;
 inline tGetExposureRange oGetExposureRange;
 inline tEstimateAbsVelocity oEstimateAbsVelocity;
+inline tInterpolatePlayer oInterpolatePlayer;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

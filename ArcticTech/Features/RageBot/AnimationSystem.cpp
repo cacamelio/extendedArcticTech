@@ -39,8 +39,6 @@ void CAnimationSystem::OnCreateMove() {
 	AnimationLayer animlayers_backup[13];
 	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
-	GlobalVars->curtime = TICKS_TO_TIME( Cheat.LocalPlayer->m_nTickBase() );
-
 	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
 
@@ -52,6 +50,9 @@ void CAnimationSystem::OnCreateMove() {
 
 	if (animstate->nLastUpdateFrame >= GlobalVars->framecount)
 		animstate->nLastUpdateFrame = GlobalVars->framecount - 1;
+
+	if (animstate->flLastUpdateTime >= GlobalVars->curtime)
+		animstate->flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
 
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
 	animstate->bLanding = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
@@ -112,7 +113,6 @@ void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
 }
 
 void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld, int maxBones, int mask, AnimationLayer* animlayers) {
-	hook_info.setup_bones = true;
 
 	player->InvalidateBoneCache();
 
@@ -122,15 +122,15 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 	bool backupMaintainSequenceTransitions = player->m_bMaintainSequenceTransitions();
 	int backupEffects = player->m_fEffects();
 
-	player->m_fEffects() |= EF_NOINTERP;
-	player->m_bMaintainSequenceTransitions() = false;
+	player->m_fEffects() |= EF_NOINTERP; // Disable interp
+	player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
 
-	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer ? GlobalVars->curtime : player->m_flSimulationTime());
+	hook_info.setup_bones = true;
+	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer == player ? GlobalVars->curtime : player->m_flSimulationTime());
+	hook_info.setup_bones = false;
 
 	player->m_fEffects() = backupEffects;
 	player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
-
-	hook_info.setup_bones = false;
 }
 
 void CAnimationSystem::DisableInterpolationFlags(CBasePlayer* player) {

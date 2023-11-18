@@ -10,7 +10,7 @@ void GrenadePrediction::PrecacheParticles() {
 	Effects->PrecacheParticleSystem("env_fire_tiny_b");
 }
 
-void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
+void GrenadePrediction::Start() {
 	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || (GameRules() && GameRules()->IsFreezePeriod()) || !config.visuals.other_esp.grenade_trajecotry->get()) {
 		runningPrediction = false;
 		return;
@@ -48,14 +48,20 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 	if (config.misc.movement.compensate_throwable->get(0) && !(localPlayer->m_fFlags() & FL_ONGROUND))
 		vel = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
-	Vector eyePosition = origin;
-	if (origin == Vector())
-		eyePosition = localPlayer->GetEyePosition();
+	if (!runningPrediction)
+		lerped_velocity = vel;
+	else
+		lerped_velocity = lerped_velocity + (vel - lerped_velocity) * std::clamp(GlobalVars->frametime * 64.f, 0.1f, 1.f);
+
+	vel = lerped_velocity;
+
+	QAngle viewAngles;
+	EngineClient->GetViewAngles(&viewAngles);
+	Vector eyePosition = localPlayer->GetAbsOrigin() + localPlayer->m_vecViewOffset();
 
 	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
 
 	if (config.misc.movement.compensate_throwable->get(1) && !(localPlayer->m_fFlags() & FL_ONGROUND)) {
-		Vector vel = Cheat.LocalPlayer->m_vecVelocity();
 		Vector ideal_vel = vel;
 		ideal_vel.z = std::clamp(vel.z, -120.f, 120.f);
 
@@ -74,7 +80,10 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 
 	const float flThrowStrength = std::clamp(grenade->m_flThrowStrength(), 0.f, 1.f);
 
-	Vector src = eyePosition + Vector(0.f, 0.f, flThrowStrength * 12.f - 12.f) + vel * 0.046875f;
+	if (vel.LengthSqr() < 20)
+		vel = Vector();
+
+	Vector src = eyePosition + Vector(0.f, 0.f, flThrowStrength * 12.f - 12.f) + vel * TICKS_TO_TIME(ctx.tickbase_shift == 13 ? 2 : 7);
 	Vector dest = src;
 	dest += direction * 22.f;
 
@@ -83,9 +92,6 @@ void GrenadePrediction::Start(QAngle viewAngles, Vector origin) {
 
 	runningPrediction = true;
 	owner = Cheat.LocalPlayer;
-
-	if (vel.LengthSqr() < 20)
-		vel = Vector();
 
 	Predict(trace.endpos - direction * 6.f, direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (flThrowStrength * 0.7f + 0.3f)) + vel * 1.25f, TICKS_TO_TIME(ctx.corrected_tickbase), 0);
 }

@@ -77,7 +77,9 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(user_id_pl));
 		AnimationSystem->InvalidateInterpolation(user_id_pl);
 		LagCompensation->Invalidate(user_id_pl);
+		ESPInfo[user_id_pl].m_flLastUpdateTime = 0.f;
 		ESPInfo[user_id_pl].m_nHealth = 0;
+		PlayerResource->m_bAlive()[user_id_pl] = false;
 	}
 	else if (name == "round_start") {
 		LagCompensation->Reset();

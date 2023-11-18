@@ -115,7 +115,10 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	ESP::Draw();
 	ESP::DrawGrenades();
 	ESP::RenderMarkers();
+
+	NadePrediction.Start();
 	NadePrediction.Draw();
+
 	AutoPeek->Draw();
 	World->Crosshair();
 	DebugOverlay->RenderOverlays();
@@ -231,8 +234,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	if (ctx.should_release_grenade && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled())
 		ctx.cmd->buttons &= ~IN_ATTACK;
-
-	Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
 
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
@@ -544,8 +545,6 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 
 	World->ProcessCamera(setup);
 
-	NadePrediction.Start(setup->angles, setup->origin);
-
 	if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && config.antiaim.misc.fake_duck->get())
 		setup->origin = Cheat.LocalPlayer->GetAbsOrigin() + Vector(0, 0, 64);
 
@@ -644,9 +643,9 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
-		if (Cheat.InGame) {
-			EngineClient->FireEvents();
-		}
+		//if (Cheat.InGame) {
+		//	EngineClient->FireEvents();
+		//}
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
@@ -671,17 +670,17 @@ void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
 	if (thisptr == Cheat.LocalPlayer) {
 		CCSGOPlayerAnimationState* animstate = thisptr->GetAnimstate();
 
-		int backup_last_update = 0;
+		CBasePlayer* backup_player = nullptr;
+
 		if (animstate) {
-			backup_last_update = animstate->nLastUpdateFrame;
-			animstate->nLastUpdateFrame = GlobalVars->framecount;
+			backup_player = animstate->pEntity;
+			animstate->pEntity = nullptr; // do not update animstate
 		}
 
 		oUpdateClientSideAnimation(thisptr, edx);
 
-		if (animstate) {
-			animstate->nLastUpdateFrame = backup_last_update;
-		}
+		if (animstate)
+			animstate->pEntity = backup_player;
 	}
 }
 
@@ -970,9 +969,8 @@ __declspec(naked) void hkCreateNewParticleEffect_proxy() {
 }
 
 bool __fastcall hkSVCMsg_VoiceData(CClientState* clientstate, void* edx, const CSVCMsg_VoiceData& msg) {
-	if (NetMessages->OnVoiceDataRecieved(msg)) {
+	if (NetMessages->OnVoiceDataRecieved(msg))
 		return true;
-	}
 
 	return oSVCMsg_VoiceData(clientstate, edx, msg);
 }
@@ -1071,8 +1069,8 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 	// extend world space bounds to maximum ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L707 )
 	static const Vector map_min = Vector(-16384.0f, -16384.0f, -16384.0f);
 	static const Vector map_max = Vector(16384.0f, 16384.0f, 16384.0f);
-	auto count = oListLeavesInBox(ecx, edx, map_min, map_max, list, size);
-	return count;
+
+	return oListLeavesInBox(ecx, edx, map_min, map_max, list, size);
 }
 
 bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
@@ -1089,13 +1087,9 @@ void __fastcall hkCL_DispatchSound(const SoundInfo_t& snd, void* edx) {
 	oCL_DispatchSound(snd, edx);
 }
 
-bool __fastcall hkInterpolateEntity(CBaseEntity* ent, void* edx, float curTime) {
-	CBaseViewModel* vm = reinterpret_cast<CBaseViewModel*>(ent);
-
-	bool is_vm = EntityList->GetClientEntityFromHandle(vm->m_hOwner()) == Cheat.LocalPlayer;
-
-	if (!is_vm && ent != Cheat.LocalPlayer)
-		return oInterpolateEntity(vm, edx, curTime);
+bool __fastcall hkInterpolateViewModel(CBaseViewModel* vm, void* edx, float curTime) {
+	if (EntityList->GetClientEntityFromHandle(vm->m_hOwner()) != Cheat.LocalPlayer)
+		return oInterpolateViewModel(vm, edx, curTime);
 
 	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
 	auto backup_lerp_amt = GlobalVars->interpolation_amount;
@@ -1104,10 +1098,27 @@ bool __fastcall hkInterpolateEntity(CBaseEntity* ent, void* edx, float curTime) 
 	if (Exploits->ShouldCharge())
 		GlobalVars->interpolation_amount = 0.f;
 
-	auto result = oInterpolateEntity(vm, edx, curTime);
+	auto result = oInterpolateViewModel(vm, edx, curTime);
 	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
 
 	GlobalVars->interpolation_amount = backup_lerp_amt;
+
+	return result;
+}
+
+bool __fastcall hkInterpolatePlayer(CBasePlayer* pl, void* edx, float curTime) {
+	if (pl != Cheat.LocalPlayer || !pl)
+		return oInterpolatePlayer(pl, edx, curTime);
+
+	int& pred_tick = pl->m_nFinalPredictedTick();
+	auto backup_pred_tick = pred_tick;
+
+	if (Exploits->ShouldCharge())
+		pred_tick = Cheat.LocalPlayer->m_nTickBase();
+
+	bool result = oInterpolatePlayer(pl, edx, curTime);
+
+	pred_tick = backup_pred_tick;
 
 	return result;
 }
@@ -1232,13 +1243,14 @@ void Hooks::Initialize() {
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
 	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
 	oCL_DispatchSound = HookFunction<tCL_DispatchSound>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 8B F1 8D 4D 98 E8"), hkCL_DispatchSound);
-	oInterpolateEntity = HookFunction<tInterpolateEntity>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateEntity);
+	oInterpolateViewModel = HookFunction<tInterpolateViewModel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateViewModel);
 	oThrowGrenade = HookFunction<tThrowGrenade>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 57 8B F9 80 BF ? ? ? ? ? 74 07"), hkThrowGrenade);
 	oCalcViewModel = HookFunction<tCalcViewModel>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 58 56 57"), hkCalcViewModel);
 	oSVCMsg_TempEntities = HookFunction<tSVCMsg_TempEntities>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 83 EC 4C A1 ? ? ? ? 80"), hkSVCMsg_TempEntities);
 	oResetLatched = HookFunction<tResetLatched>(Utils::PatternScan("client.dll", "56 8B F1 57 8B BE ? ? ? ? 85 FF 74 ? 8B CF E8 ? ? ? ? 68"), hkResetLatched);
 	oGetExposureRange = HookFunction<tGetExposureRange>(Utils::PatternScan("client.dll", "55 8B EC 51 80 3D ? ? ? ? ? 0F 57"), hkGetExposureRange);
 	oEstimateAbsVelocity = HookFunction<tEstimateAbsVelocity>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 ? 83 EC ? 56 8B F1 85 F6 74 ? 8B 06 8B 80 ? ? ? ? FF D0 84 C0 74 ? 8A 86"), hkEstimateAbsVelocity);
+	//oInterpolatePlayer = HookFunction<tInterpolatePlayer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC ? 56 8B F1 83 BE ? ? ? ? ? 0F 85"), hkInterpolatePlayer);
 
 	EventListner->Register();
 
@@ -1300,11 +1312,12 @@ void Hooks::End() {
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
 	RemoveHook(oInPrediction, hkInPrediction);
 	RemoveHook(oCL_DispatchSound, hkCL_DispatchSound);
-	RemoveHook(oInterpolateEntity, hkInterpolateEntity);
+	RemoveHook(oInterpolateViewModel, hkInterpolateViewModel);
 	RemoveHook(oThrowGrenade, hkThrowGrenade);
 	RemoveHook(oCalcViewModel, hkCalcViewModel);
 	RemoveHook(oSVCMsg_TempEntities, hkSVCMsg_TempEntities);
 	RemoveHook(oResetLatched, hkResetLatched);
 	RemoveHook(oGetExposureRange, hkGetExposureRange);
 	RemoveHook(oEstimateAbsVelocity, hkEstimateAbsVelocity);
+	//RemoveHook(oInterpolatePlayer, hkInterpolatePlayer);
 }

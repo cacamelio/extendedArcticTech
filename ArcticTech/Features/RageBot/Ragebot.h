@@ -8,14 +8,14 @@
 #include <condition_variable>
 #include <queue>
 
-#define MAX_RAGEBOT_THREADS 6
+#define MAX_RAGEBOT_THREADS 8
 
 inline int GetRagebotThreads() {
 	int cpu_threads = std::thread::hardware_concurrency();
 	if (cpu_threads <= 4)
 		return 1;
 
-	int threads = cpu_threads - 2;
+	int threads = cpu_threads / 2;
 	if (threads > MAX_RAGEBOT_THREADS)
 		threads = MAX_RAGEBOT_THREADS;
 
@@ -31,7 +31,8 @@ struct ScannedPoint_t {
 	int priority = 0;
 	float damage = 0.f;
 	bool safe_point = false;
-	std::vector<Vector> impacts;
+	Vector impacts[5];
+	int num_impacts = 0;
 };
 
 struct ScannedTarget_t {
