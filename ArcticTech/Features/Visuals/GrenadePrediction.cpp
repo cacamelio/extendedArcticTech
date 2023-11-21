@@ -83,7 +83,9 @@ void GrenadePrediction::Start() {
 	if (vel.LengthSqr() < 20)
 		vel = Vector();
 
-	Vector src = eyePosition + Vector(0.f, 0.f, flThrowStrength * 12.f - 12.f) + vel * TICKS_TO_TIME(ctx.tickbase_shift == 13 ? 2 : 7);
+	float throw_offset = TICKS_TO_TIME(ctx.tickbase_shift == 13 ? 2 : 7);
+	Vector src = eyePosition + Vector(0.f, 0.f, flThrowStrength * 12.f - 12.f) + vel * throw_offset;
+
 	Vector dest = src;
 	dest += direction * 22.f;
 
@@ -141,12 +143,12 @@ void GrenadePrediction::Draw() {
 
 			int rel_dmg = config.misc.miscellaneous.automatic_grenade_release->get();
 
-			if (maxDamage > rel_dmg && rel_dmg > 0)
+			if (maxDamage > rel_dmg && rel_dmg > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled())
 				ctx.should_release_grenade = true;
 		}
 	}
 	else if (weaponId == Molotov || weaponId == IncGrenade) {
-		float minDistance = 5.f;
+		float minDistance = 10.f;
 
 		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
@@ -154,20 +156,20 @@ void GrenadePrediction::Draw() {
 			if (!player || player->IsTeammate() || !player->IsPlayer() || !player->IsAlive() || player->m_bDormant())
 				continue;
 
-			CGameTrace tr = EngineTrace->TraceRay(vecDetonate + Vector(0, 0, 10), player->m_vecOrigin() + Vector(0, 0, 32), 0x1, player);
+			CGameTrace tr = EngineTrace->TraceRay(vecDetonate + Vector(0, 0, 16), player->m_vecOrigin() + Vector(0, 0, 32), 0x1, player);
 
 			if (tr.fraction == 1.f) {
-				float dist = (player->m_vecOrigin() - vecDetonate).Q_Length() * 0.0254f;
+				float dist = (player->m_vecOrigin() - vecDetonate).Q_Length2D() / 12.f;
 
 				if (dist < minDistance) {
-					additional_info = std::format("{:.2f}m", dist);
+					additional_info = std::format("{:.2}ft", dist);
 					hit = true;
-					dist = minDistance;
+					minDistance = dist;
 				}
 			}
 		}
 
-		if (minDistance < 3.f && config.misc.miscellaneous.automatic_grenade_release->get() > 0)
+		if (minDistance < 5.f && config.misc.miscellaneous.automatic_grenade_release->get() > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled())
 			ctx.should_release_grenade = true;
 	}
 

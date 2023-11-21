@@ -179,11 +179,13 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
 
-	player->m_BoneAccessor().m_ReadableBones = 0;
-	player->m_BoneAccessor().m_WritableBones = 0;
+	if (!player->IsTeammate()) {
+		player->m_BoneAccessor().m_ReadableBones = 0;
+		player->m_BoneAccessor().m_WritableBones = 0;
 
-	player->m_nOcclusionFrame() = 0;
-	player->m_nOcclusionFlags() = 0;
+		player->m_nOcclusionFrame() = 0;
+		player->m_nOcclusionFlags() = 0;
+	}
 
 	player->SetAbsVelocity(player->m_vecVelocity());
 	player->SetAbsOrigin(player->m_vecOrigin());

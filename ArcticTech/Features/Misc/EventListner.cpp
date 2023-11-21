@@ -71,7 +71,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
 			AutoPeek->returning = false;
-			Ragebot->ClearTargets();
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(user_id_pl));

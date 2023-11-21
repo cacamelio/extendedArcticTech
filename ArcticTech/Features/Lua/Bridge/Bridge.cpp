@@ -117,11 +117,13 @@ void LuaLoadConfig(LuaScript_t* script) {
 				break;
 			}
 
-			for (auto cb : e->callbacks)
-				cb();
+			if (e->GetType() != WidgetType::Button) {
+				for (auto cb : e->callbacks)
+					cb();
 
-			for (auto& lcb : e->lua_callbacks)
-				lcb.func();
+				for (auto& lcb : e->lua_callbacks)
+					lcb.func();
+			}
 		}
 		catch (nlohmann::json::exception& ex) {
 			Console->Error("could not find item: " + e->name);
@@ -149,62 +151,68 @@ nlohmann::json luaTableToJson(sol::table table) {
 	return result;
 }
 
-sol::table jsonToLuaTable(nlohmann::json json);
 
-sol::table jsonToLuaArray(nlohmann::json json) {
-	sol::table tmp;
+sol::state lua;
+
+sol::table jsonToLuaTable(lua_State* state, nlohmann::json json);
+
+sol::table jsonToLuaArray(lua_State* state, nlohmann::json json) {
+	sol::table tmp = lua.create_table();
 	int index = 1;
 	for (const auto& element : json) {
 		if (element.is_null()) {
-			tmp[index++] = sol::nil;
+			tmp[sol::create_if_nil][index++] = sol::nil;
 		}
 		else if (element.is_boolean()) {
-			tmp[index++] = element.get<bool>();
+			tmp[sol::create_if_nil][index++] = element.get<bool>();
 		}
-		else if (element.is_number()) {
-			tmp[index++] = element.get<double>();
+		else if (element.is_number_float()) {
+			tmp[sol::create_if_nil][index++] = element.get<float>();
+		}
+		else if (element.is_number_integer()) {
+			tmp[sol::create_if_nil][index++] = element.get<int>();
 		}
 		else if (element.is_string()) {
-			tmp[index++] = element.get<std::string>();
+			tmp[sol::create_if_nil][index++] = element.get<std::string>();
 		}
 		else if (element.is_object()) {
-			tmp[index++] = jsonToLuaTable(element);
+			tmp[sol::create_if_nil][index++] = jsonToLuaTable(state, element);
 		}
 		else if (element.is_array()) {
-			tmp[index++] = jsonToLuaArray(element);
+			tmp[sol::create_if_nil][index++] = jsonToLuaArray(state, element);
 		}
 	}
 
 	return tmp;
 }
 
-sol::table jsonToLuaTable(nlohmann::json json) {
-	sol::table result;
+sol::table jsonToLuaTable(lua_State* state, nlohmann::json json) {
+	sol::table result = lua.create_table(state);
 
 	if (json.is_array())
-		return jsonToLuaArray(json);
+		return jsonToLuaArray(state, json);
 
 	for (auto& pair : json.items()) {
 		auto& key = pair.key();
 		auto& value = pair.value();
 
 		if (value.is_object()) {
-			result[pair.key()] = jsonToLuaTable(value.get<nlohmann::json>());
+			result[sol::create_if_nil][pair.key()] = jsonToLuaTable(state, value.get<nlohmann::json>());
 		}
 		else if (value.is_array()) {
-			result[pair.key()] = jsonToLuaArray(value);
+			result[sol::create_if_nil][pair.key()] = jsonToLuaArray(state, value);
 		}
 		else if (value.is_null()) {
-			result[key] = sol::nil;
+			result[sol::create_if_nil][key] = sol::nil;
 		}
 		else if (value.is_boolean()) {
-			result[key] = value.get<bool>();
+			result[sol::create_if_nil][key] = value.get<bool>();
 		}
 		else if (value.is_number()) {
-			result[key] = value.get<double>();
+			result[sol::create_if_nil][key] = value.get<double>();
 		}
 		else if (value.is_string()) {
-			result[key] = value.get<std::string>();
+			result[sol::create_if_nil][key] = value.get<std::string>();
 		}
 	}
 
@@ -245,8 +253,6 @@ void ScriptSaveButton() {
 			LuaSaveConfig(&script);
 	}
 }
-
-sol::state lua;
 
 namespace api {
 	void print(sol::this_state staet, sol::object msg) {
@@ -408,11 +414,10 @@ namespace api {
 			}
 
 			std::ifstream file(path);
+			std::stringstream buffer;
+			buffer << file.rdbuf();
 
-			std::string result;
-			file >> result;
-
-			return result;
+			return buffer.str();
 		}
 
 		void write(std::string path, std::string data) {
@@ -439,10 +444,10 @@ namespace api {
 			return json.dump();
 		}
 
-		sol::table parse(std::string data) {
+		sol::table parse(sol::this_state state, std::string data) {
 			nlohmann::json json = nlohmann::json::parse(data);
 
-			return jsonToLuaTable(json);
+			return jsonToLuaTable(state, json);
 		}
 	} 
 
@@ -468,8 +473,10 @@ namespace api {
 			return std::format("vector({}, {}, {})", self.x, self.y, self.z);
 		}
 
-		QAngle angles(Vector self) {
-			return Math::VectorAngles(self);
+		sol::object angles(sol::this_state state, Vector self, sol::optional<QAngle> angle) {
+			if (angle.has_value())
+				return sol::make_object(state, Math::AngleVectors(angle.value()));
+			return sol::make_object(state, Math::VectorAngles(self));
 		}
 	}
 
@@ -1370,6 +1377,11 @@ void CLua::Setup() {
 		"to_screen", api::vector::to_screen
 	);
 
+	lua.new_usertype<DXImage>("image_t", sol::no_constructor, 
+		"width", &DXImage::width,
+		"height", &DXImage::height
+	);
+
 	lua.new_usertype<player_info_t>("player_info_t", sol::no_constructor,
 		"steamID64", &player_info_t::steamID64,
 		"xuid_low", &player_info_t::xuid_low,
@@ -1816,7 +1828,7 @@ void CLua::LoadScript( int id ) {
 		return result;
 	};
 
-	lua.script_file(path, env, load_result_func);
+	lua.safe_script_file(path, env, load_result_func);
 
 	LuaLoadConfig(&script);
 

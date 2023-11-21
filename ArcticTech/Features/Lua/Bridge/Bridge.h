@@ -43,10 +43,7 @@ struct CUserCmd_lua {
 			sp = move.Q_Length();
 		}
 
-		float view_yaw = viewangles.yaw;
-		float diff_yaw = Math::AngleDiff(yaw, view_yaw);
-
-		move = Math::AngleVectors(QAngle(0.f, diff_yaw, 0.f));
+		move = Math::AngleVectors(QAngle(0.f, viewangles.yaw - yaw, 0.f)) * sp;
 	}
 };
 

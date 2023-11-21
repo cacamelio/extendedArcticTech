@@ -155,20 +155,6 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup)
 	return hits * 0.01f;
 }
 
-void CRagebot::FindTargets() {
-	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
-		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
-
-		if (!player || !player->IsAlive() || player->IsTeammate() || player->m_bDormant() || player->m_bGunGameImmunity())
-			continue;
-
-		if (frametime_issues && (i + ctx.cmd->command_number % 2) % 2 == 0)
-			continue;
-
-		targets.push(player);
-	}
-}
-
 bool CRagebot::CompareRecords(LagRecord* a, LagRecord* b) {
 	const Vector vec_diff = a->m_vecOrigin - b->m_vecOrigin;
 
@@ -241,7 +227,7 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 	return target_records;
 }
 
-void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale, std::vector<AimPoint_t>& points) {
+void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale) {
 	studiohdr_t* studiomodel = ModelInfoClient->GetStudioModel(record->player->GetModel());
 
 	if (!studiomodel)
@@ -274,10 +260,10 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale, std
 	};
 
 	for (const auto& vert : verts)
-		points.push_back(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
+		thread_work.push(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
 
 	if (hitbox_id == HITBOX_HEAD)
-		points.push_back(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
+		thread_work.push(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
 }
 
 int CRagebot::CalcPointsCount() {
@@ -315,11 +301,7 @@ bool CRagebot::IsArmored(int hitbox) {
 	}
 }
 
-std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record) {
-	std::vector<AimPoint_t> points;
-
-	points.reserve(CalcPointsCount());
-
+void CRagebot::SelectPoints(LagRecord* record) {
 	for (int hitbox = 0; hitbox < HITBOX_MAX; hitbox++) {
 		if (!hitbox_enabled(hitbox) || (cvars.mp_damage_headshot_only->GetInt() > 0 && hitbox != HITBOX_HEAD))
 			continue;
@@ -330,31 +312,29 @@ std::vector<AimPoint_t> CRagebot::SelectPoints(LagRecord* record) {
 		if (!settings.auto_stop->get(1) && max_possible_damage < CalcMinDamage(record->player))
 			continue;
 
-		points.push_back(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false }));
+		thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false }));
 
 		if (multipoints_enabled(hitbox))
-			GetMultipoints(record, hitbox, hitbox == HITBOX_HEAD ? settings.head_point_scale->get() * 0.01f : settings.body_point_scale->get() * 0.01f, points);
+			GetMultipoints(record, hitbox, hitbox == HITBOX_HEAD ? settings.head_point_scale->get() * 0.01f : settings.body_point_scale->get() * 0.01f);
 	}
-
-	return points;
 }
 
-ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
+void CRagebot::SelectBestPoint(ScannedTarget_t* target) {
 	ScannedPoint_t best_body_point;
 	ScannedPoint_t best_head_point;
 
-	for (const auto& point : target.points) {
+	for (const auto& point : target->points) {
 		if (point.hitbox == HITBOX_HEAD) {
-			if (best_head_point.damage < target.minimum_damage || (point.priority > best_head_point.priority && point.damage > target.minimum_damage))
+			if (best_head_point.damage < target->minimum_damage || (point.priority > best_head_point.priority && point.damage > target->minimum_damage))
 				best_head_point = point;
 		}
 		else if (point.hitbox != HITBOX_HEAD) {
-			if (best_body_point.damage < target.minimum_damage || (point.priority > best_body_point.priority && point.damage > target.minimum_damage))
+			if (best_body_point.damage < target->minimum_damage || (point.priority > best_body_point.priority && point.damage > target->minimum_damage))
 				best_body_point = point;
 		}
 	}
 
-	int& delay = delayed_ticks[target.player->EntIndex()];
+	int& delay = delayed_ticks[target->player->EntIndex()];
 	if (best_body_point.damage > 1.f && best_head_point.damage > 1.f && settings.delay_shot->get() > 0) {
 		if (delay < settings.delay_shot->get())
 			best_head_point.damage = -1.f;
@@ -364,23 +344,22 @@ ScannedPoint_t CRagebot::SelectBestPoint(ScannedTarget_t target) {
 		delay = 0;
 	}
 
-	if (best_body_point.damage < target.player->m_iHealth() && best_head_point.damage > best_body_point.damage && (best_head_point.record->shooting || (settings.aim_head_if_safe->get() && best_head_point.safe_point)))
-		return best_head_point;
-
-	if ((target.player != last_target && ctx.tickbase_shift == 0 && config.ragebot.aimbot.doubletap->get() && !config.ragebot.aimbot.force_teleport->get())) {
-		if (best_body_point.damage > target.player->m_iHealth())
-			return best_body_point;
-
-		if (best_head_point.damage < target.player->m_iHealth())
-			return best_body_point;
-
-		return best_head_point;
+	if (best_body_point.damage < target->player->m_iHealth() && best_head_point.damage > best_body_point.damage && (best_head_point.record->shooting || (settings.aim_head_if_safe->get() && best_head_point.safe_point))) {
+		target->best_point = best_head_point;
+		return;
 	}
 
-	if (best_body_point.damage > target.minimum_damage)
-		return best_body_point;
+	if ((target->player != last_target && ctx.tickbase_shift == 0 && config.ragebot.aimbot.doubletap->get() && !config.ragebot.aimbot.force_teleport->get())) {
+		if (best_body_point.damage > target->player->m_iHealth() || best_head_point.damage < target->player->m_iHealth()) {
+			target->best_point = best_body_point;
+			return;
+		}
 
-	return best_head_point;
+		target->best_point = best_head_point;
+		return;
+	}
+
+	target->best_point = (best_body_point.damage > target->minimum_damage) ? best_body_point : best_head_point;
 }
 
 void CRagebot::CreateThreads() {
@@ -404,14 +383,17 @@ void CRagebot::TerminateThreads() {
 
 void CRagebot::ScanTargets() {
 	scanned_targets.clear();
-	scanned_targets.reserve(targets.size());
 
-	selected_targets = targets.size();
-	scan_condition.notify_one();
+	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
 
-	{
-		std::unique_lock<std::mutex> lock(target_mutex);
-		result_condition.wait(lock, [this]() { return scanned_targets.size() == selected_targets; });
+		if (!player || !player->IsAlive() || player->IsTeammate() || player->m_bDormant() || player->m_bGunGameImmunity())
+			continue;
+
+		if (frametime_issues && (i + ctx.cmd->command_number % 2) % 2 == 0)
+			continue;
+
+		ScanTarget(player);
 	}
 }
 
@@ -419,42 +401,80 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 	while (true) {
 		std::unique_lock<std::mutex> scan_lock(Ragebot->target_mutex);
 
-		Ragebot->scan_condition.wait(scan_lock, []() { return !Ragebot->targets.empty() || Ragebot->remove_threads; });
+		Ragebot->scan_condition.wait(scan_lock, []() { return !Ragebot->thread_work.empty() || Ragebot->remove_threads; });
 
-		if (Ragebot->remove_threads) {
+		if (Ragebot->remove_threads)
 			break;
-		}
 
-		CBasePlayer* target = Ragebot->targets.front();
-		Ragebot->targets.pop();
+		AimPoint_t point = Ragebot->thread_work.front();
+		Ragebot->thread_work.pop();
 		scan_lock.unlock();
-		
+
 		Ragebot->scan_condition.notify_one();
 
-		ScannedTarget_t scan = Ragebot->ScanTarget(target);
+		if (config.ragebot.aimbot.show_aimpoints->get())
+			DebugOverlay->AddBoxOverlay(point.point, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(0, 0, 0), 255, 255, 255, 200, GlobalVars->interval_per_tick * 2);
 
-		std::unique_lock<std::mutex> lock(Ragebot->scan_mutex);
-		Ragebot->scanned_targets.emplace_back(scan);
-		lock.unlock();
+		CBasePlayer* target = Ragebot->current_record->player;
 
-		if (Ragebot->scanned_targets.size() >= Ragebot->selected_targets)
+		FireBulletData_t bullet;
+		if (AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, point.point, bullet, target)) {
+			int priority = 2;
+			bool jitter_safe = false;
+			if (point.multipoint)
+				priority--;
+
+			if (EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->opposite_matrix, HitboxToDamagegroup(point.hitbox)) &&
+				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->clamped_matrix, HitboxToDamagegroup(point.hitbox))) {
+
+				priority += 2;
+				jitter_safe = true;
+			}
+
+			if (point.hitbox >= HITBOX_PELVIS && point.hitbox <= HITBOX_UPPER_CHEST)
+				priority += 2;
+
+			if (Ragebot->current_record->shooting)
+				priority += 2;
+			else if (Ragebot->current_record->m_angEyeAngles.pitch < 10.f) // aim at shitty defensive aa
+				priority += 1;
+
+			ScannedPoint_t sc_point;
+			sc_point.damage = bullet.damage;
+			sc_point.hitbox = point.hitbox;
+			std::memcpy(sc_point.impacts, bullet.impacts, sizeof(Vector) * 5);
+			sc_point.num_impacts = bullet.num_impacts;
+			sc_point.point = point.point;
+			sc_point.priority = priority;
+			sc_point.record = Ragebot->current_record;
+			sc_point.safe_point = jitter_safe;
+
+			if (bullet.damage > 5.f)
+				Exploits->block_charge = true;
+
+			std::unique_lock<std::mutex> result_lock(Ragebot->scan_mutex);
+			Ragebot->result_target->points.push_back(sc_point);
+		}
+
+		Ragebot->scanned_points++;
+		if (Ragebot->scanned_points >= Ragebot->selected_points)
 			Ragebot->result_condition.notify_one();
 	}
 
 	return 0;
 }
 
-ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
+void CRagebot::ScanTarget(CBasePlayer* target) {
 	std::queue<LagRecord*> records = SelectRecords(target);
 
 	if (records.empty())
-		return ScannedTarget_t{};
+		return;
 
 	float minimum_damage = CalcMinDamage(target);
 
-	ScannedTarget_t result;
-	result.player = target;
-	result.minimum_damage = minimum_damage;
+	ScannedTarget_t* result = &scanned_targets.emplace_back();
+	result->player = target;
+	result->minimum_damage = minimum_damage;
 
 	LagRecord* backup_record = LagCompensation->BackupData(target);
 
@@ -468,71 +488,35 @@ ScannedTarget_t CRagebot::ScanTarget(CBasePlayer* target) {
 		memcpy(target->GetCachedBoneData().Base(), record->clamped_matrix, sizeof(matrix3x4_t) * target->GetCachedBoneData().Count());
 		target->ForceBoneCache();
 
-		std::vector<AimPoint_t> points = SelectPoints(record);
+		current_record = record;
+		result_target = result;
+		SelectPoints(record);
+		selected_points = thread_work.size();
+		scanned_points = 0;
 
+		scan_condition.notify_one();
 
-		for (const auto& point : points) {
-			if (config.ragebot.aimbot.show_aimpoints->get())
-				DebugOverlay->AddBoxOverlay(point.point, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(0, 0, 0), 255, 255, 255, 200, GlobalVars->interval_per_tick * 2);
-
-			FireBulletData_t bullet;
-			if (!AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, point.point, bullet, target))
-				continue;
-
-			int priority = 2;
-			bool jitter_safe = false;
-			if (point.multipoint)
-				priority--;
-
-			if (EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, record->opposite_matrix, HitboxToDamagegroup(point.hitbox)) && 
-				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, record->clamped_matrix, HitboxToDamagegroup(point.hitbox))) {
-
-				priority += 2;
-				jitter_safe = true;
-			}
-
-			if (point.hitbox >= HITBOX_PELVIS && point.hitbox <= HITBOX_UPPER_CHEST)
-				priority += 2;
-
-			if (record->shooting)
-				priority += 2;
-			else if (record->m_angEyeAngles.pitch < 10.f) // aim at shitty defensive aa
-				priority += 1;
-			
-			ScannedPoint_t sc_point;
-			sc_point.damage = bullet.damage;
-			sc_point.hitbox = point.hitbox;
-			std::memcpy(sc_point.impacts, bullet.impacts, sizeof(Vector) * 5);
-			sc_point.num_impacts = bullet.num_impacts;
-			sc_point.point = point.point;
-			sc_point.priority = priority;
-			sc_point.record = record;
-			sc_point.safe_point = jitter_safe;
-
-			result.points.emplace_back(sc_point);
-
-			if (bullet.damage > 5.f)
-				Exploits->block_charge = true;
+		{
+			std::unique_lock<std::mutex> lock(target_mutex);
+			result_condition.wait(lock, [this]() { return scanned_points >= selected_points; });
 		}
 	}
 
 	LagCompensation->BacktrackEntity(backup_record);
 	delete backup_record;
 
-	result.best_point = SelectBestPoint(result);
-	if (!result.best_point.record || result.best_point.damage < 2)
-		return result;
+	SelectBestPoint(result);
+	if (!result->best_point.record || result->best_point.damage < 2)
+		return;
 
-	result.angle = Math::VectorAngles_p(result.best_point.point - ctx.shoot_position);
+	result->angle = Math::VectorAngles_p(result->best_point.point - ctx.shoot_position);
 
 	if (frametime_issues) { // fast hitchance approx
-		result.hitchance = min(10.f / ((ctx.shoot_position - result.best_point.point).Q_Length() * std::tan(EnginePrediction->WeaponInaccuracy() * settings.accuracy_boost->get())), 1.f);
+		result->hitchance = min(10.f / ((ctx.shoot_position - result->best_point.point).Q_Length() * std::tan(EnginePrediction->WeaponInaccuracy() * settings.accuracy_boost->get())), 1.f);
 	}
 	else {
-		result.hitchance = CalcHitchance(result.angle, result.best_point.record, HitboxToDamagegroup(result.best_point.hitbox));
+		result->hitchance = CalcHitchance(result->angle, result->best_point.record, HitboxToDamagegroup(result->best_point.hitbox));
 	}
-
-	return result;
 }
 
 void CRagebot::Run() {
@@ -586,8 +570,6 @@ void CRagebot::Run() {
 		DormantAimbot();
 
 	doubletap_stop = false;
-
-	FindTargets();
 
 	hook_info.disable_interpolation = true;
 	ScanTargets();

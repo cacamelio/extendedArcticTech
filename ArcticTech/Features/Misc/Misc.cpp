@@ -125,3 +125,27 @@ void Miscelleaneus::FastThrow() {
 			ctx.cmd->weaponselect = best_weapon->EntIndex();
 	}
 }
+
+void Miscelleaneus::AutomaticGrenadeRelease() {
+	static bool prev_release = false;
+	static Vector on_release_move;
+	static QAngle on_release_angle;
+
+	if (ctx.should_release_grenade && ctx.active_weapon && ctx.active_weapon->IsGrenade()) {
+		if (!prev_release) {
+			on_release_move = Vector(ctx.cmd->sidemove, ctx.cmd->forwardmove);
+			on_release_angle = ctx.cmd->viewangles;
+		}
+
+		ctx.cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
+
+		ctx.cmd->sidemove = on_release_move.x;
+		ctx.cmd->forwardmove = on_release_move.y;
+		ctx.cmd->viewangles = on_release_angle;
+	}
+	else if (!ctx.active_weapon || !ctx.active_weapon->IsGrenade()) {
+		ctx.should_release_grenade = false;
+	}
+
+	prev_release = ctx.should_release_grenade;
+}

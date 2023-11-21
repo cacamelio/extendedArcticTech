@@ -74,16 +74,20 @@ private:
 	int last_target_shot = 0;
 
 	// multithreading part
-	bool remove_threads = false;
+	std::atomic<bool> remove_threads = false;
 	int inited_threads = 0;
-	int selected_targets = 0;
+	std::atomic<int> selected_points = 0;
+	std::atomic<int> scanned_points = 0;
 	HANDLE threads[MAX_RAGEBOT_THREADS];
-	std::mutex scan_mutex{};
 	std::mutex target_mutex{};
+	std::mutex scan_mutex{};
 	std::condition_variable scan_condition;
 	std::condition_variable result_condition;
 
-	std::queue<CBasePlayer*> targets;
+	LagRecord* current_record;
+	std::queue<AimPoint_t> thread_work;
+	ScannedTarget_t* result_target;
+
 	std::vector<ScannedTarget_t> scanned_targets;
 	std::array<int, 64> delayed_ticks;
 
@@ -133,11 +137,6 @@ private:
 	}
 
 public:
-	inline void ClearTargets() {
-		while (targets.size() > 0)
-			targets.pop();
-	};
-
 	void				CalcSpreadValues();
 	void				AutoStop();
 	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);
@@ -147,18 +146,17 @@ public:
 	bool				IsArmored(int hitbox);
 
 	int					CalcPointsCount();
-	void				GetMultipoints(LagRecord* record, int hitbox, float scale, std::vector<AimPoint_t>& points);
-	void				FindTargets();
+	void				GetMultipoints(LagRecord* record, int hitbox, float scale);
 	std::queue<LagRecord*> SelectRecords(CBasePlayer* player);
-	std::vector<AimPoint_t> SelectPoints(LagRecord* record);
+	void				SelectPoints(LagRecord* record);
 	bool				CompareRecords(LagRecord* a, LagRecord* b);
 
 	void				CreateThreads();
 	void				TerminateThreads();
-	ScannedPoint_t		SelectBestPoint(ScannedTarget_t target);
+	void				SelectBestPoint(ScannedTarget_t* target);
 	void				ScanTargets();
 	static uintptr_t	ThreadScan(int threadId);
-	ScannedTarget_t		ScanTarget(CBasePlayer* target);
+	void				ScanTarget(CBasePlayer* target);
 
 	void				Run();
 	void				Zeusbot();

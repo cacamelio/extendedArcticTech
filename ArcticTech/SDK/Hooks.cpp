@@ -186,7 +186,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	CUserCmd_lua lua_cmd;
 	lua_cmd.command_number = cmd->command_number;
 	lua_cmd.tickcount = cmd->tick_count;
-	lua_cmd.move = Vector(cmd->sidemove, cmd->forwardmove, cmd->upmove);
+	lua_cmd.move = Vector(cmd->forwardmove, cmd->sidemove, cmd->upmove);
 	lua_cmd.viewangles = cmd->viewangles;
 	lua_cmd.random_seed = cmd->random_seed;
 	lua_cmd.buttons = cmd->buttons;
@@ -196,9 +196,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	}
 
 	cmd->buttons = lua_cmd.buttons;
-	cmd->sidemove = lua_cmd.move.x;
-	cmd->forwardmove = lua_cmd.move.y;
-	cmd->upmove = lua_cmd.move.z;
+	cmd->sidemove = lua_cmd.move.y;
+	cmd->forwardmove = lua_cmd.move.x;
 	cmd->tick_count = lua_cmd.tickcount;
 	cmd->viewangles = lua_cmd.viewangles;
 
@@ -210,7 +209,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			cmd->buttons &= ~IN_JUMP;
 	}
 
-	if (config.misc.movement.quick_stop->get() && (cmd->buttons & (IN_MOVELEFT | IN_MOVERIGHT | IN_FORWARD | IN_BACK | IN_JUMP)) == 0 && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 256 && Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
+	if (config.misc.movement.quick_stop->get() && ((std::abs(cmd->forwardmove) + std::abs(cmd->sidemove)) <= 1.f || !(cmd->buttons & (IN_FORWARD | IN_BACK | IN_LEFT | IN_RIGHT))) && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 256 && Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
 		Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 		QAngle direction = Math::VectorAngles(vec_speed);
 
@@ -231,9 +230,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AntiAim->FakeDuck();
 	AntiAim->JitterMove();
 	Miscelleaneus::AutoStrafe();
-
-	if (ctx.should_release_grenade && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled())
-		ctx.cmd->buttons &= ~IN_ATTACK;
+	Miscelleaneus::AutomaticGrenadeRelease();
 
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
@@ -423,7 +420,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	//Console->Log(std::format("{}\t{}\t{}\t{}", bSendPacket, ctx.lc_exploit_change, ctx.lc_exploit, Exploits->charged_command));
 
 	ctx.teleported_last_tick = false;
-	ctx.should_release_grenade = false;
 
 	verified->cmd = *cmd;
 	verified->crc = cmd->GetChecksum();
@@ -508,7 +504,6 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 	LagCompensation->Reset();
 	AnimationSystem->ResetInterpolation();
 	ShotManager->Reset();
-	Ragebot->ClearTargets();
 
 	oLevelShutdown(thisptr);
 }
@@ -683,8 +678,14 @@ void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
 	}
 }
 
-bool __fastcall hkShouldSkipAnimationFrame(void* thisptr, void* edx) {
-	return false;
+bool __fastcall hkShouldSkipAnimationFrame(CBasePlayer* thisptr, void* edx) {
+	if (!thisptr->IsPlayer())
+		return oShouldSkipAnimationFrame(thisptr, edx);
+
+	if (Cheat.LocalPlayer == thisptr || !thisptr->IsTeammate())
+		return false;
+
+	return oShouldSkipAnimationFrame(thisptr, edx);
 }
 
 bool __fastcall hkShouldInterpolate(CBasePlayer* thisptr, void* edx) {

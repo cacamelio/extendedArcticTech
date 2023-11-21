@@ -126,7 +126,7 @@ void Miscelleaneus::CompensateThrowable() {
 	if (!weapon->IsGrenade())
 		return;
 
-	if (config.misc.movement.compensate_throwable->get(0)) {
+	if (config.misc.movement.compensate_throwable->get(0) && config.misc.movement.auto_strafe->get()) {
 		CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(weapon);
 		auto weaponData = weapon->GetWeaponInfo();
 

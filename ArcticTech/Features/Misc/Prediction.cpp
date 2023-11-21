@@ -82,8 +82,8 @@ void CPrediction::Start(CUserCmd* cmd) {
 	Prediction->CheckMovingGround(Cheat.LocalPlayer, GlobalVars->frametime);
 	Prediction->SetLocalViewAngles(cmd->viewangles);
 
-	RunPreThink(Cheat.LocalPlayer);
-	RunThink(Cheat.LocalPlayer);
+	//RunPreThink(Cheat.LocalPlayer);
+	//RunThink(Cheat.LocalPlayer);
 
 	MoveHelper->SetHost(Cheat.LocalPlayer);
 	Prediction->SetupMove(Cheat.LocalPlayer, cmd, MoveHelper, &moveData);
@@ -92,7 +92,7 @@ void CPrediction::Start(CUserCmd* cmd) {
 
 	MoveHelper->ProcessImpacts();
 
-	Cheat.LocalPlayer->PostThink();
+	//Cheat.LocalPlayer->PostThink();
 
 	Cheat.LocalPlayer->m_flVelocityModifier() = backup_velocity_modifier;
 

@@ -175,7 +175,7 @@ bool CMenu::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_RBUTTONDBLCLK:
         return true;
     default:
-        return false;
+        return ImGui::GetIO().WantTextInput;
     }
 }
 
