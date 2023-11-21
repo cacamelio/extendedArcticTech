@@ -643,9 +643,8 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
-		//if (Cheat.InGame) {
-		//	EngineClient->FireEvents();
-		//}
+		if (Cheat.InGame)
+			EngineClient->FireEvents();
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
