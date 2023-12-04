@@ -5,7 +5,7 @@
 #include "Matrix.h"
 #include "../Interfaces/IEngineTrace.h"
 
-#define MAXSTUDIOBONES		256		// total bones actually used
+#define MAXSTUDIOBONES		128		// total bones actually used (actually 256, but for optimization reasons we will use 90, player uses 86)
 
 #define BONE_CALCULATE_MASK			0x1F
 #define BONE_PHYSICALLY_SIMULATED	0x01	// bone is physically simulated when physics are active

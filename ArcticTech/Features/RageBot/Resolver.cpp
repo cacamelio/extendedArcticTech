@@ -92,21 +92,21 @@ void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
 	float negYaw = Math::AngleNormalize(eyeYaw - player->GetMaxDesyncDelta());
 
 	// zero delta
-	*animstate = record->unupdated_animstate;
+	std::memcpy(animstate, AnimationSystem->GetUnupdatedAnimstate(player->EntIndex()), sizeof(CCSGOPlayerAnimationState));
 	animstate->flFootYaw = zeroYaw;
 
 	player->UpdateAnimationState(animstate, record->m_angEyeAngles, true);
 	memcpy(record->resolver_data.animlayers[0], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	// positive delta
-	*animstate = record->unupdated_animstate;
+	std::memcpy(animstate, AnimationSystem->GetUnupdatedAnimstate(player->EntIndex()), sizeof(CCSGOPlayerAnimationState));
 	animstate->flFootYaw = posYaw;
 
 	player->UpdateAnimationState(animstate, record->m_angEyeAngles, true);
 	memcpy(record->resolver_data.animlayers[1], player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 
 	// negative delta
-	*animstate = record->unupdated_animstate;
+	std::memcpy(animstate, AnimationSystem->GetUnupdatedAnimstate(player->EntIndex()), sizeof(CCSGOPlayerAnimationState));
 	animstate->flFootYaw = negYaw;
 
 	player->UpdateAnimationState(animstate, record->m_angEyeAngles, true);

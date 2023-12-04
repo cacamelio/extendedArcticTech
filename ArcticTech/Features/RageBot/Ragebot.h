@@ -1,12 +1,12 @@
 #pragma once
+#include "../../SDK/Globals.h"
 #include "../../SDK/Misc/Studio.h"
 #include "LagCompensation.h"
-#include "../../SDK/Globals.h"
 
-#include <vector>
-#include <shared_mutex>
 #include <condition_variable>
 #include <queue>
+#include <shared_mutex>
+#include <vector>
 
 #define MAX_RAGEBOT_THREADS 8
 
@@ -79,8 +79,9 @@ private:
 	std::atomic<int> selected_points = 0;
 	std::atomic<int> scanned_points = 0;
 	HANDLE threads[MAX_RAGEBOT_THREADS];
-	std::mutex target_mutex{};
 	std::mutex scan_mutex{};
+	std::mutex result_mutex{};
+	std::mutex completed_mutex{};
 	std::condition_variable scan_condition;
 	std::condition_variable result_condition;
 
@@ -145,7 +146,6 @@ public:
 	weapon_settings_t	GetWeaponSettings(int weaponId);
 	bool				IsArmored(int hitbox);
 
-	int					CalcPointsCount();
 	void				GetMultipoints(LagRecord* record, int hitbox, float scale);
 	std::queue<LagRecord*> SelectRecords(CBasePlayer* player);
 	void				SelectPoints(LagRecord* record);

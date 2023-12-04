@@ -148,8 +148,9 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		return;
 	
 	record->player = player;
-	record->unupdated_animstate = *animstate;
 	record->m_vecAbsOrigin = player->m_vecOrigin();
+
+	unupdated_animstate[idx] = *animstate;
 
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;
@@ -177,9 +178,9 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	record->animlayers[12].m_flWeight = 0.f;
 	auto pose_params = player->m_flPoseParameter();
 
-	player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
-
 	if (!player->IsTeammate()) {
+		player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
+
 		player->m_BoneAccessor().m_ReadableBones = 0;
 		player->m_BoneAccessor().m_WritableBones = 0;
 
@@ -193,7 +194,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	if (!player->IsTeammate()) {
 		Resolver->Run(player, record, records);
 
-		*animstate = record->unupdated_animstate;
+		*animstate = unupdated_animstate[idx];
 
 		Resolver->Apply(record);
 		player->UpdateClientSideAnimation();

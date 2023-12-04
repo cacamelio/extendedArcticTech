@@ -226,7 +226,7 @@ void CMenu::SetupUI() {
 	config.misc.movement.auto_jump = movement->AddCheckBox("Auto jump");
 	config.misc.movement.auto_strafe = movement->AddCheckBox("Auto strafe");
 	config.misc.movement.auto_strafe_smooth = movement->AddSliderInt("Auto strafe smooth", 0, 100, 50, "%d%%");
-	config.misc.movement.compensate_throwable = movement->AddMultiCombo("Compensate throwable", {"Velocity yaw jitter", "Velocity Z"});
+	config.misc.movement.compensate_throwable = movement->AddMultiCombo("Compensate throwable", {"Velocity yaw jitter", "Velocity Z", "Super toss"});
 	config.misc.movement.edge_jump = movement->AddCheckBox("Edge jump");
 	config.misc.movement.edge_jump_key = movement->AddKeyBind("Edge jump");
 	config.misc.movement.infinity_duck = movement->AddCheckBox("Infinity duck");

@@ -221,7 +221,15 @@ void CShotManager::OnNetUpdate() {
 			CBasePlayer* player = shot->record->player;
 			LagRecord* backup_record = &LagCompensation->records(player->EntIndex()).back(); // just updated player, so latest record is correct
 
-			LagCompensation->BacktrackEntity(shot->record, true);
+			LagCompensation->BacktrackEntity(shot->record);
+
+			QAngle backup_angle = player->m_angEyeAngles();
+
+			player->m_angEyeAngles() = shot->player_angle;
+			shot->record->BuildMatrix();
+			player->m_angEyeAngles() = backup_angle;
+
+			memcpy(player->GetCachedBoneData().Base(), shot->record->clamped_matrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
 
 			Console->ArcticTag();
 			if (shot->damage > 0) {
@@ -304,7 +312,7 @@ void CShotManager::OnNetUpdate() {
 							}
 						}
 
-						if (break_lag_comp) {
+						if (break_lag_comp || shot->safe_point) {
 							it->miss_reason = "lagcomp failure";
 							Console->ColorPrint("lagcomp failure\n", Color(200, 255, 0));
 						}
@@ -326,7 +334,7 @@ void CShotManager::OnNetUpdate() {
 	}
 }
 
-void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, LagRecord* record) {
+void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, bool safe, LagRecord* record) {
 	RegisteredShot_t* shot = &m_RegisteredShots.emplace_back();
 
 	shot->client_shoot_pos = shoot_pos;
@@ -334,13 +342,18 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 	shot->client_angle = Math::VectorAngles(target_pos - shoot_pos);
 	shot->shot_tick = GlobalVars->tickcount;
 	shot->hitchance = hitchance;
-	shot->backtrack = TIME_TO_TICKS(record->player->m_flSimulationTime() - record->m_flSimulationTime);
+	shot->backtrack = GlobalVars->tickcount - record->update_tick;
 	shot->record = record;
+	shot->player_angle = record->player->m_angEyeAngles();
 	shot->wanted_damage = damage;
 	shot->wanted_damagegroup = damagegroup;
+	shot->safe_point = safe;
 
 	for (auto& callback : Lua->hooks.getHooks(LUA_AIM_SHOT))
 		callback.func(shot);
+
+	while (m_RegisteredShots.size() > 8)
+		m_RegisteredShots.erase(m_RegisteredShots.begin());
 }
 
 void CShotManager::Reset() {

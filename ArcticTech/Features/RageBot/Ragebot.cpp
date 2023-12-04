@@ -259,31 +259,19 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale) {
 		Vector(0, 0, -width * scale),
 	};
 
-	for (const auto& vert : verts)
+	for (const auto& vert : verts) {
+		std::lock_guard<std::mutex> lock(scan_mutex);
 		thread_work.push(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
-
-	if (hitbox_id == HITBOX_HEAD)
-		thread_work.push(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
-}
-
-int CRagebot::CalcPointsCount() {
-	int count = 0;
-
-	for (int hitbox = 0; hitbox < HITBOX_MAX; hitbox++) {
-		if (!hitbox_enabled(hitbox))
-			continue;
-
-		count++;
-
-		if (multipoints_enabled(hitbox)) {
-			if (hitbox == HITBOX_HEAD)
-				count += 5;
-			else if (hitbox >= HITBOX_PELVIS && hitbox <= HITBOX_UPPER_CHEST)
-				count += 4;
-		}
+		selected_points++;
+		scan_condition.notify_one();
 	}
 
-	return count;
+	if (hitbox_id == HITBOX_HEAD) {
+		std::lock_guard<std::mutex> lock(scan_mutex);
+		thread_work.push(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
+		selected_points++;
+		scan_condition.notify_one();
+	}
 }
 
 bool CRagebot::IsArmored(int hitbox) {
@@ -312,7 +300,12 @@ void CRagebot::SelectPoints(LagRecord* record) {
 		if (!settings.auto_stop->get(1) && max_possible_damage < CalcMinDamage(record->player))
 			continue;
 
-		thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false }));
+		{
+			std::lock_guard<std::mutex> lock(scan_mutex);
+			thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false }));
+			selected_points++;
+			scan_condition.notify_one();
+		}
 
 		if (multipoints_enabled(hitbox))
 			GetMultipoints(record, hitbox, hitbox == HITBOX_HEAD ? settings.head_point_scale->get() * 0.01f : settings.body_point_scale->get() * 0.01f);
@@ -399,7 +392,7 @@ void CRagebot::ScanTargets() {
 
 uintptr_t CRagebot::ThreadScan(int threadId) {
 	while (true) {
-		std::unique_lock<std::mutex> scan_lock(Ragebot->target_mutex);
+		std::unique_lock<std::mutex> scan_lock(Ragebot->scan_mutex);
 
 		Ragebot->scan_condition.wait(scan_lock, []() { return !Ragebot->thread_work.empty() || Ragebot->remove_threads; });
 
@@ -409,8 +402,6 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 		AimPoint_t point = Ragebot->thread_work.front();
 		Ragebot->thread_work.pop();
 		scan_lock.unlock();
-
-		Ragebot->scan_condition.notify_one();
 
 		if (config.ragebot.aimbot.show_aimpoints->get())
 			DebugOverlay->AddBoxOverlay(point.point, Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(0, 0, 0), 255, 255, 255, 200, GlobalVars->interval_per_tick * 2);
@@ -452,13 +443,15 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 			if (bullet.damage > 5.f)
 				Exploits->block_charge = true;
 
-			std::unique_lock<std::mutex> result_lock(Ragebot->scan_mutex);
+			std::lock_guard<std::mutex> result_lock(Ragebot->result_mutex);
 			Ragebot->result_target->points.push_back(sc_point);
 		}
 
+		std::lock_guard completed_lock(Ragebot->completed_mutex);			
+
 		Ragebot->scanned_points++;
 		if (Ragebot->scanned_points >= Ragebot->selected_points)
-			Ragebot->result_condition.notify_one();
+			Ragebot->result_condition.notify_all();
 	}
 
 	return 0;
@@ -490,16 +483,19 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 
 		current_record = record;
 		result_target = result;
-		SelectPoints(record);
-		selected_points = thread_work.size();
+		selected_points = 0;
 		scanned_points = 0;
 
-		scan_condition.notify_one();
+		while (!thread_work.empty())
+			thread_work.pop();
 
-		{
-			std::unique_lock<std::mutex> lock(target_mutex);
-			result_condition.wait(lock, [this]() { return scanned_points >= selected_points; });
-		}
+		SelectPoints(record);
+
+		std::unique_lock<std::mutex> lock(completed_mutex);
+		result_condition.wait(lock, [this]() {
+			//std::lock_guard<std::mutex> completed_lock(completed_mutex);
+			return scanned_points >= selected_points; 
+		});
 	}
 
 	LagCompensation->BacktrackEntity(backup_record);
@@ -586,7 +582,7 @@ void CRagebot::Run() {
 		float flInaccuracyJumpInitial = ctx.weapon_info->_flInaccuracyUnknown;
 
 		float fSqrtMaxJumpSpeed = Math::Q_sqrt(cvars.sv_jump_impulse->GetFloat());
-		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.65f);
+		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.7f);
 
 		float flAirSpeedInaccuracy = Math::RemapVal(fSqrtVerticalSpeed,
 			fSqrtMaxJumpSpeed * 0.25f,
@@ -692,14 +688,14 @@ void CRagebot::Run() {
 			GetHitboxName(best_target.best_point.hitbox), 
 			static_cast<int>(best_target.best_point.damage), 
 			static_cast<int>(best_target.hitchance * 100), 
-			max(TIME_TO_TICKS(best_target.player->m_flSimulationTime() - record->m_flSimulationTime), 0),
+			GlobalVars->tickcount - record->update_tick,
 			static_cast<int>(record->resolver_data.side * best_target.player->GetMaxDesyncDelta()),
 			best_target.best_point.safe_point,
 			best_target.best_point.priority
 		));
 	}
 
-	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.record);
+	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, best_target.best_point.record);
 	if (config.visuals.chams.shot_chams->get()) {
 		Chams->AddShotChams(best_target.best_point.record);
 	}
@@ -734,13 +730,15 @@ void CRagebot::Zeusbot() {
 			if (distance > 155 * 155)
 				continue;
 
-			LagCompensation->BacktrackEntity(record);
+			LagCompensation->BacktrackEntity(record, false);
+			record->BuildMatrix();
+
 			const Vector points[]{
-				player->GetHitboxCenter(HITBOX_STOMACH),
-				player->GetHitboxCenter(HITBOX_CHEST),
-				player->GetHitboxCenter(HITBOX_UPPER_CHEST),
-				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM),
-				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM)
+				player->GetHitboxCenter(HITBOX_STOMACH, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_CHEST, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_UPPER_CHEST, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_LEFT_UPPER_ARM, record->clamped_matrix),
+				player->GetHitboxCenter(HITBOX_RIGHT_UPPER_ARM, record->clamped_matrix)
 			};
 
 			for (const auto& point : points) {

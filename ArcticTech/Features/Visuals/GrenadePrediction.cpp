@@ -6,6 +6,121 @@
 #include <algorithm>
 #include <string>
 
+Vector RayCircleIntersection(Vector ray, Vector center, float r) {
+	// (x - center.x) ** 2 + (y - center.y) ** 2 = r ** 2
+	// ray.y * x = ray.x * y 
+	// if std::abs(ray.x) > std::abs(ray.y): y = (ray.y / ray.x) * x else x = (ray.x / ray.y) * y
+
+	if (std::abs(ray.x) > std::abs(ray.y)) {
+		float k = ray.y / ray.x;
+
+		// (x - center.x) ** 2 + ((ray.y / ray.x) * x - center.y) ** 2 = r ** 2
+		// x ** 2 - 2 * x * center.x + center.x ** 2 + (ray.y / ray.x * x) ** 2 - 2 * (ray.y / ray.x) * x * center.y + center.y * center.y - r ** 2 = 0
+		float a = 1 + k * k;
+		float b = -2 * center.x - 2 * k * center.y;
+		float c = center.Length2DSqr() - r * r;
+
+		float d = b * b - 4 * a * c;
+
+		if (d < 0) { // no intersections, find nearest
+			Vector nearest_on_ray = ray * center.Dot(ray);
+			Vector diff = (nearest_on_ray - center).Normalized();
+
+			return center + diff * r;
+		}
+		else if (d < 0.001f) {
+			float x = -b / (2 * a);
+			float y = k * x;
+			return Vector(x, y);
+		}
+
+		float d_sqrt = Math::Q_sqrt(d);
+
+		float x = (-b + d_sqrt) / (2 * a);
+		float y = k * x;
+
+		Vector dir1(x, y);
+
+		x = (-b - d_sqrt) / (2 * a);
+		y = k * x;
+
+		Vector dir2(x, y);
+
+		if (ray.Dot(dir1) > ray.Dot(dir2))
+			return dir1;
+
+		return dir2;
+	}
+	else {
+		float k = ray.x / ray.y;
+
+		// (k * y - center.x) ** 2 + (y - center.y) ** 2 = r ** 2
+		// (y * k) ** 2 - 2 * k * y * center.x + center.x ** 2 + y ** 2 - 2 * y * center.y + center.y ** 2 - r ** 2 = 0
+		float a = 1 + k * k;
+		float b = -2 * center.y - 2 * k * center.x;
+		float c = center.Length2DSqr() - r * r;
+
+		float d = b * b - 4 * a * c;
+
+		if (d < 0) { // no intersections, find nearest
+			Vector nearest_on_ray = ray * center.Dot(ray);
+			Vector diff = (nearest_on_ray - center).Normalized();
+
+			return center + diff * r;
+		}
+		else if (d < 0.001f) {
+			float y = -b / (2 * a);
+			float x = k * y;
+			return Vector(x, y);
+		}
+
+		float d_sqrt = Math::Q_sqrt(d);
+
+		float y = (-b + d_sqrt) / (2 * a);
+		float x = k * y;
+
+		Vector dir1(x, y);
+
+		y = (-b - d_sqrt) / (2 * a);
+		x = k * y;
+
+		Vector dir2(x, y);
+
+		if (ray.Dot(dir1) > ray.Dot(dir2))
+			return dir1;
+
+		return dir2;
+	}
+}
+
+float CalculateThrowYaw(const Vector& wish_dir, const Vector& vel, float throw_velocity, float throw_strength) {
+	Vector dir_normalized = wish_dir;
+	dir_normalized.z = 0;
+	dir_normalized.Normalize();
+
+	float cos_pitch = dir_normalized.Dot(wish_dir) / wish_dir.Q_Length();
+
+	//Vector dir = (wish_dir - vel * 1.25f) / (std::clamp(throw_velocity * 0.9f, 15.f, 750.f) * (std::clamp(throw_strength, 0.f, 1.f) * 0.7f + 0.3f));
+	//return Math::VectorAngles_p(dir).yaw;
+
+	Vector real_dir = RayCircleIntersection(dir_normalized, vel * 1.25f, std::clamp(throw_velocity * 0.9f, 15.f, 750.f) * (std::clamp(throw_strength, 0.f, 1.f) * 0.7f + 0.3f) * cos_pitch) - vel * 1.25f;
+	return Math::VectorAngles_p(real_dir).yaw;
+}
+
+float CalculateThrowPitch(const Vector& wish_dir, float wish_z_vel, const Vector& vel, float throw_velocity, float throw_strength) {
+	float speed = std::clamp(throw_velocity * 0.9f, 15.f, 750.f) * (std::clamp(throw_strength, 0.f, 1.f) * 0.7f + 0.3f);
+	
+	Vector cur_vel = vel * 1.25f + wish_dir * speed;
+	Vector wish_vel = Vector(vel.x, vel.y, wish_z_vel) * 1.25f + wish_dir * speed;
+
+	QAngle ang1 = Math::VectorAngles(cur_vel);
+	QAngle ang2 = Math::VectorAngles(wish_vel);
+
+	float ang_diff = ang2.pitch - ang1.pitch;
+
+	return ang_diff * (std::cos(DEG2RAD(ang_diff)) + 1) * 0.5f;
+}
+
 void GrenadePrediction::PrecacheParticles() {
 	Effects->PrecacheParticleSystem("env_fire_tiny_b");
 }
@@ -59,26 +174,26 @@ void GrenadePrediction::Start() {
 	EngineClient->GetViewAngles(&viewAngles);
 	Vector eyePosition = localPlayer->GetAbsOrigin() + localPlayer->m_vecViewOffset();
 
-	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
+	const float flThrowStrength = std::clamp(grenade->m_flThrowStrength(), 0.f, 1.f);
 
-	if (config.misc.movement.compensate_throwable->get(1) && !(localPlayer->m_fFlags() & FL_ONGROUND)) {
-		Vector ideal_vel = vel;
-		ideal_vel.z = std::clamp(vel.z, -120.f, 120.f);
-
-		float diff = vel.z - ideal_vel.z;
-
-		float ang_diff = RAD2DEG(std::acosf(vel.Dot(ideal_vel) / (vel.Q_Length() * ideal_vel.Q_Length())));
-
-		if (diff < 0.f)
-			ang_diff = -ang_diff;
-
-		viewAngles.pitch += ang_diff;
+	if (config.misc.movement.compensate_throwable->get(1) && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
+		viewAngles.pitch += CalculateThrowPitch(Math::AngleVectors(viewAngles), config.misc.movement.compensate_throwable->get(2) ? 0.f : std::clamp(vel.z, -120.f, 120.f), vel, weaponData->flThrowVelocity, flThrowStrength);
 	}
+
+	if (config.misc.movement.compensate_throwable->get(0) && config.misc.movement.compensate_throwable->get(2)) {
+		Vector direction = Math::AngleVectors(viewAngles);
+		Vector base_vel = direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (flThrowStrength * 0.7f + 0.3f));
+		Vector curent_vel = vel * 1.25f + base_vel;
+
+		if (curent_vel.Dot(direction) > 0.f)
+			viewAngles.yaw = CalculateThrowYaw(direction, vel, weaponData->flThrowVelocity, flThrowStrength);
+	}
+
+
+	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
 
 	Vector direction;
 	Utils::AngleVectors(viewAngles, direction);
-
-	const float flThrowStrength = std::clamp(grenade->m_flThrowStrength(), 0.f, 1.f);
 
 	if (vel.LengthSqr() < 20)
 		vel = Vector();

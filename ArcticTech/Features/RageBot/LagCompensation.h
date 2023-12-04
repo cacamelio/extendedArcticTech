@@ -1,5 +1,5 @@
 #pragma once
-#include <vector>
+
 #include "../../SDK/Misc/Vector.h"
 #include "../../SDK/Misc/QAngle.h"
 #include "../../SDK/Misc/Matrix.h"
@@ -11,10 +11,10 @@ class CBasePlayer;
 struct LagRecord {
 	CBasePlayer* player = nullptr;
 
-	matrix3x4_t bone_matrix[128];
-	matrix3x4_t aim_matrix[128];
-	matrix3x4_t clamped_matrix[128];
-	matrix3x4_t opposite_matrix[128];
+	matrix3x4_t bone_matrix[MAXSTUDIOBONES];
+	matrix3x4_t aim_matrix[MAXSTUDIOBONES];
+	matrix3x4_t clamped_matrix[MAXSTUDIOBONES];
+	matrix3x4_t opposite_matrix[MAXSTUDIOBONES];
 
 	AnimationLayer animlayers[13];
 
@@ -46,7 +46,6 @@ struct LagRecord {
 	bool bone_matrix_filled = false;
 
 	ResolverData_t resolver_data;
-	CCSGOPlayerAnimationState unupdated_animstate;
 
 	LagRecord* prev_record;
 
@@ -57,6 +56,7 @@ class CLagCompensation {
 	std::array<std::deque<LagRecord>, 64> lag_records;
 	float max_simulation_time[64];
 	int last_update_tick[64];
+
 public:
 
 	__forceinline std::deque<LagRecord>& records(int index) { return lag_records[index]; };

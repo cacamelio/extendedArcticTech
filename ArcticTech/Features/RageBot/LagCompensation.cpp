@@ -155,7 +155,7 @@ void CLagCompensation::OnNetUpdate() {
 				}
 			}
 
-			while (records.size() > (TIME_TO_TICKS(0.4f) + 13)) { // super puper proper lagcomp
+			while (records.size() > (pl->IsTeammate() ? 12 : (TIME_TO_TICKS(0.4f) + 13))) { // super puper proper lagcomp
 				records.pop_front();
 			}
 		}

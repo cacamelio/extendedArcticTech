@@ -209,7 +209,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			cmd->buttons &= ~IN_JUMP;
 	}
 
-	if (config.misc.movement.quick_stop->get() && ((std::abs(cmd->forwardmove) + std::abs(cmd->sidemove)) <= 1.f || !(cmd->buttons & (IN_FORWARD | IN_BACK | IN_LEFT | IN_RIGHT))) && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 256 && Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
+	if (config.misc.movement.quick_stop->get() && ((std::abs(cmd->forwardmove) + std::abs(cmd->sidemove)) <= 1.f && !(cmd->buttons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP))) && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 256 && Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
 		Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 		QAngle direction = Math::VectorAngles(vec_speed);
 
@@ -331,8 +331,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (Exploits->TeleportThisTick())
 		ctx.send_packet = false;
 
-	if (ctx.send_packet && !(Exploits->GetExploitType() == CExploits::E_HideShots && Exploits->shot_cmd == cmd->command_number)) {
-		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) >= 5)
+	if (ctx.send_packet) {
+		if (!config.antiaim.angles.body_yaw_options->get(1) || Utils::RandomInt(0, 10) >= 6)
 			AntiAim->jitter = !AntiAim->jitter;
 
 		ctx.breaking_lag_compensation = (ctx.local_sent_origin - Cheat.LocalPlayer->m_vecOrigin()).LengthSqr() > 4096;
@@ -638,8 +638,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
-		if (Cheat.InGame)
-			EngineClient->FireEvents();
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
@@ -1144,6 +1142,9 @@ bool __fastcall hkSVCMsg_TempEntities(CClientState* thisptr, void* edx, const vo
 	thisptr->m_nMaxClients = 1;
 	bool result = oSVCMsg_TempEntities(thisptr, edx, msg);
 	thisptr->m_nMaxClients = old_maxclients;
+
+	EngineClient->FireEvents();
+
 	return result;
 }
 

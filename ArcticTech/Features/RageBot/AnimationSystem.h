@@ -15,6 +15,7 @@ class CAnimationSystem {
 	};
 
 	interpolate_data_t interpolate_data[64];
+	CCSGOPlayerAnimationState unupdated_animstate[64]; // keep unupdated unimstates here, not in records
 
 	matrix3x4_t local_matrix[128];
 	matrix3x4_t prediction_matrix[128];
@@ -36,6 +37,7 @@ public:
 	void	BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld, int maxBones, int mask, AnimationLayer* animlayers);
 	void	DisableInterpolationFlags(CBasePlayer* player);
 	void	UpdateAnimations(CBasePlayer* player, LagRecord* record, std::deque<LagRecord>& records);
+	CCSGOPlayerAnimationState* GetUnupdatedAnimstate(int id) { return &unupdated_animstate[id]; };
 
 	Vector	GetInterpolated(CBasePlayer* player);
 	void	RunInterpolation();

@@ -5,6 +5,7 @@
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
 #include "../../Utils/Utils.h"
+#include "../Visuals/GrenadePrediction.h"
 
 __forceinline float GetYaw(float a1, float a2) {
 
@@ -118,48 +119,39 @@ void Miscelleaneus::AutoStrafe() {
 }
 
 void Miscelleaneus::CompensateThrowable() {
-	if (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)
-		return;
-
 	auto weapon = Cheat.LocalPlayer->GetActiveWeapon();
 
 	if (!weapon->IsGrenade())
 		return;
 
-	if (config.misc.movement.compensate_throwable->get(0) && config.misc.movement.auto_strafe->get()) {
-		CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(weapon);
-		auto weaponData = weapon->GetWeaponInfo();
+	CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(weapon);
+	auto weaponData = weapon->GetWeaponInfo();
 
-		Vector direction = Math::AngleVectors(ctx.cmd->viewangles);
+	if (!weaponData)
+		return;
+
+	QAngle vangle;
+	EngineClient->GetViewAngles(&vangle);
+
+	if (config.misc.movement.compensate_throwable->get(0) && config.misc.movement.auto_strafe->get()) {
+		Vector direction = Math::AngleVectors(vangle);
 
 		Vector smoothed_velocity = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
 		Vector base_vel = direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (grenade->m_flThrowStrength() * 0.7f + 0.3f));
-		Vector smoothed_grenade_vel = base_vel + smoothed_velocity * 1.25f;
-		Vector current_grenade_vel = base_vel + ctx.local_velocity * 1.25f;
+		Vector curent_vel = ctx.local_velocity * 1.25f + base_vel;
 
-		QAngle smoothed_angle = Math::VectorAngles(smoothed_grenade_vel);
-		QAngle vel_angle = Math::VectorAngles(current_grenade_vel);
+		Vector target_vel = (base_vel + smoothed_velocity * 1.25f).Normalized();
+		if (curent_vel.Dot(direction) > 0.f && config.misc.movement.compensate_throwable->get(2))
+			target_vel = direction;
 
-		float angle_diff = Math::AngleDiff(smoothed_angle.yaw, vel_angle.yaw);
+		float throw_yaw = CalculateThrowYaw(target_vel, ctx.local_velocity, weaponData->flThrowVelocity, grenade->m_flThrowStrength());
 
-		float sign = angle_diff < 0.f ? -1 : 1;
-		if (abs(angle_diff) < 45.f)
-			ctx.cmd->viewangles.yaw += angle_diff + std::tan(DEG2RAD(angle_diff)) * angle_diff * sign;
+		if (config.misc.movement.compensate_throwable->get(2) || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+			ctx.cmd->viewangles.yaw = throw_yaw;
 	}
 
 	if (config.misc.movement.compensate_throwable->get(1)) {
-		Vector vel = Cheat.LocalPlayer->m_vecVelocity();
-		Vector ideal_vel = vel;
-		ideal_vel.z = std::clamp(vel.z, -120.f, 120.f);
-
-		float diff = vel.z - ideal_vel.z;
-
-		float ang_diff = RAD2DEG(std::acosf(vel.Dot(ideal_vel) / (vel.Q_Length() * ideal_vel.Q_Length())));
-
-		if (diff < 0.f)
-			ang_diff = -ang_diff;
-
-		ctx.cmd->viewangles.pitch += ang_diff;
+		ctx.cmd->viewangles.pitch += CalculateThrowPitch(Math::AngleVectors(ctx.cmd->viewangles), config.misc.movement.compensate_throwable->get(2) ? 0.f : std::clamp(ctx.local_velocity.z, -120.f, 120.f), ctx.local_velocity, weaponData->flThrowVelocity, grenade->m_flThrowStrength());
 	}
 }

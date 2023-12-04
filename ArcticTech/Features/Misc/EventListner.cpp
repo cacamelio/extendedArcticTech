@@ -78,7 +78,10 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		LagCompensation->Invalidate(user_id_pl);
 		ESPInfo[user_id_pl].m_flLastUpdateTime = 0.f;
 		ESPInfo[user_id_pl].m_nHealth = 0;
-		PlayerResource->m_bAlive()[user_id_pl] = false;
+		if (PlayerResource)
+			PlayerResource->m_bAlive()[user_id_pl] = false;
+
+		Ragebot->CalcSpreadValues(); // maybe we got bad values previously?
 	}
 	else if (name == "round_start") {
 		LagCompensation->Reset();
