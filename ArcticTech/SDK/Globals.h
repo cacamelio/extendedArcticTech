@@ -18,6 +18,7 @@ struct HooksInfo_t {
 	bool disable_interpolation = false;
 	bool in_draw_static_props = false;
 	bool disable_clamp_bones = false;
+	bool read_packets = false;
 };
 
 struct Ctx_t {
@@ -54,7 +55,7 @@ struct Ctx_t {
 	int corrected_tickbase = 0;
 
 	int lc_exploit = 0; // for tickbase correction
-	int lc_exploit_prev = false;
+	int lc_exploit_prev = 0;
 	int lc_exploit_change = 0;
 	int lc_exploit_diff = 0;
 

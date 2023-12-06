@@ -24,13 +24,26 @@ public:
     bool      m_bClient;                    // 0x0031
     bool      m_bRemoteClient;              // 0x0032
 
+    inline void store();
+    inline void restore();
 private:
     // 100 (i.e., tickcount is rounded down to this base and then the "delta" from this base is networked
     int       nTimestampNetworkingBase;
     // 32 (entindex() % nTimestampRandomizeWindow ) is subtracted from gpGlobals->tickcount to Set the networking basis, prevents
     //  all of the entities from forcing a new PackedEntity on the same tick (i.e., prevents them from getting lockstepped on this)
     int       nTimestampRandomizeWindow;
+
 };
+
+inline CGlobalVarsBase s_RestoreGlobalsBase;
+
+inline void CGlobalVarsBase::store() {
+    memcpy(&s_RestoreGlobalsBase, this, sizeof(CGlobalVarsBase));
+}
+
+inline void CGlobalVarsBase::restore() {
+    memcpy(this, &s_RestoreGlobalsBase, sizeof(CGlobalVarsBase));
+}
 
 class CClockDriftMgr
 {

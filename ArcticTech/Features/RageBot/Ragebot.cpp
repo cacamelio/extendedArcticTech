@@ -227,6 +227,13 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 	return target_records;
 }
 
+void CRagebot::AddPoint(const AimPoint_t& point) {
+	std::lock_guard<std::mutex> lock(scan_mutex);
+	thread_work.push(point);
+	selected_points++;
+	scan_condition.notify_one();
+}
+
 void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale) {
 	studiohdr_t* studiomodel = ModelInfoClient->GetStudioModel(record->player->GetModel());
 
@@ -259,18 +266,20 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale) {
 		Vector(0, 0, -width * scale),
 	};
 
-	for (const auto& vert : verts) {
-		std::lock_guard<std::mutex> lock(scan_mutex);
-		thread_work.push(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
-		selected_points++;
-		scan_condition.notify_one();
-	}
-
-	if (hitbox_id == HITBOX_HEAD) {
-		std::lock_guard<std::mutex> lock(scan_mutex);
-		thread_work.push(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
-		selected_points++;
-		scan_condition.notify_one();
+	switch (hitbox_id) {
+	case HITBOX_HEAD:
+		for (auto& vert : verts)
+			AddPoint(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
+		AddPoint(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
+		break;
+	case HITBOX_STOMACH:
+	case HITBOX_PELVIS:
+	case HITBOX_CHEST:
+	case HITBOX_UPPER_CHEST:
+		AddPoint(AimPoint_t{ Math::VectorTransform(verts[1], boneMatrix), hitbox_id, true });
+		AddPoint(AimPoint_t{ Math::VectorTransform(verts[2], boneMatrix), hitbox_id, true });
+		AddPoint(AimPoint_t{ Math::VectorTransform(verts[3], boneMatrix), hitbox_id, true });
+		break;
 	}
 }
 
@@ -302,7 +311,7 @@ void CRagebot::SelectPoints(LagRecord* record) {
 
 		{
 			std::lock_guard<std::mutex> lock(scan_mutex);
-			thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false }));
+			thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false}));
 			selected_points++;
 			scan_condition.notify_one();
 		}
@@ -410,10 +419,8 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 
 		FireBulletData_t bullet;
 		if (AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, point.point, bullet, target)) {
-			int priority = 2;
+			int priority = point.multipoint ? 0 : 1;
 			bool jitter_safe = false;
-			if (point.multipoint)
-				priority--;
 
 			if (EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->opposite_matrix, HitboxToDamagegroup(point.hitbox)) &&
 				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->clamped_matrix, HitboxToDamagegroup(point.hitbox))) {

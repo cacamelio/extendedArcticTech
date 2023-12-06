@@ -178,9 +178,9 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	record->animlayers[12].m_flWeight = 0.f;
 	auto pose_params = player->m_flPoseParameter();
 
-	if (!player->IsTeammate()) {
-		player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
+	player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
 
+	if (!player->IsTeammate()) {
 		player->m_BoneAccessor().m_ReadableBones = 0;
 		player->m_BoneAccessor().m_WritableBones = 0;
 

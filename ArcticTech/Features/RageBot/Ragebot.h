@@ -97,7 +97,6 @@ private:
 		{
 		case HITBOX_HEAD:
 			return settings.hitboxes->get(0);
-		case HITBOX_PELVIS:
 		case HITBOX_STOMACH:
 			return settings.hitboxes->get(2);
 		case HITBOX_CHEST:
@@ -113,8 +112,6 @@ private:
 			return settings.hitboxes->get(5);
 		case HITBOX_RIGHT_UPPER_ARM:
 		case HITBOX_LEFT_UPPER_ARM:
-		case HITBOX_LEFT_FOREARM:
-		case HITBOX_RIGHT_FOREARM:
 			return settings.hitboxes->get(3);
 		default:
 			return false;
@@ -126,7 +123,6 @@ private:
 		{
 		case HITBOX_HEAD:
 			return settings.multipoints->get(0);
-		case HITBOX_PELVIS:
 		case HITBOX_STOMACH:
 			return settings.multipoints->get(2);
 		case HITBOX_CHEST:
@@ -146,6 +142,7 @@ public:
 	weapon_settings_t	GetWeaponSettings(int weaponId);
 	bool				IsArmored(int hitbox);
 
+	void				AddPoint(const AimPoint_t& point);
 	void				GetMultipoints(LagRecord* record, int hitbox, float scale);
 	std::queue<LagRecord*> SelectRecords(CBasePlayer* player);
 	void				SelectPoints(LagRecord* record);

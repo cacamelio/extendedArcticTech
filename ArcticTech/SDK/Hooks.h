@@ -61,6 +61,7 @@ typedef void(__fastcall* tResetLatched)(CBasePlayer*, void*);
 typedef void(__fastcall* tGetExposureRange)(float*, float*);
 typedef void(__fastcall* tEstimateAbsVelocity)(CBaseEntity*, void*, Vector&);
 typedef bool(__fastcall* tInterpolatePlayer)(CBasePlayer*, void*, float);
+typedef bool(__fastcall* tCIsPaused)(CClientState*, void*);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -101,6 +102,7 @@ inline tResetLatched oResetLatched;
 inline tGetExposureRange oGetExposureRange;
 inline tEstimateAbsVelocity oEstimateAbsVelocity;
 inline tInterpolatePlayer oInterpolatePlayer;
+inline tCIsPaused oCIsPaused;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

@@ -603,8 +603,10 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	static auto oFrameStageNotify = (tFrameStageNotify)Hooks::ClientVMT->GetOriginal(37);
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 
+	static auto CL_ReadPackets = reinterpret_cast<void(__fastcall*)(bool)>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"));
+
 	switch (stage) {
-	case FRAME_RENDER_START:
+	case FRAME_RENDER_START: {
 		AnimationSystem->RunInterpolation();
 		Chams->UpdateSettings();
 		World->SunDirection();
@@ -621,7 +623,8 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
 
 		break;
-	case FRAME_RENDER_END:
+	}
+	case FRAME_RENDER_END: {
 		if (ctx.update_nightmode) {
 			World->Modulation();
 			ctx.update_nightmode = false;
@@ -632,7 +635,15 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 			World->RemoveBlood();
 			ctx.update_remove_blood = false;
 		}
+
+		//GlobalVars->store();
+		//hook_info.read_packets = true;
+		//CL_ReadPackets(false);
+		//hook_info.read_packets = false;
+		//GlobalVars->restore();
+
 		break;
+	}
 	case FRAME_NET_UPDATE_START:
 		ShotManager->OnNetUpdate();
 		break;
@@ -991,14 +1002,14 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	CCLCMsg_Move_t* moveMsg = reinterpret_cast<CCLCMsg_Move_t*>(*stack_pointer - 0x58);
 
-	auto new_commands = moveMsg->new_commands;
+	auto new_commands = moveMsg->new_commands + moveMsg->backup_commands;
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
-	moveMsg->new_commands = std::clamp(moveMsg->new_commands + ctx.lc_exploit, 0, 15);
-	moveMsg->backup_commands = 0;
+	moveMsg->new_commands = std::clamp(moveMsg->new_commands + ctx.lc_exploit, 1, 15);
+	//moveMsg->backup_commands = 0;
 
 	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++) {
-		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, to == next_cmd_nr))
+		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, true))
 			return false;
 
 		from = to;
@@ -1016,14 +1027,13 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	to_cmd = from_cmd;
 
 	to_cmd.command_number++;
-	to_cmd.tick_count += 200;
+	to_cmd.tick_count = INT_MAX;
 
-	for (int i = new_commands; i < moveMsg->new_commands; i++) {
+	for (int i = 0; i < ctx.lc_exploit; i++) {
 		WriteUserCmd(buf, &to_cmd, &from_cmd);
 
 		from_cmd = to_cmd;
 		to_cmd.command_number++;
-		to_cmd.tick_count++;
 	}
 
 	return true;
@@ -1174,6 +1184,15 @@ void __fastcall hkEstimateAbsVelocity(CBaseEntity* ent, void* edx, Vector& vel) 
 	oEstimateAbsVelocity(ent, edx, vel);
 }
 
+bool __fastcall hkCIsPaused(CClientState* state, void* edx) {
+	static auto cl_readpackets = Utils::PatternScan("engine.dll", "84 C0 75 ? FF 86");
+
+	if (_ReturnAddress() == cl_readpackets && hook_info.read_packets)
+		return true;
+
+	return oCIsPaused(state, edx);
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1252,6 +1271,7 @@ void Hooks::Initialize() {
 	oGetExposureRange = HookFunction<tGetExposureRange>(Utils::PatternScan("client.dll", "55 8B EC 51 80 3D ? ? ? ? ? 0F 57"), hkGetExposureRange);
 	oEstimateAbsVelocity = HookFunction<tEstimateAbsVelocity>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 ? 83 EC ? 56 8B F1 85 F6 74 ? 8B 06 8B 80 ? ? ? ? FF D0 84 C0 74 ? 8A 86"), hkEstimateAbsVelocity);
 	//oInterpolatePlayer = HookFunction<tInterpolatePlayer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC ? 56 8B F1 83 BE ? ? ? ? ? 0F 85"), hkInterpolatePlayer);
+	oCIsPaused = HookFunction<tCIsPaused>(Utils::PatternScan("engine.dll", "80 B9 ? ? ? ? ? 75 ? 80 3D"), hkCIsPaused);
 
 	EventListner->Register();
 
@@ -1321,4 +1341,5 @@ void Hooks::End() {
 	RemoveHook(oGetExposureRange, hkGetExposureRange);
 	RemoveHook(oEstimateAbsVelocity, hkEstimateAbsVelocity);
 	//RemoveHook(oInterpolatePlayer, hkInterpolatePlayer);
+	RemoveHook(oCIsPaused, hkCIsPaused);
 }
