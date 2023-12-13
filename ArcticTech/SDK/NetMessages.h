@@ -146,6 +146,8 @@ public:
 		}
 	}
 	bool OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg);
+
+	void ReadPackets();
 };
 
 extern CNetMessages* NetMessages;

@@ -31,6 +31,9 @@
 #include "../Features/ShotManager/ShotManager.h"
 #include "../Features/Visuals/PreserveKillfeed.h"
 
+#include "Misc/xorstr.h"
+
+
 GrenadePrediction NadePrediction;
 
 template <typename T>
@@ -128,6 +131,9 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Render->EndFrame();
 
+	if (config.misc.miscellaneous.ping_reducer->get() && Cheat.InGame && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive())
+		NetMessages->ReadPackets();
+
 	oHudUpdate(thisptr, edx, bActive);
 }
 
@@ -201,7 +207,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	cmd->tick_count = lua_cmd.tickcount;
 	cmd->viewangles = lua_cmd.viewangles;
 
-	if ((config.misc.movement.infinity_duck->get() && (cmd->buttons & IN_DUCK || Cheat.LocalPlayer->m_flDuckAmount() > 0.f)) || config.antiaim.misc.fake_duck->get())
+	if (config.misc.movement.infinity_duck->get() || config.antiaim.misc.fake_duck->get())
 		ctx.cmd->buttons |= IN_BULLRUSH;
 
 	if (config.misc.movement.auto_jump->get()) {
@@ -467,6 +473,10 @@ char* __fastcall hk_get_halloween_mask_model_addon( void* ecx, void* edx )
 
 bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count, const void* msg) {
 	static ConVar* cl_threaded_bone_setup = CVar->FindVar("cl_threaded_bone_setup");
+	static ConVar* cl_interp = CVar->FindVar("cl_interp");
+	static ConVar* cl_interp_ratio = CVar->FindVar("cl_interp_ratio");
+	static ConVar* net_earliertempents = CVar->FindVar("net_earliertempents");
+
 
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
@@ -481,6 +491,9 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		World->Smoke();
 
 		cl_threaded_bone_setup->SetInt(1);
+		net_earliertempents->SetInt(1);
+		cl_interp->SetFloat(0.015625f);
+		cl_interp_ratio->SetInt(2);
 
 		GrenadePrediction::PrecacheParticles();
 		Ragebot->CalcSpreadValues();
@@ -603,8 +616,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	static auto oFrameStageNotify = (tFrameStageNotify)Hooks::ClientVMT->GetOriginal(37);
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 
-	static auto CL_ReadPackets = reinterpret_cast<void(__fastcall*)(bool)>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"));
-
 	switch (stage) {
 	case FRAME_RENDER_START: {
 		AnimationSystem->RunInterpolation();
@@ -635,12 +646,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 			World->RemoveBlood();
 			ctx.update_remove_blood = false;
 		}
-
-		//GlobalVars->store();
-		//hook_info.read_packets = true;
-		//CL_ReadPackets(false);
-		//hook_info.read_packets = false;
-		//GlobalVars->restore();
 
 		break;
 	}
@@ -1002,11 +1007,11 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	CCLCMsg_Move_t* moveMsg = reinterpret_cast<CCLCMsg_Move_t*>(*stack_pointer - 0x58);
 
-	auto new_commands = moveMsg->new_commands + moveMsg->backup_commands;
+	auto new_commands = moveMsg->new_commands;
 	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
 	moveMsg->new_commands = std::clamp(moveMsg->new_commands + ctx.lc_exploit, 1, 15);
-	//moveMsg->backup_commands = 0;
+	moveMsg->backup_commands = 0;
 
 	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++) {
 		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, true))
@@ -1027,13 +1032,14 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	to_cmd = from_cmd;
 
 	to_cmd.command_number++;
-	to_cmd.tick_count = INT_MAX;
+	to_cmd.tick_count += 200;
 
-	for (int i = 0; i < ctx.lc_exploit; i++) {
+	for (int i = new_commands; i < moveMsg->new_commands; i++) {
 		WriteUserCmd(buf, &to_cmd, &from_cmd);
 
 		from_cmd = to_cmd;
 		to_cmd.command_number++;
+		to_cmd.tick_count++;
 	}
 
 	return true;

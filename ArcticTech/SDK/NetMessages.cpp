@@ -99,3 +99,25 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 
 	delete data;
 }
+
+void CNetMessages::ReadPackets() {
+	static auto CL_ReadPackets = reinterpret_cast<void(__fastcall*)(bool)>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"));
+
+	int backup_flags = 0;
+	Vector backup_abs_origin;
+	if (Cheat.LocalPlayer) {
+		backup_flags = Cheat.LocalPlayer->m_fFlags();
+		backup_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
+	}
+
+	GlobalVars->store();
+	hook_info.read_packets = true;
+	CL_ReadPackets(false);
+	hook_info.read_packets = false;
+	GlobalVars->restore();
+
+	if (Cheat.LocalPlayer) {
+		Cheat.LocalPlayer->m_fFlags() = backup_flags;
+		Cheat.LocalPlayer->SetAbsOrigin(backup_abs_origin);
+	}
+}

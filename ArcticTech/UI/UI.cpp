@@ -216,6 +216,7 @@ void CMenu::SetupUI() {
 	config.visuals.effects.viewmodel_scope_alpha = effects->AddSliderInt("Viewmodel scope alpha", 0, 100, 0, "%d%%");
 
 	config.misc.miscellaneous.anti_untrusted = misc->AddCheckBox("Anti untrusted");
+	config.misc.miscellaneous.ping_reducer = misc->AddCheckBox("Ping reducer");
 	config.misc.miscellaneous.automatic_grenade_release = misc->AddSliderInt("Automatic grenade release", 0, 60, 0, "%ddmg");
 	config.misc.miscellaneous.logs = misc->AddMultiCombo("Logs", { "Damage", "Aimbot", "Purchuases" });
 	config.misc.miscellaneous.auto_buy = misc->AddMultiCombo("Auto buy", { "AWP", "Scout", "Autosniper", "Deagle / R8", "Five-Seven / Tec-9", "Taser", "Armor", "Smoke", "Molotov", "HeGrenade", "Flashbang", "Defuse kit" });

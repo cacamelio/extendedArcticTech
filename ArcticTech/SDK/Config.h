@@ -240,6 +240,7 @@ struct config_t {
     struct misc_t {
         struct miscellaneous_t {
             CCheckBox* anti_untrusted;
+            CCheckBox* ping_reducer;
             CSliderInt* automatic_grenade_release;
             CMultiCombo* logs;
             CMultiCombo* auto_buy;
