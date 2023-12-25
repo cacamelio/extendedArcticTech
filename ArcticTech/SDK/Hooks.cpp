@@ -319,7 +319,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		else if (Exploits->GetExploitType() == CExploits::E_HideShots)
 			Exploits->HideShot();
 
-		ShotManager->ProcessManualShot();
+		if (!config.misc.miscellaneous.gamesense_mode->get())
+			ShotManager->ProcessManualShot();
 	}
 
 	AntiAim->lua_override.reset();
@@ -333,6 +334,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	Ragebot->Run();
 
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
+
+	if (config.misc.miscellaneous.gamesense_mode->get() && ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK)
+		ShotManager->ProcessManualShot();
 
 	if (Exploits->TeleportThisTick())
 		ctx.send_packet = false;
@@ -1108,7 +1112,7 @@ bool __fastcall hkInterpolateViewModel(CBaseViewModel* vm, void* edx, float curT
 	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
 	auto backup_lerp_amt = GlobalVars->interpolation_amount;
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = EnginePrediction->tickcount();
+	Cheat.LocalPlayer->m_nFinalPredictedTick() = ctx.corrected_tickbase;
 	if (Exploits->ShouldCharge())
 		GlobalVars->interpolation_amount = 0.f;
 

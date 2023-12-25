@@ -251,7 +251,7 @@ void CShotManager::OnNetUpdate() {
 						it->miss_reason = "correction";
 					}
 					else {
-						if (HitboxToDamagegroup(trace.hitgroup) == shot->wanted_damagegroup) {
+						if (HitgroupToDamagegroup(trace.hitgroup) == shot->wanted_damagegroup) {
 							Console->ColorPrint("correction", Color(200, 255, 0));
 							it->miss_reason = "correction";
 						}

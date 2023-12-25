@@ -300,7 +300,7 @@ bool CRagebot::IsArmored(int hitbox) {
 
 void CRagebot::SelectPoints(LagRecord* record) {
 	for (int hitbox = 0; hitbox < HITBOX_MAX; hitbox++) {
-		if (!hitbox_enabled(hitbox) || (cvars.mp_damage_headshot_only->GetInt() > 0 && hitbox != HITBOX_HEAD))
+		if (!hitbox_enabled(hitbox) || (cvars.mp_damage_headshot_only->GetInt() > 0 && hitbox != HITBOX_HEAD) || (hitbox == HITBOX_HEAD && config.ragebot.aimbot.force_body_aim->get()))
 			continue;
 
 		float max_possible_damage = ctx.weapon_info->iDamage;
@@ -680,7 +680,7 @@ void CRagebot::Run() {
 	last_target = best_target.player;
 	last_target_shot = ctx.cmd->command_number;
 
-	if (config.visuals.effects.client_impacts->get()) {
+	if (config.visuals.effects.client_impacts->get() && !config.misc.miscellaneous.gamesense_mode->get()) {
 		Color face_col = config.visuals.effects.client_impacts_color->get();
 
 		for (int i = 0; i < best_target.best_point.num_impacts; i++)
@@ -690,19 +690,27 @@ void CRagebot::Run() {
 	LagRecord* record = best_target.best_point.record;
 
 	if (config.misc.miscellaneous.logs->get(1)) {
-		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}%] [bt: {}] [r: {:d} s: {} p: {}]", 
+		std::string fl;
+		if (record->breaking_lag_comp)
+			fl += "T";
+		if (record->shifting_tickbase)
+			fl += "S";
+		if (record->exploiting)
+			fl += "E";
+		if (best_target.best_point.safe_point)
+			fl += "P";
+
+		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}%] [bt: {}] [flags: {}]", 
 			best_target.player->GetName(), 
 			GetHitboxName(best_target.best_point.hitbox), 
 			static_cast<int>(best_target.best_point.damage), 
 			static_cast<int>(best_target.hitchance * 100), 
 			GlobalVars->tickcount - record->update_tick,
-			static_cast<int>(record->resolver_data.side * best_target.player->GetMaxDesyncDelta()),
-			best_target.best_point.safe_point,
-			best_target.best_point.priority
+			fl
 		));
 	}
 
-	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, best_target.best_point.record);
+	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, record);
 	if (config.visuals.chams.shot_chams->get()) {
 		Chams->AddShotChams(best_target.best_point.record);
 	}

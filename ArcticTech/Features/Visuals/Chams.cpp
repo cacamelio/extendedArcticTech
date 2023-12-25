@@ -320,10 +320,15 @@ void CChams::AddShotChams(LagRecord* record) {
 	hit.model_to_world.AngleMatrix(hit.info.angles, hit.info.origin);
 
 	if (config.visuals.chams.shot_chams_options->get(1)) {
-		for (auto it = shot_chams.begin(); it != shot_chams.end(); it++) {
+		for (auto it = shot_chams.begin(); it != shot_chams.end();) {
 			if (it->end_time != hit.end_time && GlobalVars->realtime < it->end_time) {
 				it->end_time = GlobalVars->realtime;
 			}
+			
+			if (it->end_time != hit.end_time && config.misc.miscellaneous.gamesense_mode->get())
+				it = shot_chams.erase(it);
+			else
+				it++;
 		}
 	}
 }

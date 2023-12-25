@@ -104,9 +104,11 @@ void CNetMessages::ReadPackets() {
 	static auto CL_ReadPackets = reinterpret_cast<void(__fastcall*)(bool)>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"));
 
 	int backup_flags = 0;
+	int backup_tickbase = 0;
 	Vector backup_abs_origin;
 	if (Cheat.LocalPlayer) {
 		backup_flags = Cheat.LocalPlayer->m_fFlags();
+		backup_tickbase = Cheat.LocalPlayer->m_nTickBase();
 		backup_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 	}
 
@@ -118,6 +120,7 @@ void CNetMessages::ReadPackets() {
 
 	if (Cheat.LocalPlayer) {
 		Cheat.LocalPlayer->m_fFlags() = backup_flags;
+		Cheat.LocalPlayer->m_nTickBase() = backup_tickbase;
 		Cheat.LocalPlayer->SetAbsOrigin(backup_abs_origin);
 	}
 }

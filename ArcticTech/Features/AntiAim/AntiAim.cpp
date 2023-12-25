@@ -46,7 +46,7 @@ void CAntiAim::FakeLag() {
 
 	if (config.antiaim.fakelag.enabled->get()) {
 		if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 4096.f) {
-			fakelag = 2;
+			fakelag = 1;
 		}
 		else {
 			fakelag = fakelag_limit;

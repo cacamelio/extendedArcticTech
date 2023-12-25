@@ -48,9 +48,9 @@ void on_save() {
     file << config_json;
 };
 
-void on_delete() {};
-void on_import() {};
-void on_export() {};
+void on_refresh_config() {
+    Config->config_list->UpdateList(Config->GetAllConfigs());
+}
 
 void CConfig::Init() {
     add(config.ragebot.aimbot.enabled);
@@ -292,6 +292,7 @@ void CConfig::Init() {
     add(config.misc.miscellaneous.filter_console);
     add(config.misc.miscellaneous.clantag);
     add(config.misc.miscellaneous.ad_block);
+    add(config.misc.miscellaneous.gamesense_mode);
     add(config.misc.movement.auto_jump);
     add(config.misc.movement.auto_strafe);
     add(config.misc.movement.compensate_throwable);
@@ -312,6 +313,7 @@ void CConfig::Init() {
     load_button->SetCallback(on_load);
     save_button->SetCallback(on_save);
     config_list->SetCallback(on_config_list_changed);
+    refresh_button->SetCallback(on_refresh_config);
 }
 
 void CConfig::parse(nlohmann::json& cfg) {

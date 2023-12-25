@@ -118,7 +118,7 @@ void CMenu::Draw() {
 
             ImGui::GetWindowDrawList()->AddImage(pic::logo.texture, window_pos + ImVec2(181 / 2 - 128 / 2 + item_spacing.x / 2, item_spacing.y - 16), window_pos + ImVec2(181 / 2 + 128 / 2 + item_spacing.x / 2, item_spacing.y - 16 + 128), ImVec2(0, 0), ImVec2(1, 1));
 
-            ImGui::GetWindowDrawList()->AddText(font::general, font::general->FontSize, window_pos + ImVec2(220, 35), ImColor(255, 255, 255), xorstr("Created by Penguin. May only be distributed with permission from Penguin. Credits: @shialex"));
+            //ImGui::GetWindowDrawList()->AddText(font::general, font::general->FontSize, window_pos + ImVec2(220, 35), ImColor(255, 255, 255), xorstr("Created by Penguin. May only be distributed with permission from Penguin. Credits: @shialex"));
 
             static int tabs = 0;
 

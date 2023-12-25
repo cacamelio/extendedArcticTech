@@ -247,6 +247,7 @@ struct config_t {
             CCheckBox* filter_console;
             CCheckBox* clantag;
             CCheckBox* ad_block;
+            CCheckBox* gamesense_mode;
         } miscellaneous;
 
         struct movement_t {
@@ -298,12 +299,9 @@ public:
 
     CComboBox* config_list;
     CInputBox* config_name;
-    CInputBox* knife_name;
     CButton* load_button;
     CButton* save_button;
-    CButton* delete_button;
-    CButton* import_button;
-    CButton* export_button;
+    CButton* refresh_button;
 
     void parse(nlohmann::json& cfg);
     nlohmann::json dump();

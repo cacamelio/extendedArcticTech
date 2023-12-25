@@ -199,7 +199,10 @@ void ESP::UpdatePlayer(int id) {
 		info.m_bExploiting = false;
 		info.m_bBreakingLagComp = false;
 
-		info.m_vecOrigin.Interpolate(player->m_vecOrigin(), GlobalVars->frametime * 32);
+		if (config.misc.miscellaneous.gamesense_mode->get())
+			info.m_vecOrigin = player->m_vecOrigin();
+		else
+			info.m_vecOrigin.Interpolate(player->m_vecOrigin(), GlobalVars->frametime * 32);
 	}
 
 	float playerHeight = player->m_vecMaxs().z;
@@ -345,7 +348,7 @@ void ESP::DrawFlags(ESPInfo_t info) {
 		if (info.m_pEnt->m_bHasHelmet())
 			str = "HK";
 		if (!str.empty())
-			flags.push_back({ str, Color(240, 240, 240, info.m_flAlpha) });
+			flags.push_back({ str, Color(215, 255 * info.m_flAlpha) });
 	}
 
 	bool shifting = record && record->shifting_tickbase;

@@ -58,6 +58,9 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.roll_resolver_key = aimbot->AddKeyBind("Roll Resolver");
 	config.ragebot.aimbot.roll_angle = aimbot->AddSliderInt("Roll Angle", -90, 90, 0);
 
+	config.ragebot.aimbot.extrapolation->SetVisible(false);
+	config.ragebot.aimbot.show_aimpoints->SetVisible(false);
+
 	config.ragebot.selected_weapon = aim_settings->AddComboBox("Current Weapon", { "Global", "AWP", "Autosniper", "Scout", "Deagle", "Revolver", "Pistol" });
 
 	auto setup_weapon_config = [this, aim_settings](weapon_settings_t& settings) {
@@ -134,6 +137,10 @@ void CMenu::SetupUI() {
 	config.visuals.esp.damage_marker = player_esp->AddCheckBox("Damage marker");
 	config.visuals.esp.damage_marker_color = player_esp->AddColorPicker("Damage marker");
 
+	config.visuals.esp.show_server_hitboxes->SetVisible(false);
+	config.visuals.esp.bounding_box->SetVisible(false);
+	config.visuals.esp.box_color->SetVisible(false);
+
 	config.visuals.chams.chams_selector = chams->AddComboBox("Class", { "Player", "Shot", "Local", "Attachments", "Viewmodel" });
 	config.visuals.chams.enemy = chams->AddCheckBox("Player");
 	config.visuals.chams.enemy_invisible = chams->AddCheckBox("Player behind wall");
@@ -181,7 +188,15 @@ void CMenu::SetupUI() {
 	config.visuals.other_esp.grenade_trajectory_hit_color = other_esp->AddColorPicker("Grenade trajectory (hit)", Color(150, 200, 60));
 	config.visuals.other_esp.grenade_proximity_warning = other_esp->AddCheckBox("Grenade proximity warning");
 	config.visuals.other_esp.grenade_predict_color = other_esp->AddColorPicker("Grenade predict color");
-	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov", "Smoke" });
+	config.visuals.other_esp.particles = other_esp->AddMultiCombo("Particles", { "Molotov" });
+
+	config.visuals.other_esp.molotov_radius->SetVisible(false);
+	config.visuals.other_esp.molotov_radius_color->SetVisible(false);
+	config.visuals.other_esp.bomb->SetVisible(false);
+	config.visuals.other_esp.bomb_color->SetVisible(false);
+	config.visuals.other_esp.radar->SetVisible(false);
+	config.visuals.other_esp.dropped_weapons->SetVisible(false);
+	config.visuals.other_esp.dropped_weapons_color->SetVisible(false);
 
 	config.visuals.effects.fov = effects->AddSliderInt("Field of view", 80, 130, 90);
 	config.visuals.effects.fov_zoom = effects->AddSliderInt("FOV - Zoom", 0, 100, 10, "%d%%");
@@ -223,6 +238,7 @@ void CMenu::SetupUI() {
 	config.misc.miscellaneous.filter_console = misc->AddCheckBox("Filter console");
 	config.misc.miscellaneous.clantag = misc->AddCheckBox("Clantag");
 	config.misc.miscellaneous.ad_block = misc->AddCheckBox("Ad block");
+	config.misc.miscellaneous.gamesense_mode = misc->AddCheckBox("Gamesense mode");
 
 	config.misc.movement.auto_jump = movement->AddCheckBox("Auto jump");
 	config.misc.movement.auto_strafe = movement->AddCheckBox("Auto strafe");
@@ -233,10 +249,13 @@ void CMenu::SetupUI() {
 	config.misc.movement.infinity_duck = movement->AddCheckBox("Infinity duck");
 	config.misc.movement.quick_stop = movement->AddCheckBox("Quick stop");
 
+	config.misc.movement.auto_strafe_smooth->SetVisible(false);
+
 	config.skins.paint_kits = skins->AddComboBox("Paint kits", SkinChanger->GetUIPaintKits());
 	config.skins.glove_paint_kits = skins->AddComboBox("Glove Paint kits", SkinChanger->GetUIPaintKitsGloves());
 
-	Config->knife_name = skins->AddInput("Custom name");
+	config.skins.paint_kits->SetVisible(false);
+	config.skins.glove_paint_kits->SetVisible(false);
 
 	config.skins.override_knife = models->AddCheckBox("Override knife");
 	config.skins.knife_model = models->AddComboBox("Knife model", SkinChanger->GetUIKnifeModels());
@@ -513,6 +532,7 @@ void CMenu::SetupUI() {
 	Config->config_name = configs->AddInput("Config");
 	Config->load_button = configs->AddButton("Load");
 	Config->save_button = configs->AddButton("Save");
+	Config->refresh_button = configs->AddButton("Refresh");
 
 	Config->lua_list = scripts->AddComboBox("lualist", {});
 	Config->lua_button = scripts->AddButton("Load");

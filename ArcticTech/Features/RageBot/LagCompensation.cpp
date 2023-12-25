@@ -116,7 +116,7 @@ void CLagCompensation::OnNetUpdate() {
 
 		auto& records = lag_records[pl->EntIndex()];
 
-		if (records.empty() || pl->m_flSimulationTime() != pl->m_flOldSimulationTime()) {
+		if (records.empty() || (pl->m_flSimulationTime() != pl->m_flOldSimulationTime() && pl->m_flSimulationTime() - pl->m_flOldSimulationTime() > -TICKS_TO_TIME(16))) {
 			LagRecord* prev_record = !records.empty() ? &records.back() : nullptr;
 			LagRecord* new_record = &records.emplace_back();
 
@@ -126,7 +126,7 @@ void CLagCompensation::OnNetUpdate() {
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = GlobalVars->curtime - pl->m_flSimulationTime() > TICKS_TO_TIME(10.f) || (prev_record && prev_record->shifting_tickbase);
+			new_record->exploiting = (EngineClient->GetLastTimeStamp() - new_record->m_flSimulationTime > TICKS_TO_TIME(7.f)) || (prev_record && prev_record->shifting_tickbase);
 
 			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
 				max_simulation_time[i] = new_record->m_flSimulationTime;
@@ -190,25 +190,27 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	if (!nci)
 		return false;
 
-	const float latency = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
+	const auto last_server_tick = TIME_TO_TICKS(EngineClient->GetLastTimeStamp());
 
-	int server_tickcount = ctx.corrected_tickbase + TIME_TO_TICKS(latency);
+	const auto rtt = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
+	const auto possible_future_tick = last_server_tick + TIME_TO_TICKS(rtt) + 8;
 
-	if (ctx.fake_duck)
-		server_tickcount += 14 - ClientState->m_nChokedCommands;
+	float correct = 0;
+	correct += rtt;
+	correct += GetLerpTime();
 
-	const float lerp_time = GetLerpTime();
-	const float delta_time = std::clamp(latency + lerp_time, 0.f, cvars.sv_maxunlag->GetFloat()) - (TICKS_TO_TIME(ctx.corrected_tickbase) - record->m_flSimulationTime);
-
-	if (fabs(delta_time) > 0.2f)
+	const auto deadtime = static_cast<int>(TICKS_TO_TIME(last_server_tick) + rtt - cvars.sv_maxunlag->GetFloat());
+	if (record->m_flSimulationTime <= static_cast<float>(deadtime) || TIME_TO_TICKS(record->m_flSimulationTime + GetLerpTime()) > possible_future_tick)
 		return false;
 
-	/// omg v0lvo broke this check but i want to add it because i want to be like Soufiw
-	const float dead_time = TICKS_TO_TIME(server_tickcount) - 0.2f;
-	if (record->m_flSimulationTime + lerp_time < dead_time)
-		return false;
+	correct = std::clamp(correct, 0.f, cvars.sv_maxunlag->GetFloat());
+	float time = TICKS_TO_TIME(ctx.corrected_tickbase);
 
-	return true;
+	const auto delta_time = correct - (time - record->m_flSimulationTime);
+	const auto delta_time1 = correct - (time - GlobalVars->interval_per_tick - record->m_flSimulationTime);
+	const auto delta_time2 = correct - (time + GlobalVars->interval_per_tick - record->m_flSimulationTime);
+
+	return fabsf(delta_time) < 0.2f;
 }
 
 void CLagCompensation::Reset(int index) {

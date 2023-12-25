@@ -262,10 +262,10 @@ void CWorld::Crosshair() {
 	FireBulletData_t fb_data;
 	bool hit = AutoWall->FireBullet(Cheat.LocalPlayer, eyePos, eyePos + direction * 8192, fb_data);
 
-	Color crosshairColor(255, 20, 20);
+	Color crosshairColor(255, 0, 50);
 
 	if (fb_data.num_impacts > 1) {
-		crosshairColor = Color(20, 255, 20);
+		crosshairColor = Color(50, 255, 0);
 	}
 
 	if (hit)

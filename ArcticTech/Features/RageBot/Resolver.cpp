@@ -8,6 +8,9 @@
 #include "AnimationSystem.h"
 
 
+#include "../../Utils/Console.h"
+
+
 CResolver* Resolver = new CResolver;
 
 float FindAvgYaw(const std::deque<LagRecord>& records) {
@@ -243,7 +246,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	}
 
 	BruteForceData_t* bf_data = &brute_force_data[player->EntIndex()];
-	if (bf_data->use && GlobalVars->realtime - bf_data->last_shot < 5.f && record->resolver_data.resolver_type != ResolverType::ANIM && record->resolver_data.resolver_type != ResolverType::LOGIC && bf_data->current_side != 0) {
+	if (bf_data->use && GlobalVars->realtime - bf_data->last_shot < 8.f && record->resolver_data.resolver_type != ResolverType::ANIM && bf_data->current_side != 0) {
 		record->resolver_data.side = bf_data->current_side;
 		record->resolver_data.resolver_type = ResolverType::BRUTEFORCE;
 	}
