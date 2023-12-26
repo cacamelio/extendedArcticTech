@@ -128,15 +128,12 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record, const st
 
 	Vector right = Math::AngleVectors(QAngle(0, notModifiedYaw + 90.f, 0));
 
-	Vector negPos = eyePos - right * 20.f;
-	Vector posPos = eyePos + right * 20.f;
-
-	Vector local_eye_pos = Cheat.LocalPlayer->GetEyePosition();
-	local_eye_pos.z -= 0.5f;
+	Vector negPos = eyePos - right * 16.f;
+	Vector posPos = eyePos + right * 16.f;
 
 	CTraceFilterWorldAndPropsOnly filter;
-	Ray_t rayNeg(negPos, local_eye_pos);
-	Ray_t rayPos(posPos, local_eye_pos);
+	Ray_t rayNeg(negPos, negPos + forward * 100.f);
+	Ray_t rayPos(posPos, posPos + forward * 100.f);
 	CGameTrace negTrace, posTrace;
 
 	EngineTrace->TraceRay(rayNeg, MASK_SHOT_HULL | CONTENTS_GRATE, &filter, &negTrace);

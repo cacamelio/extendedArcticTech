@@ -142,6 +142,13 @@ public:
 	int value = 0;
 
 	int get() { return value; };
+	void set(int new_val) { 
+		value = new_val; 
+		for (auto& cb : callbacks)
+			cb();
+		for (auto lcb : lua_callbacks)
+			lcb.func();
+	};
 	std::string get_name() { 
 		if (elements.size() == 0)
 			return "";

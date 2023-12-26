@@ -109,6 +109,9 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		if (player && player->m_bDormant()) {
 			ESPInfo[user_id_pl].m_iActiveWeapon = event->GetInt("defindex");
 		}
+
+		if (player == Cheat.LocalPlayer)
+			Ragebot->UpdateUI(event->GetInt("defindex"));
 	}
 	else if (name == "player_disconnect") {
 		Chams->RemoveShotChams(user_id_pl);

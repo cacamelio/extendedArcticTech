@@ -71,11 +71,10 @@ void CMenu::SetupUI() {
 		settings.hitchance = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Hitchance"), 0, 100, 50, "%d%%");
 		settings.minimum_damage = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage"), 1, 130, 30);
 		settings.minimum_damage_override = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Minimum damage override"), 1, 130, 10);
-		settings.auto_stop = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Full stop", "Early", "Move between shots", "In Air" });
+		settings.auto_stop = aim_settings->AddMultiCombo(std::format("[{}] {}", settings.weapon_name, "Auto stop"), { "Early", "Move between shots", "In Air" });
 		settings.auto_scope = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Auto scope"));
 		settings.delay_shot = aim_settings->AddSliderInt(std::format("[{}] {}", settings.weapon_name, "Delay shot"), 0, 32, 0);
 		settings.strict_hitchance = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Strict hitchance"));
-		settings.accuracy_boost = aim_settings->AddSliderFloat(std::format("[{}] {}", settings.weapon_name, "Accuracy boost"), 1.f, 3.f, 1.f, "%.2f");
 		settings.aim_head_if_safe = aim_settings->AddCheckBox(std::format("[{}] {}", settings.weapon_name, "Aim head if safe"));
 	};
 
@@ -140,6 +139,8 @@ void CMenu::SetupUI() {
 	config.visuals.esp.show_server_hitboxes->SetVisible(false);
 	config.visuals.esp.bounding_box->SetVisible(false);
 	config.visuals.esp.box_color->SetVisible(false);
+	config.visuals.esp.ammo->SetVisible(false);
+	config.visuals.esp.ammo_color->SetVisible(false);
 
 	config.visuals.chams.chams_selector = chams->AddComboBox("Class", { "Player", "Shot", "Local", "Attachments", "Viewmodel" });
 	config.visuals.chams.enemy = chams->AddCheckBox("Player");
@@ -229,6 +230,8 @@ void CMenu::SetupUI() {
 	config.visuals.effects.sun_distance = effects->AddSliderInt("Sun distance", 0, 2000, 400);
 	config.visuals.effects.scope_blend = effects->AddSliderInt("Scope blend", 0, 100, 30, "%d%%");
 	config.visuals.effects.viewmodel_scope_alpha = effects->AddSliderInt("Viewmodel scope alpha", 0, 100, 0, "%d%%");
+
+	config.visuals.effects.preserve_killfeed->SetVisible(false);
 
 	config.misc.miscellaneous.anti_untrusted = misc->AddCheckBox("Anti untrusted");
 	config.misc.miscellaneous.ping_reducer = misc->AddCheckBox("Ping reducer");

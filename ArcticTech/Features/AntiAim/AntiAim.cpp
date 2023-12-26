@@ -99,7 +99,7 @@ void CAntiAim::Angles() {
 	if (ctx.active_weapon->IsGrenade() && (EnginePrediction->m_fThrowTime > 0 || reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_flThrowTime() > 0.f || abs(ctx.grenade_throw_tick - ctx.cmd->command_number) < 7))
 		return;
 
-	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && ctx.cmd->buttons & IN_ATTACK)
+	if ((ctx.active_weapon->ShootingWeapon() || (ctx.active_weapon->GetWeaponInfo() && ctx.active_weapon->GetWeaponInfo()->nWeaponType == WEAPONTYPE_KNIFE)) && ctx.active_weapon->CanShoot() && ctx.cmd->buttons & IN_ATTACK)
 		return;
 
 	target = GetNearestTarget();
@@ -382,10 +382,10 @@ bool CAntiAim::IsPeeking() {
 
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	if (velocity.LengthSqr() < 64.f)
+	if (velocity.LengthSqr() < 32.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 9.4f + (velocity * TICKS_TO_TIME(3.4f));
+	Vector move_factor = velocity.Normalized() * 10.2f + (velocity * TICKS_TO_TIME(3.2f));
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

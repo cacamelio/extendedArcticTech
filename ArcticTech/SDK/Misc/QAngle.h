@@ -26,6 +26,12 @@ struct QAngle {
 		return QAngle(pitch - other.pitch, yaw - other.yaw, roll - other.roll);
 	}
 
+	void operator-=(QAngle other) {
+		pitch -= other.pitch;
+		yaw -= other.yaw;
+		roll -= other.roll;
+	}
+
 	QAngle operator*(float other) const {
 		return QAngle(pitch * other, yaw * other, roll * other);
 	}

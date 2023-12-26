@@ -64,8 +64,6 @@ private:
 	SpreadValues_t spread_values[100];
 
 	weapon_settings_t settings;
-	bool doubletap_stop = false;
-	float doubletap_stop_speed = 0.f;
 
 	float last_frametime_check = 0.f;
 	bool frametime_issues = false;
@@ -134,6 +132,8 @@ private:
 	}
 
 public:
+	void				UpdateUI(int idx = -1);
+
 	void				CalcSpreadValues();
 	void				AutoStop();
 	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);

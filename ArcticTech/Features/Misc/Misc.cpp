@@ -139,9 +139,11 @@ void Miscelleaneus::AutomaticGrenadeRelease() {
 
 		ctx.cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
 
-		ctx.cmd->sidemove = on_release_move.x;
-		ctx.cmd->forwardmove = on_release_move.y;
-		ctx.cmd->viewangles = on_release_angle;
+		if (ctx.cmd->command_number <= ctx.grenade_throw_tick + 7) {
+			ctx.cmd->sidemove = on_release_move.x;
+			ctx.cmd->forwardmove = on_release_move.y;
+			ctx.cmd->viewangles = on_release_angle;
+		}
 	}
 	else if (!ctx.active_weapon || !ctx.active_weapon->IsGrenade()) {
 		ctx.should_release_grenade = false;

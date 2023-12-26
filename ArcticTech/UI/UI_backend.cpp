@@ -17,6 +17,8 @@
 #include "../SDK/Misc/xorstr.h"
 #include "../SDK/Globals.h"
 
+#include "../Features/RageBot/Ragebot.h"
+
 CMenu* Menu = new CMenu;
 
 namespace font {
@@ -88,6 +90,8 @@ void CMenu::Draw() {
         if (!insert_pressed) {
             m_bMenuOpened = !m_bMenuOpened;
             insert_pressed = true;
+            if (m_bMenuOpened)
+                Ragebot->UpdateUI();
         }
     }
     else {

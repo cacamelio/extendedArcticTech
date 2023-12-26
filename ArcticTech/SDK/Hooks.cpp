@@ -480,7 +480,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 	static ConVar* cl_interp = CVar->FindVar("cl_interp");
 	static ConVar* cl_interp_ratio = CVar->FindVar("cl_interp_ratio");
 	static ConVar* net_earliertempents = CVar->FindVar("net_earliertempents");
-
+	static ConVar* zoom_sensitivity_ratio_mouse = CVar->FindVar("zoom_sensitivity_ratio_mouse");
 
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
@@ -498,6 +498,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		net_earliertempents->SetInt(1);
 		cl_interp->SetFloat(0.015625f);
 		cl_interp_ratio->SetInt(2);
+		zoom_sensitivity_ratio_mouse->SetFloat(1.f);
 
 		GrenadePrediction::PrecacheParticles();
 		Ragebot->CalcSpreadValues();
@@ -561,6 +562,11 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 		setup->origin = Cheat.LocalPlayer->GetAbsOrigin() + Vector(0, 0, 64);
 
 	setup->angles.roll = 0;
+
+	if (!Input->m_fCameraInThirdPerson && Cheat.LocalPlayer->IsAlive() && config.visuals.effects.removals->get(7)) {
+		setup->angles -= Cheat.LocalPlayer->m_aimPunchAngle() * 0.9f;
+		setup->angles -= Cheat.LocalPlayer->m_viewPunchAngle();
+	}
 
 	oOverrideView(thisptr, edx, setup);
 }
