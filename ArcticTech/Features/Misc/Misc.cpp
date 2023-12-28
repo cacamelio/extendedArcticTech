@@ -6,7 +6,7 @@
 #include "../../SDK/Config.h"
 #include "../../SDK/Globals.h"
 
-void Miscelleaneus::Clantag()
+void Miscellaneous::Clantag()
 {
 	static auto removed = false;
 
@@ -64,7 +64,7 @@ void Miscelleaneus::Clantag()
 	}
 }
 
-void Miscelleaneus::FastThrow() {
+void Miscellaneous::FastThrow() {
 	static bool fast_throw_triggred = false;
 	static bool quick_switch_triggered = false;
 
@@ -126,7 +126,7 @@ void Miscelleaneus::FastThrow() {
 	}
 }
 
-void Miscelleaneus::AutomaticGrenadeRelease() {
+void Miscellaneous::AutomaticGrenadeRelease() {
 	static bool prev_release = false;
 	static Vector on_release_move;
 	static QAngle on_release_angle;

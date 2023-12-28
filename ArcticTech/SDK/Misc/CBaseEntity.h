@@ -251,6 +251,7 @@ public:
 	IClientNetworkable* GetClientNetworkable();
 	IClientUnknown* GetClientUnknown();
 	ICollideable* GetCollideable();
+	CBaseEntity* GetShadowParent();
 
 	bool IsPlayer();
 	bool IsWeapon();

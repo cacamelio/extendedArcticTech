@@ -5,13 +5,18 @@
 class CUserCmd;
 
 class CAutoPeek {
-public:
+	int block_buttons = 0;
 	bool returning;
 	Vector position;
 	Animation circleAnimation;
 
+public:
+
 	void CreateMove();
 	void Draw();
+	void Return();
+	void Disable() { returning = false; };
+	bool IsReturning() { return returning; };
 };
 
 extern CAutoPeek* AutoPeek;

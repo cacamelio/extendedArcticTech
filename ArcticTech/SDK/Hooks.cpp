@@ -8,7 +8,7 @@
 #include "../UI/UI.h"
 #include "Misc/MoveMsg.h"
 
-#include "../Features/Misc/AutoStrafe.h"
+#include "../Features/Misc/GameMovement.h"
 #include "../Features/Visuals/ESP.h"
 #include "../Features/Visuals/Glow.h"
 #include "../Features/Lua/Bridge/Bridge.h"
@@ -131,9 +131,6 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Render->EndFrame();
 
-	if (config.misc.miscellaneous.ping_reducer->get() && Cheat.InGame && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive())
-		NetMessages->ReadPackets();
-
 	oHudUpdate(thisptr, edx, bActive);
 }
 
@@ -166,7 +163,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 
-	Miscelleaneus::Clantag();
+	Miscellaneous::Clantag();
 
 	Exploits->DefenseiveThisTick() = false;
 	Exploits->force_charge = false;
@@ -184,7 +181,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (!cmd || !cmd->command_number)
 		return;
 
-	ctx.corrected_tickbase = Cheat.LocalPlayer->m_nTickBase() - ctx.tickbase_shift + ctx.lc_exploit;
+	Exploits->PrePrediction(); // update tickbase info
 
 	ctx.cmd = cmd;
 	ctx.send_packet = true;
@@ -215,28 +212,12 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			cmd->buttons &= ~IN_JUMP;
 	}
 
-	if (config.misc.movement.quick_stop->get() && ((std::abs(cmd->forwardmove) + std::abs(cmd->sidemove)) <= 1.f && !(cmd->buttons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP))) && Cheat.LocalPlayer->m_vecVelocity().LengthSqr() > 256 && Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
-		Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
-		QAngle direction = Math::VectorAngles(vec_speed);
-
-		QAngle view; EngineClient->GetViewAngles(&view);
-		direction.yaw = view.yaw - direction.yaw;
-		direction.Normalize();
-
-		Vector forward;
-		Math::AngleVectors(direction, forward);
-
-		Vector nigated_direction = forward * -std::clamp(vec_speed.Q_Length2D(), 0.f, 450.f) * 0.9f;
-
-		cmd->sidemove = nigated_direction.y;
-		cmd->forwardmove = nigated_direction.x;
-	}
-
 	AutoPeek->CreateMove();
+	Movement->QuickStop();
 	AntiAim->FakeDuck();
 	AntiAim->JitterMove();
-	Miscelleaneus::AutoStrafe();
-	Miscelleaneus::AutomaticGrenadeRelease();
+	Movement->AutoStrafe();
+	Miscellaneous::AutomaticGrenadeRelease();
 
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
@@ -261,14 +242,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 		AntiAim->LegMovement();
 
-		ctx.lc_exploit_prev = ctx.lc_exploit;
-		if (bSendPacket)
-			ctx.lc_exploit = 0;
-
-		if (ctx.lc_exploit != ctx.lc_exploit_prev) {
-			ctx.lc_exploit_change = cmd->command_number;
-			ctx.lc_exploit_diff = ctx.lc_exploit - ctx.lc_exploit_prev;
-		}
+		Exploits->UpdateTickbase();
 
 		ctx.shifted_commands.emplace_back(cmd->command_number);
 		if (bSendPacket)
@@ -303,7 +277,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	ctx.last_local_velocity = ctx.local_velocity;
 	ctx.local_velocity = Cheat.LocalPlayer->m_vecVelocity();
 
-	Miscelleaneus::CompensateThrowable();
+	Movement->CompensateThrowable();
 
 	// prediction
 
@@ -353,7 +327,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	AntiAim->LegMovement();
 
-	Miscelleaneus::FastThrow();
+	Miscellaneous::FastThrow();
 
 	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
 		ctx.last_shot_time = GlobalVars->realtime;
@@ -369,14 +343,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	// createmove
 
-	ctx.lc_exploit_prev = ctx.lc_exploit;
-	if (ctx.send_packet) // exploit state actually changes only when sending packet, so do not update if we are choking
-		ctx.lc_exploit = Exploits->LC_TickbaseShift();
-
-	if (ctx.lc_exploit != ctx.lc_exploit_prev) {
-		ctx.lc_exploit_change = cmd->command_number;
-		ctx.lc_exploit_diff = ctx.lc_exploit - ctx.lc_exploit_prev;
-	}
+	Exploits->UpdateTickbase();
 
 	bSendPacket = ctx.send_packet;
 	if (bSendPacket) {
@@ -561,12 +528,12 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 	if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && config.antiaim.misc.fake_duck->get())
 		setup->origin = Cheat.LocalPlayer->GetAbsOrigin() + Vector(0, 0, 64);
 
-	setup->angles.roll = 0;
-
 	if (!Input->m_fCameraInThirdPerson && Cheat.LocalPlayer->IsAlive() && config.visuals.effects.removals->get(7)) {
 		setup->angles -= Cheat.LocalPlayer->m_aimPunchAngle() * 0.9f;
 		setup->angles -= Cheat.LocalPlayer->m_viewPunchAngle();
 	}
+
+	setup->angles.roll = 0;
 
 	oOverrideView(thisptr, edx, setup);
 }
@@ -688,17 +655,13 @@ void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
 	if (thisptr == Cheat.LocalPlayer) {
 		CCSGOPlayerAnimationState* animstate = thisptr->GetAnimstate();
 
-		CBasePlayer* backup_player = nullptr;
-
-		if (animstate) {
-			backup_player = animstate->pEntity;
+		if (animstate)
 			animstate->pEntity = nullptr; // do not update animstate
-		}
 
 		oUpdateClientSideAnimation(thisptr, edx);
 
 		if (animstate)
-			animstate->pEntity = backup_player;
+			animstate->pEntity = thisptr;
 	}
 }
 
@@ -793,13 +756,7 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 	int& tickbase = player->m_nTickBase();
 
-	if (cmd->tick_count == INT_MAX) {
-		tickbase++;
-		return;
-	}
-
-	if (ctx.lc_exploit_change == cmd->command_number)
-		tickbase -= ctx.lc_exploit_diff;
+	Exploits->AdjustTickbase(tickbase, cmd);
 
 	if (cmd->command_number == Exploits->charged_command + 1)
 		tickbase += ctx.shifted_last_tick;
@@ -855,7 +812,7 @@ void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_seq
 		std::remove_if(
 			ctx.sented_commands.begin(),
 			ctx.sented_commands.end(),
-			[&](auto const& command) { return std::abs(command - outgoing_acknowledged) >= 150 || command < outgoing_acknowledged; }),
+			[&](auto const& command) { return std::abs(command - outgoing_acknowledged) >= 150; }),
 		ctx.sented_commands.end());
 }
 
@@ -874,13 +831,8 @@ void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t*
 		return;
 
 	auto backup_curtime = GlobalVars->curtime;
-	if (thisptr == Cheat.LocalPlayer) {
+	if (thisptr == Cheat.LocalPlayer)
 		GlobalVars->curtime = EnginePrediction->curtime();
-	}
-
-	if (thisptr->m_fFlags() & FL_FROZEN) {
-		thisptr->SetCollisionBounds(Vector(-16, -16, 0), Vector(16, 16, 72));
-	}
 
 	oClampBonesInBBox(thisptr, edx, bones, boneMask);
 
@@ -892,6 +844,9 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 
 	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return oCL_Move(accamulatedExtraSamples, bFinalTick);
+
+	if (config.misc.miscellaneous.ping_reducer->get())
+		NetMessages->ReadPackets();
 
 	Exploits->Run();
 
@@ -1006,8 +961,20 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 }
 
 bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !ctx.lc_exploit || !ctx.tickbase_shift)
+
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
+
+	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
+	auto tb_info = Exploits->GetTickbaseInfo(next_cmd_nr);
+	auto last_tb_info = Exploits->GetTickbaseInfo(ClientState->m_nLastOutgoingCommand);
+
+	if (!ctx.lc_exploit || !ctx.tickbase_shift) {
+		if (tb_info->command_number == next_cmd_nr && last_tb_info->command_number == ClientState->m_nLastOutgoingCommand)
+			tb_info->tickbase_diff = tb_info->extra_commands - last_tb_info->extra_commands;
+
+		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
+	}
 
 	if (from != -1)
 		return true;
@@ -1018,7 +985,6 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 	CCLCMsg_Move_t* moveMsg = reinterpret_cast<CCLCMsg_Move_t*>(*stack_pointer - 0x58);
 
 	auto new_commands = moveMsg->new_commands;
-	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
 
 	moveMsg->new_commands = std::clamp(moveMsg->new_commands + ctx.lc_exploit, 1, 15);
 	moveMsg->backup_commands = 0;
@@ -1032,8 +998,12 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 
 	CUserCmd* user_cmd = Input->GetUserCmd(from);
 
-	if (!user_cmd)
+	if (!user_cmd) {
+		if (tb_info->command_number == next_cmd_nr && last_tb_info->command_number == ClientState->m_nLastOutgoingCommand)
+			tb_info->tickbase_diff = tb_info->extra_commands - last_tb_info->extra_commands;
+
 		return true;
+	}
 
 	CUserCmd from_cmd;
 	CUserCmd to_cmd;
@@ -1050,7 +1020,13 @@ bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot
 		from_cmd = to_cmd;
 		to_cmd.command_number++;
 		to_cmd.tick_count++;
+
+		if (tb_info->command_number == next_cmd_nr)
+			tb_info->extra_commands++;
 	}
+
+	if (tb_info->command_number == next_cmd_nr && last_tb_info->command_number == ClientState->m_nLastOutgoingCommand)
+		tb_info->tickbase_diff = tb_info->extra_commands - last_tb_info->extra_commands;
 
 	return true;
 }
@@ -1154,7 +1130,12 @@ void __fastcall hkThrowGrenade(CBaseGrenade* thisptr, void* edx) {
 	oThrowGrenade(thisptr, edx);
 }
 
-void __fastcall hkCalcViewModel(CBaseViewModel* vm, void* edx, CBasePlayer* player, const Vector& eyePosition, const QAngle& eyeAngles) {
+void __fastcall hkCalcViewModel(CBaseViewModel* vm, void* edx, CBasePlayer* player, const Vector& eyePosition, QAngle& eyeAngles) {
+	if (!Input->m_fCameraInThirdPerson && Cheat.LocalPlayer->IsAlive() && config.visuals.effects.removals->get(7)) {
+		eyeAngles -= Cheat.LocalPlayer->m_aimPunchAngle() * 0.9f;
+		eyeAngles -= Cheat.LocalPlayer->m_viewPunchAngle();
+	}
+
 	if (ctx.fake_duck && Cheat.LocalPlayer == player)
 		return oCalcViewModel(vm, edx, player, player->GetAbsOrigin() + Vector(0, 0, 64), eyeAngles);
 

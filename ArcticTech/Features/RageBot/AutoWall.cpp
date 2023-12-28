@@ -114,7 +114,7 @@ bool CAutoWall::TraceToExit(CGameTrace& enterTrace, CGameTrace& exitTrace, const
 
 		start = startPosition + direction * currentDistance;
 
-		int pointContents = EngineTrace->GetPointContents_WorldOnly(start, MASK_SHOT_HULL | CONTENTS_HITBOX);
+		int pointContents = EngineTrace->GetPointContents_WorldOnly(start, MASK_SHOT_HULL);
 
 		if (!firstContents)
 			firstContents = pointContents;
@@ -125,7 +125,7 @@ bool CAutoWall::TraceToExit(CGameTrace& enterTrace, CGameTrace& exitTrace, const
 		ray.Init(start, start - (direction * rayExtension));
 		filter.pSkip = nullptr;
 
-		EngineTrace->TraceRay(ray, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &exitTrace);
+		EngineTrace->TraceRay(ray, MASK_SHOT_HULL, &filter, &exitTrace);
 
 		if (exitTrace.startsolid && exitTrace.surface.flags & SURF_HITBOX)
 		{

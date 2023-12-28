@@ -70,7 +70,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			ctx.reset();
 			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
-			AutoPeek->returning = false;
+			AutoPeek->Disable();
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(user_id_pl));

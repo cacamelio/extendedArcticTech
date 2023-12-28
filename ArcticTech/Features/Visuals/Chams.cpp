@@ -116,9 +116,18 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	CBaseEntity* ent = EntityList->GetClientEntity(info.entity_index);
 	std::string modelName = ModelInfoClient->GetModelName(info.pModel);
 
-	bool isWeapon = modelName.starts_with("models/weapons/w");
 	bool isArms = modelName.find("arms") != std::string::npos || modelName.find("sleeve") != std::string::npos;
 	bool isViewModel = modelName.starts_with("models/weapons/v") && !isArms;
+	bool isAttachment = false; 
+
+	if (state.m_pRenderable) {
+		if (EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->moveparent()) == Cheat.LocalPlayer)
+			isAttachment = true;
+		else if (EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->m_hOwnerEntity()) == Cheat.LocalPlayer)
+			isAttachment = true;
+		else if (state.m_pRenderable->GetShadowParent() && state.m_pRenderable->GetShadowParent()->GetIClientUnknown()->GetBaseEntity() == Cheat.LocalPlayer)
+			isAttachment = true;
+	}
 
 	ClassOfEntity entType;
 
@@ -134,9 +143,7 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	else if (isViewModel) {
 		entType = ClassOfEntity::ViewModel;
 	}
-	else if (isWeapon && (EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->moveparent()) == Cheat.LocalPlayer || 
-		EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->m_hOwnerEntity()) == Cheat.LocalPlayer)) 
-	{
+	else if (isAttachment) {
 		entType = ClassOfEntity::Attachment;
 	}
 	else if (isArms) {

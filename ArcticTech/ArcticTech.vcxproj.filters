@@ -162,7 +162,7 @@
     <ClCompile Include="Features\Misc\AutoPeek.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Features\Misc\AutoStrafe.cpp">
+    <ClCompile Include="Features\Misc\GameMovement.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Features\Misc\EventListner.cpp">
@@ -479,7 +479,7 @@
     <ClInclude Include="Features\Misc\AutoPeek.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Features\Misc\AutoStrafe.h">
+    <ClInclude Include="Features\Misc\GameMovement.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Features\Misc\EventListner.h">

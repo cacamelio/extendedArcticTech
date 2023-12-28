@@ -244,7 +244,7 @@ bool CBasePlayer::IsAlive() {
 	if (!this || !PlayerResource)
 		return false;
 
-	if (this == Cheat.LocalPlayer && (m_iHealth() <= 0 || m_lifeState() != LIFE_ALIVE))
+	if ((this == Cheat.LocalPlayer || !m_bDormant()) && (m_iHealth() <= 0 || m_lifeState() != LIFE_ALIVE))
 		return false;
 
 	return PlayerResource->m_bAlive()[EntIndex()];

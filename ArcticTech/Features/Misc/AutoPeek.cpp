@@ -46,27 +46,50 @@ void CAutoPeek::CreateMove() {
 	float distance_sqr = (Cheat.LocalPlayer->m_vecOrigin() - position).LengthSqr();
 
 	if (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot()) {
-		returning = true;
-	} else if (distance_sqr < 4.f) {
+		Return();
+	} else if (distance_sqr < 16.f) {
 		if (ctx.active_weapon->m_flNextPrimaryAttack() - 0.15f < TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()))
 			returning = false;
 	}
 
-	if (returning) {
-		QAngle ang = Utils::VectorToAngle(Cheat.LocalPlayer->m_vecOrigin(), position);
-		QAngle vang;
-		EngineClient->GetViewAngles(&vang);
-		ang.yaw = vang.yaw - ang.yaw;
-		ang.Normalize();
+	if (!returning)
+		return;
 
-		float vel = (distance_sqr > 25.f) ? 450 : (5.f + 3.f * distance_sqr);
-		if (distance_sqr < 1.f)
-			vel = 0.f;
+	block_buttons &= ctx.cmd->buttons; // if player will release buttons, they will not be blocked
+	ctx.cmd->buttons &= ~block_buttons;
 
-		Vector dir;
-		Utils::AngleVectors(ang, dir);
-		dir *= vel;
-		ctx.cmd->forwardmove = dir.x;
-		ctx.cmd->sidemove = dir.y;
+	if (block_buttons & IN_FORWARD && ctx.cmd->forwardmove > 0.f)
+		ctx.cmd->forwardmove = 0.f;
+
+	if (block_buttons & IN_BACK && ctx.cmd->forwardmove < 0.f)
+		ctx.cmd->forwardmove = 0.f;
+
+	if (block_buttons & IN_MOVELEFT && ctx.cmd->sidemove < 0.f)
+		ctx.cmd->sidemove = 0.f;
+
+	if (block_buttons & IN_MOVERIGHT && ctx.cmd->sidemove > 0.f)
+		ctx.cmd->sidemove = 0.f;
+
+	if (distance_sqr < 16.f) {
+		if (block_buttons == 0)
+			returning = false;
+		return;
 	}
+
+	QAngle ang = Utils::VectorToAngle(Cheat.LocalPlayer->m_vecOrigin(), position);
+	QAngle vang;
+	EngineClient->GetViewAngles(&vang);
+	ang.yaw = vang.yaw - ang.yaw;
+	ang.Normalize();
+
+	Vector dir;
+	Utils::AngleVectors(ang, dir);
+	dir *= 450.f;
+	ctx.cmd->forwardmove = dir.x;
+	ctx.cmd->sidemove = dir.y;
+}
+
+void CAutoPeek::Return() {
+	block_buttons = ctx.cmd->buttons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT);
+	returning = true;
 }

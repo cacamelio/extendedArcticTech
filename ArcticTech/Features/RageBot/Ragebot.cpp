@@ -479,6 +479,9 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 			else if (Ragebot->current_record->m_angEyeAngles.pitch < 10.f) // aim at shitty defensive aa
 				priority += 1;
 
+			if (GlobalVars->tickcount - Ragebot->current_record->update_tick < 12)
+				priority += 1;
+
 			ScannedPoint_t sc_point;
 			sc_point.damage = bullet.damage;
 			sc_point.hitbox = point.hitbox;
@@ -677,7 +680,7 @@ void CRagebot::Run() {
 	if (settings.auto_stop->get(1) && !(ctx.active_weapon->CanShoot() || ctx.was_unregistered_shot) && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
-	if (should_autostop && !AutoPeek->returning)
+	if (should_autostop && !AutoPeek->IsReturning())
 		AutoStop();
 
 	if (Exploits->IsShifting())
@@ -702,7 +705,7 @@ void CRagebot::Run() {
 	if (!config.antiaim.misc.fake_duck->get())
 		ctx.send_packet = true;
 
-	AutoPeek->returning = true;
+	AutoPeek->Return();
 	last_target = best_target.player;
 	last_target_shot = ctx.cmd->command_number;
 
@@ -1006,7 +1009,7 @@ void CRagebot::DormantAimbot() {
 		if (!config.antiaim.misc.fake_duck->get())
 			ctx.send_packet = true;
 
-		AutoPeek->returning = true;
+		AutoPeek->Return();
 
 		Console->Log(std::format("shot at {} [dmg: {}] [hc: {}%] [da]", player->GetName(), bullet.damage, int(hc * 100)));
 		break;

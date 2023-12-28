@@ -86,15 +86,14 @@ void LagRecord::BuildMatrix() {
 
 	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 
-	if (prev_record && 
-		resolver_data.antiaim_type == R_AntiAimType::JITTER && 
-		std::abs(Math::AngleDiff(backup_eye_angle.yaw, prev_record->m_angEyeAngles.yaw)) > 32.f &&
-		std::abs(Math::AngleDiff(backup_eye_angle.yaw, m_angEyeAngles.yaw)) < 32.f) // retarded jitter fix
-		player->m_angEyeAngles() = prev_record->m_angEyeAngles;
+	//if (prev_record && 
+	//	resolver_data.antiaim_type == R_AntiAimType::JITTER && 
+	//	std::abs(Math::AngleDiff(backup_eye_angle.yaw, prev_record->m_angEyeAngles.yaw)) > 32.f &&
+	//	std::abs(Math::AngleDiff(backup_eye_angle.yaw, m_angEyeAngles.yaw)) < 32.f) // retarded jitter fix
+	//	player->m_angEyeAngles() = prev_record->m_angEyeAngles;
 
-	if (config.ragebot.aimbot.roll_resolver->get()) {
+	if (config.ragebot.aimbot.roll_resolver->get())
 		player->m_angEyeAngles().roll = config.ragebot.aimbot.roll_angle->get() * (resolver_data.side != 0 ? resolver_data.side : 1);
-	}
 
 	player->ClampBonesInBBox(clamped_matrix, BONE_USED_BY_ANYTHING);
 

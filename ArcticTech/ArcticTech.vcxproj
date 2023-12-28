@@ -104,7 +104,7 @@
     <ClCompile Include="Features\Lua\Hook\Hook.cpp" />
     <ClCompile Include="Features\Lua\Protect\Protect.cpp" />
     <ClCompile Include="Features\Misc\AutoPeek.cpp" />
-    <ClCompile Include="Features\Misc\AutoStrafe.cpp" />
+    <ClCompile Include="Features\Misc\GameMovement.cpp" />
     <ClCompile Include="Features\Misc\EventListner.cpp" />
     <ClCompile Include="Features\Misc\Misc.cpp" />
     <ClCompile Include="Features\Misc\Prediction.cpp" />
@@ -170,7 +170,7 @@
     <ClInclude Include="Features\Lua\Protect\Protect.h" />
     <ClInclude Include="Features\Lua\Sol.hpp" />
     <ClInclude Include="Features\Misc\AutoPeek.h" />
-    <ClInclude Include="Features\Misc\AutoStrafe.h" />
+    <ClInclude Include="Features\Misc\GameMovement.h" />
     <ClInclude Include="Features\Misc\EventListner.h" />
     <ClInclude Include="Features\Misc\Misc.h" />
     <ClInclude Include="Features\Misc\Prediction.h" />

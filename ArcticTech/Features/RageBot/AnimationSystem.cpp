@@ -165,6 +165,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	auto nOcclusionMask = player->m_nOcclusionFlags();
 	auto nOcclusionFrame = player->m_nOcclusionFrame();
 	auto backupAbsAngles = player->GetAbsAngles();
+	auto backupiEFlags = player->m_iEFlags();
 
 	GlobalVars->realtime = player->m_flSimulationTime();
 	GlobalVars->curtime = player->m_flSimulationTime();
@@ -176,9 +177,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	memcpy(record->animlayers, player->GetAnimlayers(), 13 * sizeof(AnimationLayer));
 	record->animlayers[12].m_flWeight = 0.f;
-	auto pose_params = player->m_flPoseParameter();
 
-	player->m_iEFlags() &= ~(EFL_DIRTY_ABSTRANSFORM | EFL_DIRTY_ABSVELOCITY);
+	auto pose_params = player->m_flPoseParameter();
 
 	if (!player->IsTeammate()) {
 		player->m_BoneAccessor().m_ReadableBones = 0;
@@ -203,9 +203,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		player->UpdateClientSideAnimation();
 	}
 
-	if (!(player->m_fFlags() & FL_ONGROUND)) {
+	if (!(player->m_fFlags() & FL_ONGROUND))
 		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat();
-	}
 
 	hook_info.disable_clamp_bones = true;
 	BuildMatrix(player, record->aim_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
@@ -234,6 +233,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	player->m_nOcclusionFrame() = nOcclusionFrame;
 	player->m_nOcclusionFlags() = nOcclusionMask;
+	player->m_iEFlags() = backupiEFlags;
 
 	player->SetAbsOrigin(backupAbsOrigin);
 	player->m_vecAbsVelocity() = backupAbsVelocity;
@@ -272,10 +272,13 @@ void CAnimationSystem::RunInterpolation() {
 			continue;
 		}
 
-		float lerp_amt = 24.f;
+		if (!data->valid)
+			data->origin = data->net_origin;
+
+		float lerp_amt = 28.f;
 
 		if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && player->IsEnemy())
-			lerp_amt = 36.f; // speed up interpolation
+			lerp_amt = 42.f; // speed up interpolation
 
 		data->valid = true;
 		data->origin += (data->net_origin - data->origin) * std::clamp(GlobalVars->frametime * lerp_amt, 0.f, 0.8f);

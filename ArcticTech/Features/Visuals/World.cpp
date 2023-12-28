@@ -246,7 +246,7 @@ void CWorld::Crosshair() {
 
 	CBaseCombatWeapon* activeWeapon = Cheat.LocalPlayer->GetActiveWeapon();
 
-	if (!activeWeapon || !activeWeapon->ShootingWeapon())
+	if (!activeWeapon || !activeWeapon->ShootingWeapon() || activeWeapon->m_iItemDefinitionIndex() == Taser)
 		return;
 
 	Vector eyePos = (ctx.fake_duck ? Vector(0, 0, 64) : Cheat.LocalPlayer->m_vecViewOffset()) + Cheat.LocalPlayer->GetAbsOrigin();

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Miscelleaneus {
+namespace Miscellaneous {
 	void Clantag();
 	void FastThrow();
 	void AutomaticGrenadeRelease();

@@ -41,6 +41,20 @@ ICollideable* CBaseEntity::GetCollideable() {
 	return unk->GetCollideable();
 }
 
+CBaseEntity* CBaseEntity::GetShadowParent() {
+	auto renderable = GetClientRenderable();
+
+	if (!renderable)
+		return nullptr;
+
+	auto unknown = renderable->GetIClientUnknown();
+
+	if (!unknown)
+		return nullptr;
+
+	return unknown->GetBaseEntity();
+}
+
 const model_t* CBaseEntity::GetModel() {
 	void* pClientRenderable = (void*)(this + 0x4);
 	typedef model_t* (__thiscall* fnGetModel)(void*);

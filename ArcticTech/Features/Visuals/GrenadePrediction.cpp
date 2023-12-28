@@ -189,7 +189,6 @@ void GrenadePrediction::Start() {
 			viewAngles.yaw = CalculateThrowYaw(direction, vel, weaponData->flThrowVelocity, flThrowStrength);
 	}
 
-
 	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
 
 	Vector direction;
