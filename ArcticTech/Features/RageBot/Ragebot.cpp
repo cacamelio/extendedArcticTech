@@ -121,7 +121,7 @@ void CRagebot::AutoStop() {
 	if (vec_speed.LengthSqr() < ((target_speed + 3.6f) * (target_speed + 3.6f))) {
 		float cmd_speed = Math::Q_sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
 	
-		if (cmd_speed > 0.00001f) {
+		if (cmd_speed > 2.f) {
 			float factor = target_speed / cmd_speed;
 			ctx.cmd->forwardmove *= factor;
 			ctx.cmd->sidemove *= factor;

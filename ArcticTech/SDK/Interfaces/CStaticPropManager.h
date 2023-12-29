@@ -12,6 +12,29 @@ public:
 
 	// Sets a constant alpha modulation value
 	virtual void SetAlphaModulation(unsigned char a) = 0;
+
+	IClientUnknown* m_pOuter;
+
+	unsigned short m_hShadowHandle;
+	uint16_t m_nRenderFX : 5;
+	uint16_t m_nRenderMode : 4;
+	uint16_t m_bAlphaOverride : 1;
+	uint16_t m_bShadowAlphaOverride : 1;
+	uint16_t m_nDistanceFadeMode : 1;
+	uint16_t m_nReserved : 4;
+
+	uint16_t m_nDesyncOffset;
+	uint8_t m_nAlpha;
+	uint8_t m_nReserved2;
+
+	uint16_t m_nDistFadeStart;
+	uint16_t m_nDistFadeEnd;
+
+	float m_flFadeScale;
+	float m_flRenderFxStartTime;
+	float m_flRenderFxDuration;
+
+	inline int GetAlphaModulation() const { return m_nAlpha; };
 };
 
 class CStaticProp

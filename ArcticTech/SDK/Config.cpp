@@ -288,8 +288,8 @@ void CConfig::Init() {
     add(config.misc.miscellaneous.gamesense_mode);
     add(config.misc.movement.auto_jump);
     add(config.misc.movement.auto_strafe);
-    add(config.misc.movement.compensate_throwable);
     add(config.misc.movement.auto_strafe_smooth);
+    add(config.misc.movement.super_toss);
     add(config.misc.movement.edge_jump);
     add(config.misc.movement.edge_jump_key);
     add(config.misc.movement.infinity_duck);

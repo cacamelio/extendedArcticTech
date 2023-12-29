@@ -43,15 +43,8 @@ void CMovement::AutoStrafe() {
 	float speed_sqr = ctx.local_velocity.Length2DSqr();
 	float target_yaw = new_angle.yaw; // eye yaw at the moment
 	float offset = 0.f;
-
-	if (ctx.cmd->buttons & IN_MOVELEFT)
-		offset += 90.f;
-	if (ctx.cmd->buttons & IN_MOVERIGHT)
-		offset -= 90.f;
-	if (ctx.cmd->buttons & IN_FORWARD)
-		offset *= 0.5f;
-	if (ctx.cmd->buttons & IN_BACK)
-		offset = (-offset * 0.5f) + 180.f;
+	if (ctx.cmd->sidemove != 0.f || ctx.cmd->forwardmove != 0.f)
+		offset = RAD2DEG(std::atan2(-ctx.cmd->sidemove, ctx.cmd->forwardmove));
 
 	target_yaw += offset;
 	target_yaw = Math::AngleNormalize(target_yaw);
@@ -102,6 +95,9 @@ void CMovement::AutoStrafe() {
 }
 
 void CMovement::CompensateThrowable() {
+	if (config.misc.movement.super_toss->get() == 0)
+		return;
+
 	auto weapon = Cheat.LocalPlayer->GetActiveWeapon();
 
 	if (!weapon->IsGrenade())
@@ -116,30 +112,26 @@ void CMovement::CompensateThrowable() {
 	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER)
 		return;
 
-	QAngle vangle;
-	EngineClient->GetViewAngles(&vangle);
+	if (config.misc.movement.super_toss->get() == 2 && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+		ctx.cmd->viewangles.pitch += CalculateThrowPitch(ctx.cmd->viewangles.pitch, ctx.local_velocity, weaponData->flThrowVelocity, grenade->m_flThrowStrength());
 
-	if (config.misc.movement.compensate_throwable->get(0) && config.misc.movement.auto_strafe->get()) {
-		Vector direction = Math::AngleVectors(vangle);
+	QAngle vangle = ctx.cmd->viewangles;
+	vangle.pitch -= (90.f - fabsf(vangle.pitch)) * 10.f / 90.f;
+	Vector direction = Math::AngleVectors(vangle);
 
-		Vector smoothed_velocity = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
+	Vector smoothed_velocity = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
-		Vector base_vel = direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (grenade->m_flThrowStrength() * 0.7f + 0.3f));
-		Vector curent_vel = ctx.local_velocity * 1.25f + base_vel;
+	Vector base_vel = direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (grenade->m_flThrowStrength() * 0.7f + 0.3f));
+	Vector curent_vel = ctx.local_velocity * 1.25f + base_vel;
 
-		Vector target_vel = (base_vel + smoothed_velocity * 1.25f).Normalized();
-		if (curent_vel.Dot(direction) > 0.f && config.misc.movement.compensate_throwable->get(2))
-			target_vel = direction;
+	Vector target_vel = (base_vel + smoothed_velocity * 1.25f).Normalized();
+	if (curent_vel.Dot(direction) > 0.f && config.misc.movement.super_toss->get() == 2)
+		target_vel = direction;
 
-		float throw_yaw = CalculateThrowYaw(target_vel, ctx.local_velocity, weaponData->flThrowVelocity, grenade->m_flThrowStrength());
+	float throw_yaw = CalculateThrowYaw(target_vel, ctx.local_velocity, weaponData->flThrowVelocity, grenade->m_flThrowStrength());
 
-		if (config.misc.movement.compensate_throwable->get(2) || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
-			ctx.cmd->viewangles.yaw = throw_yaw;
-	}
-
-	if (config.misc.movement.compensate_throwable->get(1)) {
-		ctx.cmd->viewangles.pitch += CalculateThrowPitch(Math::AngleVectors(ctx.cmd->viewangles), config.misc.movement.compensate_throwable->get(2) ? 0.f : std::clamp(ctx.local_velocity.z, -120.f, 120.f), ctx.local_velocity, weaponData->flThrowVelocity, grenade->m_flThrowStrength());
-	}
+	if (config.misc.movement.super_toss->get() == 2 || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+		ctx.cmd->viewangles.yaw = throw_yaw;
 }
 
 void CMovement::QuickStop() {

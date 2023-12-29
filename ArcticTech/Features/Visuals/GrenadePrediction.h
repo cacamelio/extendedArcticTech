@@ -70,4 +70,4 @@ inline float CSGO_Armor(float flDamage, int ArmorValue) {
 }
 
 float CalculateThrowYaw(const Vector& wish_dir, const Vector& vel, float throw_velocity, float throw_strength);
-float CalculateThrowPitch(const Vector& wish_dir, float wish_z_vel, const Vector& vel, float throw_velocity, float throw_strength);
+float CalculateThrowPitch(float pitch, const Vector& vel, float throw_velocity, float throw_strength);

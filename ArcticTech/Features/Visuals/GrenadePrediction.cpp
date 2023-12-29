@@ -107,18 +107,8 @@ float CalculateThrowYaw(const Vector& wish_dir, const Vector& vel, float throw_v
 	return Math::VectorAngles_p(real_dir).yaw;
 }
 
-float CalculateThrowPitch(const Vector& wish_dir, float wish_z_vel, const Vector& vel, float throw_velocity, float throw_strength) {
-	float speed = std::clamp(throw_velocity * 0.9f, 15.f, 750.f) * (std::clamp(throw_strength, 0.f, 1.f) * 0.7f + 0.3f);
-	
-	Vector cur_vel = vel * 1.25f + wish_dir * speed;
-	Vector wish_vel = Vector(vel.x, vel.y, wish_z_vel) * 1.25f + wish_dir * speed;
-
-	QAngle ang1 = Math::VectorAngles(cur_vel);
-	QAngle ang2 = Math::VectorAngles(wish_vel);
-
-	float ang_diff = ang2.pitch - ang1.pitch;
-
-	return ang_diff * (std::cos(DEG2RAD(ang_diff)) + 1) * 0.5f;
+float CalculateThrowPitch(float pitch, const Vector& vel, float throw_velocity, float throw_strength) {
+	return std::clamp(vel.z * 0.1f, -25.f, 25.f);
 }
 
 void GrenadePrediction::PrecacheParticles() {
@@ -160,7 +150,7 @@ void GrenadePrediction::Start() {
 	}
 
 	Vector vel = Cheat.LocalPlayer->m_vecVelocity();
-	if (config.misc.movement.compensate_throwable->get(0) && !(localPlayer->m_fFlags() & FL_ONGROUND))
+	if (config.misc.movement.super_toss->get() == 1 && !(localPlayer->m_fFlags() & FL_ONGROUND))
 		vel = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
 	if (!runningPrediction)
@@ -176,11 +166,12 @@ void GrenadePrediction::Start() {
 
 	const float flThrowStrength = std::clamp(grenade->m_flThrowStrength(), 0.f, 1.f);
 
-	if (config.misc.movement.compensate_throwable->get(1) && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
-		viewAngles.pitch += CalculateThrowPitch(Math::AngleVectors(viewAngles), config.misc.movement.compensate_throwable->get(2) ? 0.f : std::clamp(vel.z, -120.f, 120.f), vel, weaponData->flThrowVelocity, flThrowStrength);
-	}
+	if (config.misc.movement.super_toss->get() == 2 && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+		viewAngles.pitch += CalculateThrowPitch(viewAngles.pitch, lerped_velocity, weaponData->flThrowVelocity, flThrowStrength);
 
-	if (config.misc.movement.compensate_throwable->get(0) && config.misc.movement.compensate_throwable->get(2)) {
+	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
+
+	if (config.misc.movement.super_toss->get() == 2) {
 		Vector direction = Math::AngleVectors(viewAngles);
 		Vector base_vel = direction * (std::clamp(weaponData->flThrowVelocity * 0.9f, 15.f, 750.f) * (flThrowStrength * 0.7f + 0.3f));
 		Vector curent_vel = vel * 1.25f + base_vel;
@@ -188,8 +179,6 @@ void GrenadePrediction::Start() {
 		if (curent_vel.Dot(direction) > 0.f)
 			viewAngles.yaw = CalculateThrowYaw(direction, vel, weaponData->flThrowVelocity, flThrowStrength);
 	}
-
-	viewAngles.pitch -= (90.f - fabsf(viewAngles.pitch)) * 10.f / 90.f;
 
 	Vector direction;
 	Utils::AngleVectors(viewAngles, direction);

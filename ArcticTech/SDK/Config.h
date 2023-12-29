@@ -251,7 +251,7 @@ struct config_t {
         struct movement_t {
             CCheckBox* auto_jump;
             CCheckBox* auto_strafe;
-            CMultiCombo* compensate_throwable;
+            CComboBox* super_toss;
             CSliderInt* auto_strafe_smooth;
             CCheckBox* edge_jump;
             CKeyBind* edge_jump_key;

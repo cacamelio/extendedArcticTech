@@ -90,7 +90,10 @@ void LagRecord::BuildMatrix() {
 	//	resolver_data.antiaim_type == R_AntiAimType::JITTER && 
 	//	std::abs(Math::AngleDiff(backup_eye_angle.yaw, prev_record->m_angEyeAngles.yaw)) > 32.f &&
 	//	std::abs(Math::AngleDiff(backup_eye_angle.yaw, m_angEyeAngles.yaw)) < 32.f) // retarded jitter fix
-	//	player->m_angEyeAngles() = prev_record->m_angEyeAngles;
+	//	player->m_angEyeAngles() = prev_record->m_angEyeAngles
+
+	bool broken_record = abs(Math::AngleDiff(m_angEyeAngles.yaw, player->m_angEyeAngles().yaw)) >= 30.f;
+
 
 	if (config.ragebot.aimbot.roll_resolver->get())
 		player->m_angEyeAngles().roll = config.ragebot.aimbot.roll_angle->get() * (resolver_data.side != 0 ? resolver_data.side : 1);
