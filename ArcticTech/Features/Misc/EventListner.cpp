@@ -7,11 +7,12 @@
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/LagCompensation.h"
 #include "../RageBot/Ragebot.h"
+#include "../AntiAim/AntiAim.h"
 #include "../Visuals/ESP.h"
 #include "../Visuals/Chams.h"
 #include "../ShotManager/ShotManager.h"
-#include "../Visuals/PreserveKillfeed.h"
 #include "../Lua/Bridge/Bridge.h"
+#include "Misc.h"
 #include "AutoPeek.h"
 
 CEventListner* EventListner = new CEventListner;
@@ -71,6 +72,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
 			AutoPeek->Disable();
+			AntiAim->ResetManual();
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(user_id_pl));
@@ -90,8 +92,8 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		//Utils::ForceFullUpdate();
 
-		KillFeed->ClearDeathNotice = true;
-
+		Miscellaneous::ClearKillfeed();
+		
 		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 			ESPInfo[i].m_nHealth = 100;
 		}

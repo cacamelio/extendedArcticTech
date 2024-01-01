@@ -728,7 +728,8 @@ namespace api {
 
 		FireBulletData_t trace_bullet(CBasePlayer* attacker, Vector start, Vector end, sol::optional<CBasePlayer*> target) {
 			FireBulletData_t data;
-			AutoWall->FireBullet(attacker, start, end, data, target.value_or(nullptr));
+			if (!AutoWall->FireBullet(attacker, start, end, data, target.value_or(nullptr)))
+				data.damage = -1.f;
 			return data;
 		}
 
@@ -1200,6 +1201,10 @@ namespace api {
 		void set_icon(CBasePlayer* player, int level) {
 			ESP::IconDisplay(player, level);
 		}
+
+		Vector get_hitbox_position(CBasePlayer* self, int hb) {
+			return self->GetHitboxCenter(hb);
+		}
 	}
 
 	namespace network {
@@ -1489,10 +1494,11 @@ void CLua::Setup() {
 		"is_alive", &CBasePlayer::IsAlive,
 		"is_enemy", &CBasePlayer::IsEnemy,
 		"is_bot", api::entity::is_bot,
+		"is_dormant", &CBasePlayer::m_bDormant,
 		"get_player_info", api::entity::get_player_info,
 		"get_eye_position", &CBasePlayer::GetEyePosition,
 		"get_bone_position", &CBasePlayer::GetBonePosition,
-		"get_hitbox_position", &CBasePlayer::GetHitboxCenter,
+		"get_hitbox_position", &api::entity::get_hitbox_position,
 		"get_animstate", &CBasePlayer::GetAnimstate,
 		"get_animlayers", &api::entity::get_anim_layers,
 		"get_simulation_time", api::entity::get_simulation_time,
@@ -1635,6 +1641,11 @@ void CLua::Setup() {
 		"desync_side", &LuaAntiAim_t::override_desync_side
 	);
 
+	lua.new_usertype<FireBulletData_t>("fire_bullet_t", sol::no_constructor, 
+		"damage", &FireBulletData_t::damage,
+		"trace", &FireBulletData_t::enterTrace
+	);
+
 	// _G
 	lua["print"] = api::print;
 	lua["error"] = api::error;
@@ -1741,6 +1752,7 @@ void CLua::Setup() {
 		"pattern_scan", api::utils::pattern_scan,
 		"trace_line", api::utils::trace_line,
 		"trace_hull", api::utils::trace_hull,
+		"trace_bullet", api::utils::trace_bullet,
 		"is_key_pressed", api::utils::is_key_pressed,
 		"get_mouse_position", api::utils::get_mouse_position,
 		"send_voice_message", api::utils::send_voice_message

@@ -7,14 +7,29 @@
 bool CBasePlayer::IsTeammate() {
 	if (!Cheat.LocalPlayer || !this)
 		return false;
-	return Cheat.LocalPlayer->m_iTeamNum() == m_iTeamNum();
+
+	int local_team = Cheat.LocalPlayer->m_iTeamNum();
+
+	CBasePlayer* obs_target = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(Cheat.LocalPlayer->m_hObserverTarget()));
+	int obs_mode = Cheat.LocalPlayer->m_iObserverMode();
+	if (obs_target && !Cheat.LocalPlayer->IsAlive() && (obs_mode == OBS_MODE_IN_EYE || obs_mode == OBS_MODE_CHASE))
+		local_team = obs_target->m_iTeamNum();
+
+	return local_team == m_iTeamNum();
 }
 
 bool CBasePlayer::IsEnemy() {
 	if (!Cheat.LocalPlayer)
 		return true;
 
-	return Cheat.LocalPlayer->m_iTeamNum() != m_iTeamNum();
+	int local_team = Cheat.LocalPlayer->m_iTeamNum();
+
+	CBasePlayer* obs_target = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(Cheat.LocalPlayer->m_hObserverTarget()));
+	int obs_mode = Cheat.LocalPlayer->m_iObserverMode();
+	if (obs_target && !Cheat.LocalPlayer->IsAlive() && (obs_mode == OBS_MODE_IN_EYE || obs_mode == OBS_MODE_CHASE))
+		local_team = obs_target->m_iTeamNum();
+
+	return local_team != m_iTeamNum();
 }
 
 Vector CBasePlayer::GetEyePosition() {
@@ -432,4 +447,8 @@ bool CBasePlayer::IsHitboxArmored(int hitbox) {
 	}
 
 	return false;
+}
+
+CBasePlayer* CBasePlayer::GetObserverTarget() {
+	return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(m_hObserverTarget()));
 }

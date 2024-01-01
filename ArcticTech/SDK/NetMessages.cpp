@@ -70,8 +70,14 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 		func.func(lua_voice_data);
 	}
 
+	VoiceDataOther data_o;
+	data_o.xuid = msg.xuid;
+	data_o.section_number = msg.section_number;
+	data_o.sequence_bytes = msg.sequence_bytes;
+	data_o.uncompressed_sample_offset = msg.uncompressed_sample_offset;
+
 	for (auto handler : m_voiceDataCallbacks)
-		handler(msg);
+		handler(&data_o);
 
 	if (msg.xuid_low != NET_ARCTIC_CODE)
 		return false;

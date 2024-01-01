@@ -377,7 +377,6 @@ public:
     PRED_DESC_MAP(m_afButtonsReleased, int, "m_afButtonReleased")
     PRED_DESC_MAP(m_fEffects, int, "m_fEffects")
     PRED_DESC_MAP(m_vecAbsVelocity, Vector, "m_vecAbsVelocity")
-    OFFSET(m_bDormant, bool, 0xED)
     NETVAR_O(GetAnimstate, CCSGOPlayerAnimationState*, "DT_CSPlayer", "m_bIsScoped", -0x14)
     NETVAR(deadflag, bool, "DT_BasePlayer", "deadflag")
     NETVAR_O(v_angle, QAngle, "DT_BasePlayer", "deadflag", 0x4)
@@ -479,6 +478,7 @@ public:
     float               GetMaxSpeed();
     void                CopyBones(matrix3x4_t* boneMatrix);
     void                ClampBonesInBBox(matrix3x4_t* bones, int bone_mask);
+    CBasePlayer*        GetObserverTarget();
 
     int&                m_nImpulse();
     int                 GetButtonForced();

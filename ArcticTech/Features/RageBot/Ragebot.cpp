@@ -113,12 +113,15 @@ float CRagebot::CalcMinDamage(CBasePlayer* player) {
 }
 
 void CRagebot::AutoStop() {
+	if (ctx.cmd->buttons & IN_DUCK)
+		return;
+
 	Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 	QAngle direction = Math::VectorAngles(vec_speed);
 
 	float target_speed = ctx.active_weapon->MaxSpeed() * 0.2f;
 
-	if (vec_speed.LengthSqr() < ((target_speed + 3.6f) * (target_speed + 3.6f))) {
+	if (vec_speed.LengthSqr() < ((target_speed + 1.f) * (target_speed + 1.f))) {
 		float cmd_speed = Math::Q_sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
 	
 		if (cmd_speed > 2.f) {
@@ -311,16 +314,16 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale) {
 	switch (hitbox_id) {
 	case HITBOX_HEAD:
 		for (auto& vert : verts)
-			AddPoint(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true });
-		AddPoint(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true });
+			AddPoint(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true, dont_shoot_next_points });
+		AddPoint(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true, dont_shoot_next_points });
 		break;
 	case HITBOX_STOMACH:
 	case HITBOX_PELVIS:
 	case HITBOX_CHEST:
 	case HITBOX_UPPER_CHEST:
-		AddPoint(AimPoint_t{ Math::VectorTransform(verts[1], boneMatrix), hitbox_id, true });
-		AddPoint(AimPoint_t{ Math::VectorTransform(verts[2], boneMatrix), hitbox_id, true });
-		AddPoint(AimPoint_t{ Math::VectorTransform(verts[3], boneMatrix), hitbox_id, true });
+		AddPoint(AimPoint_t{ Math::VectorTransform(verts[1], boneMatrix), hitbox_id, true, dont_shoot_next_points });
+		AddPoint(AimPoint_t{ Math::VectorTransform(verts[2], boneMatrix), hitbox_id, true, dont_shoot_next_points });
+		AddPoint(AimPoint_t{ Math::VectorTransform(verts[3], boneMatrix), hitbox_id, true, dont_shoot_next_points });
 		break;
 	}
 }
@@ -348,18 +351,23 @@ void CRagebot::SelectPoints(LagRecord* record) {
 		float max_possible_damage = ctx.weapon_info->iDamage;
 		record->player->ScaleDamage(HitboxToHitgroup(hitbox), ctx.weapon_info, max_possible_damage);
 
-		if (!settings.auto_stop->get(0) && max_possible_damage < CalcMinDamage(record->player))
+		int min_damage = CalcMinDamage(record->player);
+		if (!settings.auto_stop->get(0) && max_possible_damage < min_damage)
 			continue;
+
+		dont_shoot_next_points = max_possible_damage < min_damage;
 
 		{
 			std::lock_guard<std::mutex> lock(scan_mutex);
-			thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false}));
+			thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false, dont_shoot_next_points }));
 			selected_points++;
 			scan_condition.notify_one();
 		}
 
 		if (multipoints_enabled(hitbox) && !Exploits->IsShifting())
 			GetMultipoints(record, hitbox, hitbox == HITBOX_HEAD ? settings.head_point_scale->get() * 0.01f : settings.body_point_scale->get() * 0.01f);
+
+		dont_shoot_next_points = false;
 	}
 }
 
@@ -379,7 +387,7 @@ void CRagebot::SelectBestPoint(ScannedTarget_t* target) {
 	}
 
 	int& delay = delayed_ticks[target->player->EntIndex()];
-	if (best_body_point.damage > 1.f && best_head_point.damage > 1.f && settings.delay_shot->get() > 0) {
+	if ((best_body_point.damage > 1.f && !best_body_point.dont_shoot) && best_head_point.damage > 1.f && settings.delay_shot->get() > 0) {
 		if (delay < settings.delay_shot->get())
 			best_head_point.damage = -1.f;
 		delay++;
@@ -459,13 +467,26 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 
 		CBasePlayer* target = Ragebot->current_record->player;
 
+		if (config.ragebot.aimbot.force_safepoint->get() &&
+			!(EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->opposite_matrix, HitboxToDamagegroup(point.hitbox)) &&
+				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->safe_matrix, HitboxToDamagegroup(point.hitbox)))) {
+
+			std::lock_guard completed_lock(Ragebot->completed_mutex);
+
+			Ragebot->scanned_points++;
+			if (Ragebot->scanned_points >= Ragebot->selected_points)
+				Ragebot->result_condition.notify_all();
+			continue;
+		}
+
 		FireBulletData_t bullet;
 		if (AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, point.point, bullet, target)) {
 			int priority = point.multipoint ? 0 : 1;
 			bool jitter_safe = false;
 
-			if (EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->opposite_matrix, HitboxToDamagegroup(point.hitbox)) &&
-				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->clamped_matrix, HitboxToDamagegroup(point.hitbox))) {
+			if (!config.ragebot.aimbot.force_safepoint->get() &&
+				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->opposite_matrix, HitboxToDamagegroup(point.hitbox)) &&
+				EngineTrace->RayIntersectPlayer(ctx.shoot_position, point.point, target, Ragebot->current_record->safe_matrix, HitboxToDamagegroup(point.hitbox))) {
 
 				priority += 2;
 				jitter_safe = true;
@@ -491,6 +512,7 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 			sc_point.priority = priority;
 			sc_point.record = Ragebot->current_record;
 			sc_point.safe_point = jitter_safe;
+			sc_point.dont_shoot = point.dont_shoot;
 
 			if (bullet.damage > 5.f)
 				Exploits->block_charge = true;
@@ -567,6 +589,24 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 	}
 }
 
+void CRagebot::RunPrediction() {
+	if (ctx.cmd->buttons & IN_DUCK)
+		return;
+
+	if (abs(ctx.cmd->sidemove) + abs(ctx.cmd->forwardmove) < 16.f)
+		return;
+
+	auto backup_cmd = ctx.cmd;
+	CUserCmd stop_cmd = *ctx.cmd;
+	ctx.cmd = &stop_cmd;
+	AutoStop();
+	ctx.cmd = backup_cmd;
+
+	QAngle vangle;
+	EngineClient->GetViewAngles(&vangle);
+	EnginePrediction->Repredict(&stop_cmd, vangle);
+}
+
 void CRagebot::Run() {
 	if (!config.ragebot.aimbot.enabled->get() || !ctx.active_weapon)
 		return;
@@ -612,7 +652,7 @@ void CRagebot::Run() {
 	ScannedTarget_t best_target;
 	bool should_autostop = false;
 
-	bool local_on_ground = Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && EnginePrediction->m_fFlags & FL_ONGROUND;
+	bool local_on_ground = Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && EnginePrediction->pre_prediction.m_fFlags & FL_ONGROUND;
 	int m_nWeaponMode = Cheat.LocalPlayer->m_bIsScoped() ? 1 : 0;
 	float min_jump_inaccuracy_tan = 0.f;
 
@@ -645,15 +685,18 @@ void CRagebot::Run() {
 	}
 
 	for (const auto& target : scanned_targets) {
+		if (target.best_point.damage <= 1.f)
+			continue;
+
+		float jump_max_hc = FastHitchance(target.best_point.record, min_jump_inaccuracy_tan);
+
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 256 && target.player == last_target) {
 			if (target.hitchance > hitchance) {
 				best_target = target;
 				break;
 			}
-			else {
-				if (local_on_ground || (settings.auto_stop->get(2) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= hitchance * 0.09f)) {
-					should_autostop = true;
-				}
+			else if (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance * 0.3f)) {
+				should_autostop = true;
 			}
 		}
 
@@ -661,23 +704,27 @@ void CRagebot::Run() {
 			best_target = target;
 
 		if (target.best_point.damage > target.minimum_damage) {
-			if (local_on_ground || (settings.auto_stop->get(2) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= hitchance * 0.09f)) {
+			if (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance * 0.3f))
 				should_autostop = true;
-			}
 
 			if (settings.auto_scope->get() && !Cheat.LocalPlayer->m_bIsScoped() && !Cheat.LocalPlayer->m_bResumeZoom() && ctx.weapon_info->nWeaponType == WEAPONTYPE_SNIPER)
 				ctx.cmd->buttons |= IN_ATTACK2;
 		}
 
-		if (target.best_point.damage > 15) {
-			if (settings.auto_stop->get(0) && (local_on_ground || (settings.auto_stop->get(2) && FastHitchance(target.best_point.record, min_jump_inaccuracy_tan) >= hitchance))) {
+		if (target.best_point.damage > 2) {
+			if (settings.auto_stop->get(0) && (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance)) && target.best_point.damage > target.minimum_damage * 0.4f)
 				should_autostop = true;
-			}
+
 			Exploits->block_charge = true;
 		}
 	}
 
-	if (settings.auto_stop->get(1) && !(ctx.active_weapon->CanShoot() || ctx.was_unregistered_shot) && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
+	bool can_shoot_this_tick = ctx.active_weapon->CanShoot() || ctx.was_unregistered_shot;
+
+	if (best_target.player && ctx.active_weapon->m_iItemDefinitionIndex() == Revolver && ctx.active_weapon->CanShoot(false))
+		ctx.cmd->buttons |= IN_ATTACK;
+
+	if (settings.auto_stop->get(1) && !can_shoot_this_tick && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
 	if (should_autostop && !AutoPeek->IsReturning())
@@ -686,14 +733,13 @@ void CRagebot::Run() {
 	if (Exploits->IsShifting())
 		return;
 
-	if (!best_target.player || !(ctx.active_weapon->CanShoot() || ctx.was_unregistered_shot)) {
-		if (best_target.player && ctx.active_weapon->m_iItemDefinitionIndex() == Revolver)
-			ctx.cmd->buttons |= IN_ATTACK;
+	if (!best_target.player || !can_shoot_this_tick)
 		return;
-	}
+
+	RunPrediction(); // predict autostop movement to calculate damage and angle correctly
 
 	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime + LagCompensation->GetLerpTime());
-	ctx.cmd->viewangles = best_target.angle - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
+	ctx.cmd->viewangles = Math::VectorAngles_p(best_target.best_point.point - ctx.shoot_position) - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
 	ctx.cmd->buttons |= IN_ATTACK;
 
 	ctx.was_unregistered_shot = false;
@@ -740,9 +786,8 @@ void CRagebot::Run() {
 	}
 
 	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, record);
-	if (config.visuals.chams.shot_chams->get()) {
-		Chams->AddShotChams(best_target.best_point.record);
-	}
+	if (config.visuals.chams.shot_chams->get())
+		Chams->AddShotChams(record);
 }
 
 void CRagebot::Zeusbot() {
@@ -952,13 +997,14 @@ void CRagebot::AutoRevolver() {
 	ctx.cmd->buttons &= ~IN_ATTACK2;
 
 	static float next_cock_time = 0.f;
+	float time = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() + 1); // add 1 extra tick for some inaccuracies
 
-	if (ctx.active_weapon->m_flPostponeFireReadyTime() > GlobalVars->curtime) {
-		if (GlobalVars->curtime > next_cock_time)
+	if (ctx.active_weapon->m_flPostponeFireReadyTime() > time) {
+		if (time > next_cock_time)
 			ctx.cmd->buttons |= IN_ATTACK;
 	}
 	else {
-		next_cock_time = GlobalVars->curtime + 0.25f;
+		next_cock_time = time + 0.25f;
 	}
 }
 

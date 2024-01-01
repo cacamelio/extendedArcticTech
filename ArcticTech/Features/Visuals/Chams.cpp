@@ -378,7 +378,7 @@ void CChams::RenderShotChams() {
 		_info = it->info;
 		_state = it->state;
 
-		DrawModel(materials[ClassOfEntity::Shot], alpha, it->pBoneToWorld, config.visuals.chams.shot_chams_options->get(1));
+		DrawModel(materials[ClassOfEntity::Shot], alpha, it->pBoneToWorld, config.visuals.chams.shot_chams_options->get(0));
 
 		++it;
 	}

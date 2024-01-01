@@ -39,6 +39,7 @@ IEffects* Effects;
 INetworkStringTableContainer* NetworkStringTableContainer;
 ISteamHTTP* SteamHTTP;
 CStaticPropMgr* StaticPropMgr;
+CHud* CSGOHud;
 
 void Interfaces::Initialize() {
 	EntityList = (IClientEntityList*)Utils::CreateInterface("client.dll", "VClientEntityList003");
@@ -72,6 +73,7 @@ void Interfaces::Initialize() {
 	GlowObjectManager = *(CGlowObjectManager**)(Utils::PatternScan("client.dll", "0F 11 05 ? ? ? ? 83 C8 01", 0x3));
 	ViewRenderBeams = *(IViewRenderBeams**)(Utils::PatternScan("client.dll", "B9 ? ? ? ? 50 A1 ? ? ? ? FF 50 14", 0x1));
 	SteamHTTP = (ISteamHTTP*)(reinterpret_cast<uint32_t**>(reinterpret_cast<char**>(reinterpret_cast<char*>(Utils::PatternScan("client.dll", "B9 ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? ? 0F 84")) + 1)[0] + 48)[0]);
+	CSGOHud = CHud::Get();
 
 	KeyValuesSystem = reinterpret_cast<KeyValuesSystemFn>(Utils::GetExportAddress(Utils::GetModuleBaseHandle("vstdlib.dll"), "KeyValuesSystem"))();
 

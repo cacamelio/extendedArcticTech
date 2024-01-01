@@ -196,4 +196,9 @@ public:
 	Color clone() {
 		return Color(r, g, b, a);
 	}
+
+	Color grey_scale() const {
+		int v = 0.299 * r + 0.587 * g + 0.114f * b;
+		return Color(v, v, v, a);
+	}
 };

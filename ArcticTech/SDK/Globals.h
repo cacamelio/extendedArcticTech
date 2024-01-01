@@ -53,11 +53,7 @@ struct Ctx_t {
 	int grenade_throw_tick = 0;
 
 	int corrected_tickbase = 0;
-
-	int lc_exploit = 0; // for tickbase correction
-	int lc_exploit_prev = 0;
-	int lc_exploit_change = 0;
-	int lc_exploit_diff = 0;
+	int lc_exploit = 0;
 
 	std::vector<int> shifted_commands;
 	std::vector<int> sented_commands;
@@ -68,11 +64,11 @@ struct Ctx_t {
 		tickbase_shift = 0;
 		local_velocity = Vector();
 		last_local_velocity = Vector();
-		lc_exploit = lc_exploit_prev = false;
 		breaking_lag_compensation = false;
 		active_weapon = nullptr;
 		weapon_info = nullptr;
 		grenade_throw_tick = 0;
+		lc_exploit = 0;
 		fake_duck = 0;
 		last_shot_time = 0.f;
 		planting_bomb = false;

@@ -150,7 +150,7 @@ void GrenadePrediction::Start() {
 	}
 
 	Vector vel = Cheat.LocalPlayer->m_vecVelocity();
-	if (config.misc.movement.super_toss->get() == 1 && !(localPlayer->m_fFlags() & FL_ONGROUND))
+	if (config.misc.movement.super_toss->get() > 0 && !(localPlayer->m_fFlags() & FL_ONGROUND))
 		vel = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
 	if (!runningPrediction)
@@ -186,7 +186,7 @@ void GrenadePrediction::Start() {
 	if (vel.LengthSqr() < 20)
 		vel = Vector();
 
-	float throw_offset = TICKS_TO_TIME(ctx.tickbase_shift == 13 ? 2 : 7);
+	float throw_offset = TICKS_TO_TIME(ctx.tickbase_shift > 0 ? 2 : 7);
 	Vector src = eyePosition + Vector(0.f, 0.f, flThrowStrength * 12.f - 12.f) + vel * throw_offset;
 
 	Vector dest = src;
@@ -276,14 +276,6 @@ void GrenadePrediction::Draw() {
 			ctx.should_release_grenade = true;
 	}
 
-	Render->PolyLine(scrPoints, hit ? config.visuals.other_esp.grenade_trajectory_hit_color->get() : config.visuals.other_esp.grenade_trajectory_color->get());
-
-	for (auto& point : collisionPoints) {
-		Vector2 w2s = Render->WorldToScreen(point);
-		Render->CircleFilled(w2s, 3, Color(0, 0, 0, 190));
-		Render->CircleFilled(w2s, 2, Color(255, 255, 255, 255));
-	}
-
 	if (weaponId == Molotov || weaponId == IncGrenade) {
 		Ray_t ray;
 		CGameTrace trace;
@@ -294,15 +286,11 @@ void GrenadePrediction::Draw() {
 		EngineTrace->TraceRay(ray, 0x1, &filter, &trace);
 
 		if (trace.fraction < 1.f) {
-			Render->CircleFilled(Render->WorldToScreen(vecDetonate), 3, Color(255, 0, 0));
-
 			if (config.visuals.other_esp.particles->get(0)) {
-				if (!pMolotovParticle) {
+				if (!pMolotovParticle)
 					pMolotovParticle = Effects->DispatchParticleEffect("env_fire_tiny_b", vecDetonate, QAngle());
-				}
-				else {
+				else
 					pMolotovParticle->SetOrigin(vecDetonate);
-				}
 			}
 			else if (pMolotovParticle) {
 				pMolotovParticle->Stop();
@@ -311,6 +299,11 @@ void GrenadePrediction::Draw() {
 		}
 		else {
 			hit = false;
+			if (pMolotovParticle) {
+				pMolotovParticle->Stop();
+				pMolotovParticle = nullptr;
+			}
+			return;
 		}
 	}
 	else {
@@ -318,10 +311,18 @@ void GrenadePrediction::Draw() {
 			pMolotovParticle->Stop();
 			pMolotovParticle = nullptr;
 		}
-
-		Render->CircleFilled(Render->WorldToScreen(vecDetonate), 3, Color(255, 0, 0));
 	}
 
+
+	Render->PolyLine(scrPoints, hit ? config.visuals.other_esp.grenade_trajectory_hit_color->get() : config.visuals.other_esp.grenade_trajectory_color->get());
+
+	for (auto& point : collisionPoints) {
+		Vector2 w2s = Render->WorldToScreen(point);
+		Render->CircleFilled(w2s, 3, Color(0, 0, 0, 190));
+		Render->CircleFilled(w2s, 2, Color(255, 255, 255, 255));
+	}
+
+	Render->CircleFilled(Render->WorldToScreen(vecDetonate), 3, Color(255, 0, 0));
 
 	if (!additional_info.empty() && hit) {
 		auto sc_pos = Render->WorldToScreen(vecDetonate);
@@ -636,7 +637,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	for (int i = 1; i < pathPoints.size(); i++) {
 		Vector start = pathPoints[i - 1];
 		Vector end = pathPoints[i];
-		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.5, -0.5), Vector((start - end).Q_Length(), 0.5, 0.5), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 3.f);
+		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.4, -0.4), Vector((start - end).Q_Length(), 0.4, 0.4), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 3.f);
 	}
 
 	//for (int i = 0; i < pathPoints.size(); i++) {
@@ -647,29 +648,35 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 
 	//Render->PolyLine(scrPoints, Color(240, 161, 14));
 
-	float distance = (Cheat.LocalPlayer->GetEyePosition() - vecDetonate).Q_Length();
+	Vector local_pos = Cheat.LocalPlayer->GetAbsOrigin();
+	CBasePlayer* obs = Cheat.LocalPlayer->GetObserverTarget();
+	if (obs && Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_CHASE || Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_IN_EYE)
+		local_pos = obs->GetAbsOrigin();
+
+	float distance = (local_pos - vecDetonate).Q_Length();
 
 	if (!shouldDrawCircle || distance > 700)
 		return;
 
 	float distance_alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
+	float circle_radius = 30.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
 
-	Render->CircleFilled(pos, 30, Color(16, 16, 16, 190 * distance_alpha));
-	Render->GlowCircle2(pos, 27, Color(40, 40, 40, 255 * distance_alpha), Color(20, 20, 20, 255 * distance_alpha));
+	Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * distance_alpha));
+	Render->GlowCircle2(pos, circle_radius - 3.f, Color(40, 40, 40, 255 * distance_alpha), Color(20, 20, 20, 255 * distance_alpha));
 
 	if (weapId == HeGrenade) {
 		float damage = CalcDamage(vecDetonate + Vector(0, 0, 0.25f), Cheat.LocalPlayer);
 		if (damage > 0)
-			Render->GlowCircle(pos, 25, Color(255, 50, 50, min(damage / Cheat.LocalPlayer->m_iHealth() * 2.f, 1) * 255));
-		Render->Text(std::to_string(int(damage)).c_str(), pos + Vector2(0, 13), Color(255, 255, 255, 255 * distance_alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
+			Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, min(damage / Cheat.LocalPlayer->m_iHealth() * 2.f, 1) * 210));
 
+		Render->Text(std::to_string(int(damage)).c_str(), pos + Vector2(0, 13), Color(255, 255, 255, 255 * distance_alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
 		Render->Image(Resources::HeGrenade, pos - Vector2(10, 21), Color(255, 255, 255, 230 * distance_alpha));
 	}
 
 	if (weapId == Molotov) {
 		float distance = (vecDetonate - Cheat.LocalPlayer->GetHitboxCenter(2)).Length2D();
-		Render->GlowCircle(pos, 25, Color(255, 50, 50, std::clamp((430 - distance) / 250.f, 0.f, 1.f) * 255));
 
+		Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, std::clamp((430 - distance) / 250.f, 0.f, 1.f) * 210));
 		Render->Image(Resources::Molotov, pos - Vector2(10, 18), Color(255, 255, 255, 230 * distance_alpha));
 	}
 }

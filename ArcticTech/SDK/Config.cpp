@@ -65,6 +65,7 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.hide_shots_key);
     add(config.ragebot.aimbot.force_teleport);
     add(config.ragebot.aimbot.force_body_aim);
+    add(config.ragebot.aimbot.force_safepoint);
     add(config.ragebot.aimbot.minimum_damage_override_key);
     add(config.ragebot.aimbot.peek_assist);
     add(config.ragebot.aimbot.peek_assist_color);

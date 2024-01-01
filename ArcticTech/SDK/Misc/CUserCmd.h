@@ -70,8 +70,32 @@ public:
 	short	mousedx;
 	short	mousedy;
 	bool	hasbeenpredicted;
+
+	CUserCmd& operator =(const CUserCmd& src)
+	{
+		if (this == &src)
+			return *this;
+
+		command_number = src.command_number;
+		tick_count = src.tick_count;
+		viewangles = src.viewangles;
+		aimdirection = src.aimdirection;
+		forwardmove = src.forwardmove;
+		sidemove = src.sidemove;
+		upmove = src.upmove;
+		buttons = src.buttons;
+		impulse = src.impulse;
+		weaponselect = src.weaponselect;
+		weaponsubtype = src.weaponsubtype;
+		random_seed = src.random_seed;
+		headangles = src.headangles;
+		headoffset = src.headoffset;
+
+		return *this;
+	}
 private:
-	char	pad[0x18];
+	QAngle	headangles;
+	Vector	headoffset;
 };
 
 struct C_CommandContext {

@@ -49,6 +49,7 @@ void CMenu::SetupUI() {
 	config.ragebot.aimbot.hide_shots_key = aimbot->AddKeyBind("Hide Shots");
 	config.ragebot.aimbot.force_teleport = aimbot->AddKeyBind("Force Teleport");
 	config.ragebot.aimbot.force_body_aim = aimbot->AddKeyBind("Force Body Aim");
+	config.ragebot.aimbot.force_safepoint = aimbot->AddKeyBind("Force safepoint");
 	config.ragebot.aimbot.minimum_damage_override_key = aimbot->AddKeyBind("Min. damage override");
 	config.ragebot.aimbot.peek_assist = aimbot->AddCheckBox("Peek Assist");
 	config.ragebot.aimbot.peek_assist_color = aimbot->AddColorPicker("Peek Assist");
@@ -230,8 +231,6 @@ void CMenu::SetupUI() {
 	config.visuals.effects.sun_distance = effects->AddSliderInt("Sun distance", 0, 2000, 400);
 	config.visuals.effects.scope_blend = effects->AddSliderInt("Scope blend", 0, 100, 30, "%d%%");
 	config.visuals.effects.viewmodel_scope_alpha = effects->AddSliderInt("Viewmodel scope alpha", 0, 100, 0, "%d%%");
-
-	config.visuals.effects.preserve_killfeed->SetVisible(false);
 
 	config.misc.miscellaneous.anti_untrusted = misc->AddCheckBox("Anti untrusted");
 	config.misc.miscellaneous.ping_reducer = misc->AddCheckBox("Ping reducer");

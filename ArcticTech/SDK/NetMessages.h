@@ -106,6 +106,13 @@ struct CSVCMsg_VoiceData_Lua {
 	}
 };
 
+struct VoiceDataOther {
+	uint64_t xuid{};
+	int32_t sequence_bytes{};
+	uint32_t section_number{};
+	uint32_t uncompressed_sample_offset{};
+};
+
 struct SharedVoiceData_t {
 	uint32_t xuid_high;
 	int sequence_bytes;
@@ -113,7 +120,7 @@ struct SharedVoiceData_t {
 	uint32_t uncompressed_sample_offset;
 };
 
-typedef void(*tRecieveVoiceDataCallback)(const CSVCMsg_VoiceData&);
+typedef void(*tRecieveVoiceDataCallback)(const VoiceDataOther*);
 typedef void(*tRecieveArcticDataCallback)(const SharedVoiceData_t*);
 
 class CNetMessages {

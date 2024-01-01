@@ -16,13 +16,9 @@ void CAntiAim::FakeLag() {
 	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || GameRules()->IsFreezePeriod())
 		return;
 
-	if (!ctx.active_weapon)
+	if (!ctx.active_weapon || ctx.active_weapon->ThrowingGrenade())
 		return;
 
-	if (ctx.active_weapon->IsGrenade() && (EnginePrediction->m_fThrowTime > 0 || reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_flThrowTime() > 0.f || abs(ctx.grenade_throw_tick - ctx.cmd->command_number) < 7)) {
-		ctx.send_packet = true;
-		return;
-	}
 	else if (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot()) {
 		if (!config.antiaim.misc.fake_duck->get()) {
 			ctx.send_packet = true;
@@ -93,10 +89,7 @@ void CAntiAim::Angles() {
 	if (GameRules()->IsFreezePeriod() || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER && ctx.cmd->buttons & (IN_MOVELEFT | IN_MOVERIGHT | IN_FORWARD | IN_BACK)) || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP)
 		return;
 
-	if (!ctx.active_weapon)
-		return;
-
-	if (ctx.active_weapon->IsGrenade() && (EnginePrediction->m_fThrowTime > 0 || reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_flThrowTime() > 0.f || abs(ctx.grenade_throw_tick - ctx.cmd->command_number) < 7))
+	if (!ctx.active_weapon || ctx.active_weapon->ThrowingGrenade())
 		return;
 
 	if ((ctx.active_weapon->ShootingWeapon() || (ctx.active_weapon->GetWeaponInfo() && ctx.active_weapon->GetWeaponInfo()->nWeaponType == WEAPONTYPE_KNIFE)) && ctx.active_weapon->CanShoot() && ctx.cmd->buttons & IN_ATTACK)
@@ -314,7 +307,7 @@ void CAntiAim::FakeDuck() {
 
 	ctx.cmd->buttons |= IN_BULLRUSH;
 
-	if (ClientState->m_nChokedCommands < 7 && !(Exploits->IsShifting() || (GlobalVars->realtime - Exploits->last_teleport_time) < TICKS_TO_TIME(14)))
+	if (ClientState->m_nChokedCommands < 7)
 		ctx.cmd->buttons &= ~IN_DUCK;
 	else
 		ctx.cmd->buttons |= IN_DUCK;

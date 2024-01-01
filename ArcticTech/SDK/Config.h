@@ -57,6 +57,7 @@ struct config_t {
             CKeyBind* hide_shots_key;
             CKeyBind* force_teleport;
             CKeyBind* force_body_aim;
+            CKeyBind* force_safepoint;
             CKeyBind* minimum_damage_override_key;
             CCheckBox* peek_assist;
             CColorPicker* peek_assist_color;

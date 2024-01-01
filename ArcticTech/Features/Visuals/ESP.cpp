@@ -12,6 +12,7 @@
 #include "../RageBot/LagCompensation.h"
 #include "../RageBot/AnimationSystem.h"
 #include "WeaponIcons.h"
+#include "../../Utils/Console.h"
 
 ESPInfo_t ESPInfo[64];
 GrenadeWarning NadeWarning;
@@ -51,6 +52,7 @@ void ESP::IconDisplay( CBasePlayer* player, int Level )
 
 void ESP::RegisterCallback() {
 	NetMessages->AddArcticDataCallback(ProcessSharedESP);
+	NetMessages->AddVoiceDataCallback(ParseOtherShared);
 }
 
 void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
@@ -74,6 +76,26 @@ void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
 		player->m_vecOrigin() = Vector(esp.m_vecOrigin.x, esp.m_vecOrigin.y, esp.m_vecOrigin.z);
 		player->m_iHealth() = esp.m_iHealth;
 	}
+
+	g_LastSharedESPData[ent_index] = GlobalVars->realtime;
+}
+
+void ESP::ParseOtherShared(const VoiceDataOther* data) {
+	auto fatal_data = reinterpret_cast<const SharedEsp_Fatality*>(data);
+
+	if (fatal_data->identifier != 0x7FFA && fatal_data->identifier != 0x7FFB)
+		return;
+
+	int ent_index = EngineClient->GetPlayerForUserID(fatal_data->user_id);
+	auto& esp_info = ESPInfo[ent_index];
+	const auto player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(ent_index));
+
+	if (!player || !player->m_bDormant() || !player->IsEnemy())
+		return;
+
+	player->m_vecOrigin() = fatal_data->pos;
+	esp_info.m_iActiveWeapon = fatal_data->weapon_id + (fatal_data->identifier == 0x7FFB ? 400 : 0);
+	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
 
 	g_LastSharedESPData[ent_index] = GlobalVars->realtime;
 }
@@ -346,12 +368,12 @@ void ESP::DrawFlags(ESPInfo_t info) {
 
 	if (config.visuals.esp.flags->get(0) && !dormant) {
 		std::string str = "";
-		if (info.m_pEnt->m_ArmorValue() > 0)
-			str = "K";
-		if (info.m_pEnt->m_bHasHelmet())
-			str = "HK";
+		if (!info.m_pEnt->m_bHasHelmet())
+			str = "NH";
+		if (info.m_pEnt->m_ArmorValue() == 0)
+			str = "NA";
 		if (!str.empty())
-			flags.push_back({ str, Color(215, 255 * info.m_flAlpha) });
+			flags.push_back({ str, Color(210, 0, 40, 255 * info.m_flAlpha) });
 	}
 
 	bool shifting = record && record->shifting_tickbase;
@@ -419,10 +441,10 @@ void ESP::DrawGrenades() {
 
 	if (!Cheat.InGame || !config.visuals.other_esp.grenades->get()) return;
 	
-	for (int i = 0; i < EntityList->GetMaxEntities(); i++) {
+	for (int i = 0; i < EntityList->GetHighestEntityIndex(); i++) {
 		CBaseGrenade* ent = reinterpret_cast<CBaseGrenade*>(EntityList->GetClientEntity(i));
 
-		if (!ent)
+		if (!ent || ent->m_bDormant())
 			continue;
 
 		auto classId = ent->GetClientClass();
@@ -447,54 +469,77 @@ void ESP::DrawGrenades() {
 				continue;
 
 			float distance_alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
+			float circle_radius = 30.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
 
 			float alpha = std::clamp((7.03125f - (GlobalVars->curtime - ent->m_flInfernoSpawnTime())) * 2.f, 0.f, 1.f) * distance_alpha;
 
-			Render->CircleFilled(pos, 30, Color(16, 16, 16, 190 * alpha));
-			Render->GlowCircle2(pos, 27, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 255 * alpha));
-			Render->GlowCircle(pos, 25, Color(255, 50, 50, std::clamp((430 - distance) / 250.f, 0.f, 1.f) * 255 * alpha));
+			Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
+			Render->GlowCircle2(pos, circle_radius - 3, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 215 * alpha));
+			Render->GlowCircle(pos, circle_radius - 5, Color(255, 50, 50, std::clamp((380 - distance) / 200.f, 0.f, 1.f) * 215 * alpha));
 
 			Render->Image(Resources::Inferno, pos - Vector2(15, 15), Color(255, 255, 255, 230 * alpha));
 
 			continue;
 		}
 
-		const model_t* model = ent->GetModel();
-
-		if (!model)
+		if (classId->m_ClassID != C_BASE_CS_GRENADE_PROJECTILE && classId->m_ClassID != C_MOLOTOV_PROJECTILE && classId->m_ClassID != C_SMOKE_GRENADE_PROJECTILE && classId->m_ClassID != C_DECOY_PROJECTILE)
 			continue;
 
-		studiohdr_t* studioModel = ModelInfoClient->GetStudioModel(model);
+		CBasePlayer* thrower = ent->GetThrower();
 
-		if (!studioModel)
-			continue;
+		bool thrower_teammate = thrower && thrower->IsTeammate() && mp_friendlyfire->GetInt() == 0 && thrower != Cheat.LocalPlayer;
 
-		if (strstr(studioModel->szName, "thrown") || classId->m_ClassID == C_BASE_CS_GRENADE_PROJECTILE || classId->m_ClassID == C_MOLOTOV_PROJECTILE || classId->m_ClassID == C_DECOY_PROJECTILE) {
-			int weapId;
+		int weapId = -1;
+		std::string name;
+		float alpha = 1.f;
 
-			CBasePlayer* thrower = ent->GetThrower();
+		switch (ent->GetGrenadeType()) {
+		case GRENADE_TYPE_DECOY:
+			name = "DECOY";
+			break;
+		case GRENADE_TYPE_FIRE:
+			if (thrower_teammate)
+				break;
+			name = "MOLLY";
+			weapId = Molotov;
+			break;
+		case GRENADE_TYPE_SMOKE:
+			name = "SMOKE";
+			if (ent->m_nSmokeEffectTickBegin() > 0)
+				alpha = std::clamp((17.5f - TICKS_TO_TIME(GlobalVars->tickcount - ent->m_nSmokeEffectTickBegin())) / 1.5f, 0.f, 1.f);
+			break;
+		case GRENADE_TYPE_EXPLOSIVE:
+			const model_t* model = ent->GetModel();
+			if (!model)
+				break;
+			studiohdr_t* studioModel = ModelInfoClient->GetStudioModel(model);
+			if (!studioModel)
+				break;
 
-			if (thrower && thrower->IsTeammate() && mp_friendlyfire->GetInt() == 0 && thrower != Cheat.LocalPlayer)
-				continue;
-
-			if (strstr(studioModel->szName, "fraggrenade"))
-			{
-				if (ent->GetCreationTime() + 1.625f <= TICKS_TO_TIME(GlobalVars->tickcount))
-					continue;
-
-				weapId = HeGrenade;
+			if (!strstr(studioModel->szName, "fraggrenade")) {
+				name = "FLASH";
+				break;
 			}
-			else if (strstr(studioModel->szName, "incendiarygrenade") || strstr(studioModel->szName, "molotov"))
-			{
-				weapId = Molotov;
-			}
-			else
-				continue;
 
-			if (config.visuals.other_esp.grenade_proximity_warning->get()) {
-				NadeWarning.Warning(ent, weapId);
-			}
+			if (thrower_teammate || ent->m_nExplodeEffectTickBegin() > 0)
+				break;
+
+			name = "FRAG";
+			weapId = HeGrenade;
+			break;
 		}
+
+		if (!name.empty()) {
+			Vector2 pos = Render->WorldToScreen(ent->GetAbsOrigin());
+			if (!pos.Invalid())
+				Render->Text(name, pos + Vector2(0, 8), Color(250, 255 * alpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
+		}
+
+		if (weapId == -1)
+			continue;
+
+		if (config.visuals.other_esp.grenade_proximity_warning->get())
+			NadeWarning.Warning(ent, weapId);
 	}
 }
 

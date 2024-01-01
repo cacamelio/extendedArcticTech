@@ -221,6 +221,7 @@ public:
 	virtual void					SetDestroyedOnRecreateEntities() = 0;
 };
 
+
 class CBaseEntity {
 public:
 	NETVAR(m_vecOrigin, Vector, "DT_BaseEntity", "m_vecOrigin")
@@ -239,6 +240,8 @@ public:
 	OFFSET(m_VarMapping, VarMapping_t, 0x24)
 	NETVAR(m_flSimulationTime, float, "DT_BaseEntity", "m_flSimulationTime")
 	NETVAR_O(m_flOldSimulationTime, float, "DT_BaseEntity", "m_flSimulationTime", 0x4)
+	OFFSET(m_flAnimTime, float, 0x260)
+	OFFSET(m_bDormant, bool, 0xED)
 
 	CBaseEntity* m_pMoveParent();
 
@@ -374,12 +377,24 @@ public:
 	}
 };
 
+enum GrenadeType_t
+{
+	GRENADE_TYPE_EXPLOSIVE,
+	GRENADE_TYPE_FLASH,
+	GRENADE_TYPE_FIRE,
+	GRENADE_TYPE_DECOY,
+	GRENADE_TYPE_SMOKE,
+	GRENADE_TYPE_SENSOR,
+
+	GRENADE_TYPE_TOTAL,
+};
 
 class CBaseGrenade : public CBaseEntity {
 public:
 	OFFSET(m_flInfernoSpawnTime, float, 0x20)
 	NETVAR(m_nSmokeEffectTickBegin, int, "DT_SmokeGrenadeProjectile", "m_nSmokeEffectTickBegin")
 	NETVAR_O(GetCreationTime, float, "DT_BaseCSGrenadeProjectile", "m_nExplodeEffectTickBegin", 0x10)
+	NETVAR(m_nExplodeEffectTickBegin, int, "DT_BaseCSGrenadeProjectile", "m_nExplodeEffectTickBegin")
 	NETVAR(m_hThrower, unsigned long, "DT_BaseGrenade", "m_hThrower")
 	NETVAR(m_flThrowTime, float, "DT_BaseCSGrenade", "m_fThrowTime")
 	NETVAR(m_bPinPulled, bool, "DT_BaseCSGrenade", "m_bPinPulled")
@@ -388,6 +403,10 @@ public:
 	NETVAR(m_flNextPrimaryAttack, float, "DT_BaseCombatWeapon", "m_flNextPrimaryAttack")
 
 	CBasePlayer* GetThrower();
+
+	int GetGrenadeType() {
+		return CallVFunction<int(*)()>(this, 256)();
+	}
 };
 
 class CCascadeLight : public CBaseEntity {

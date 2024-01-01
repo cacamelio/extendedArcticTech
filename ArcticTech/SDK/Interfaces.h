@@ -32,6 +32,7 @@
 #include "Interfaces/ISteamHTTP.h"
 #include "Interfaces/CGameRules.h"
 #include "Interfaces/CStaticPropManager.h"
+#include "Interfaces/CHud.h"
 
 extern IClientEntityList* EntityList;
 extern IVEngineClient*	  EngineClient;
@@ -69,6 +70,7 @@ extern IEffects*          Effects;
 extern INetworkStringTableContainer* NetworkStringTableContainer;
 extern ISteamHTTP*		  SteamHTTP;
 extern CStaticPropMgr*	  StaticPropMgr;
+extern CHud*			  CSGOHud;
 
 namespace Interfaces {
 	void Initialize();

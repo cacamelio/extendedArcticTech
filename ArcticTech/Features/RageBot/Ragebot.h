@@ -33,6 +33,7 @@ struct ScannedPoint_t {
 	bool safe_point = false;
 	Vector impacts[5];
 	int num_impacts = 0;
+	bool dont_shoot = false;
 };
 
 struct ScannedTarget_t {
@@ -48,6 +49,7 @@ struct AimPoint_t {
 	Vector point;
 	int hitbox = 0;
 	bool multipoint = false;
+	bool dont_shoot = false; // if point was selected for early autostop
 };
 
 class CRagebot {
@@ -70,6 +72,7 @@ private:
 
 	CBasePlayer* last_target = nullptr;
 	int last_target_shot = 0;
+	bool dont_shoot_next_points = false;
 
 	// multithreading part
 	std::atomic<bool> remove_threads = false;
@@ -134,6 +137,7 @@ private:
 public:
 	void				UpdateUI(int idx = -1);
 
+	void				RunPrediction();
 	void				CalcSpreadValues();
 	void				AutoStop();
 	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);

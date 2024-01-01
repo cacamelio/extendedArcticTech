@@ -78,6 +78,7 @@ void CLagCompensation::BacktrackEntity(LagRecord* record, bool copy_matrix, bool
 
 void LagRecord::BuildMatrix() {
 	memcpy(clamped_matrix, aim_matrix, 128 * sizeof(matrix3x4_t));
+	memcpy(safe_matrix, opposite_matrix, 128 * sizeof(matrix3x4_t));
 
 	if (config.antiaim.angles.legacy_desync->get())
 		return;
@@ -94,6 +95,14 @@ void LagRecord::BuildMatrix() {
 
 	bool broken_record = abs(Math::AngleDiff(m_angEyeAngles.yaw, player->m_angEyeAngles().yaw)) >= 30.f;
 
+	if (broken_record)
+		player->m_angEyeAngles() = m_angEyeAngles;
+	else if (prev_record)
+		player->m_angEyeAngles() = prev_record->m_angEyeAngles;
+
+	player->ClampBonesInBBox(safe_matrix, BONE_USED_BY_HITBOX);
+
+	player->m_angEyeAngles() = backup_eye_angle;
 
 	if (config.ragebot.aimbot.roll_resolver->get())
 		player->m_angEyeAngles().roll = config.ragebot.aimbot.roll_angle->get() * (resolver_data.side != 0 ? resolver_data.side : 1);
@@ -124,7 +133,7 @@ void CLagCompensation::OnNetUpdate() {
 
 			new_record->prev_record = prev_record;
 			new_record->update_tick = GlobalVars->tickcount;
-			new_record->m_nChokedTicks = new_record->update_tick - (prev_record ? prev_record->update_tick : new_record->update_tick) - 1;
+			new_record->m_nChokedTicks = TIME_TO_TICKS(pl->m_flSimulationTime() - pl->m_flOldSimulationTime()) - 1;
 			new_record->m_flSimulationTime = pl->m_flSimulationTime();
 
 			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
@@ -157,9 +166,8 @@ void CLagCompensation::OnNetUpdate() {
 				}
 			}
 
-			while (records.size() > (pl->IsTeammate() ? 12 : (TIME_TO_TICKS(0.4f) + 13))) { // super puper proper lagcomp
+			while (records.size() > (pl->IsTeammate() ? 4 : (TIME_TO_TICKS(0.4f) + 13))) // super puper proper lagcomp
 				records.pop_front();
-			}
 		}
 
 		INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
@@ -192,27 +200,34 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	if (!nci)
 		return false;
 
-	const auto last_server_tick = TIME_TO_TICKS(EngineClient->GetLastTimeStamp());
+	float time = TICKS_TO_TIME(ctx.corrected_tickbase);
+	float ping = nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING);
 
-	const auto rtt = nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
-	const auto possible_future_tick = last_server_tick + TIME_TO_TICKS(rtt) + 8;
+	float correct = 0.f;
+	float lerp_time = GetLerpTime();
 
-	float correct = 0;
-	correct += rtt;
-	correct += GetLerpTime();
+	correct += ping;
+	correct += lerp_time;
+	correct = std::clamp(correct, 0.f, cvars.sv_maxunlag->GetFloat());
 
-	const auto deadtime = static_cast<int>(TICKS_TO_TIME(last_server_tick) + rtt - cvars.sv_maxunlag->GetFloat());
-	if (record->m_flSimulationTime <= static_cast<float>(deadtime) || TIME_TO_TICKS(record->m_flSimulationTime + GetLerpTime()) > possible_future_tick)
+	float delta_time = correct - (time - record->m_flSimulationTime);
+
+	if (std::abs(delta_time) > 0.2f)
 		return false;
 
-	correct = std::clamp(correct, 0.f, cvars.sv_maxunlag->GetFloat());
-	float time = TICKS_TO_TIME(ctx.corrected_tickbase);
+	auto extra_choke = 0;
+	
+	if (ctx.fake_duck)
+		extra_choke = 14 - ClientState->m_nChokedCommands;
 
-	const auto delta_time = correct - (time - record->m_flSimulationTime);
-	const auto delta_time1 = correct - (time - GlobalVars->interval_per_tick - record->m_flSimulationTime);
-	const auto delta_time2 = correct - (time + GlobalVars->interval_per_tick - record->m_flSimulationTime);
+	int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(ping) + extra_choke;
+	auto dead_time = (int)(float)((float)((int)((float)((float)server_tickcount
+		* GlobalVars->interval_per_tick) - 0.2f) / GlobalVars->interval_per_tick) + 0.5f);
 
-	return fabsf(delta_time) < 0.2f;
+	if (TIME_TO_TICKS(record->m_flSimulationTime + lerp_time) < dead_time)
+		return false;
+
+	return true;
 }
 
 void CLagCompensation::Reset(int index) {

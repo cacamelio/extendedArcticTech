@@ -9,7 +9,7 @@ void Glow::Run() {
 	for (int i = 0; i < GlowObjectManager->m_GlowObjects.Count(); i++) {
 		GlowObjectDefinition_t& glowObject = GlowObjectManager->m_GlowObjects[i];
 
-		if (!glowObject.m_pEntity)
+		if (!glowObject.m_pEntity || glowObject.m_pEntity->m_bDormant())
 			continue;
 
 		if (glowObject.m_nNextFreeSlot != -2)
@@ -35,7 +35,7 @@ void Glow::Run() {
 			//glowObject.m_bRenderWhenUnoccluded = false;
 		}
 		else if ((classId == C_BASE_CS_GRENADE || classId == C_BASE_CS_GRENADE_PROJECTILE || classId == C_MOLOTOV_PROJECTILE || classId == C_DECOY_PROJECTILE || classId == C_SMOKE_GRENADE_PROJECTILE) && config.visuals.other_esp.grenades->get()) {
-			glowObject.m_flGlowAlpha = 0.75f;
+			glowObject.m_flGlowAlpha = 0.8f;
 			glowObject.m_vGlowColor.x = 1.f;
 			glowObject.m_vGlowColor.y = 0.5f;
 			glowObject.m_vGlowColor.z = 0.f;

@@ -113,24 +113,23 @@ void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
 }
 
 void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld, int maxBones, int mask, AnimationLayer* animlayers) {
-
 	player->InvalidateBoneCache();
 
 	if (animlayers != nullptr)
 		memcpy(player->GetAnimlayers(), animlayers, sizeof(AnimationLayer) * 13);
 
-	bool backupMaintainSequenceTransitions = player->m_bMaintainSequenceTransitions();
+	//bool backupMaintainSequenceTransitions = player->m_bMaintainSequenceTransitions();
 	int backupEffects = player->m_fEffects();
 
 	player->m_fEffects() |= EF_NOINTERP; // Disable interp
-	player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
+	//player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
 
 	hook_info.setup_bones = true;
 	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer == player ? GlobalVars->curtime : player->m_flSimulationTime());
 	hook_info.setup_bones = false;
 
 	player->m_fEffects() = backupEffects;
-	player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
+	//player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
 }
 
 void CAnimationSystem::DisableInterpolationFlags(CBasePlayer* player) {
@@ -180,7 +179,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	auto pose_params = player->m_flPoseParameter();
 
-	if (!player->IsTeammate()) {
+	if (player->IsEnemy()) {
 		player->m_BoneAccessor().m_ReadableBones = 0;
 		player->m_BoneAccessor().m_WritableBones = 0;
 
@@ -191,7 +190,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	player->SetAbsVelocity(player->m_vecVelocity());
 	player->SetAbsOrigin(player->m_vecOrigin());
 
-	if (!player->IsTeammate()) {
+	if (player->IsEnemy()) {
 		Resolver->Run(player, record, records);
 
 		*animstate = unupdated_animstate[idx];
@@ -225,7 +224,9 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 		player->SetAbsAngles(QAngle(0, eyeYawNew, 0));
 		player->m_flPoseParameter()[BODY_YAW] = 1.f - player->m_flPoseParameter()[BODY_YAW]; // opposite side
 
+		hook_info.disable_clamp_bones = true;
 		BuildMatrix(player, record->opposite_matrix, 128, BONE_USED_BY_HITBOX, record->animlayers);
+		hook_info.disable_clamp_bones = false;
 
 		if (config.ragebot.aimbot.show_aimpoints->get())
 			DebugOverlay->AddBoxOverlay(player->GetHitboxCenter(HITBOX_HEAD, record->opposite_matrix), Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), 12, 255, 12, 160, 0.1f);

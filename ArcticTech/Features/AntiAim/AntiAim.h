@@ -112,6 +112,8 @@ public:
 	void OnKeyPressed(WPARAM key);
 	CBasePlayer* GetNearestTarget();
 	float AtTargets();
+
+	void ResetManual() { manualAngleState = 0; };
 };
 
 extern CAntiAim* AntiAim;

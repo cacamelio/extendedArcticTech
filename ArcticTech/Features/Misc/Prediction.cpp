@@ -36,16 +36,20 @@ void CPrediction::RunThink(CBasePlayer* player) {
 void CPrediction::BackupData() {
 	if (ctx.active_weapon) {
 		if (ctx.active_weapon->IsGrenade())
-			m_fThrowTime = reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_flThrowTime();
-		m_flNextPrimaryAttack = ctx.active_weapon->m_flNextPrimaryAttack();
+			pre_prediction.m_fThrowTime = reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_flThrowTime();
+		pre_prediction.m_flNextPrimaryAttack = ctx.active_weapon->m_flNextPrimaryAttack();
 
 		weaponAccuracyPenality = ctx.active_weapon->m_fAccuracyPenalty();
 		weaponRecoilIndex = ctx.active_weapon->m_flRecoilIndex();
 	}
 
-	m_fFlags = Cheat.LocalPlayer->m_fFlags();
-	m_vecVelocity = Cheat.LocalPlayer->m_vecVelocity();
-	m_vecAbsVelocity = Cheat.LocalPlayer->m_vecAbsVelocity();
+	pre_prediction.m_fFlags = Cheat.LocalPlayer->m_fFlags();
+	pre_prediction.m_vecOrigin = Cheat.LocalPlayer->m_vecOrigin();
+	pre_prediction.m_vecAbsOrigin = Cheat.LocalPlayer->GetAbsOrigin();
+	pre_prediction.m_vecVelocity = Cheat.LocalPlayer->m_vecVelocity();
+	pre_prediction.m_vecAbsVelocity = Cheat.LocalPlayer->m_vecAbsVelocity();
+	pre_prediction.m_flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
+	pre_prediction.m_flDuckSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
 
 	flOldCurrentTime = GlobalVars->curtime;
 	flOldFrameTime = GlobalVars->frametime;
@@ -130,6 +134,35 @@ void CPrediction::End() {
 
 	Prediction->bInPrediction = bOldInPrediction;
 	Prediction->bIsFirstTimePredicted = bOldIsFirstPrediction;
+}
+
+void CPrediction::Repredict(CUserCmd* cmd, QAngle angles) {
+	*Cheat.LocalPlayer->GetCurrentCommand() = cmd;
+	Cheat.LocalPlayer->GetLastCommand() = *cmd;
+
+	auto backup_angle = cmd->viewangles;
+	cmd->viewangles = angles;
+
+	Cheat.LocalPlayer->m_fFlags() = pre_prediction.m_fFlags;
+	Cheat.LocalPlayer->m_vecOrigin() = pre_prediction.m_vecOrigin;
+	Cheat.LocalPlayer->SetAbsOrigin(pre_prediction.m_vecAbsOrigin);
+	Cheat.LocalPlayer->m_vecVelocity() = pre_prediction.m_vecVelocity;
+	Cheat.LocalPlayer->m_vecAbsVelocity() = pre_prediction.m_vecAbsVelocity;
+	Cheat.LocalPlayer->m_flDuckAmount() = pre_prediction.m_flDuckAmount;
+	Cheat.LocalPlayer->m_flDuckSpeed() = pre_prediction.m_flDuckSpeed;
+
+	GameMovement->StartTrackPredictionErrors(Cheat.LocalPlayer);
+	MoveHelper->SetHost(Cheat.LocalPlayer);
+	Prediction->SetupMove(Cheat.LocalPlayer, cmd, MoveHelper, &moveData);
+	GameMovement->ProcessMovement(Cheat.LocalPlayer, &moveData);
+	Prediction->FinishMove(Cheat.LocalPlayer, cmd, &moveData);
+	GameMovement->FinishTrackPredictionErrors(Cheat.LocalPlayer);
+	MoveHelper->SetHost(nullptr);
+
+	AnimationSystem->UpdatePredictionAnimation();
+	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();
+
+	cmd->viewangles = backup_angle;
 }
 
 void CPrediction::PatchAttackPacket(CUserCmd* cmd, bool restore)
@@ -217,6 +250,41 @@ void CPrediction::RestoreNetvars(int place) {
 
 	if (std::abs(net_origin_diff.x) > 0.0625f || std::abs(net_origin_diff.y) > 0.0625f || std::abs(net_origin_diff.z) > 0.0625f)
 		has_prediction_errors = true;
+}
+
+void CPrediction::FixRevolver(CUserCmd* cmd) {
+	auto& data = local_data[cmd->command_number % MULTIPLAYER_BACKUP];
+	data.m_nButtons = cmd->buttons;
+
+	if (data.m_nSequence != cmd->command_number)
+		return;
+
+	if (!data.m_ActiveWeapon || data.m_ActiveWeapon->m_iItemDefinitionIndex() != Revolver)
+		return;
+
+	if (!(cmd->buttons & IN_ATTACK))
+		return;
+
+	int lowest_cmd = cmd->command_number - 149;
+	int iter_cmd = cmd->command_number;
+	int fire_cmd = 0;
+
+	while (iter_cmd > lowest_cmd) {
+		auto cmd_data = local_data[iter_cmd % 150];
+		fire_cmd = iter_cmd;
+
+		if (!(cmd_data.m_nButtons & IN_ATTACK))
+			break;
+
+		float time = TICKS_TO_TIME(cmd_data.m_nTickBase);
+		if (cmd_data.m_flNextPrimaryAttack > time || cmd_data.m_flNextAttack > time)
+			break;
+
+		iter_cmd--;
+	}
+
+	if (fire_cmd != 0 && cmd->command_number - fire_cmd >= 3)
+		data.m_ActiveWeapon->m_flPostponeFireReadyTime() = TICKS_TO_TIME(local_data[(fire_cmd + 3) % 150].m_nTickBase) + 0.2f;
 }
 
 CPrediction* EnginePrediction = new CPrediction;

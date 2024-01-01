@@ -325,8 +325,11 @@ public:
         return weapon_type == WEAPONTYPE_PISTOL || weapon_type == WEAPONTYPE_SHOTGUN || weapon_type == WEAPONTYPE_SNIPER || weapon_type == WEAPONTYPE_RIFLE || weapon_type == WEAPONTYPE_MACHINEGUN || m_iItemDefinitionIndex() == Taser;
     }
 
+
+
 	CCSWeaponData* GetWeaponInfo();
 	std::string GetName(CCSWeaponData* custom_data = nullptr);
     bool CanShoot(bool revolver_check = true);
+	bool ThrowingGrenade();
 	DXImage& GetIcon();
 };

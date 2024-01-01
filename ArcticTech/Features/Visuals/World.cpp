@@ -84,12 +84,14 @@ void CWorld::Modulation() {
 			Color clr = config.visuals.effects.props_color->get();
 
 			auto it = backup_props.find(prop);
-			if (it == backup_props.end())
-				backup_props.insert({ prop, Color(prop->m_DiffuseModulation[0] * 255.f, prop->m_DiffuseModulation[1] * 255.f, prop->m_DiffuseModulation[2] * 255.f, prop->m_pClientAlphaProperty->GetAlphaModulation())});
+			if (it == backup_props.end()) {
+				backup_props.insert({ prop, Color(prop->m_DiffuseModulation[0] * 255.f, prop->m_DiffuseModulation[1] * 255.f, prop->m_DiffuseModulation[2] * 255.f, prop->m_pClientAlphaProperty->GetAlphaModulation()) });
+				it = backup_props.find(prop);
+			}
 
-			prop->m_DiffuseModulation[0] *= clr.r / 255.f;
-			prop->m_DiffuseModulation[1] *= clr.g / 255.f;
-			prop->m_DiffuseModulation[2] *= clr.b / 255.f;
+			prop->m_DiffuseModulation[0] = (it->second.r / 255.f) * (clr.r / 255.f);
+			prop->m_DiffuseModulation[1] = (it->second.g / 255.f) * (clr.g / 255.f);
+			prop->m_DiffuseModulation[2] = (it->second.b / 255.f) * (clr.b / 255.f);
 			prop->m_DiffuseModulation[3] = 1.f;
 
 			auto alpha_prop = prop->m_pClientAlphaProperty;

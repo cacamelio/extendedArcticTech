@@ -57,6 +57,15 @@ struct SharedESP_t {
 	VectorSmall	m_vecOrigin;
 };
 
+struct SharedEsp_Fatality
+{
+	uint16_t identifier;
+	uint8_t user_id;
+	uint8_t weapon_id;
+	uint32_t server_tick;
+	Vector pos;
+};
+
 static_assert(sizeof(SharedESP_t) == sizeof(SharedVoiceData_t));
 
 extern ESPInfo_t ESPInfo[64];
@@ -66,6 +75,7 @@ namespace ESP {
 	void		RegisterCallback();
 
 	void		ProcessSharedESP(const SharedVoiceData_t* data);
+	void		ParseOtherShared(const VoiceDataOther* data);
 	void		UpdatePlayer(int id);
 	void		Draw();
 	void		IconDisplay( CBasePlayer* pLocal, int Level );

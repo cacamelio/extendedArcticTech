@@ -66,33 +66,36 @@ void Miscellaneous::Clantag()
 
 void Miscellaneous::FastThrow() {
 	static bool fast_throw_triggred = false;
-	static bool quick_switch_triggered = false;
+	static int nLastButtons = 0;
 
-	if (!config.ragebot.aimbot.doubletap_options->get(3) || !ctx.active_weapon || !ctx.active_weapon->IsGrenade()) {
+	if (!ctx.active_weapon || !ctx.active_weapon->IsGrenade()) {
 		fast_throw_triggred = false;
-		quick_switch_triggered = false;
 		return;
 	}
 
 	CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(ctx.active_weapon);
 
-	float next_attack = max(Cheat.LocalPlayer->m_flNextAttack(), grenade->m_flNextPrimaryAttack());
+	if (!(ctx.cmd->buttons & IN_ATTACK) && (nLastButtons & IN_ATTACK) && grenade->m_bPinPulled())
+		ctx.grenade_throw_tick = ctx.cmd->command_number;
 
-	if (Exploits->GetExploitType() == CExploits::E_DoubleTap) {
-		Exploits->LC_OverrideTickbase(13);
-		if (next_attack - TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) < TICKS_TO_TIME(4))
-			quick_switch_triggered = true;
+	nLastButtons = ctx.cmd->buttons;
 
-		if (quick_switch_triggered)
-			Exploits->LC_OverrideTickbase(9);
+	if (!config.ragebot.aimbot.doubletap_options->get(3)) {
+		fast_throw_triggred = false;
+		return;
+	}
+
+	if (ctx.tickbase_shift > 0) {
+		Exploits->LC_OverrideTickbase(ctx.tickbase_shift);
+
 		if (fast_throw_triggred)
 			Exploits->LC_OverrideTickbase(0);
 
-		if (EnginePrediction->m_fThrowTime > 0.f)
+		if (grenade->m_flThrowTime() > 0.f)
 			fast_throw_triggred = true;
 	}
 
-	if (ctx.grenade_throw_tick + 7 == ctx.cmd->command_number) {
+	if (ctx.cmd->command_number == ctx.grenade_throw_tick + 8 && ctx.grenade_throw_tick != 0) {
 		CBaseCombatWeapon* best_weapon = nullptr;
 		auto weapons = Cheat.LocalPlayer->m_hMyWeapons();
 		int best_type = WEAPONTYPE_KNIFE;
@@ -150,4 +153,44 @@ void Miscellaneous::AutomaticGrenadeRelease() {
 	}
 
 	prev_release = ctx.should_release_grenade;
+}
+
+static bool s_ShouldClearNotices = false;
+void Miscellaneous::PreserveKillfeed() {
+	if (!Cheat.InGame || !Cheat.LocalPlayer)
+		return;
+
+	static auto spawntime = 0.f;
+	static auto status = false;
+	static auto clear_deathnotices = reinterpret_cast<void(__thiscall*)(uintptr_t*)>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 0C 53 56 8B 71 58"));
+
+	auto set = false;
+	if (spawntime != Cheat.LocalPlayer->m_flSpawnTime() || status != config.visuals.effects.preserve_killfeed->get())
+	{
+		set = true;
+		status = config.visuals.effects.preserve_killfeed->get();
+		spawntime = Cheat.LocalPlayer->m_flSpawnTime();
+	}
+
+	const auto death_notice = reinterpret_cast<uintptr_t>(CSGOHud->FindHudElement("CCSGO_HudDeathNotice"));
+	if (death_notice == 20)
+		return;
+
+	const auto notice_element = reinterpret_cast<uintptr_t*>(death_notice - 0x14);
+	if (!death_notice || !notice_element)
+		return;
+
+	if (set) {
+		const auto lifetime = reinterpret_cast<float*>(death_notice + 0x50);
+		*lifetime = status ? FLT_MAX : 1.5f;
+	}
+
+	if (s_ShouldClearNotices) {
+		s_ShouldClearNotices = false;
+		clear_deathnotices(notice_element);
+	}
+}
+
+void Miscellaneous::ClearKillfeed() {
+	s_ShouldClearNotices = true;
 }

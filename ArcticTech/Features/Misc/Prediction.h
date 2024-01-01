@@ -40,21 +40,38 @@ struct local_netvars_t {
 };
 
 struct local_data_t {
+	int m_nSequence = 0;
 	float m_flSpawnTime = 0.f;
+	float m_flNextAttack = 0.f;
+	float m_flNextPrimaryAttack = 0.f;
 	int m_nTickBase = 0;
-	int shift_amount = 0;
+	CBaseCombatWeapon* m_ActiveWeapon = nullptr;
+	int m_nButtons = 0;
 
 	void init(const CUserCmd* cmd) {
+		m_nSequence = cmd->command_number;
 		m_flSpawnTime = Cheat.LocalPlayer->m_flSpawnTime();
 		m_nTickBase = Cheat.LocalPlayer->m_nTickBase();
-		shift_amount = ctx.tickbase_shift;
+		m_flNextAttack = Cheat.LocalPlayer->m_flNextAttack();
+		m_flNextPrimaryAttack = 0.f;
+		m_ActiveWeapon = ctx.active_weapon;
+		m_nButtons = 0;
+		if (ctx.active_weapon)
+			m_flNextPrimaryAttack = ctx.active_weapon->m_flNextPrimaryAttack();
 	}
+};
+
+struct CPlayerPredictData {
+	Vector m_vecVelocity;
+	Vector m_vecOrigin;
+	int m_fFlags = 0;
 };
 
 class CPrediction {
 private:
 	int* predictionRandomSeed;
 	CBaseEntity** predictionEntity;
+
 	CMoveData moveData = {};
 	float flOldCurrentTime = 0.f;
 	float flOldFrameTime = 0.f;
@@ -71,11 +88,17 @@ private:
 
 	bool has_prediction_errors = false;
 public:
-	float m_flNextPrimaryAttack = 0;
-	int m_fFlags = 0;
-	float m_fThrowTime = 0.f;
-	Vector m_vecVelocity;
-	Vector m_vecAbsVelocity;
+	struct {
+		float m_flNextPrimaryAttack = 0;
+		int m_fFlags = 0;
+		float m_fThrowTime = 0.f;
+		float m_flDuckAmount = 0.f;
+		float m_flDuckSpeed = 0.f;
+		Vector m_vecOrigin;
+		Vector m_vecAbsOrigin;
+		Vector m_vecVelocity;
+		Vector m_vecAbsVelocity;
+	} pre_prediction;
 
 	__forceinline float WeaponInaccuracy() { return weaponInaccuracy; };
 	__forceinline float WeaponSpread() { return weaponSpread; };
@@ -93,22 +116,18 @@ public:
 
 	void Start(CUserCmd* cmd);
 	void End();
+	void Repredict(CUserCmd* cmd, QAngle angles);
 
 	void StoreNetvars(int place);
 	void RestoreNetvars(int place);
 
 	void PatchAttackPacket(CUserCmd* cmd, bool restore);
+	void FixRevolver(CUserCmd* cmd);
 
 	CPrediction() {
 		predictionRandomSeed = *(int**)Utils::PatternScan("client.dll", "8B 47 40 A3", 0x4); // 0x10DA7244
 		predictionEntity = *(CBaseEntity***)Utils::PatternScan("client.dll", "0F 5B C0 89 35", 0x5); // 0x1532D108
 	}
-};
-
-class CNetData {
-private:
-	int m_nTickBase;
-	Vector m_vecVelocity;
 };
 
 extern CPrediction* EnginePrediction;

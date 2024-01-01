@@ -216,9 +216,6 @@
     <ClCompile Include="SDK\Requests.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Features\Visuals\PreserveKillfeed.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="Features\Visuals\GlovesChanger.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -539,9 +536,6 @@
     <ClInclude Include="SDK\Interfaces\ISteamHTTP.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Features\Visuals\PreserveKillfeed.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="Features\Visuals\GlovesChanger.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -555,6 +549,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="SDK\Interfaces\CStaticPropManager.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Interfaces\CHud.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

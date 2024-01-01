@@ -5,6 +5,7 @@
 #include <string>
 #include "../../Features/Misc/Prediction.h"
 #include "../../Features/Visuals/WeaponIcons.h"
+#include "../../Features/RageBot/Exploits.h"
 
 
 CCSWeaponData* CBaseCombatWeapon::GetWeaponInfo() {
@@ -51,18 +52,47 @@ bool CBaseCombatWeapon::CanShoot(bool revolver_check) {
 		return false;
 
 	int tick_base = owner->m_nTickBase();
-	if (owner == Cheat.LocalPlayer && m_iItemDefinitionIndex() != Revolver)
+	if (owner == Cheat.LocalPlayer)
 		tick_base = ctx.corrected_tickbase;
 
 	const float cur_time = TICKS_TO_TIME(tick_base);
 
-	if (revolver_check && m_iItemDefinitionIndex() == Revolver && m_flPostponeFireReadyTime() > cur_time)
+	if (revolver_check && m_iItemDefinitionIndex() == Revolver && m_flPostponeFireReadyTime() > TICKS_TO_TIME(owner->m_nTickBase()))
 		return false;
 
 	if (cur_time < m_flNextPrimaryAttack() || cur_time < owner->m_flNextAttack())
 		return false;
 
 	return true;
+}
+
+bool CBaseCombatWeapon::ThrowingGrenade() {
+	if (!IsGrenade())
+		return false;
+
+	auto grenade = reinterpret_cast<CBaseGrenade*>(this);
+
+	CBasePlayer* owner = (CBasePlayer*)EntityList->GetClientEntityFromHandle(m_hOwner());
+
+	if (!owner)
+		return false;
+
+	float throw_time = grenade->m_flThrowTime();
+
+	if (owner == Cheat.LocalPlayer && ctx.tickbase_shift > 0) {
+		if (EnginePrediction->pre_prediction.m_fThrowTime > 0.f || throw_time > 0.f)
+			return true;
+
+		int throw_offset = ctx.cmd->command_number - ctx.grenade_throw_tick;
+
+		if (throw_offset >= 0 && throw_offset <= 8)
+			return true;
+	}
+
+	if (throw_time <= 0.f)
+		return false;
+
+	return throw_time < TICKS_TO_TIME(owner->m_nTickBase());
 }
 
 DXImage& CBaseCombatWeapon::GetIcon() {
