@@ -16,14 +16,12 @@ void CAntiAim::FakeLag() {
 	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || GameRules()->IsFreezePeriod())
 		return;
 
-	if (!ctx.active_weapon || ctx.active_weapon->ThrowingGrenade())
+	if ((!ctx.active_weapon || ctx.active_weapon->ThrowingGrenade()) && !ctx.fake_duck)
 		return;
 
-	else if (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot()) {
-		if (!config.antiaim.misc.fake_duck->get()) {
-			ctx.send_packet = true;
-			return;
-		}
+	if (ctx.cmd->buttons & IN_ATTACK && ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && !ctx.fake_duck) {
+		ctx.send_packet = true;
+		return;
 	}
 
 	if (Exploits->GetExploitType() == CExploits::E_DoubleTap && ctx.tickbase_shift && ctx.cmd->buttons & IN_USE)
@@ -32,23 +30,21 @@ void CAntiAim::FakeLag() {
 	fakelag = 0;
 	fakelag_limit = min(sv_maxusrcmdprocessticks->GetInt(), config.antiaim.fakelag.limit->get());
 
-	if (ctx.tickbase_shift > 0) {
+	if (ctx.tickbase_shift > 0)
 		fakelag_limit = max((sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 1);
-	}
 
-	if (config.ragebot.aimbot.doubletap->get() && (GlobalVars->realtime - ctx.last_shot_time) < 0.5f) {
+	if (config.ragebot.aimbot.doubletap->get() && (GlobalVars->realtime - ctx.last_shot_time) < 0.3f)
 		fakelag_limit = 2;
-	}
 
 	if (config.antiaim.fakelag.enabled->get()) {
 		if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 4096.f) {
 			fakelag = 1;
-		}
-		else {
+		} else {
 			fakelag = fakelag_limit;
 
 			if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
-				fakelag = int(64.0f / (Cheat.LocalPlayer->m_vecVelocity().Q_Length() * GlobalVars->interval_per_tick) + 1);
+				if ((Cheat.LocalPlayer->m_vecOrigin() - ctx.local_sent_origin).LengthSqr() > 4096.f)
+					fakelag = 1;
 			} else {
 				if (config.antiaim.fakelag.variability->get() > 0)
 					fakelag -= Utils::RandomInt(0, config.antiaim.fakelag.variability->get());
@@ -59,7 +55,7 @@ void CAntiAim::FakeLag() {
 	if (lua_override.override_bits & LuaAntiAim_t::OverrideFakeLag)
 		fakelag = lua_override.fakelag;
 
-	if (config.antiaim.misc.fake_duck->get()) {
+	if (config.antiaim.misc.fake_duck->get() && !ctx.no_fakeduck) {
 		fakelag = 14;
 		fakelag_limit = 14;
 	}
@@ -302,7 +298,7 @@ void CAntiAim::SlowWalk() {
 void CAntiAim::FakeDuck() {
 	ctx.fake_duck = false;
 
-	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) || !config.antiaim.misc.fake_duck->get())
+	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) || !config.antiaim.misc.fake_duck->get() || ctx.no_fakeduck)
 		return;
 
 	ctx.cmd->buttons |= IN_BULLRUSH;
@@ -378,7 +374,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 32.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 10.2f + (velocity * TICKS_TO_TIME(3.2f));
+	Vector move_factor = velocity.Normalized() * 8.2f + (velocity * TICKS_TO_TIME(4.1f));
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

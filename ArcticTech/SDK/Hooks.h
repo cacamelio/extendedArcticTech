@@ -46,7 +46,6 @@ typedef CNewParticleEffect*(__fastcall* tCreateNewParticleEffect)(CBaseEntity*, 
 typedef bool(__fastcall* tSVCMsg_VoiceData)(CClientState*, void*, const CSVCMsg_VoiceData&);
 typedef bool(__fastcall* tSendNetMsg)(INetChannel*, void*, INetMessage&, bool, bool);
 typedef void(__stdcall* tDrawStaticProps)(void*, void*, const void*, int, bool, bool);
-typedef bool(__fastcall* tWriteUserCmdDeltaToBuffer)(CInput*, void*, int, void*, int, int, bool);
 typedef bool(__fastcall* tShouldDrawViewModel)(void*, void*);
 typedef void(__fastcall* tPerformScreenOverlay)(void*, void*, int, int, int, int);
 typedef int(__fastcall* tListLeavesInBox)(void*, void*, const Vector&, const Vector&, unsigned int*, int);
@@ -88,7 +87,6 @@ inline tCreateNewParticleEffect oCreateNewParticleEffect;
 inline tSVCMsg_VoiceData oSVCMsg_VoiceData;
 inline tSendNetMsg oSendNetMsg;
 inline tDrawStaticProps oDrawStaticProps;
-inline tWriteUserCmdDeltaToBuffer oWriteUserCmdDeltaToBuffer;
 inline tShouldDrawViewModel oShouldDrawViewModel;
 inline tPerformScreenOverlay oPerformScreenOverlay;
 inline tListLeavesInBox oListLeavesInBox;

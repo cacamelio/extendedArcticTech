@@ -40,6 +40,7 @@ struct Ctx_t {
 	bool planting_bomb = false;
 	bool was_unregistered_shot = true;
 	bool should_release_grenade = false;
+	bool no_fakeduck = false;
 
 	QAngle sent_angles;
 	QAngle shot_angles;
@@ -53,7 +54,6 @@ struct Ctx_t {
 	int grenade_throw_tick = 0;
 
 	int corrected_tickbase = 0;
-	int lc_exploit = 0;
 
 	std::vector<int> shifted_commands;
 	std::vector<int> sented_commands;
@@ -68,10 +68,10 @@ struct Ctx_t {
 		active_weapon = nullptr;
 		weapon_info = nullptr;
 		grenade_throw_tick = 0;
-		lc_exploit = 0;
 		fake_duck = 0;
 		last_shot_time = 0.f;
 		planting_bomb = false;
+		no_fakeduck = false;
 	}
 };
 

@@ -372,6 +372,7 @@ public:
     NETVAR(m_hVehicle, unsigned long, "DT_BasePlayer", "m_hVehicle")
     PNETVAR(m_hViewModel, unsigned long, "DT_BasePlayer", "m_hViewModel[0]")
     PPRED_DESC_MAP(m_nButtons, int, "m_nButtons")
+    NETVAR(m_nOldButtons, int, "DT_BasePlayer", "m_nOldButtons")
     PRED_DESC_MAP(m_afButtonsLast, int, "m_afButtonLast")
     PRED_DESC_MAP(m_afButtonsPressed, int, "m_afButtonPressed")
     PRED_DESC_MAP(m_afButtonsReleased, int, "m_afButtonReleased")

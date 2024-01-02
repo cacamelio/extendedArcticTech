@@ -54,8 +54,8 @@ public:
 
 CUserCmd* CInput::GetUserCmd(int sequence_number)
 {
-	using OriginalFn = CUserCmd * (__thiscall*)(void*, int, int);
-	return CallVFunction<OriginalFn>(this, 8)(this, 0, sequence_number);
+    auto cmds = *(CUserCmd**)(reinterpret_cast<uint32_t>(this) + 0xF0);
+    return &cmds[sequence_number % MULTIPLAYER_BACKUP];
 }
 
 CVerifiedUserCmd* CInput::GetVerifiedCmd(int sequence_number)

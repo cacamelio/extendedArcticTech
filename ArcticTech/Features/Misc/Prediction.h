@@ -44,20 +44,19 @@ struct local_data_t {
 	float m_flSpawnTime = 0.f;
 	float m_flNextAttack = 0.f;
 	float m_flNextPrimaryAttack = 0.f;
+	float m_fLastShotTime = 0.f;
 	int m_nTickBase = 0;
-	CBaseCombatWeapon* m_ActiveWeapon = nullptr;
+	unsigned int m_hActiveWeapon = 0;
 	int m_nButtons = 0;
 
 	void init(const CUserCmd* cmd) {
 		m_nSequence = cmd->command_number;
 		m_flSpawnTime = Cheat.LocalPlayer->m_flSpawnTime();
-		m_nTickBase = Cheat.LocalPlayer->m_nTickBase();
-		m_flNextAttack = Cheat.LocalPlayer->m_flNextAttack();
+		m_nTickBase = 0;
+		m_flNextAttack = 0.f;
 		m_flNextPrimaryAttack = 0.f;
-		m_ActiveWeapon = ctx.active_weapon;
+		m_hActiveWeapon = 0;
 		m_nButtons = 0;
-		if (ctx.active_weapon)
-			m_flNextPrimaryAttack = ctx.active_weapon->m_flNextPrimaryAttack();
 	}
 };
 
@@ -120,9 +119,10 @@ public:
 
 	void StoreNetvars(int place);
 	void RestoreNetvars(int place);
+	void NetUpdate();
 
 	void PatchAttackPacket(CUserCmd* cmd, bool restore);
-	void FixRevolver(CUserCmd* cmd);
+	void RunCommand(CUserCmd* cmd);
 
 	CPrediction() {
 		predictionRandomSeed = *(int**)Utils::PatternScan("client.dll", "8B 47 40 A3", 0x4); // 0x10DA7244

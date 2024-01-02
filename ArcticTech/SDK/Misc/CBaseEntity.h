@@ -255,6 +255,14 @@ public:
 	IClientUnknown* GetClientUnknown();
 	ICollideable* GetCollideable();
 	CBaseEntity* GetShadowParent();
+	inline unsigned int GetHandle() { 
+		auto unk = GetClientUnknown();
+
+		if (!unk)
+			return 0;
+
+		return unk->GetRefEHandle();
+	};
 
 	bool IsPlayer();
 	bool IsWeapon();
@@ -393,7 +401,7 @@ class CBaseGrenade : public CBaseEntity {
 public:
 	OFFSET(m_flInfernoSpawnTime, float, 0x20)
 	NETVAR(m_nSmokeEffectTickBegin, int, "DT_SmokeGrenadeProjectile", "m_nSmokeEffectTickBegin")
-	NETVAR_O(GetCreationTime, float, "DT_BaseCSGrenadeProjectile", "m_nExplodeEffectTickBegin", 0x10)
+	NETVAR_O(m_flCreationTime, float, "DT_BaseCSGrenadeProjectile", "m_nExplodeEffectTickBegin", 0x10)
 	NETVAR(m_nExplodeEffectTickBegin, int, "DT_BaseCSGrenadeProjectile", "m_nExplodeEffectTickBegin")
 	NETVAR(m_hThrower, unsigned long, "DT_BaseGrenade", "m_hThrower")
 	NETVAR(m_flThrowTime, float, "DT_BaseCSGrenade", "m_fThrowTime")

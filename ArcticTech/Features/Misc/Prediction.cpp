@@ -252,14 +252,26 @@ void CPrediction::RestoreNetvars(int place) {
 		has_prediction_errors = true;
 }
 
-void CPrediction::FixRevolver(CUserCmd* cmd) {
+void CPrediction::RunCommand(CUserCmd* cmd) {
 	auto& data = local_data[cmd->command_number % MULTIPLAYER_BACKUP];
-	data.m_nButtons = cmd->buttons;
 
 	if (data.m_nSequence != cmd->command_number)
 		return;
+	
+	data.m_nTickBase = Cheat.LocalPlayer->m_nTickBase();
+	data.m_nButtons = cmd->buttons;
+	data.m_flNextAttack = Cheat.LocalPlayer->m_flNextAttack();
+	data.m_hActiveWeapon = Cheat.LocalPlayer->m_hActiveWeapon();
 
-	if (!data.m_ActiveWeapon || data.m_ActiveWeapon->m_iItemDefinitionIndex() != Revolver)
+	auto weapon = reinterpret_cast<CBaseCombatWeapon*>(EntityList->GetClientEntityFromHandle(data.m_hActiveWeapon));
+
+	if (!weapon)
+		return;
+
+	data.m_flNextPrimaryAttack = weapon->m_flNextPrimaryAttack();
+	data.m_fLastShotTime = weapon->m_fLastShotTime();
+
+	if (weapon->m_iItemDefinitionIndex() != Revolver)
 		return;
 
 	if (!(cmd->buttons & IN_ATTACK))
@@ -284,7 +296,17 @@ void CPrediction::FixRevolver(CUserCmd* cmd) {
 	}
 
 	if (fire_cmd != 0 && cmd->command_number - fire_cmd >= 3)
-		data.m_ActiveWeapon->m_flPostponeFireReadyTime() = TICKS_TO_TIME(local_data[(fire_cmd + 3) % 150].m_nTickBase) + 0.2f;
+		weapon->m_flPostponeFireReadyTime() = TICKS_TO_TIME(local_data[(fire_cmd + 3) % 150].m_nTickBase) + 0.2f;
+}
+
+void CPrediction::NetUpdate() {
+	auto data = local_data[ClientState->m_nCommandAck % MULTIPLAYER_BACKUP];
+
+	if (data.m_nSequence != ClientState->m_nCommandAck || data.m_nTickBase != Cheat.LocalPlayer->m_nTickBase())
+		return;
+
+	if (data.m_nButtons & IN_BULLRUSH && !(Cheat.LocalPlayer->m_nOldButtons() & IN_BULLRUSH))
+		ctx.no_fakeduck = true;
 }
 
 CPrediction* EnginePrediction = new CPrediction;

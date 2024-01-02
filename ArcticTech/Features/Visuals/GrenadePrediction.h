@@ -4,6 +4,7 @@
 #include "../../SDK/Misc/CBasePlayer.h"
 #include "../../SDK/Misc/CBaseCombatWeapon.h"
 #include <vector>
+#include <unordered_map>
 
 class GrenadePrediction {
 private:
@@ -48,8 +49,12 @@ public:
 };
 
 class GrenadeWarning : public GrenadePrediction {
+	std::unordered_map<unsigned int, float> m_flThrowTimes;
+
 public:
 	void Warning(CBaseGrenade* entity, int weapId);
+
+	void Reset() { m_flThrowTimes.clear(); };
 };
 
 inline float CSGO_Armor(float flDamage, int ArmorValue) {

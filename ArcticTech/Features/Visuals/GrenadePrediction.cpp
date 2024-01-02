@@ -150,6 +150,10 @@ void GrenadePrediction::Start() {
 	}
 
 	Vector vel = Cheat.LocalPlayer->m_vecVelocity();
+
+	if (vel.LengthSqr() < 4.f)
+		vel = Vector();
+
 	if (config.misc.movement.super_toss->get() > 0 && !(localPlayer->m_fFlags() & FL_ONGROUND))
 		vel = (ctx.local_velocity + ctx.last_local_velocity) * 0.5f;
 
@@ -601,8 +605,13 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	owner = (CBasePlayer*)EntityList->GetClientEntityFromHandle(entity->m_hThrower());
 	weaponId = weapId;
 
-	flThrowTime = entity->GetCreationTime();
+	unsigned int handle = entity->GetClientUnknown()->GetRefEHandle();
 	float simulationTime = entity->m_flSimulationTime();
+
+	if (m_flThrowTimes.find(handle) == m_flThrowTimes.end()) 
+		m_flThrowTimes.insert({ handle, min(owner->m_flSimulationTime(), entity->m_flCreationTime())});
+
+	flThrowTime = m_flThrowTimes.find(handle)->second;
 
 	Predict(entity->m_vecOrigin(), entity->m_vecVelocity(), flThrowTime, TIME_TO_TICKS(simulationTime - flThrowTime));
 

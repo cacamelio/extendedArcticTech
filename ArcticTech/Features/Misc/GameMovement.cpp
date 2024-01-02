@@ -98,12 +98,16 @@ void CMovement::CompensateThrowable() {
 	if (config.misc.movement.super_toss->get() == 0)
 		return;
 
+	if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 4.f)
+		return;
+
 	auto weapon = Cheat.LocalPlayer->GetActiveWeapon();
 
-	if (!weapon->IsGrenade())
+	if (!weapon->IsGrenade() || !weapon->ThrowingGrenade())
 		return;
 
 	CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(weapon);
+
 	auto weaponData = weapon->GetWeaponInfo();
 
 	if (!weaponData)

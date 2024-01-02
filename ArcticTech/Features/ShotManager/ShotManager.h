@@ -21,7 +21,7 @@ struct RegisteredShot_t {
 	Vector client_shoot_pos;
 	Vector target_pos;
 	QAngle client_angle;
-	int shot_tick;
+	int command_number;
 	int wanted_damage;
 	int wanted_damagegroup;
 	int hitchance = 0;
@@ -34,7 +34,6 @@ struct RegisteredShot_t {
 	Vector shoot_pos;
 	Vector end_pos;
 	QAngle angle;
-	int	ack_tick = 0;
 	std::vector<Vector> impacts;
 	int damage = 0;
 	int	damagegroup = -1;
@@ -45,15 +44,13 @@ struct RegisteredShot_t {
 	bool death = false;
 	bool player_death = false;
 	bool acked = false;
+	bool recieved_events = false;
 	std::string_view miss_reason = "none";
 };
 
 class CBaseCombatWeapon;
 class CShotManager {
 	std::vector<RegisteredShot_t>	m_RegisteredShots;
-
-	float	m_fLastShotTime = 0.f;
-	CBaseCombatWeapon* last_weapon = nullptr;
 
 public:
 	void	DetectUnregisteredShots();

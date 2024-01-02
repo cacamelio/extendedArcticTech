@@ -160,8 +160,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	CUserCmd* cmd = Input->GetUserCmd(sequence_number);
 	CVerifiedUserCmd* verified = Input->GetVerifiedCmd(sequence_number);
 
-	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
-
 	Miscellaneous::Clantag();
 
 	Exploits->DefenseiveThisTick() = false;
@@ -203,8 +201,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	cmd->tick_count = lua_cmd.tickcount;
 	cmd->viewangles = lua_cmd.viewangles;
 
-	if (config.misc.movement.infinity_duck->get() || config.antiaim.misc.fake_duck->get())
-		ctx.cmd->buttons |= IN_BULLRUSH;
+	if ((config.misc.movement.infinity_duck->get() || config.antiaim.misc.fake_duck->get()) && !ctx.no_fakeduck)
+		cmd->buttons |= IN_BULLRUSH;
 
 	if (config.misc.movement.auto_jump->get()) {
 		if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) && Cheat.LocalPlayer->m_MoveType() != MOVETYPE_NOCLIP && Cheat.LocalPlayer->m_MoveType() != MOVETYPE_LADDER)
@@ -219,6 +217,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	Movement->AutoStrafe();
 	Miscellaneous::AutomaticGrenadeRelease();
 
+	if (ctx.active_weapon && ctx.active_weapon->ShootingWeapon() && Exploits->IsShifting())
+		cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
+
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
 
@@ -228,9 +229,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		AntiAim->Angles();
 
 		ctx.send_packet = bSendPacket = ctx.tickbase_shift == 1;
-
-		if (ctx.active_weapon && ctx.active_weapon->ShootingWeapon())
-			cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
 
 		cmd->viewangles.Normalize();
 		AnimationSystem->OnCreateMove();
@@ -242,6 +240,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		AntiAim->LegMovement();
 
 		Exploits->UpdateTickbase();
+		Exploits->Shift(); // we actually will not shift here, only update tickbase info
 
 		ctx.shifted_commands.emplace_back(cmd->command_number);
 		if (bSendPacket)
@@ -260,8 +259,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	if (ctx.is_peeking && config.ragebot.aimbot.doubletap_options->get(1))
 		Exploits->DefenseiveThisTick() = true;
-
-	ShotManager->DetectUnregisteredShots();
 
 	Exploits->AllowDefensive() = lua_cmd.allow_defensive;
 
@@ -341,6 +338,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	// createmove
 
 	Exploits->UpdateTickbase();
+	Exploits->Shift();
 
 	bSendPacket = ctx.send_packet;
 	if (bSendPacket) {
@@ -521,7 +519,7 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 
 	World->ProcessCamera(setup);
 
-	if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && config.antiaim.misc.fake_duck->get())
+	if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && ctx.fake_duck)
 		setup->origin = Cheat.LocalPlayer->GetAbsOrigin() + Vector(0, 0, 64);
 
 	if (!Input->m_fCameraInThirdPerson && Cheat.LocalPlayer->IsAlive() && config.visuals.effects.removals->get(7)) {
@@ -623,11 +621,13 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	}
 	case FRAME_NET_UPDATE_START:
-		ShotManager->OnNetUpdate();
 		Miscellaneous::PreserveKillfeed();
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
+		EnginePrediction->NetUpdate();
+		Exploits->NetUpdate();
+		ShotManager->OnNetUpdate();
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
@@ -755,15 +755,10 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 	Exploits->AdjustTickbase(tickbase, cmd);
 
-	if (cmd->command_number == Exploits->charged_command + 1)
-		tickbase += ctx.shifted_last_tick;
-
 	const int backup_tickbase = tickbase;
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
-
-	EnginePrediction->FixRevolver(cmd);
 
 	player->m_flVelocityModifier() = backup_velocity_modifier;
 
@@ -780,6 +775,9 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 		++i;
 	}
+
+	EnginePrediction->RunCommand(cmd);
+	Exploits->RunCommand(cmd);
 
 	MoveHelper = moveHelper;
 }
@@ -853,6 +851,7 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 		ctx.tickbase_shift++;
 		ctx.shifted_last_tick++;
 
+		Exploits->charged_command = ClientState->m_nLastOutgoingCommand;
 		return;
 	}
 
@@ -959,75 +958,6 @@ void __stdcall hkDrawStaticProps(void* thisptr, IClientRenderable** pProps, cons
 	hook_info.in_draw_static_props = false;
 }
 
-bool __fastcall hkWriteUserCmdDeltaToBuffer(CInput* thisptr, void* edx, int slot, void* buf, int from, int to, bool isnewcommand) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
-		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
-
-	auto next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
-	auto tb_info = Exploits->GetTickbaseInfo(next_cmd_nr);
-	auto last_tb_info = Exploits->GetTickbaseInfo(ClientState->m_nLastOutgoingCommand);
-
-	tb_info->sent = true;
-
-	if (!ctx.lc_exploit || !ctx.tickbase_shift) {
-		if (tb_info->command_number == next_cmd_nr && last_tb_info->command_number == ClientState->m_nLastOutgoingCommand)
-			tb_info->tickbase_diff = tb_info->extra_commands - last_tb_info->extra_commands;
-
-		return oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, isnewcommand);
-	}
-
-	if (from != -1)
-		return true;
-
-	uintptr_t* stack_pointer;
-	__asm mov stack_pointer, ebp;
-
-	CCLCMsg_Move_t* moveMsg = reinterpret_cast<CCLCMsg_Move_t*>(*stack_pointer - 0x58);
-
-	auto new_commands = moveMsg->new_commands;
-
-	moveMsg->new_commands = std::clamp(moveMsg->new_commands + ctx.lc_exploit, 1, 15);
-	moveMsg->backup_commands = 0;
-
-	for (to = next_cmd_nr - new_commands + 1; to <= next_cmd_nr; to++) {
-		if (!oWriteUserCmdDeltaToBuffer(thisptr, edx, slot, buf, from, to, true))
-			return false;
-
-		from = to;
-	}
-
-	CUserCmd* user_cmd = Input->GetUserCmd(next_cmd_nr);
-
-	if (!user_cmd) {
-		if (tb_info->command_number == next_cmd_nr && last_tb_info->command_number == ClientState->m_nLastOutgoingCommand)
-			tb_info->tickbase_diff = tb_info->extra_commands - last_tb_info->extra_commands;
-
-		return true;
-	}
-
-	CUserCmd from_cmd = *user_cmd;
-	CUserCmd to_cmd = from_cmd;
-
-	to_cmd.command_number++;
-	to_cmd.tick_count += 200;
-
-	for (int i = new_commands; i < moveMsg->new_commands; i++) {
-		WriteUserCmd(buf, &to_cmd, &from_cmd);
-
-		from_cmd = to_cmd;
-		to_cmd.command_number++;
-		to_cmd.tick_count++;
-
-		if (tb_info->command_number == next_cmd_nr)
-			tb_info->extra_commands++;
-	}
-
-	if (tb_info->command_number == next_cmd_nr && last_tb_info->command_number == ClientState->m_nLastOutgoingCommand)
-		tb_info->tickbase_diff = tb_info->extra_commands - last_tb_info->extra_commands;
-
-	return true;
-}
-
 bool __fastcall hkShouldDrawViewModel(void* thisptr, void* edx) {
 	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || config.visuals.effects.viewmodel_scope_alpha->get() == 0)
 		return oShouldDrawViewModel(thisptr, edx);
@@ -1088,17 +1018,18 @@ bool __fastcall hkInterpolateViewModel(CBaseViewModel* vm, void* edx, float curT
 	if (EntityList->GetClientEntityFromHandle(vm->m_hOwner()) != Cheat.LocalPlayer)
 		return oInterpolateViewModel(vm, edx, curTime);
 
-	auto backup_pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
+	auto& pred_tick = Cheat.LocalPlayer->m_nFinalPredictedTick();
+	auto backup_pred_tick = pred_tick;
 	auto backup_lerp_amt = GlobalVars->interpolation_amount;
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = Exploits->GetViewmodelTick();
+	pred_tick = Exploits->GetInterpolateTick();
 
 	if (Exploits->ShouldCharge())
 		GlobalVars->interpolation_amount = 0.f;
 
 	auto result = oInterpolateViewModel(vm, edx, curTime);
 
-	Cheat.LocalPlayer->m_nFinalPredictedTick() = backup_pred_tick;
+	pred_tick = backup_pred_tick;
 
 	GlobalVars->interpolation_amount = backup_lerp_amt;
 
@@ -1112,8 +1043,9 @@ bool __fastcall hkInterpolatePlayer(CBasePlayer* pl, void* edx, float curTime) {
 	int& pred_tick = pl->m_nFinalPredictedTick();
 	auto backup_pred_tick = pred_tick;
 
-	if (Exploits->ShouldCharge())
-		pred_tick = Cheat.LocalPlayer->m_nTickBase();
+	pred_tick = Exploits->GetInterpolateTick();
+	//if (Exploits->ShouldCharge())
+	//	pred_tick = Cheat.LocalPlayer->m_nTickBase();
 
 	bool result = oInterpolatePlayer(pl, edx, curTime);
 
@@ -1268,7 +1200,6 @@ void Hooks::Initialize() {
 	oCreateNewParticleEffect = HookFunction<tCreateNewParticleEffect>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 0C 53 56 8B F2 89 75 F8 57"), hkCreateNewParticleEffect_proxy);
 	oSVCMsg_VoiceData = HookFunction<tSVCMsg_VoiceData>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 A1 ? ? ? ? 81 EC ? ? ? ? 53 56 8B F1 B9 ? ? ? ? 57 FF 50 34 8B 7D 08 85 C0 74 13 8B 47 08 40 50"), hkSVCMsg_VoiceData);
 	oDrawStaticProps = HookFunction<tDrawStaticProps>(Utils::PatternScan("engine.dll", "55 8B EC 56 57 8B F9 8B 0D ? ? ? ? 8B B1 ? ? ? ? 85 F6 74 16 6A 04 6A 00 68"), hkDrawStaticProps);
-	oWriteUserCmdDeltaToBuffer = HookFunction<tWriteUserCmdDeltaToBuffer>(Utils::PatternScan("client.dll", "55 8B EC B9 ? ? ? ? A1 ? ? ? ? 8B 40 14"), hkWriteUserCmdDeltaToBuffer);
 	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
@@ -1339,7 +1270,6 @@ void Hooks::End() {
 	RemoveHook(oCreateNewParticleEffect, hkCreateNewParticleEffect_proxy);
 	RemoveHook(oSVCMsg_VoiceData, hkSVCMsg_VoiceData);
 	RemoveHook(oDrawStaticProps, hkDrawStaticProps);
-	RemoveHook(oWriteUserCmdDeltaToBuffer, hkWriteUserCmdDeltaToBuffer);
 	RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
 	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);

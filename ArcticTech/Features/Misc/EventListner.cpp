@@ -7,6 +7,7 @@
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/LagCompensation.h"
 #include "../RageBot/Ragebot.h"
+#include "../Visuals/GrenadePrediction.h"
 #include "../AntiAim/AntiAim.h"
 #include "../Visuals/ESP.h"
 #include "../Visuals/Chams.h"
@@ -16,6 +17,8 @@
 #include "AutoPeek.h"
 
 CEventListner* EventListner = new CEventListner;
+
+extern GrenadeWarning NadeWarning;
 
 static std::vector<const char*> s_RgisterEvents = {
 	"player_hurt",
@@ -72,7 +75,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			Exploits->target_tickbase_shift = 0;
 			ctx.tickbase_shift = 0;
 			AutoPeek->Disable();
-			AntiAim->ResetManual();
+			ctx.no_fakeduck = false;
 		}
 
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(user_id_pl));
@@ -92,8 +95,10 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		//Utils::ForceFullUpdate();
 
+		AntiAim->ResetManual();
 		Miscellaneous::ClearKillfeed();
-		
+		NadeWarning.Reset();
+
 		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 			ESPInfo[i].m_nHealth = 100;
 		}
