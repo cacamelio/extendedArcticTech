@@ -104,4 +104,5 @@ void Interfaces::Initialize() {
 	cvars.r_drawsprites = CVar->FindVar("r_drawsprites");
 	cvars.zoom_sensitivity_ratio_mouse = CVar->FindVar("zoom_sensitivity_ratio_mouse");
 	cvars.mp_damage_headshot_only = CVar->FindVar("mp_damage_headshot_only");
+	cvars.mp_friendlyfire = CVar->FindVar("mp_friendlyfire");
 }

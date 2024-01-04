@@ -18,8 +18,6 @@
 
 CEventListner* EventListner = new CEventListner;
 
-extern GrenadeWarning NadeWarning;
-
 static std::vector<const char*> s_RgisterEvents = {
 	"player_hurt",
 	"player_death",
@@ -37,7 +35,8 @@ static std::vector<const char*> s_RgisterEvents = {
 	"item_purchase",
 	"round_freeze_end",
 	"bullet_impact",
-	"item_equip"
+	"item_equip",
+	"grenade_thrown"
 };
 
 void CEventListner::FireGameEvent(IGameEvent* event) {
@@ -49,7 +48,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	int user_id_pl = EngineClient->GetPlayerForUserID(event->GetInt("userid"));
 
 	if (name == "player_hurt") {
-		CBasePlayer* victim = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid"))));
+		CBasePlayer* victim = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(user_id_pl));
 
 		if (EngineClient->GetPlayerForUserID(event->GetInt("attacker")) == local_id) {
 			if (config.visuals.esp.hitsound->get())
@@ -57,7 +56,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 			if (!skip_hurt) {
 				if (config.visuals.esp.damage_marker->get())
-					ESP::AddDamageMarker(victim->m_vecOrigin() + Vector(0, 0, 80), event->GetInt("dmg_health"));
+					WorldESP->AddDamageMarker(victim->m_vecOrigin() + Vector(0, 0, 80), event->GetInt("dmg_health"));
 			}
 
 			if (config.misc.miscellaneous.logs->get(0) && !skip_hurt) {
@@ -66,7 +65,8 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		}
 
 		if (victim && victim->m_bDormant()) {
-			ESPInfo[victim->EntIndex()].m_nHealth = event->GetInt("health");
+			victim->m_iHealth() = event->GetInt("health");
+			WorldESP->GetESPInfo(user_id_pl).m_nHealth = victim->m_iHealth();
 		}
 	}
 	else if (name == "player_death") {
@@ -78,11 +78,13 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			ctx.no_fakeduck = false;
 		}
 
+		auto& esp_info = WorldESP->GetESPInfo(user_id_pl);
+
 		Resolver->Reset((CBasePlayer*)EntityList->GetClientEntity(user_id_pl));
 		AnimationSystem->InvalidateInterpolation(user_id_pl);
 		LagCompensation->Invalidate(user_id_pl);
-		ESPInfo[user_id_pl].m_flLastUpdateTime = 0.f;
-		ESPInfo[user_id_pl].m_nHealth = 0;
+		esp_info.m_flLastUpdateTime = 0.f;
+		esp_info.m_nHealth = 0;
 		if (PlayerResource)
 			PlayerResource->m_bAlive()[user_id_pl] = false;
 
@@ -97,11 +99,10 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		AntiAim->ResetManual();
 		Miscellaneous::ClearKillfeed();
-		NadeWarning.Reset();
+		NadeWarning->Reset();
 
-		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
-			ESPInfo[i].m_nHealth = 100;
-		}
+		for (int i = 0; i < ClientState->m_nMaxClients; i++)
+			WorldESP->GetESPInfo(i).m_nHealth = 100;
 	}
 	else if (name == "bullet_impact") {
 		if (user_id_pl == local_id && config.visuals.effects.server_impacts->get() && Cheat.LocalPlayer) {
@@ -114,16 +115,37 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(user_id_pl));
 
 		if (player && player->m_bDormant()) {
-			ESPInfo[user_id_pl].m_iActiveWeapon = event->GetInt("defindex");
+			auto& esp_info = WorldESP->GetESPInfo(user_id_pl);
+			if (esp_info.m_nHealth == 0)
+				esp_info.m_nHealth = 100;
+			esp_info.m_iActiveWeapon = event->GetInt("defindex");
+			PlayerResource->m_bAlive()[user_id_pl] = true;
 		}
 
 		if (player == Cheat.LocalPlayer)
 			Ragebot->UpdateUI(event->GetInt("defindex"));
 	}
+	else if (name == "item_purchase") {
+		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(user_id_pl));
+
+		if (player && player->m_bDormant()) {
+			auto& esp_info = WorldESP->GetESPInfo(user_id_pl);
+			if (esp_info.m_nHealth == 0)
+				esp_info.m_nHealth = 100;
+			PlayerResource->m_bAlive()[user_id_pl] = true;
+
+			std::string item = event->GetString("weapon");
+
+			if (item == "vest")
+				player->m_ArmorValue() = 100;
+			else if (item == "vesthelm")
+				player->m_bHasHelmet() = true;
+		}
+	}
 	else if (name == "player_disconnect") {
 		Chams->RemoveShotChams(user_id_pl);
 		LagCompensation->Reset(user_id_pl);
-		ESPInfo[user_id_pl].reset();
+		WorldESP->GetESPInfo(user_id_pl).reset();
 		AnimationSystem->InvalidateInterpolation(user_id_pl);
 	}
 	else if (name == "bomb_beginplant") {
@@ -136,6 +158,9 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	}
 	else if (name == "bomb_planted") {
 		ctx.planting_bomb = false;
+	}
+	else if (name == "grenade_thrown") {
+		NadeWarning->OnEvent(event);
 	}
 
 	for (auto& func : Lua->hooks.getHooks(LUA_GAMEEVENTS))

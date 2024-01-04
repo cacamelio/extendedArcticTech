@@ -24,7 +24,7 @@ void CAntiAim::FakeLag() {
 		return;
 	}
 
-	if (Exploits->GetExploitType() == CExploits::E_DoubleTap && ctx.tickbase_shift && ctx.cmd->buttons & IN_USE)
+	if (Exploits->GetExploitType() == CExploits::E_DoubleTap && ctx.tickbase_shift && ctx.cmd->buttons & IN_USE && !ctx.planting_bomb)
 		return;
 
 	fakelag = 0;
@@ -146,7 +146,7 @@ void CAntiAim::Desync() {
 	if (!config.antiaim.angles.body_yaw->get() || 
 		Exploits->IsShifting() || 
 		Cheat.LocalPlayer->m_bIsDefusing() || 
-		(ctx.cmd->buttons & IN_USE && !(lua_override.override_bits & lua_override.OverrideDesync) && !lua_override.desync) ||
+		(ctx.cmd->buttons & IN_USE && !(lua_override.override_bits & lua_override.OverrideDesync) && !lua_override.desync && !ctx.planting_bomb) ||
 		((lua_override.override_bits & lua_override.OverrideDesync) && !lua_override.desync))
 		return;
 
@@ -155,7 +155,7 @@ void CAntiAim::Desync() {
 	if (config.antiaim.angles.body_yaw_options->get(0) && (!config.antiaim.angles.manual_options->get(0) || manualAngleState == 0))
 		inverter = jitter;
 
-	if (config.antiaim.angles.body_yaw_options->get(3) || (manualAngleState != 0 && config.antiaim.angles.manual_options->get(1))) {
+	if ((config.antiaim.angles.body_yaw_options->get(3) && manualAngleState == 0) || (manualAngleState != 0 && config.antiaim.angles.manual_options->get(1))) {
 		int fs_side = DesyncFreestand();
 
 		if (fs_side != 0)
@@ -205,7 +205,7 @@ CBasePlayer* CAntiAim::GetNearestTarget() {
 		if (!pl->IsPlayer() || pl->IsTeammate() || !pl->IsAlive())
 			continue;
 
-		if (EnginePrediction->curtime() - ESPInfo[i].m_flLastUpdateTime > 10.f) // old dormant
+		if (EnginePrediction->curtime() - WorldESP->GetESPInfo(i).m_flLastUpdateTime > 10.f) // old dormant
 			continue;
 
 		QAngle angleToPlayer = Math::VectorAngles(pl->m_vecOrigin() - eyePos);

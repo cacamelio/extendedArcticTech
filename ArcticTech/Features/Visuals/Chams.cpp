@@ -121,12 +121,20 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 	bool isAttachment = false; 
 
 	if (state.m_pRenderable) {
-		if (EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->moveparent()) == Cheat.LocalPlayer)
+		auto ent = state.m_pRenderable->GetIClientUnknown()->GetBaseEntity();
+		auto shadow_parent = state.m_pRenderable->GetShadowParent();
+
+		if (EntityList->GetClientEntityFromHandle(ent->moveparent()) == Cheat.LocalPlayer)
 			isAttachment = true;
-		else if (EntityList->GetClientEntityFromHandle(((CBaseCombatWeapon*)state.m_pRenderable->GetIClientUnknown())->m_hOwnerEntity()) == Cheat.LocalPlayer)
+		else if (EntityList->GetClientEntityFromHandle(ent->m_hOwnerEntity()) == Cheat.LocalPlayer)
 			isAttachment = true;
-		else if (state.m_pRenderable->GetShadowParent() && state.m_pRenderable->GetShadowParent()->GetIClientUnknown()->GetBaseEntity() == Cheat.LocalPlayer)
+		else if (shadow_parent && shadow_parent->GetIClientUnknown()->GetBaseEntity() == Cheat.LocalPlayer)
 			isAttachment = true;
+
+		auto cl_class = ent->GetClientClass();
+
+		if (cl_class && cl_class->m_ClassID == C_PLANTED_C4)
+			isAttachment = false;
 	}
 
 	ClassOfEntity entType;

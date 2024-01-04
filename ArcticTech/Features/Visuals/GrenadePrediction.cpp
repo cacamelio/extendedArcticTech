@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <string>
 
+
+GrenadeWarning* NadeWarning = new GrenadeWarning;
+
 Vector RayCircleIntersection(Vector ray, Vector center, float r) {
 	// (x - center.x) ** 2 + (y - center.y) ** 2 = r ** 2
 	// ray.y * x = ray.x * y 
@@ -605,14 +608,45 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	owner = (CBasePlayer*)EntityList->GetClientEntityFromHandle(entity->m_hThrower());
 	weaponId = weapId;
 
-	unsigned int handle = entity->GetClientUnknown()->GetRefEHandle();
+	unsigned int handle = entity->GetHandle();
+
+	if (grenade_warnings.find(handle) == grenade_warnings.end()) {
+		ThrownGrenade_t* event = nullptr;
+		std::vector<ThrownGrenade_t>::iterator iter_found;
+
+		for (auto it = thrown_grenades.begin(); it != thrown_grenades.end();) {
+			if (GlobalVars->curtime - it->flThrowTime > 10.f) {
+				it = thrown_grenades.erase(it);
+				continue;
+			}
+
+			if (it->m_hThrower != entity->m_hThrower() || it->grenadeType != entity->GetGrenadeType()) {
+				it++;
+				continue;
+			}
+
+			event = &*it;
+			iter_found = it;
+			break;
+		}
+
+		float creation_time = owner->m_bDormant() ? entity->m_flCreationTime() : min(owner->m_flSimulationTime(), entity->m_flCreationTime());
+		if (event) {
+			if (entity->m_flSimulationTime() - event->flThrowTime <= 2.f)
+				creation_time = event->flThrowTime;
+			thrown_grenades.erase(iter_found);
+		}
+
+		grenade_warnings.insert({ handle, {{}, creation_time} });
+	}
+
+	auto& grenade_data = grenade_warnings.find(handle)->second;
+
+	flThrowTime = grenade_data.flThrowTime;
+
+	pathPoints.push_back(entity->GetAbsOrigin());
+
 	float simulationTime = entity->m_flSimulationTime();
-
-	if (m_flThrowTimes.find(handle) == m_flThrowTimes.end()) 
-		m_flThrowTimes.insert({ handle, min(owner->m_flSimulationTime(), entity->m_flCreationTime())});
-
-	flThrowTime = m_flThrowTimes.find(handle)->second;
-
 	Predict(entity->m_vecOrigin(), entity->m_vecVelocity(), flThrowTime, TIME_TO_TICKS(simulationTime - flThrowTime));
 
 	float timeInAir = flExpireTime - flThrowTime;
@@ -620,7 +654,6 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	if (flExpireTime <= simulationTime)
 		return;
 
-	std::vector<Vector2> scrPoints = { Render->WorldToScreen(entity->GetAbsOrigin()) };
 	bool shouldDrawCircle = true;
 
 	if (weapId == Molotov) {
@@ -641,21 +674,10 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 		}
 	}
 
+	grenade_data.path = pathPoints;
+	grenade_data.flLastUpdate = GlobalVars->realtime;
+
 	Vector2 pos = Render->WorldToScreen(vecDetonate);
-
-	for (int i = 1; i < pathPoints.size(); i++) {
-		Vector start = pathPoints[i - 1];
-		Vector end = pathPoints[i];
-		GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.4, -0.4), Vector((start - end).Q_Length(), 0.4, 0.4), config.visuals.other_esp.grenade_predict_color->get(), GlobalVars->frametime * 3.f);
-	}
-
-	//for (int i = 0; i < pathPoints.size(); i++) {
-	//	Vector2 cpoint = Render->WorldToScreen(pathPoints[i]);
-	//	if (!cpoint.Invalid())
-	//		scrPoints.push_back(cpoint);
-	//}
-
-	//Render->PolyLine(scrPoints, Color(240, 161, 14));
 
 	Vector local_pos = Cheat.LocalPlayer->GetAbsOrigin();
 	CBasePlayer* obs = Cheat.LocalPlayer->GetObserverTarget();
@@ -667,31 +689,31 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	if (!shouldDrawCircle || distance > 700)
 		return;
 
-	float distance_alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
+	float alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
 	float circle_radius = 30.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
 
-	Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * distance_alpha));
-	Render->GlowCircle2(pos, circle_radius - 3.f, Color(40, 40, 40, 255 * distance_alpha), Color(20, 20, 20, 255 * distance_alpha));
+	if (flExpireTime - simulationTime < 0.2f)
+		alpha *= max((flExpireTime - simulationTime), 0) * 5.f;
+
+	Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
+	Render->GlowCircle2(pos, circle_radius - 3.f, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 255 * alpha));
 
 	if (weapId == HeGrenade) {
-		float damage = CalcDamage(vecDetonate + Vector(0, 0, 0.25f), Cheat.LocalPlayer);
+		float damage = CalcDamage(vecDetonate + Vector(0, 0, 0.25f), Cheat.LocalPlayer, entity);
 		if (damage > 0)
 			Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, min(damage / Cheat.LocalPlayer->m_iHealth() * 2.f, 1) * 210));
 
-		Render->Text(std::to_string(int(damage)).c_str(), pos + Vector2(0, 13), Color(255, 255, 255, 255 * distance_alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
-		Render->Image(Resources::HeGrenade, pos - Vector2(10, 21), Color(255, 255, 255, 230 * distance_alpha));
-	}
-
-	if (weapId == Molotov) {
-		float distance = (vecDetonate - Cheat.LocalPlayer->GetHitboxCenter(2)).Length2D();
+		Render->Text(std::to_string(int(damage)).c_str(), pos + Vector2(0, 13), Color(255, 255, 255, 255 * alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
+		Render->Image(Resources::HeGrenade, pos - Vector2(10, 21), Color(255, 255, 255, 230 * alpha));
+	} else if (weapId == Molotov) {
+		float distance = (vecDetonate - Cheat.LocalPlayer->GetAbsOrigin()).Length2D();
 
 		Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, std::clamp((430 - distance) / 250.f, 0.f, 1.f) * 210));
-		Render->Image(Resources::Molotov, pos - Vector2(10, 18), Color(255, 255, 255, 230 * distance_alpha));
+		Render->Image(Resources::Molotov, pos - Vector2(10, 18), Color(255, 255, 255, 230 * alpha));
 	}
 }
 
-
-int GrenadePrediction::CalcDamage(Vector pos, CBasePlayer* target) {
+int GrenadePrediction::CalcDamage(Vector pos, CBasePlayer* target, CBaseEntity* skip) {
 	Vector vecPelvis = target->GetHitboxCenter(2);
 	Vector delta = vecPelvis - pos;
 
@@ -701,7 +723,7 @@ int GrenadePrediction::CalcDamage(Vector pos, CBasePlayer* target) {
 	CTraceFilter filter;
 	CGameTrace trace;
 	Ray_t ray;
-	filter.pSkip = Cheat.LocalPlayer;
+	filter.pSkip = skip;
 	ray.Init(pos, vecPelvis);
 
 	EngineTrace->TraceRay(ray, MASK_SHOT, &filter, &trace);
@@ -723,4 +745,36 @@ int GrenadePrediction::CalcDamage(Vector pos, CBasePlayer* target) {
 	dmg = min(dmg, (target->m_ArmorValue() > 0) ? 57 : 98);
 
 	return dmg;
+}
+
+void GrenadeWarning::RenderPaths() {
+	float curtime_backup = GlobalVars->curtime;
+	GlobalVars->curtime -= 0.01f;
+	for (auto& nade : grenade_warnings) {
+		auto& data = nade.second;
+
+		if (GlobalVars->realtime - data.flLastUpdate > 0.1f || data.path.size() <= 3)
+			continue;
+
+		for (int i = 1; i < data.path.size(); i++) {
+			Vector start = data.path[i - 1];
+			Vector end = data.path[i];
+			GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.4, -0.4), Vector((start - end).Q_Length(), 0.4, 0.4), config.visuals.other_esp.grenade_predict_color->get(), 0.02f);
+		}
+	}
+	GlobalVars->curtime = curtime_backup;
+}
+
+void GrenadeWarning::OnEvent(IGameEvent* event) {
+	std::string weap = event->GetString("weapon");
+
+	bool is_he = weap == "hegrenade";
+
+	if (!is_he && weap != "incgrenade" && weap != "molotov")
+		return;
+
+	ThrownGrenade_t& grenade = thrown_grenades.emplace_back();
+	grenade.m_hThrower = EntityList->GetClientEntity(EngineClient->GetPlayerForUserID(event->GetInt("userid")))->GetHandle();
+	grenade.grenadeType = is_he ? GRENADE_TYPE_EXPLOSIVE : GRENADE_TYPE_FIRE;
+	grenade.flThrowTime = GlobalVars->curtime;
 }

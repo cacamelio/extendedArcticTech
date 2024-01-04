@@ -29,6 +29,7 @@ struct RegisteredShot_t {
 	LagRecord* record;
 	QAngle player_angle; // for building correct matrix
 	bool safe_point = false;
+	std::vector<Vector> client_impacts;
 
 	// acked info
 	Vector shoot_pos;
@@ -57,7 +58,7 @@ public:
 	void	ProcessManualShot();
 	void	OnNetUpdate();
 	bool	OnEvent(IGameEvent* event);
-	void	AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, bool safe, LagRecord* record);
+	void	AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, bool safe, LagRecord* record, Vector impacts[], int total_impacts);
 	void	Reset();
 };
 

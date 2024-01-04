@@ -137,7 +137,7 @@ private:
 public:
 	void				UpdateUI(int idx = -1);
 
-	void				RunPrediction();
+	void				RunPrediction(const QAngle& angle);
 	void				CalcSpreadValues();
 	void				AutoStop();
 	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);

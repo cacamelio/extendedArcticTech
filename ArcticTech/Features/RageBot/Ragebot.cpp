@@ -480,7 +480,7 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 		}
 
 		FireBulletData_t bullet;
-		if (AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, point.point, bullet, target)) {
+		if (AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, point.point, bullet, target) && bullet.enterTrace.hitgroup == HitboxToHitgroup(point.hitbox)) {
 			int priority = point.multipoint ? 0 : 1;
 			bool jitter_safe = false;
 
@@ -589,22 +589,8 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 	}
 }
 
-void CRagebot::RunPrediction() {
-	if (ctx.cmd->buttons & IN_DUCK)
-		return;
-
-	if (abs(ctx.cmd->sidemove) + abs(ctx.cmd->forwardmove) < 16.f)
-		return;
-
-	auto backup_cmd = ctx.cmd;
-	CUserCmd stop_cmd = *ctx.cmd;
-	ctx.cmd = &stop_cmd;
-	AutoStop();
-	ctx.cmd = backup_cmd;
-
-	QAngle vangle;
-	EngineClient->GetViewAngles(&vangle);
-	EnginePrediction->Repredict(&stop_cmd, vangle);
+void CRagebot::RunPrediction(const QAngle& angle) {
+	EnginePrediction->Repredict(ctx.cmd, angle);
 }
 
 void CRagebot::Run() {
@@ -719,7 +705,7 @@ void CRagebot::Run() {
 		}
 	}
 
-	bool can_shoot_this_tick = ctx.active_weapon->CanShoot() || ctx.was_unregistered_shot;
+	bool can_shoot_this_tick = ctx.active_weapon->CanShoot();
 
 	if (best_target.player && ctx.active_weapon->m_iItemDefinitionIndex() == Revolver && ctx.active_weapon->CanShoot(false))
 		ctx.cmd->buttons |= IN_ATTACK;
@@ -736,13 +722,11 @@ void CRagebot::Run() {
 	if (!best_target.player || !can_shoot_this_tick)
 		return;
 
-	RunPrediction(); // predict autostop movement to calculate damage and angle correctly
+	RunPrediction(best_target.angle); // predict autostop movement to calculate damage and angle correctly
 
 	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime + LagCompensation->GetLerpTime());
 	ctx.cmd->viewangles = Math::VectorAngles_p(best_target.best_point.point - ctx.shoot_position) - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
 	ctx.cmd->buttons |= IN_ATTACK;
-
-	ctx.was_unregistered_shot = false;
 
 	if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
 		Exploits->ForceTeleport();
@@ -785,7 +769,7 @@ void CRagebot::Run() {
 		));
 	}
 
-	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, record);
+	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, record, best_target.best_point.impacts, best_target.best_point.num_impacts);
 	if (config.visuals.chams.shot_chams->get())
 		Chams->AddShotChams(record);
 }
@@ -997,7 +981,7 @@ void CRagebot::AutoRevolver() {
 	ctx.cmd->buttons &= ~IN_ATTACK2;
 
 	static float next_cock_time = 0.f;
-	float time = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() + 1); // add 1 extra tick for some inaccuracies
+	float time = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 
 	if (ctx.active_weapon->m_flPostponeFireReadyTime() > time) {
 		if (time > next_cock_time)
@@ -1020,7 +1004,7 @@ void CRagebot::DormantAimbot() {
 		if (!player || !player->m_bDormant() || !player->IsAlive() || player->IsTeammate())
 			continue;
 
-		if (EnginePrediction->curtime() - ESPInfo[i].m_flLastUpdateTime > 5.f)
+		if (EnginePrediction->curtime() - WorldESP->GetESPInfo(i).m_flLastUpdateTime > 5.f)
 			continue;
 
 		Vector shoot_target = player->m_vecOrigin() + Vector(0, 0, 36);

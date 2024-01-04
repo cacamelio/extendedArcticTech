@@ -14,80 +14,49 @@
 #include "WeaponIcons.h"
 #include "../../Utils/Console.h"
 
-ESPInfo_t ESPInfo[64];
-GrenadeWarning NadeWarning;
-CUtlVector<SndInfo_t> soundList;
 
-struct ESPFlag_t {
-	std::string flag;
-	Color color;
-};
+CWorldESP* WorldESP = new CWorldESP;
 
-float g_LastSharedESPData[64];
 
-void ESP::Draw() {
+void CWorldESP::Draw() {
 	if (!config.visuals.esp.enable->get() || !Cheat.InGame || !Cheat.LocalPlayer) return;
 
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
-		ESP::UpdatePlayer(i);
-		ESP::DrawPlayer(i);
+		UpdatePlayer(i);
+		DrawPlayer(i);
 	}
 }
 
-void ESP::IconDisplay( CBasePlayer* player, int Level )
-{
-	static void* DT_CSPlayerResource = NULL;
 
-	if ( DT_CSPlayerResource == NULL )
-		DT_CSPlayerResource = Utils::PatternScan( "client.dll", "8B 3D ? ? ? ? 85 FF 0F 84 ? ? ? ? 81 C7", 0x2 );
-
-	if ( !DT_CSPlayerResource )
-		return;
-
-	DWORD ptrResource = **( DWORD** )DT_CSPlayerResource;
-	DWORD m_nPersonaDataPublicLevel = ( DWORD )ptrResource + 0x4dd4 + ( player->EntIndex( ) * 4 );
-
-	*( PINT )( ( DWORD )m_nPersonaDataPublicLevel ) = Level;
-}
-
-void ESP::RegisterCallback() {
-	NetMessages->AddArcticDataCallback(ProcessSharedESP);
-	NetMessages->AddVoiceDataCallback(ParseOtherShared);
-}
-
-void ESP::ProcessSharedESP(const SharedVoiceData_t* data) {
+void ProcessSharedESP(const SharedVoiceData_t* data) {
 	SharedESP_t esp = *(SharedESP_t*)data;
 
 	int ent_index = EngineClient->GetPlayerForUserID(esp.m_iPlayer);
-	auto& esp_info = ESPInfo[ent_index];
+	auto& esp_info = WorldESP->GetESPInfo(ent_index);
 
 	CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(ent_index));
 
 	if (!player || player == Cheat.LocalPlayer || !player->m_bDormant())
 		return;
 
-	//esp_info.m_vecOrigin = esp.m_vecOrigin;
 	esp_info.m_iActiveWeapon = esp.m_ActiveWeapon;
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
 	esp_info.m_nHealth = esp.m_iHealth;
 	esp_info.m_bValid = true;
+	player->m_vecOrigin() = Vector(esp.m_vecOrigin.x, esp.m_vecOrigin.y, esp.m_vecOrigin.z);
+	player->m_iHealth() = esp.m_iHealth;
 
-	if (player) {
-		player->m_vecOrigin() = Vector(esp.m_vecOrigin.x, esp.m_vecOrigin.y, esp.m_vecOrigin.z);
-		player->m_iHealth() = esp.m_iHealth;
-	}
-
-	g_LastSharedESPData[ent_index] = GlobalVars->realtime;
+	esp_info.m_flLastSharedData = GlobalVars->realtime;
 }
 
-void ESP::ParseOtherShared(const VoiceDataOther* data) {
+void ParseOtherShared(const VoiceDataOther* data) {
 	auto fatal_data = reinterpret_cast<const SharedEsp_Fatality*>(data);
 
 	if (fatal_data->identifier != 0x7FFA && fatal_data->identifier != 0x7FFB)
 		return;
 
 	int ent_index = EngineClient->GetPlayerForUserID(fatal_data->user_id);
-	auto& esp_info = ESPInfo[ent_index];
+	auto& esp_info = WorldESP->GetESPInfo(ent_index);
 	const auto player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(ent_index));
 
 	if (!player || !player->m_bDormant() || !player->IsEnemy())
@@ -96,11 +65,15 @@ void ESP::ParseOtherShared(const VoiceDataOther* data) {
 	player->m_vecOrigin() = fatal_data->pos;
 	esp_info.m_iActiveWeapon = fatal_data->weapon_id + (fatal_data->identifier == 0x7FFB ? 400 : 0);
 	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
-
-	g_LastSharedESPData[ent_index] = GlobalVars->realtime;
+	esp_info.m_flLastSharedData = GlobalVars->realtime;
 }
 
-void ESP::ProcessSound(const SoundInfo_t& sound) {
+void CWorldESP::RegisterCallback() {
+	NetMessages->AddArcticDataCallback(ProcessSharedESP);
+	NetMessages->AddVoiceDataCallback(ParseOtherShared);
+}
+
+void CWorldESP::ProcessSound(const SoundInfo_t& sound) {
 	if (!config.visuals.esp.dormant->get())
 		return;
 
@@ -134,10 +107,12 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 	else
 		return;
 
-	if (!player || player == Cheat.LocalPlayer || !player->m_bDormant() || player->IsTeammate() || !player->IsAlive())
+	if (!player || !player->m_bDormant() || player->IsTeammate() || !player->IsAlive())
 		return;
 
-	if (abs(GlobalVars->realtime - g_LastSharedESPData[player->EntIndex()]) < 0.5f)
+	auto& info = esp_info[player->EntIndex()];
+
+	if (abs(GlobalVars->realtime - info.m_flLastSharedData) < 0.5f)
 		return;
 
 	Vector origin = sound.vOrigin;
@@ -145,20 +120,15 @@ void ESP::ProcessSound(const SoundInfo_t& sound) {
 	auto trace = EngineTrace->TraceHull(origin, origin - Vector(0, 0, 128), Vector(-16, -16, 0), Vector(16, 16, 72), MASK_SOLID, player);
 	player->m_vecOrigin() = trace.fraction == 1.f ? trace.startpos : trace.endpos;
 
-	ESPInfo_t& esp_info = ESPInfo[player->EntIndex()];
-
-	esp_info.m_flLastUpdateTime = GlobalVars->curtime;
-	esp_info.m_bValid = true;
-
-	if (esp_info.m_nHealth <= 0)
-		esp_info.m_nHealth = 100;
+	info.m_flLastUpdateTime = GlobalVars->curtime;
+	info.m_bValid = true;
 }
 
-void ESP::UpdatePlayer(int id) {
+void CWorldESP::UpdatePlayer(int id) {
 	CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(id);
-	ESPInfo_t& info = ESPInfo[id];
+	auto& info = esp_info[id];
 
-	info.m_pEnt = player;
+	info.player = player;
 	if (!player) {
 		info.m_bValid = false;
 		return;
@@ -168,7 +138,7 @@ void ESP::UpdatePlayer(int id) {
 		info.m_bValid = false;
 		info.m_nHealth = 0;
 
-		if (player->m_iObserverMode() != OBS_MODE_IN_EYE || player->m_iObserverMode() != OBS_MODE_CHASE)
+		if (player->m_iObserverMode() != OBS_MODE_IN_EYE && player->m_iObserverMode() != OBS_MODE_CHASE)
 			return;
 
 		CBasePlayer* spec_pl = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(player->m_hObserverTarget()));
@@ -178,8 +148,8 @@ void ESP::UpdatePlayer(int id) {
 		if (spec_pl->IsTeammate())
 			return;
 
-		ESPInfo_t& spec_info = ESPInfo[spec_pl->EntIndex()];
-		spec_info.m_vecOrigin = spec_pl->m_vecOrigin();
+		ESPInfo_t& spec_info = esp_info[spec_pl->EntIndex()];
+		spec_info.m_vecOrigin = player->GetAbsOrigin();
 		spec_info.m_flLastUpdateTime = GlobalVars->curtime;
 		return;
 	}
@@ -194,9 +164,8 @@ void ESP::UpdatePlayer(int id) {
 
 	auto& records = LagCompensation->records(id);
 
-	if (records.empty()) {
+	if (records.empty())
 		info.m_bDormant = true;
-	}
 
 	if (!info.m_bDormant)
 		info.m_nHealth = player->m_iHealth();
@@ -215,9 +184,8 @@ void ESP::UpdatePlayer(int id) {
 		info.m_bBreakingLagComp = latestRecord->breaking_lag_comp;
 	}
 	else {
-		if (info.m_nHealth == 0) {
+		if (info.m_nHealth == 0)
 			info.m_bValid = false;
-		}
 
 		info.m_nFakeDuckTicks = 0;
 		info.m_bFakeDuck = false;
@@ -261,6 +229,9 @@ void ESP::UpdatePlayer(int id) {
 		info.m_flAlpha = 1.f;
 		info.m_flLastUpdateTime = GlobalVars->curtime;
 		
+		if (config.visuals.other_esp.radar->get())
+			player->m_bSpotted() = true;
+
 		CBaseCombatWeapon* weapon = player->GetActiveWeapon();
 
 		if (weapon)
@@ -268,13 +239,13 @@ void ESP::UpdatePlayer(int id) {
 	}
 }
 
-void ESP::DrawPlayer(int id) {
-	ESPInfo_t info = ESPInfo[id];
+void CWorldESP::DrawPlayer(int id) {
+	auto& info = esp_info[id];
 
 	if (!info.m_bValid)
 		return;
 
-	CBasePlayer* player = info.m_pEnt;
+	CBasePlayer* player = info.player;
 
 	if (info.m_bDormant && !config.visuals.esp.dormant->get())
 		return;
@@ -289,14 +260,14 @@ void ESP::DrawPlayer(int id) {
 	DrawWeapon(info);
 }
 
-void ESP::DrawBox(ESPInfo_t info) {
+void CWorldESP::DrawBox(const ESPInfo_t& info) {
 	if (!config.visuals.esp.bounding_box->get())
 		return;
 
 	Color clr = config.visuals.esp.box_color->get();
-	if (info.m_bDormant) {
+	if (info.m_bDormant)
 		clr = config.visuals.esp.dormant_color->get();
-	}
+
 	clr.a *= info.m_flAlpha;
 
 	Render->Box(info.m_BoundingBox[0], info.m_BoundingBox[1], clr);
@@ -304,7 +275,7 @@ void ESP::DrawBox(ESPInfo_t info) {
 	Render->Box(info.m_BoundingBox[0] + Vector2(1, 1), info.m_BoundingBox[1] - Vector2(1, 1), Color(0, 0, 0, 150 * clr.a / 255));
 }
 
-void ESP::DrawHealth(ESPInfo_t info) {
+void CWorldESP::DrawHealth(const ESPInfo_t& info) {
 	if (!config.visuals.esp.health_bar->get())
 		return;
 
@@ -319,7 +290,9 @@ void ESP::DrawHealth(ESPInfo_t info) {
 		clr = config.visuals.esp.custom_health_color->get();
 
 	if (info.m_bDormant)
-		clr = config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha);
+		clr = config.visuals.esp.dormant_color->get();
+	
+	clr.alpha_modulatef(info.m_flAlpha);
 
 	float clr_a = clr.a / 255.f;
 
@@ -337,28 +310,40 @@ void ESP::DrawHealth(ESPInfo_t info) {
 
 	Render->BoxFilled(health_box_start + Vector2(1, 1 + h * health_fraction), health_box_end - Vector2(1, 1), clr);
 
-	if (health < 92)
-		Render->Text(std::to_string(health), info.m_BoundingBox[0] - Vector2(7.f, -health_fraction * h + 5), Color(240, 240, 240, 255 * info.m_flAlpha * clr_a), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+	float base_dmg = 100;
+
+	if (ctx.weapon_info && (ctx.active_weapon->m_iItemDefinitionIndex() == Ssg08 || ctx.active_weapon->m_iItemDefinitionIndex() == Revolver)) {
+		float distance = (Cheat.LocalPlayer->GetAbsOrigin() - info.m_vecOrigin).Q_Length();
+		base_dmg = ctx.weapon_info->iDamage * std::powf(ctx.weapon_info->flRangeModifier, (distance * 0.002f));
+		info.player->ScaleDamage(HITGROUP_STOMACH, ctx.weapon_info, base_dmg);
+	}
+
+	if (health < base_dmg)
+		Render->Text(std::to_string(health), info.m_BoundingBox[0] - Vector2(6.f, -health_fraction * h + 5), Color(240, 240, 240, 255 * info.m_flAlpha * clr_a), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
 }
 
-void ESP::DrawName(ESPInfo_t info) {
+void CWorldESP::DrawName(const ESPInfo_t& info) {
 	if (!config.visuals.esp.name->get())
 		return;
 
 	Color clr = config.visuals.esp.name_color->get();
-	if (info.m_bDormant) {
+	if (info.m_bDormant)
 		clr = config.visuals.esp.dormant_color->get();
-	}
 
 	clr.a *= info.m_flAlpha;
 
-	Render->Text(info.m_pEnt->GetName(), Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) * 0.5f, info.m_BoundingBox[0].y - 13), clr, Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
+	Render->Text(info.player->GetName(), Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) * 0.5f, info.m_BoundingBox[0].y - 13), clr, Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
 }
 
-void ESP::DrawFlags(ESPInfo_t info) {
+void CWorldESP::DrawFlags(const ESPInfo_t& info) {
+	struct ESPFlag_t {
+		std::string flag;
+		Color color;
+	};
+
 	bool dormant = info.m_bDormant;
 
-	auto& records = LagCompensation->records(info.m_pEnt->EntIndex());
+	auto& records = LagCompensation->records(info.player->EntIndex());
 
 	LagRecord* record = nullptr;
 	if (!records.empty())
@@ -366,22 +351,22 @@ void ESP::DrawFlags(ESPInfo_t info) {
 
 	std::vector<ESPFlag_t> flags;
 
-	if (config.visuals.esp.flags->get(0) && !dormant) {
+	if (config.visuals.esp.flags->get(0)) {
 		std::string str = "";
-		if (!info.m_pEnt->m_bHasHelmet())
-			str = "NH";
-		if (info.m_pEnt->m_ArmorValue() == 0)
-			str = "NA";
+		if (info.player->m_ArmorValue() > 0)
+			str = "K";
+		if (info.player->m_bHasHelmet())
+			str = "HK";
 		if (!str.empty())
-			flags.push_back({ str, Color(210, 0, 40, 255 * info.m_flAlpha) });
+			flags.push_back({ str, Color(215, 255 * info.m_flAlpha) });
 	}
 
 	bool shifting = record && record->shifting_tickbase;
 
-	if (config.visuals.esp.flags->get(4) && info.m_pEnt->EntIndex() == PlayerResource->m_iPlayerC4())
+	if (config.visuals.esp.flags->get(4) && info.player->EntIndex() == PlayerResource->m_iPlayerC4())
 		flags.push_back({ "BOMB", Color(210, 0, 40, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(1) && info.m_pEnt->m_bIsScoped() && !dormant)
+	if (config.visuals.esp.flags->get(1) && info.player->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(3) && record && (shifting || record->exploiting) && !dormant)
@@ -393,11 +378,30 @@ void ESP::DrawFlags(ESPInfo_t info) {
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
 		flags.push_back({ "LC", Color(210, 0, 40, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.antiaim_type == R_AntiAimType::JITTER && !dormant)
-		flags.push_back({ "J", Color(215, 255 * info.m_flAlpha) });
-
-	if (config.visuals.esp.flags->get(6) && record && record->resolver_data.resolver_type == ResolverType::ANIM && !dormant)
-		flags.push_back({ "ANIM", Color(165, 230, 14, 255 * info.m_flAlpha) });
+	if (config.visuals.esp.flags->get(6) && record && !dormant && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive()) {
+		std::string rtype;
+		switch (record->resolver_data.resolver_type)
+		{
+		case ResolverType::NONE:
+			rtype = "N";
+			break;
+		case ResolverType::FREESTAND:
+			rtype = "F";
+			break;
+		case ResolverType::LOGIC:
+			rtype = "L";
+			break;
+		case ResolverType::ANIM:
+			rtype = "A";
+			break;
+		case ResolverType::BRUTEFORCE:
+			rtype = "B";
+			break;
+		default:
+			break;
+		}
+		flags.push_back({ std::format("{}[{}]", rtype, (int)(record->resolver_data.side * info.player->GetMaxDesyncDelta())), Color(210, 255 * info.m_flAlpha) });
+	}
 
 	int line_offset = 0;
 	const Color dormant_color = config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha);
@@ -407,7 +411,7 @@ void ESP::DrawFlags(ESPInfo_t info) {
 	}
 }
 
-void ESP::DrawWeapon(ESPInfo_t info) {
+void CWorldESP::DrawWeapon(const ESPInfo_t& info) {
 	if (!config.visuals.esp.weapon_text->get() && !config.visuals.esp.weapon_icon->get())
 		return;
 
@@ -419,7 +423,7 @@ void ESP::DrawWeapon(ESPInfo_t info) {
 	if (!weapon_data)
 		return;
 
-	std::string weap = info.m_pEnt->GetActiveWeapon()->GetName(weapon_data);
+	std::string weap = info.player->GetActiveWeapon()->GetName(weapon_data);
 	int current_offset = 0;
 	if (config.visuals.esp.weapon_text->get()) {
 		Render->Text(weap, Vector2((info.m_BoundingBox[0].x + info.m_BoundingBox[1].x) / 2, info.m_BoundingBox[1].y + 2), info.m_bDormant ? config.visuals.esp.dormant_color->get().alpha_modulatef(info.m_flAlpha) : config.visuals.esp.weapon_text_color->get().alpha_modulatef(info.m_flAlpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
@@ -436,13 +440,12 @@ void ESP::DrawWeapon(ESPInfo_t info) {
 	}
 }
 
-void ESP::DrawGrenades() {
-	static auto mp_friendlyfire = CVar->FindVar("mp_friendlyfire");
-
-	if (!Cheat.InGame || !config.visuals.other_esp.grenades->get()) return;
+void CWorldESP::OtherESP() {
+	if (!Cheat.InGame) 
+		return;
 	
 	for (int i = 0; i < EntityList->GetHighestEntityIndex(); i++) {
-		CBaseGrenade* ent = reinterpret_cast<CBaseGrenade*>(EntityList->GetClientEntity(i));
+		CBaseEntity* ent = EntityList->GetClientEntity(i);
 
 		if (!ent || ent->m_bDormant())
 			continue;
@@ -452,130 +455,176 @@ void ESP::DrawGrenades() {
 		if (!classId)
 			continue;
 
-		if (classId->m_ClassID == C_INFERNO) {
-			CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(ent->m_hOwnerEntity()));
+		if (classId->m_ClassID == C_BASE_CS_GRENADE_PROJECTILE || classId->m_ClassID == C_MOLOTOV_PROJECTILE || classId->m_ClassID == C_SMOKE_GRENADE_PROJECTILE || classId->m_ClassID == C_DECOY_PROJECTILE || classId->m_ClassID == C_INFERNO)
+			DrawGrenade(reinterpret_cast<CBaseGrenade*>(ent), classId);
 
-			if (owner != Cheat.LocalPlayer && owner->IsTeammate() && !mp_friendlyfire->GetInt())
-				continue;
-
-			Vector2 pos = Render->WorldToScreen(ent->GetAbsOrigin());
-
-			if (pos.Invalid())
-				continue;
-
-			float distance = (Cheat.LocalPlayer->GetAbsOrigin() - ent->GetAbsOrigin()).Q_Length();
-
-			if (distance > 700)
-				continue;
-
-			float distance_alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
-			float circle_radius = 30.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
-
-			float alpha = std::clamp((7.03125f - (GlobalVars->curtime - ent->m_flInfernoSpawnTime())) * 2.f, 0.f, 1.f) * distance_alpha;
-
-			Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
-			Render->GlowCircle2(pos, circle_radius - 3, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 215 * alpha));
-			Render->GlowCircle(pos, circle_radius - 5, Color(255, 50, 50, std::clamp((380 - distance) / 200.f, 0.f, 1.f) * 215 * alpha));
-
-			Render->Image(Resources::Inferno, pos - Vector2(15, 15), Color(255, 255, 255, 230 * alpha));
-
-			continue;
-		}
-
-		if (classId->m_ClassID != C_BASE_CS_GRENADE_PROJECTILE && classId->m_ClassID != C_MOLOTOV_PROJECTILE && classId->m_ClassID != C_SMOKE_GRENADE_PROJECTILE && classId->m_ClassID != C_DECOY_PROJECTILE)
-			continue;
-
-		CBasePlayer* thrower = ent->GetThrower();
-
-		bool thrower_teammate = thrower && thrower->IsTeammate() && mp_friendlyfire->GetInt() == 0 && thrower != Cheat.LocalPlayer;
-
-		int weapId = -1;
-		std::string name;
-		float alpha = 1.f;
-
-		switch (ent->GetGrenadeType()) {
-		case GRENADE_TYPE_DECOY:
-			name = "DECOY";
-			break;
-		case GRENADE_TYPE_FIRE:
-			if (thrower_teammate)
-				break;
-			name = "MOLLY";
-			weapId = Molotov;
-			break;
-		case GRENADE_TYPE_SMOKE:
-			name = "SMOKE";
-			if (ent->m_nSmokeEffectTickBegin() > 0)
-				alpha = std::clamp((17.5f - TICKS_TO_TIME(GlobalVars->tickcount - ent->m_nSmokeEffectTickBegin())) / 1.5f, 0.f, 1.f);
-			break;
-		case GRENADE_TYPE_EXPLOSIVE:
-			const model_t* model = ent->GetModel();
-			if (!model)
-				break;
-			studiohdr_t* studioModel = ModelInfoClient->GetStudioModel(model);
-			if (!studioModel)
-				break;
-
-			if (!strstr(studioModel->szName, "fraggrenade")) {
-				name = "FLASH";
-				break;
-			}
-
-			if (thrower_teammate || ent->m_nExplodeEffectTickBegin() > 0)
-				break;
-
-			name = "FRAG";
-			weapId = HeGrenade;
-			break;
-		}
-
-		if (!name.empty()) {
-			Vector2 pos = Render->WorldToScreen(ent->GetAbsOrigin());
-			if (!pos.Invalid())
-				Render->Text(name, pos + Vector2(0, 8), Color(250, 255 * alpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
-		}
-
-		if (weapId == -1)
-			continue;
-
-		if (config.visuals.other_esp.grenade_proximity_warning->get())
-			NadeWarning.Warning(ent, weapId);
+		if (classId->m_ClassID == C_C4 || classId->m_ClassID == C_PLANTED_C4)
+			DrawBomb(ent, classId);
 	}
 }
 
-struct DamageMarker_t {
-	Vector position;
-	float time = 0.f;
-	int damage = 0;
-};
+void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
+	if (!config.visuals.other_esp.grenades->get())
+		return;
 
-struct Hitmarker_t {
-	Vector position;
-	float time = 0.f;
-};
+	if (cl_class->m_ClassID == C_INFERNO) {
+		CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(grenade->m_hOwnerEntity()));
 
-static std::vector<DamageMarker_t> s_DamageMarkers;
-static std::vector<Hitmarker_t> s_Hitmarkers;
+		if (owner != Cheat.LocalPlayer && owner->IsTeammate() && !cvars.mp_friendlyfire->GetInt())
+			return;
 
-void ESP::AddHitmarker(const Vector& position) {
-	s_Hitmarkers.emplace_back(Hitmarker_t{ position, GlobalVars->curtime });
+		Vector2 pos = Render->WorldToScreen(grenade->GetAbsOrigin());
+
+		if (pos.Invalid())
+			return;
+
+		float distance = (Cheat.LocalPlayer->GetAbsOrigin() - grenade->GetAbsOrigin()).Q_Length();
+
+		if (distance > 700)
+			return;
+
+		float distance_alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
+		float circle_radius = 30.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
+
+		float alpha = distance_alpha;
+		float end_time = grenade->m_flInfernoSpawnTime() + 7.03125f;
+
+		if (end_time - 0.25f < GlobalVars->curtime)
+			alpha = (end_time - GlobalVars->curtime) * 4.f;
+		else if (GlobalVars->curtime - grenade->m_flInfernoSpawnTime() < 0.2f)
+			alpha = (GlobalVars->curtime - grenade->m_flInfernoSpawnTime()) * 5.f;
+
+		Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
+		Render->GlowCircle2(pos, circle_radius - 3, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 215 * alpha));
+		Render->GlowCircle(pos, circle_radius - 5, Color(255, 50, 50, std::clamp((380 - distance) / 200.f, 0.f, 1.f) * 215 * alpha));
+
+		Render->Image(Resources::Inferno, pos - Vector2(15, 15), Color(255, 255, 255, 230 * alpha));
+
+		return;
+	}
+
+	CBasePlayer* thrower = grenade->GetThrower();
+
+	bool thrower_teammate = thrower && thrower->IsTeammate() && cvars.mp_friendlyfire->GetInt() == 0 && thrower != Cheat.LocalPlayer;
+
+	int weapId = -1;
+	std::string name;
+	float alpha = 1.f;
+
+	switch (grenade->GetGrenadeType()) {
+	case GRENADE_TYPE_DECOY:
+		name = "DECOY";
+		break;
+	case GRENADE_TYPE_FIRE:
+		if (thrower_teammate)
+			break;
+		name = "MOLLY";
+		weapId = Molotov;
+		break;
+	case GRENADE_TYPE_SMOKE:
+		name = "SMOKE";
+		if (grenade->m_nSmokeEffectTickBegin() > 0)
+			alpha = std::clamp((17.5f - TICKS_TO_TIME(GlobalVars->tickcount - grenade->m_nSmokeEffectTickBegin())) / 1.5f, 0.f, 1.f);
+		break;
+	case GRENADE_TYPE_EXPLOSIVE:
+		const model_t* model = grenade->GetModel();
+		if (!model)
+			break;
+		studiohdr_t* studioModel = ModelInfoClient->GetStudioModel(model);
+		if (!studioModel)
+			break;
+
+		if (!strstr(studioModel->szName, "fraggrenade")) {
+			name = "FLASH";
+			break;
+		}
+
+		if (thrower_teammate || grenade->m_nExplodeEffectTickBegin() > 0)
+			break;
+
+		name = "FRAG";
+		weapId = HeGrenade;
+		break;
+	}
+
+	if (!name.empty()) {
+		Vector2 pos = Render->WorldToScreen(grenade->GetAbsOrigin());
+		if (!pos.Invalid())
+			Render->Text(name, pos + Vector2(0, 8), Color(230, 255 * alpha), SmallFont, TEXT_OUTLINED | TEXT_CENTERED);
+	}
+
+	if (weapId == -1)
+		return;
+
+	if (config.visuals.other_esp.grenade_proximity_warning->get())
+		NadeWarning->Warning(grenade, weapId);
 }
 
-void ESP::AddDamageMarker(const Vector& position, int damage) {
-	s_DamageMarkers.emplace_back(DamageMarker_t{ position, GlobalVars->curtime, damage });
+void CWorldESP::DrawBomb(CBaseEntity* ent, ClientClass* cl_class) {
+	if (!config.visuals.other_esp.bomb->get())
+		return;
+
+	Vector2 pos = Render->WorldToScreen(ent->GetAbsOrigin());
+
+	if (pos.Invalid())
+		return;
+
+	pos += Vector2(0, 8);
+
+	if (cl_class->m_ClassID == C_PLANTED_C4) {
+		Render->Text("BOMB", pos, config.visuals.other_esp.bomb_color->get(), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+
+		CPlantedC4* planted_c4 = reinterpret_cast<CPlantedC4*>(ent);
+		float blow_time = planted_c4->m_flC4Blow();
+		if (blow_time > GlobalVars->curtime && !planted_c4->m_bBombDefused()) {
+			CBasePlayer* bomb_defuser =	reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(planted_c4->m_hBombDefuser()));
+
+			if (bomb_defuser != nullptr) {
+				Render->Text(std::format("DEF {:.1f}S", planted_c4->m_flDefuseCountDown() - GlobalVars->curtime), pos + Vector2(0, 11), planted_c4->m_flDefuseCountDown() > planted_c4->m_flC4Blow() ? Color(255, 0, 0) : Color(255), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+			} else {
+				Render->Text(std::format("{:.1f}S", planted_c4->m_flC4Blow() - GlobalVars->curtime), pos + Vector2(0, 11), config.visuals.other_esp.bomb_color->get(), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+			}
+		}
+	}
+	else {
+		CC4* c4 = reinterpret_cast<CC4*>(ent);
+
+		CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(c4->m_hOwner()));
+
+		if (!GameRules())
+			return;
+
+		if (!owner || c4->m_bStartedArming())
+			Render->Text("BOMB", pos, config.visuals.other_esp.bomb_color->get(), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+
+		if (!c4->m_bStartedArming())
+			return;
+
+		float round_end_time = GameRules()->m_fRoundStartTime() + GameRules()->m_iRoundTime();
+
+		Render->Text(std::format("PLANT: {:.1f}S", c4->m_fArmedTime() - GlobalVars->curtime), pos + Vector2(0, 11), c4->m_fArmedTime() > round_end_time ? Color(255, 0, 0) : Color(255), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+	}
 }
 
-void ESP::RenderMarkers() {
+void CWorldESP::AddHitmarker(const Vector& position) {
+	hit_markers.emplace_back(Hitmarker_t{ position, GlobalVars->realtime });
+}
+
+void CWorldESP::AddDamageMarker(const Vector& position, int damage) {
+	damage_markers.emplace_back(DamageMarker_t{ position, GlobalVars->realtime, damage });
+}
+
+void CWorldESP::RenderMarkers() {
 	if (!Cheat.InGame)
 		return;
 
-	for (auto it = s_DamageMarkers.begin(); it != s_DamageMarkers.end();) {
-		if (GlobalVars->curtime - it->time > 1.5f) {
-			it = s_DamageMarkers.erase(it);
+	for (auto it = damage_markers.begin(); it != damage_markers.end();) {
+		if (GlobalVars->realtime - it->time > 1.5f) {
+			it = damage_markers.erase(it);
 			continue;
 		}
 
-		float timer = GlobalVars->curtime - it->time;
+		float timer = GlobalVars->realtime - it->time;
 		float alpha = std::clamp((1.5f - timer) * 2.f, 0.f, 1.f);
 
 		Vector world_pos = it->position + Vector(0, 0, timer * 30.f);
@@ -585,13 +634,13 @@ void ESP::RenderMarkers() {
 		it++;
 	}
 
-	for (auto it = s_Hitmarkers.begin(); it != s_Hitmarkers.end();) {
-		if (GlobalVars->curtime - it->time > 3.f) {
-			it = s_Hitmarkers.erase(it);
+	for (auto it = hit_markers.begin(); it != hit_markers.end();) {
+		if (GlobalVars->realtime - it->time > 3.f) {
+			it = hit_markers.erase(it);
 			continue;
 		}
 
-		float timer = GlobalVars->curtime - it->time;
+		float timer = GlobalVars->realtime - it->time;
 		float alpha = std::clamp(3.f - timer, 0.f, 1.f);
 
 		Vector2 pos = Render->WorldToScreen(it->position);

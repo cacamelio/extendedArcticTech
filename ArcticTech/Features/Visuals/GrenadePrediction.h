@@ -45,17 +45,34 @@ public:
 	void PhysicsTraceEntity(Vector& vecSrc, Vector& vecDst, uint32_t nMask, CGameTrace& pTrace);
 	void PhysicsPushEntity(Vector& vecPush, CGameTrace& pTrace);
 	void PerformFlyCollisionResolution(CGameTrace& pTrace);
-	int  CalcDamage(Vector pos, CBasePlayer* target);
+	int  CalcDamage(Vector pos, CBasePlayer* target, CBaseEntity* skip = nullptr);
+};
+
+struct GrenadeWarningData_t {
+	std::vector<Vector> path;
+	float flThrowTime = 0.f;
+	float flLastUpdate = 0.f;
+};
+
+struct ThrownGrenade_t {
+	unsigned int m_hThrower = 0;
+	float flThrowTime = 0.f;
+	int grenadeType = 0;
 };
 
 class GrenadeWarning : public GrenadePrediction {
-	std::unordered_map<unsigned int, float> m_flThrowTimes;
+	std::unordered_map<unsigned int, GrenadeWarningData_t> grenade_warnings;
+	std::vector<ThrownGrenade_t> thrown_grenades;
 
 public:
 	void Warning(CBaseGrenade* entity, int weapId);
+	void OnEvent(IGameEvent* event);
+	void RenderPaths();
 
-	void Reset() { m_flThrowTimes.clear(); };
+	void Reset() { grenade_warnings.clear(); };
 };
+
+extern GrenadeWarning* NadeWarning;
 
 inline float CSGO_Armor(float flDamage, int ArmorValue) {
 	float flArmorRatio = 0.5f;

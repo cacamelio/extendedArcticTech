@@ -424,6 +424,16 @@ public:
 	NETVAR(m_flMaxShadowDist, float, "DT_CascadeLight", "m_flMaxShadowDist")
 };
 
+class CPlantedC4 : public CBaseEntity {
+public:
+	NETVAR(m_flTimerLength, float, "DT_PlantedC4", "m_flTimerLength")
+	NETVAR(m_flDefuseLength, float, "DT_PlantedC4", "m_flDefuseLength")
+	NETVAR(m_flDefuseCountDown, float, "DT_PlantedC4", "m_flDefuseCountDown")
+	NETVAR(m_bBombDefused, bool, "DT_PlantedC4", "m_bBombDefused")
+	NETVAR(m_hBombDefuser, unsigned int, "DT_PlantedC4", "m_hBombDefuser")
+	NETVAR(m_flC4Blow, float, "DT_PlantedC4", "m_flC4Blow")
+};
+
 enum EWeaponType : int
 {
 	WEAPONTYPE_KNIFE = 0,

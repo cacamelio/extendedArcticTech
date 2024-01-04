@@ -1161,7 +1161,7 @@ namespace api {
 		}
 
 		float get_dormant_last_update(CBasePlayer* pl) {
-			return ESPInfo[pl->EntIndex()].m_flLastUpdateTime;
+			return WorldESP->GetESPInfo(pl->EntIndex()).m_flLastUpdateTime;
 		}
 
 		uintptr_t ptr(CBaseEntity* ent) {
@@ -1196,10 +1196,6 @@ namespace api {
 			player_info_t pinfo;
 			EngineClient->GetPlayerInfo(pl->EntIndex(), &pinfo);
 			return pinfo.fakeplayer;
-		}
-
-		void set_icon(CBasePlayer* player, int level) {
-			ESP::IconDisplay(player, level);
 		}
 
 		Vector get_hitbox_position(CBasePlayer* self, int hb) {
@@ -1503,7 +1499,7 @@ void CLua::Setup() {
 		"get_animlayers", &api::entity::get_anim_layers,
 		"get_simulation_time", api::entity::get_simulation_time,
 		"get_dormant_last_update", &api::entity::get_dormant_last_update,
-		"set_icon", api::entity::set_icon,
+		"set_icon", &CBasePlayer::SetIcon,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);

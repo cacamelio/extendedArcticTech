@@ -48,7 +48,7 @@ LRESULT CALLBACK hkWndProc(HWND Hwnd, UINT Message, WPARAM wParam, LPARAM lParam
 	if (!Render->IsInitialized() || !Menu->IsInitialized())
 		return CallWindowProc(oWndProc, Hwnd, Message, wParam, lParam);
 
-	if (Message == WM_KEYDOWN && !EngineClient->Con_IsVisible()) {
+	if (Message == WM_KEYDOWN && !ctx.console_visible) {
 		AntiAim->OnKeyPressed(wParam);
 	}
 
@@ -99,13 +99,8 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 
-	if (Cheat.LocalPlayer)
-		ctx.active_weapon = Cheat.LocalPlayer->GetActiveWeapon();
-	else
-		ctx.active_weapon = nullptr;
-
-	if (ctx.active_weapon)
-		ctx.weapon_info = ctx.active_weapon->GetWeaponInfo();
+	ctx.active_weapon = Cheat.LocalPlayer ? Cheat.LocalPlayer->GetActiveWeapon() : nullptr;
+	ctx.weapon_info = ctx.active_weapon ? ctx.active_weapon->GetWeaponInfo() : nullptr;
 
 	if (!Render->IsInitialized() || !Menu->IsInitialized())
 		return;
@@ -114,9 +109,9 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 
 	Render->UpdateViewMatrix(EngineClient->WorldToScreenMatrix());
 
-	ESP::Draw();
-	ESP::DrawGrenades();
-	ESP::RenderMarkers();
+	WorldESP->Draw();
+	WorldESP->OtherESP();
+	WorldESP->RenderMarkers();
 
 	NadePrediction.Start();
 	NadePrediction.Draw();
@@ -171,9 +166,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		return;
 
 	ctx.active_weapon = Cheat.LocalPlayer->GetActiveWeapon();
-
-	if (ctx.active_weapon)
-		ctx.weapon_info = ctx.active_weapon->GetWeaponInfo();
+	ctx.weapon_info = ctx.active_weapon ? ctx.active_weapon->GetWeaponInfo() : nullptr;
 
 	if (!cmd || !cmd->command_number)
 		return;
@@ -554,6 +547,7 @@ void __fastcall hkDoPostScreenEffects(IClientMode* thisptr, void* edx, CViewSetu
 
 	Chams->RenderShotChams();
 	Glow::Run();
+	NadeWarning->RenderPaths();
 
 	oDoPostScreenEffects(thisptr, edx, setup);
 }
@@ -589,6 +583,9 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 
 	switch (stage) {
 	case FRAME_RENDER_START: {
+		ctx.active_app = EngineClient->IsActiveApp();
+		ctx.console_visible = EngineClient->Con_IsVisible();
+
 		AnimationSystem->RunInterpolation();
 		Chams->UpdateSettings();
 		World->SunDirection();
@@ -1010,7 +1007,7 @@ bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
 }
 
 void __fastcall hkCL_DispatchSound(const SoundInfo_t& snd, void* edx) {
-	ESP::ProcessSound(snd);
+	WorldESP->ProcessSound(snd);
 	oCL_DispatchSound(snd, edx);
 }
 
@@ -1139,7 +1136,7 @@ bool __fastcall hkIsConnected(IVEngineClient* thisptr, void* edx) {
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
-	ESP::RegisterCallback();
+	WorldESP->RegisterCallback();
 	Chams->LoadChams();
 	SkinChanger->LoadKnifeModels();
 	Ragebot->CreateThreads();

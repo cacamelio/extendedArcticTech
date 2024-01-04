@@ -22,6 +22,9 @@ struct HooksInfo_t {
 };
 
 struct Ctx_t {
+	bool active_app = false;
+	bool console_visible = false;
+
 	CUserCmd* cmd = nullptr;
 	bool send_packet = true;
 	bool is_peeking = false;
@@ -38,7 +41,6 @@ struct Ctx_t {
 	QAngle leg_slide_angle;
 	float last_shot_time = 0.f;
 	bool planting_bomb = false;
-	bool was_unregistered_shot = true;
 	bool should_release_grenade = false;
 	bool no_fakeduck = false;
 
@@ -99,6 +101,7 @@ struct CVars {
 	ConVar* r_drawsprites;
 	ConVar* zoom_sensitivity_ratio_mouse;
 	ConVar* mp_damage_headshot_only;
+	ConVar* mp_friendlyfire;
 };
 
 extern CheatState_t Cheat;

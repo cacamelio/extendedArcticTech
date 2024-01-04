@@ -6,7 +6,7 @@
 class CSVCMsg_VoiceData;
 
 struct ESPInfo_t {
-	CBasePlayer*	m_pEnt = nullptr;
+	CBasePlayer*	player = nullptr;
 	Vector			m_vecOrigin;
 	Vector2			m_BoundingBox[2];
 	int				m_nFakeDuckTicks = 0;
@@ -19,10 +19,11 @@ struct ESPInfo_t {
 	bool			m_bValid = false;
 	float			m_flAlpha = 0.f;
 	float			m_flLastUpdateTime = 0.f;
+	float			m_flLastSharedData = 0.f;
 	int				m_iActiveWeapon;
 
 	void reset() {
-		m_pEnt = nullptr;
+		player = nullptr;
 		m_vecOrigin = Vector();
 		m_nHealth = 0;
 		m_flLastUpdateTime = 0.f;
@@ -68,27 +69,44 @@ struct SharedEsp_Fatality
 
 static_assert(sizeof(SharedESP_t) == sizeof(SharedVoiceData_t));
 
-extern ESPInfo_t ESPInfo[64];
+class CWorldESP {
+	struct DamageMarker_t {
+		Vector position;
+		float time = 0.f;
+		int damage = 0;
+	};
 
-namespace ESP {
+	struct Hitmarker_t {
+		Vector position;
+		float time = 0.f;
+	};
+
+	ESPInfo_t	esp_info[64];
+	std::vector<DamageMarker_t> damage_markers;
+	std::vector<Hitmarker_t> hit_markers;
+
+public:
+	ESPInfo_t&	GetESPInfo(int idx) { return esp_info[idx]; };
 	void		ProcessSound(const SoundInfo_t& sound);
 	void		RegisterCallback();
 
-	void		ProcessSharedESP(const SharedVoiceData_t* data);
-	void		ParseOtherShared(const VoiceDataOther* data);
 	void		UpdatePlayer(int id);
 	void		Draw();
-	void		IconDisplay( CBasePlayer* pLocal, int Level );
+	void		IconDisplay(CBasePlayer* pLocal, int Level);
 	void		DrawPlayer(int id);
-	void		DrawBox(ESPInfo_t info);
-	void		DrawHealth(ESPInfo_t info);
-	void		DrawName(ESPInfo_t info);
-	void		DrawFlags(ESPInfo_t info);
-	void		DrawWeapon(ESPInfo_t info);
+	void		DrawBox(const ESPInfo_t& info);
+	void		DrawHealth(const ESPInfo_t& info);
+	void		DrawName(const ESPInfo_t& info);
+	void		DrawFlags(const ESPInfo_t& info);
+	void		DrawWeapon(const ESPInfo_t& info);
 
-	void		DrawGrenades();
+	void		OtherESP();
+	void		DrawGrenade(CBaseGrenade* nade, ClientClass* cl_class);
+	void		DrawBomb(CBaseEntity* bomb, ClientClass* cl_class);
 
 	void		AddHitmarker(const Vector& position);
 	void		AddDamageMarker(const Vector& postion, int damage);
 	void		RenderMarkers();
-}
+};
+
+extern CWorldESP* WorldESP;

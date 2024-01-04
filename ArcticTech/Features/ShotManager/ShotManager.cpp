@@ -20,7 +20,8 @@ void CShotManager::DetectUnregisteredShots() {
 
 	auto& pred_data = EnginePrediction->GetLocalData(ClientState->m_nCommandAck);
 
-	if (pred_data.m_nSequence != ClientState->m_nCommandAck);
+	if (pred_data.m_nSequence != ClientState->m_nCommandAck)
+		return;
 
 	auto weapon = reinterpret_cast<CBaseCombatWeapon*>(EntityList->GetClientEntityFromHandle(pred_data.m_hActiveWeapon));
 
@@ -29,7 +30,7 @@ void CShotManager::DetectUnregisteredShots() {
 
 	float fLastShotTime = weapon->m_fLastShotTime();
 
-	if (fLastShotTime >= pred_data.m_fLastShotTime)
+	if (fLastShotTime + 0.03125f >= pred_data.m_fLastShotTime)
 		return;
 
 	for (auto it = m_RegisteredShots.rbegin(); it != m_RegisteredShots.rend(); it++) {
@@ -50,6 +51,9 @@ void CShotManager::DetectUnregisteredShots() {
 		break;
 	}
 
+	int next_cmd_nr = ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands + 1;
+	for (int i = ClientState->m_nCommandAck; i < next_cmd_nr; i++)
+		EnginePrediction->GetLocalData(i).m_fLastShotTime = fLastShotTime; // fix pred error
 
 	auto weapon_info = weapon->GetWeaponInfo();
 
@@ -242,10 +246,10 @@ void CShotManager::OnNetUpdate() {
 			Console->ColorPrint(std::format("hit {}'s {}({}) for {}({}) ({} remaining) [mismatch: ", player->GetName(), GetDamagegroupName(shot->damagegroup), GetDamagegroupName(shot->wanted_damagegroup), shot->damage, shot->wanted_damage, shot->health), Color(240, 240, 240));
 
 			if (config.visuals.esp.hitmarker->get())
-				ESP::AddHitmarker(shot->hit_point);
+				WorldESP->AddHitmarker(shot->hit_point);
 
 			if (config.visuals.esp.damage_marker->get())
-				ESP::AddDamageMarker(shot->hit_point + Vector(0, 0, 10), shot->damage);
+				WorldESP->AddDamageMarker(shot->hit_point + Vector(0, 0, 10), shot->damage);
 
 			if (shot->wanted_damagegroup != shot->damagegroup) {
 				CGameTrace trace;
@@ -299,7 +303,15 @@ void CShotManager::OnNetUpdate() {
 				}
 			}
 			else {
-				if ((shot->hit_point - shot->target_pos).LengthSqr() < 64.f && shot->impacts.size() > 1) {
+				Vector target_hit_point = shot->client_impacts[0];
+				if (shot->client_impacts.size() > 1) {
+					for (int i = 1; i < shot->client_impacts.size(); i++) {
+						if ((shot->client_impacts[i] - shot->target_pos).LengthSqr() < (target_hit_point - shot->target_pos).LengthSqr())
+							target_hit_point = shot->target_pos;
+					}
+				}
+
+				if ((shot->hit_point - target_hit_point).LengthSqr() < 64.f && shot->impacts.size() > 1) {
 					it->miss_reason = "damage rejection";
 					Console->ColorPrint("damage rejection\n", Color(255, 20, 20));
 				}
@@ -316,16 +328,19 @@ void CShotManager::OnNetUpdate() {
 						}
 					}
 
-					if (break_lag_comp || shot->safe_point) {
+					if (break_lag_comp) {
 						it->miss_reason = "lagcomp failure";
 						Console->ColorPrint("lagcomp failure\n", Color(200, 255, 0));
 					}
+					else if (shot->safe_point) {
+						it->miss_reason = "jitter correction";
+						Console->ColorPrint("jitter correction\n", Color(200, 255, 0));
+					}
 					else {
+						Resolver->OnMiss(player, shot->record);
 						it->miss_reason = "correction";
 						Console->ColorPrint("correction\n", Color(200, 255, 0));
 					}
-
-					Resolver->OnMiss(player, shot->record);
 				}
 			}
 		}
@@ -337,7 +352,7 @@ void CShotManager::OnNetUpdate() {
 	}
 }
 
-void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, bool safe, LagRecord* record) {
+void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, bool safe, LagRecord* record, Vector impacts[], int total_impacts) {
 	RegisteredShot_t* shot = &m_RegisteredShots.emplace_back();
 
 	shot->client_shoot_pos = shoot_pos;
@@ -351,6 +366,9 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 	shot->wanted_damage = damage;
 	shot->wanted_damagegroup = damagegroup;
 	shot->safe_point = safe;
+
+	for (int i = 0; i < total_impacts; i++)
+		shot->client_impacts.push_back(impacts[i]);
 
 	for (auto& callback : Lua->hooks.getHooks(LUA_AIM_SHOT))
 		callback.func(shot);

@@ -57,6 +57,8 @@ void CPrediction::BackupData() {
 
 	bOldIsFirstPrediction = Prediction->bIsFirstTimePredicted;
 	bOldInPrediction = Prediction->bInPrediction;
+
+	nBackupTickBase = Cheat.LocalPlayer->m_nTickBase();
 }
 
 void CPrediction::Start(CUserCmd* cmd) {
@@ -106,6 +108,9 @@ void CPrediction::Start(CUserCmd* cmd) {
 		weaponSpread = ctx.active_weapon->GetSpread();
 	}
 
+	if (!Prediction->bEnginePaused)
+		Cheat.LocalPlayer->m_nTickBase()++;
+
 	AnimationSystem->UpdatePredictionAnimation();
 	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();
 }
@@ -134,6 +139,8 @@ void CPrediction::End() {
 
 	Prediction->bInPrediction = bOldInPrediction;
 	Prediction->bIsFirstTimePredicted = bOldIsFirstPrediction;
+
+	Cheat.LocalPlayer->m_nTickBase() = nBackupTickBase;
 }
 
 void CPrediction::Repredict(CUserCmd* cmd, QAngle angles) {

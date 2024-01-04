@@ -188,6 +188,12 @@ enum PoseParam_t {
     DEATH_YAW
 };
 
+enum ETeamNumber {
+    TEAM_SPECTATOR = 1,
+    TEAM_TERRORIST = 2,
+    TEAM_CT = 3
+};
+
 #pragma endregion
 
 class CBasePlayer;
@@ -364,7 +370,8 @@ public:
     NETVAR(m_nNextThinkTick, int, "DT_BasePlayer", "m_nNextThinkTick")
     NETVAR(m_flCycle, float, "DT_BaseAnimating", "m_flCycle")
     NETVAR(m_bGunGameImmunity, bool, "DT_CSPlayer", "m_bGunGameImmunity")
-    NETVAR( m_iAddonBits, int, "DT_CSPlayer", "m_iAddonBits" )
+    NETVAR(m_iAddonBits, int, "DT_CSPlayer", "m_iAddonBits")
+    NETVAR(m_bSpotted, bool, "DT_BaseEntity", "m_bSpotted")
     OFFSET(m_flFallVelocity, float, 0x58)
     OFFSET(m_nSimulationTick, int, 0x2AC)
     NETVAR_O(m_nFinalPredictedTick, int, "DT_CSPlayer", "m_nTickBase", 0x4)
@@ -493,6 +500,7 @@ public:
     bool                UsingStandardWeaponsInVehicle();
     void                UpdateButtonState(int button);
     bool                IsHitboxArmored(int hitbox);
+    void                SetIcon(int level);
 
     void                DrawServerHitboxes(float duration, bool monoColor);
 

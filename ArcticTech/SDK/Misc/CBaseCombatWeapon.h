@@ -325,11 +325,15 @@ public:
         return weapon_type == WEAPONTYPE_PISTOL || weapon_type == WEAPONTYPE_SHOTGUN || weapon_type == WEAPONTYPE_SNIPER || weapon_type == WEAPONTYPE_RIFLE || weapon_type == WEAPONTYPE_MACHINEGUN || m_iItemDefinitionIndex() == Taser;
     }
 
-
-
 	CCSWeaponData* GetWeaponInfo();
 	std::string GetName(CCSWeaponData* custom_data = nullptr);
     bool CanShoot(bool revolver_check = true);
 	bool ThrowingGrenade();
 	DXImage& GetIcon();
+};
+
+class CC4 : public CBaseCombatWeapon {
+public:
+	NETVAR(m_bStartedArming, bool, "DT_WeaponC4", "m_bStartedArming")
+	NETVAR(m_fArmedTime, float, "DT_WeaponC4", "m_fArmedTime")
 };

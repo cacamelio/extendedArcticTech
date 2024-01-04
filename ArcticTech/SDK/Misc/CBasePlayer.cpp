@@ -295,7 +295,7 @@ float CBasePlayer::GetMaxDesyncDelta() {
 		avg_speedfactor += duck_speed * (0.5f - avg_speedfactor);
 	}
 
-	return -animstate->flAimYawMax * avg_speedfactor;
+	return animstate->flAimYawMax * avg_speedfactor;
 }
 
 float& CBasePlayer::m_flLastBoneSetupTime()
@@ -451,4 +451,8 @@ bool CBasePlayer::IsHitboxArmored(int hitbox) {
 
 CBasePlayer* CBasePlayer::GetObserverTarget() {
 	return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(m_hObserverTarget()));
+}
+
+void CBasePlayer::SetIcon(int level) {
+	PlayerResource->m_nPersonaDataPublicLevel()[EntIndex()] = level;
 }

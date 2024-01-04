@@ -194,9 +194,6 @@ void CMenu::SetupUI() {
 
 	config.visuals.other_esp.molotov_radius->SetVisible(false);
 	config.visuals.other_esp.molotov_radius_color->SetVisible(false);
-	config.visuals.other_esp.bomb->SetVisible(false);
-	config.visuals.other_esp.bomb_color->SetVisible(false);
-	config.visuals.other_esp.radar->SetVisible(false);
 	config.visuals.other_esp.dropped_weapons->SetVisible(false);
 	config.visuals.other_esp.dropped_weapons_color->SetVisible(false);
 

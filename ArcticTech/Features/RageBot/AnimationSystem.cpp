@@ -37,7 +37,10 @@ void CAnimationSystem::OnCreateMove() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
 	AnimationLayer animlayers_backup[13];
+	float curtimeBackup = GlobalVars->curtime;
 	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
+
+	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 
 	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
 		cb.func(Cheat.LocalPlayer);
@@ -72,16 +75,19 @@ void CAnimationSystem::OnCreateMove() {
 		BuildMatrix(Cheat.LocalPlayer, local_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
 	}
 
+	GlobalVars->curtime = curtimeBackup;
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayers_backup, sizeof(AnimationLayer) * 13);
 }
 
 void CAnimationSystem::UpdatePredictionAnimation() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 
+	float curtime_backup = GlobalVars->curtime;
 	std::array<float, 24> poseparam_backup = Cheat.LocalPlayer->m_flPoseParameter();
 	AnimationLayer animlayer_backup[13];
 
 	memcpy(animlayer_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
+	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 
 	Cheat.LocalPlayer->m_flPoseParameter()[12] = (ctx.cmd->viewangles.pitch + 90.f) / 180.f;
 	Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flFootYaw));
@@ -90,6 +96,7 @@ void CAnimationSystem::UpdatePredictionAnimation() {
 
 	Cheat.LocalPlayer->m_flPoseParameter() = poseparam_backup;
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayer_backup, sizeof(AnimationLayer) * 13);
+	GlobalVars->curtime = curtime_backup;
 }
 
 void CAnimationSystem::FrameStageNotify(EClientFrameStage stage) {
