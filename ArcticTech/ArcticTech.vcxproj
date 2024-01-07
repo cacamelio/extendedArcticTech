@@ -153,7 +153,6 @@
     <ClCompile Include="SDK\Requests.cpp" />
     <ClCompile Include="UI\UI.cpp" />
     <ClCompile Include="UI\UI_backend.cpp" />
-    <ClCompile Include="Utils\Animation.cpp" />
     <ClCompile Include="Utils\Console.cpp" />
     <ClCompile Include="SDK\Globals.cpp" />
     <ClCompile Include="Utils\Math.cpp" />
@@ -258,7 +257,6 @@
     <ClInclude Include="UI\logo.h" />
     <ClInclude Include="UI\mulish_font.h" />
     <ClInclude Include="UI\UI.h" />
-    <ClInclude Include="Utils\Animation.h" />
     <ClInclude Include="Utils\Console.h" />
     <ClInclude Include="SDK\Globals.h" />
     <ClInclude Include="Utils\Hash.h" />

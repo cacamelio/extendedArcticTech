@@ -172,6 +172,7 @@ void Miscellaneous::PreserveKillfeed() {
 		spawntime = Cheat.LocalPlayer->m_flSpawnTime();
 	}
 
+	const auto hud_radar = CSGOHud->FindHudElement("CCSGO_HudRadar");
 	const auto death_notice = reinterpret_cast<uintptr_t>(CSGOHud->FindHudElement("CCSGO_HudDeathNotice"));
 	if (death_notice == 20)
 		return;
@@ -193,4 +194,16 @@ void Miscellaneous::PreserveKillfeed() {
 
 void Miscellaneous::ClearKillfeed() {
 	s_ShouldClearNotices = true;
+}
+
+void Miscellaneous::RadarAngles() {
+	if (!Cheat.InGame)
+		return;
+
+	static const auto hud_radar = reinterpret_cast<CSGO_HudRadar*>(CSGOHud->FindHudElement("CCSGO_HudRadar"));
+
+	if (!hud_radar)
+		return;
+
+	hud_radar->m_vecLocalAngles.y = 0.f;
 }

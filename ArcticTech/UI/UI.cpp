@@ -248,14 +248,6 @@ void CMenu::SetupUI() {
 	config.misc.movement.infinity_duck = movement->AddCheckBox("Infinity duck");
 	config.misc.movement.quick_stop = movement->AddCheckBox("Quick stop");
 
-	//config.misc.movement.auto_strafe_smooth->SetVisible(false);
-
-	config.skins.paint_kits = skins->AddComboBox("Paint kits", SkinChanger->GetUIPaintKits());
-	config.skins.glove_paint_kits = skins->AddComboBox("Glove Paint kits", SkinChanger->GetUIPaintKitsGloves());
-
-	config.skins.paint_kits->SetVisible(false);
-	config.skins.glove_paint_kits->SetVisible(false);
-
 	config.skins.override_knife = models->AddCheckBox("Override knife");
 	config.skins.knife_model = models->AddComboBox("Knife model", SkinChanger->GetUIKnifeModels());
 
@@ -565,21 +557,6 @@ void CMenu::SetupUI() {
 
 	config.visuals.effects.override_skybox->SetCallback([]() {
 		World->SkyBox();
-	});
-
-	config.skins.knife_model->SetCallback([]() {
-		Utils::ForceFullUpdate();
-	});
-
-	config.skins.paint_kits->SetCallback([](){
-		ClientState->ForceFullUpdate();
-		Utils::ForceFullUpdate();
-		SkinChanger->UpdateSkins();
-	});
-
-	config.skins.glove_paint_kits->SetCallback([]() {
-		Utils::ForceFullUpdate();
-		SkinChanger->UpdateSkins();
 	});
 
 	auto world_fog_callback = []() {

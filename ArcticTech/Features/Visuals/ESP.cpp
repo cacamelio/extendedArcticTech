@@ -301,12 +301,12 @@ void CWorldESP::DrawHealth(const ESPInfo_t& info) {
 	Vector2 health_box_start = info.m_BoundingBox[0] - Vector2(7, 1);
 	Vector2 health_box_end(info.m_BoundingBox[0].x - 3, info.m_BoundingBox[1].y + 1);
 
-	Render->BoxFilled(health_box_start, health_box_end, Color(16, 16, 16, 220 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(health_box_start, health_box_end, Color(8, 220 * info.m_flAlpha * clr_a));
 
-	Render->BoxFilled(health_box_start + Vector2(0, 1), Vector2(health_box_start.x + 1, health_box_end.y - 1), Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
-	Render->BoxFilled(Vector2(health_box_end.x - 1, health_box_start.y + 1), Vector2(health_box_end.x, health_box_end.y - 1), Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
-	Render->BoxFilled(health_box_start, Vector2(health_box_end.x, health_box_start.y + 1), Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
-	Render->BoxFilled(Vector2(health_box_start.x, health_box_end.y - 1), health_box_end, Color(10, 10, 10, 245 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(health_box_start + Vector2(0, 1), Vector2(health_box_start.x + 1, health_box_end.y - 1), Color(8, 245 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(Vector2(health_box_end.x - 1, health_box_start.y + 1), Vector2(health_box_end.x, health_box_end.y - 1), Color(8, 245 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(health_box_start, Vector2(health_box_end.x, health_box_start.y + 1), Color(8, 245 * info.m_flAlpha * clr_a));
+	Render->BoxFilled(Vector2(health_box_start.x, health_box_end.y - 1), health_box_end, Color(8, 245 * info.m_flAlpha * clr_a));
 
 	Render->BoxFilled(health_box_start + Vector2(1, 1 + h * health_fraction), health_box_end - Vector2(1, 1), clr);
 
@@ -396,6 +396,12 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 			break;
 		case ResolverType::BRUTEFORCE:
 			rtype = "B";
+			break;
+		case ResolverType::MEMORY:
+			rtype = "M";
+			break;
+		case ResolverType::DEFAULT:
+			rtype = "D";
 			break;
 		default:
 			break;
@@ -491,8 +497,8 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 
 		if (end_time - 0.25f < GlobalVars->curtime)
 			alpha = (end_time - GlobalVars->curtime) * 4.f;
-		else if (GlobalVars->curtime - grenade->m_flInfernoSpawnTime() < 0.2f)
-			alpha = (GlobalVars->curtime - grenade->m_flInfernoSpawnTime()) * 5.f;
+		else if (GlobalVars->curtime - grenade->m_flInfernoSpawnTime() < 0.1667f)
+			alpha = (GlobalVars->curtime - grenade->m_flInfernoSpawnTime()) * 6.f;
 
 		Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
 		Render->GlowCircle2(pos, circle_radius - 3, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 215 * alpha));

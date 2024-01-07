@@ -7,8 +7,6 @@ CAutoPeek* AutoPeek = new CAutoPeek;
 
 
 void CAutoPeek::Draw() {
-	static bool prev_state = false;
-
 	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !Cheat.InGame)
 		return;
 
@@ -29,12 +27,13 @@ void CAutoPeek::Draw() {
 		prev_state = state;
 	}
 
-	circleAnimation.UpdateAnimation(state);
+	if (state && anim < 1.f)
+		anim = std::clamp(anim + GlobalVars->frametime * 4.f, 0.f, 1.f);
+	else if (anim > 0.f)
+		anim = std::clamp(anim - GlobalVars->frametime * 4.f, 0.f, 1.f);
 
-	float alpha = circleAnimation.GetValue();
-
-	if (alpha > 0.01f)
-		Render->Circle3DGradient(position, 22.f, config.ragebot.aimbot.peek_assist_color->get().alpha_modulatef(alpha));
+	if (anim > 0.f)
+		Render->Circle3DGradient(position, 22.f, config.ragebot.aimbot.peek_assist_color->get().alpha_modulatef(anim));
 }
 
 void CAutoPeek::CreateMove() {

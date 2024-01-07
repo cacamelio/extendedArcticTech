@@ -692,8 +692,8 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	float alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
 	float circle_radius = 30.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
 
-	if (flExpireTime - simulationTime < 0.2f)
-		alpha *= max((flExpireTime - simulationTime), 0) * 5.f;
+	if (flExpireTime - simulationTime < 0.1667f)
+		alpha *= max((flExpireTime - simulationTime), 0) * 6.f;
 
 	Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
 	Render->GlowCircle2(pos, circle_radius - 3.f, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 255 * alpha));

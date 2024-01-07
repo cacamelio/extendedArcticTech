@@ -21,7 +21,6 @@ void Initialize(HMODULE hModule) {
     Hooks::Initialize();
     Lua->Setup();
     SkinChanger->FixViewModelSequence();
-    SkinChanger->GetPaintKits();
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)

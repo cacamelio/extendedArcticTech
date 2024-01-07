@@ -60,12 +60,6 @@ struct local_data_t {
 	}
 };
 
-struct CPlayerPredictData {
-	Vector m_vecVelocity;
-	Vector m_vecOrigin;
-	int m_fFlags = 0;
-};
-
 class CPrediction {
 private:
 	int* predictionRandomSeed;
@@ -98,6 +92,7 @@ public:
 		Vector m_vecAbsOrigin;
 		Vector m_vecVelocity;
 		Vector m_vecAbsVelocity;
+		unsigned int m_hGroundEntity = 0;
 	} pre_prediction;
 
 	__forceinline float WeaponInaccuracy() { return weaponInaccuracy; };

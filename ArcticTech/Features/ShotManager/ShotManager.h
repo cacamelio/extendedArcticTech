@@ -24,7 +24,7 @@ struct RegisteredShot_t {
 	int command_number;
 	int wanted_damage;
 	int wanted_damagegroup;
-	int hitchance = 0;
+	float hitchance = 0;
 	int backtrack = 0;
 	LagRecord* record;
 	QAngle player_angle; // for building correct matrix
@@ -46,19 +46,21 @@ struct RegisteredShot_t {
 	bool player_death = false;
 	bool acked = false;
 	bool recieved_events = false;
-	std::string_view miss_reason = "none";
+	std::string miss_reason;
 };
 
 class CBaseCombatWeapon;
 class CShotManager {
 	std::vector<RegisteredShot_t>	m_RegisteredShots;
 
+	void LogMiss(RegisteredShot_t* shot);
+
 public:
 	void	DetectUnregisteredShots();
 	void	ProcessManualShot();
 	void	OnNetUpdate();
 	bool	OnEvent(IGameEvent* event);
-	void	AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, bool safe, LagRecord* record, Vector impacts[], int total_impacts);
+	void	AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, float hitchance, bool safe, LagRecord* record, Vector impacts[], int total_impacts);
 	void	Reset();
 };
 

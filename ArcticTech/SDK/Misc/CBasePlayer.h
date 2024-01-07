@@ -398,6 +398,7 @@ public:
     NETVAR_O(m_surfaceFriction, float, "DT_BasePlayer", "m_flWaterJumpTime", 17)
     NETVAR(m_iAccount, int, "DT_CSPlayer", "m_iAccount")
     PRED_DESC_MAP(m_vecNetworkOrigin, Vector, "m_vecNetworkOrigin")
+    NETVAR(m_hGroundEntity, unsigned int, "DT_BasePlayer", "m_hGroundEntity")
 
     bool& m_bMaintainSequenceTransitions();
 

@@ -6,4 +6,5 @@ namespace Miscellaneous {
 	void AutomaticGrenadeRelease();
 	void PreserveKillfeed();
 	void ClearKillfeed();
+	void RadarAngles();
 }

@@ -112,7 +112,7 @@ float CRagebot::CalcMinDamage(CBasePlayer* player) {
 	}
 }
 
-void CRagebot::AutoStop() {
+void CRagebot::AutoStop(bool predict) {
 	if (ctx.cmd->buttons & IN_DUCK)
 		return;
 
@@ -134,7 +134,7 @@ void CRagebot::AutoStop() {
 	}
 
 	QAngle view; EngineClient->GetViewAngles(&view);
-	direction.yaw = view.yaw - direction.yaw;
+	direction.yaw = predict ? direction.yaw : (view.yaw - direction.yaw);
 	direction.Normalize();
 
 	Vector forward;
@@ -590,10 +590,49 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 }
 
 void CRagebot::RunPrediction(const QAngle& angle) {
+	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
+		return;
+
+	if (Cheat.LocalPlayer->m_vecVelocity().LengthSqr() < 16.f)
+		return;
+
+	if (ctx.cmd->buttons & IN_DUCK)
+		return;
+
+	pre_prediction.should_restore = true;
+	pre_prediction.m_vecAbsOrigin = Cheat.LocalPlayer->GetAbsOrigin();
+	pre_prediction.m_fFlags = Cheat.LocalPlayer->m_fFlags();
+	pre_prediction.m_flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
+	pre_prediction.m_flDuckSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
+	pre_prediction.m_vecVelocity = Cheat.LocalPlayer->m_vecVelocity();
+	pre_prediction.m_vecAbsVelocity = Cheat.LocalPlayer->m_vecAbsVelocity();
+	pre_prediction.m_hGroundEntity = Cheat.LocalPlayer->m_hGroundEntity();
+
+	CUserCmd stop_cmd = *ctx.cmd;
+	stop_cmd.viewangles = QAngle(0, 0, 0);
+	CUserCmd* backup_cmd = ctx.cmd;
+	ctx.cmd = &stop_cmd;
+	AutoStop(true);
 	EnginePrediction->Repredict(ctx.cmd, angle);
+	ctx.cmd = backup_cmd;
+}
+
+void CRagebot::RestorePrediction() {
+	if (!pre_prediction.should_restore)
+		return;
+
+	Cheat.LocalPlayer->GetAbsOrigin() = pre_prediction.m_vecAbsOrigin;
+	Cheat.LocalPlayer->m_fFlags() = pre_prediction.m_fFlags;
+	Cheat.LocalPlayer->m_flDuckAmount() = pre_prediction.m_flDuckAmount;
+	Cheat.LocalPlayer->m_flDuckSpeed() = pre_prediction.m_flDuckSpeed;
+	Cheat.LocalPlayer->m_vecVelocity() = pre_prediction.m_vecAbsOrigin;
+	Cheat.LocalPlayer->m_vecAbsVelocity() = pre_prediction.m_vecAbsVelocity;
+	Cheat.LocalPlayer->m_hGroundEntity() = pre_prediction.m_hGroundEntity;
 }
 
 void CRagebot::Run() {
+	pre_prediction.should_restore = false;
+
 	if (!config.ragebot.aimbot.enabled->get() || !ctx.active_weapon)
 		return;
 
@@ -630,6 +669,11 @@ void CRagebot::Run() {
 
 	if (config.ragebot.aimbot.dormant_aim->get() && !Exploits->IsShifting())
 		DormantAimbot();
+
+	if (!Exploits->IsShifting()) {
+		QAngle vangle; EngineClient->GetViewAngles(&vangle);
+		RunPrediction(vangle);
+	}
 
 	hook_info.disable_interpolation = true;
 	ScanTargets();
@@ -679,9 +723,10 @@ void CRagebot::Run() {
 		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 256 && target.player == last_target) {
 			if (target.hitchance > hitchance) {
 				best_target = target;
+				should_autostop = true;
 				break;
 			}
-			else if (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance * 0.3f)) {
+			else if (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance * 0.2f)) {
 				should_autostop = true;
 			}
 		}
@@ -690,7 +735,7 @@ void CRagebot::Run() {
 			best_target = target;
 
 		if (target.best_point.damage > target.minimum_damage) {
-			if (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance * 0.3f))
+			if (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance * 0.2f))
 				should_autostop = true;
 
 			if (settings.auto_scope->get() && !Cheat.LocalPlayer->m_bIsScoped() && !Cheat.LocalPlayer->m_bResumeZoom() && ctx.weapon_info->nWeaponType == WEAPONTYPE_SNIPER)
@@ -722,7 +767,7 @@ void CRagebot::Run() {
 	if (!best_target.player || !can_shoot_this_tick)
 		return;
 
-	RunPrediction(best_target.angle); // predict autostop movement to calculate damage and angle correctly
+	pre_prediction.should_restore = false;
 
 	ctx.cmd->tick_count = TIME_TO_TICKS(best_target.best_point.record->m_flSimulationTime + LagCompensation->GetLerpTime());
 	ctx.cmd->viewangles = Math::VectorAngles_p(best_target.best_point.point - ctx.shoot_position) - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
@@ -747,27 +792,6 @@ void CRagebot::Run() {
 	}
 
 	LagRecord* record = best_target.best_point.record;
-
-	if (config.misc.miscellaneous.logs->get(1)) {
-		std::string fl;
-		if (record->breaking_lag_comp)
-			fl += "T";
-		if (record->shifting_tickbase)
-			fl += "X";
-		if (record->exploiting)
-			fl += "E";
-		if (best_target.best_point.safe_point)
-			fl += "S";
-
-		Console->Log(std::format("shot at {}'s {} [dmg: {:d}] [hc: {}%] [bt: {}] [flags: {}]", 
-			best_target.player->GetName(), 
-			GetHitboxName(best_target.best_point.hitbox), 
-			static_cast<int>(best_target.best_point.damage), 
-			static_cast<int>(best_target.hitchance * 100), 
-			GlobalVars->tickcount - record->update_tick,
-			fl
-		));
-	}
 
 	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, record, best_target.best_point.impacts, best_target.best_point.num_impacts);
 	if (config.visuals.chams.shot_chams->get())
@@ -848,8 +872,6 @@ void CRagebot::Zeusbot() {
 
 				memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
 				Chams->AddShotChams(record);
-
-				Console->Log(std::format("shot at {} [hc: {}] [bt: {}]", player->GetName(), (int)(hitchance * 100.f), TIME_TO_TICKS(player->m_flSimulationTime() - record->m_flSimulationTime)));
 
 				LagCompensation->BacktrackEntity(backup_record);
 				delete backup_record;
@@ -1007,10 +1029,10 @@ void CRagebot::DormantAimbot() {
 		if (EnginePrediction->curtime() - WorldESP->GetESPInfo(i).m_flLastUpdateTime > 5.f)
 			continue;
 
-		Vector shoot_target = player->m_vecOrigin() + Vector(0, 0, 36);
+		Vector shoot_target = player->m_vecOrigin() + Vector(0, 0, 36.013f);
 
 		FireBulletData_t bullet;
-		if (!AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, shoot_target, bullet) || bullet.damage < CalcMinDamage(player))
+		if (!AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, shoot_target, bullet) || bullet.damage < CalcMinDamage(player) || (bullet.enterTrace.hit_entity != nullptr && bullet.enterTrace.hit_entity->IsPlayer()))
 			continue;
 
 		float hc = min(7.f / ((ctx.shoot_position - shoot_target).Q_Length() * inaccuracy_tan), 1.f);
@@ -1041,7 +1063,6 @@ void CRagebot::DormantAimbot() {
 
 		AutoPeek->Return();
 
-		Console->Log(std::format("shot at {} [dmg: {}] [hc: {}%] [da]", player->GetName(), bullet.damage, int(hc * 100)));
 		break;
 	}
 }

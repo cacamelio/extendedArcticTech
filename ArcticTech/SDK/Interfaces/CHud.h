@@ -2,6 +2,20 @@
 
 #include "../../Utils/Utils.h"
 
+struct CSGO_HudRadar {
+	char pad_0000[284]; //0x0000
+	Vector m_vecWorldOffset; //0x011C
+	Vector2 m_vecImageOffset; //0x0128
+	char pad_0130[4]; //0x0130
+	float m_flRotation; //0x0134
+	Vector m_vecWorldPosition; //0x0138
+	float m_flCurTime; //0x0144
+	char pad_0148[356]; //0x0148
+	Vector m_vecLocalOrigin; //0x02AC
+	Vector m_vecLocalAngles; //0x02B8
+	char pad_02C4[404]; //0x02C4
+};
+
 class CHud {
 public:
 	void* FindHudElement(const char* name) {

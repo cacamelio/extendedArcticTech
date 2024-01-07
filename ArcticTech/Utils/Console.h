@@ -3,7 +3,6 @@
 #include <string>
 #include "../SDK/Misc/Color.h"
 
-
 class CGameConsole {
 public:
 	void ArcticTag();

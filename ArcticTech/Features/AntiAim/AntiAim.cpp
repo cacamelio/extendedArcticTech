@@ -374,7 +374,7 @@ bool CAntiAim::IsPeeking() {
 	if (velocity.LengthSqr() < 32.f)
 		return false;
 
-	Vector move_factor = velocity.Normalized() * 8.2f + (velocity * TICKS_TO_TIME(4.1f));
+	Vector move_factor = velocity.Normalized() * 8.2f + (velocity * TICKS_TO_TIME((ctx.cmd->buttons & IN_USE) ? 2.f : 4.1f));
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

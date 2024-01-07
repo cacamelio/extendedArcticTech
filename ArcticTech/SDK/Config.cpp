@@ -302,7 +302,6 @@ void CConfig::Init() {
     add(config.skins.agent_model_ct);
     add(config.skins.mask_changer);
     add(config.skins.mask_changer_models); 
-    add(config.skins.paint_kits);
 
     load_button->SetCallback(on_load);
     save_button->SetCallback(on_save);

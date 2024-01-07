@@ -8,7 +8,6 @@
 #include "../../Utils/Utils.h"
 #include "../RageBot/AnimationSystem.h"
 #include "../RageBot/AutoWall.h"
-#include "../../Utils/Animation.h"
 
 void CWorld::Modulation() {
 	static std::unordered_map<std::string, Color> original_colors;
@@ -320,8 +319,8 @@ void CWorld::SunDirection() {
 			backupDistance = cascade_light_entity->m_flMaxShadowDist();
 		}
 
-		lerp_sun_pitch = interpolate(lerp_sun_pitch, config.visuals.effects.sun_pitch->get(), GlobalVars->frametime * 8);
-		lerp_sun_yaw = interpolate(lerp_sun_yaw, config.visuals.effects.sun_yaw->get(), GlobalVars->frametime * 8);
+		lerp_sun_pitch = lerp_sun_pitch + (config.visuals.effects.sun_pitch->get() - lerp_sun_pitch) * GlobalVars->frametime * 8;
+		lerp_sun_yaw = lerp_sun_yaw + (config.visuals.effects.sun_yaw->get() - lerp_sun_yaw) * GlobalVars->frametime * 8;
 
 		Vector newDirection = Math::AngleVectors(QAngle(lerp_sun_pitch, lerp_sun_yaw, 0));
 

@@ -180,7 +180,7 @@ inline int HitgroupToDamagegroup(int hitgroup) {
     return DAMAGEGROUP_ARM;
 }
 
-inline const char* GetDamagegroupName(int damagegroup) {
+inline std::string GetDamagegroupName(int damagegroup) {
     switch (damagegroup) {
     case DAMAGEGROUP_HEAD:
         return "head";

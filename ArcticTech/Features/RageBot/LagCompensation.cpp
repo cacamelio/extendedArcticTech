@@ -85,14 +85,6 @@ void LagRecord::BuildMatrix() {
 
 	auto backup_eye_angle = player->m_angEyeAngles();
 
-	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
-
-	//if (prev_record && 
-	//	resolver_data.antiaim_type == R_AntiAimType::JITTER && 
-	//	std::abs(Math::AngleDiff(backup_eye_angle.yaw, prev_record->m_angEyeAngles.yaw)) > 32.f &&
-	//	std::abs(Math::AngleDiff(backup_eye_angle.yaw, m_angEyeAngles.yaw)) < 32.f) // retarded jitter fix
-	//	player->m_angEyeAngles() = prev_record->m_angEyeAngles
-
 	bool broken_record = abs(Math::AngleDiff(m_angEyeAngles.yaw, player->m_angEyeAngles().yaw)) >= 30.f;
 
 	if (broken_record)
@@ -195,39 +187,28 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	if (!record || !record->player || record->shifting_tickbase || record->breaking_lag_comp || record->invalid)
 		return false;
 
-	auto nci = EngineClient->GetNetChannelInfo();
+	// correct is the amount of time we have to correct game time
+	float correct = 0.0f;
 
-	if (!nci)
-		return false;
+	// Get true latency
+	INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
+	if (nci)
+	{
+		// add network latency
+		correct += nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING);
+	}
 
-	float time = TICKS_TO_TIME(ctx.corrected_tickbase);
-	float ping = nci->GetLatency(FLOW_OUTGOING) + nci->GetLatency(FLOW_INCOMING);
+	// NOTE:  do these computations in float time, not ticks, to avoid big roundoff error accumulations in the math
+	// add view interpolation latency see C_BaseEntity::GetInterpolationAmount()
+	correct += GetLerpTime();
 
-	float correct = 0.f;
-	float lerp_time = GetLerpTime();
+	// check bounds [0,sv_maxunlag]
+	correct = std::clamp(correct, 0.0f, cvars.sv_maxunlag->GetFloat());
 
-	correct += ping;
-	correct += lerp_time;
-	correct = std::clamp(correct, 0.f, cvars.sv_maxunlag->GetFloat());
+	// calculate difference between tick sent by player and our latency based tick
+	float deltaTime = correct - (TICKS_TO_TIME(ctx.corrected_tickbase) - record->m_flSimulationTime);
 
-	float delta_time = correct - (time - record->m_flSimulationTime);
-
-	if (std::abs(delta_time) > 0.2f)
-		return false;
-
-	auto extra_choke = 0;
-	
-	if (ctx.fake_duck)
-		extra_choke = 14 - ClientState->m_nChokedCommands;
-
-	int server_tickcount = GlobalVars->tickcount + TIME_TO_TICKS(ping) + extra_choke;
-	auto dead_time = (int)(float)((float)((int)((float)((float)server_tickcount
-		* GlobalVars->interval_per_tick) - 0.2f) / GlobalVars->interval_per_tick) + 0.5f);
-
-	if (TIME_TO_TICKS(record->m_flSimulationTime + lerp_time) < dead_time)
-		return false;
-
-	return true;
+	return std::abs(deltaTime) < (0.2f - (ctx.tickbase_shift > 0 ? GlobalVars->interval_per_tick : 0.f));
 }
 
 void CLagCompensation::Reset(int index) {

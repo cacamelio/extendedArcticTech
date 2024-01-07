@@ -50,6 +50,7 @@ void CPrediction::BackupData() {
 	pre_prediction.m_vecAbsVelocity = Cheat.LocalPlayer->m_vecAbsVelocity();
 	pre_prediction.m_flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
 	pre_prediction.m_flDuckSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
+	pre_prediction.m_hGroundEntity = Cheat.LocalPlayer->m_hGroundEntity();
 
 	flOldCurrentTime = GlobalVars->curtime;
 	flOldFrameTime = GlobalVars->frametime;
@@ -102,14 +103,17 @@ void CPrediction::Start(CUserCmd* cmd) {
 
 	Cheat.LocalPlayer->m_flVelocityModifier() = backup_velocity_modifier;
 
+	GameMovement->FinishTrackPredictionErrors(Cheat.LocalPlayer);
+	MoveHelper->SetHost(nullptr);
+
+	if (!Prediction->bEnginePaused && !Exploits->IsShifting())
+		Cheat.LocalPlayer->m_nTickBase()++;
+
 	if (ctx.active_weapon) {
 		ctx.active_weapon->UpdateAccuracyPenality();
 		weaponInaccuracy = ctx.active_weapon->GetInaccuracy();
 		weaponSpread = ctx.active_weapon->GetSpread();
 	}
-
-	if (!Prediction->bEnginePaused)
-		Cheat.LocalPlayer->m_nTickBase()++;
 
 	AnimationSystem->UpdatePredictionAnimation();
 	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();
@@ -127,9 +131,6 @@ void CPrediction::End() {
 	*predictionRandomSeed = -1;
 	*predictionEntity = nullptr;
 
-	GameMovement->FinishTrackPredictionErrors(Cheat.LocalPlayer);
-	MoveHelper->SetHost(nullptr);
-	
 	if (ctx.active_weapon) {
 		ctx.active_weapon->m_fAccuracyPenalty() = weaponAccuracyPenality;
 		ctx.active_weapon->m_flRecoilIndex() = weaponRecoilIndex;
@@ -157,6 +158,7 @@ void CPrediction::Repredict(CUserCmd* cmd, QAngle angles) {
 	Cheat.LocalPlayer->m_vecAbsVelocity() = pre_prediction.m_vecAbsVelocity;
 	Cheat.LocalPlayer->m_flDuckAmount() = pre_prediction.m_flDuckAmount;
 	Cheat.LocalPlayer->m_flDuckSpeed() = pre_prediction.m_flDuckSpeed;
+	Cheat.LocalPlayer->m_hGroundEntity() = pre_prediction.m_hGroundEntity;
 
 	GameMovement->StartTrackPredictionErrors(Cheat.LocalPlayer);
 	MoveHelper->SetHost(Cheat.LocalPlayer);
@@ -165,6 +167,12 @@ void CPrediction::Repredict(CUserCmd* cmd, QAngle angles) {
 	Prediction->FinishMove(Cheat.LocalPlayer, cmd, &moveData);
 	GameMovement->FinishTrackPredictionErrors(Cheat.LocalPlayer);
 	MoveHelper->SetHost(nullptr);
+
+	if (ctx.active_weapon) {
+		ctx.active_weapon->UpdateAccuracyPenality();
+		weaponInaccuracy = ctx.active_weapon->GetInaccuracy();
+		weaponSpread = ctx.active_weapon->GetSpread();
+	}
 
 	AnimationSystem->UpdatePredictionAnimation();
 	ctx.shoot_position = Cheat.LocalPlayer->GetShootPosition();

@@ -14,6 +14,66 @@
 
 CShotManager* ShotManager = new CShotManager;
 
+static const std::unordered_map<std::string_view, std::string> miss_color = {
+	{"spread", "\aFFE59E"},
+	{"prediction error", "\aFFE59E"},
+	{"occlusion", "\aFFE59E"},
+	{"correction", "\aEAFFA6"},
+	{"lagcomp failure", "\aEAFFA6"},
+	{"death", "\aE6B1B1"},
+	{"damage rejection", "\aE6B1B1"},
+	{"unregistered shot", "\aE6B1B1"},
+	{"player death", "\aFFFFFF"},
+};
+
+void CShotManager::LogMiss(RegisteredShot_t* shot) {
+	std::string extra_info;
+#ifdef RESOLVER_DEBUG
+	std::string resolver;
+	switch (shot->record->resolver_data.resolver_type) {
+	case ResolverType::NONE:
+		break;
+	case ResolverType::FREESTAND:
+		resolver = "freestand";
+		break;
+	case ResolverType::LOGIC:
+		resolver = "logic";
+		break;
+	case ResolverType::ANIM:
+		resolver = "anim";
+		break;
+	case ResolverType::BRUTEFORCE:
+		resolver = "brute";
+		break;
+	case ResolverType::DEFAULT:
+		resolver = "default";
+		break;
+	}
+
+	if (!resolver.empty()) {
+		extra_info += " | resolver: \aACCENT" + resolver + " " + std::to_string(static_cast<int>(shot->record->resolver_data.side * shot->record->resolver_data.max_desync_delta + 0.5f)) + "\xC2\xB0\a_MAIN_";
+		extra_info += std::format(" | deltas: {} {} {}", (int)(shot->record->resolver_data.delta_negative * 1000), (int)(shot->record->resolver_data.delta_center * 1000), (int)(shot->record->resolver_data.delta_positive * 1000));
+	}
+#endif
+	if (shot->record->shooting)
+		extra_info += " | \aACCENTonshot\a_MAIN_";
+	if (shot->record->breaking_lag_comp)
+		extra_info += " | \aACCENTteleported\a_MAIN_";
+	if (shot->safe_point)
+		extra_info += " | \aACCENTsafe\a_MAIN_";
+
+	Console->ArcticTag();
+	Console->Print(std::format("missed \aACCENT{}\a_MAIN_'s \aACCENT{}\a_MAIN_ due to {}{}\a_MAIN_ (hc: \aACCENT{}%%\a_MAIN_ | bt: \aACCENT{}t\a_MAIN_{})\n",
+		shot->record->player->GetName(),
+		GetDamagegroupName(shot->wanted_damagegroup),
+		miss_color.find(shot->miss_reason)->second,
+		shot->miss_reason,
+		static_cast<int>(shot->hitchance * 100),
+		shot->backtrack,
+		extra_info
+	));
+}
+
 void CShotManager::DetectUnregisteredShots() {
 	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return;
@@ -30,7 +90,7 @@ void CShotManager::DetectUnregisteredShots() {
 
 	float fLastShotTime = weapon->m_fLastShotTime();
 
-	if (fLastShotTime + 0.03125f >= pred_data.m_fLastShotTime)
+	if (fLastShotTime + TICKS_TO_TIME(4.f) >= pred_data.m_fLastShotTime)
 		return;
 
 	for (auto it = m_RegisteredShots.rbegin(); it != m_RegisteredShots.rend(); it++) {
@@ -41,9 +101,7 @@ void CShotManager::DetectUnregisteredShots() {
 		it->unregistered = true;
 		it->miss_reason = "unregistered shot";
 
-		Console->ArcticTag();
-		Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
-		Console->ColorPrint("unregistered shot\n", Color(255, 20, 20));
+		LogMiss(&*it);
 
 		for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
 			callback.func(*it);
@@ -155,9 +213,7 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 				it->death = true;
 				it->miss_reason = "death";
 
-				Console->ArcticTag();
-				Console->ColorPrint("missed shot due to ", Color(230, 230, 230));
-				Console->ColorPrint("death\n", Color(255, 20, 20));
+				LogMiss(&*it);
 
 				for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
 					callback.func(*it);
@@ -175,6 +231,8 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 		}
 		return false;
 	}
+
+	return false;
 }
 
 void CShotManager::OnNetUpdate() {
@@ -191,7 +249,7 @@ void CShotManager::OnNetUpdate() {
 				it->acked = true;
 				it->miss_reason = "player death";
 
-				Console->Log("missed shot due to player death");
+				LogMiss(&*it);
 
 				for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
 					callback.func(&*it);
@@ -240,10 +298,8 @@ void CShotManager::OnNetUpdate() {
 
 		memcpy(player->GetCachedBoneData().Base(), shot->record->clamped_matrix, player->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
 
-		Console->ArcticTag();
 		if (shot->damage > 0) {
 			Resolver->OnHit(player, shot->record);
-			Console->ColorPrint(std::format("hit {}'s {}({}) for {}({}) ({} remaining) [mismatch: ", player->GetName(), GetDamagegroupName(shot->damagegroup), GetDamagegroupName(shot->wanted_damagegroup), shot->damage, shot->wanted_damage, shot->health), Color(240, 240, 240));
 
 			if (config.visuals.esp.hitmarker->get())
 				WorldESP->AddHitmarker(shot->hit_point);
@@ -256,51 +312,93 @@ void CShotManager::OnNetUpdate() {
 				Ray_t ray(shot->shoot_pos, shot->shoot_pos + direction * 8192);
 
 				if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
-					Console->ColorPrint("correction", Color(200, 255, 0));
-					it->miss_reason = "correction";
+					shot->miss_reason = "correction";
 				}
 				else {
 					if (HitgroupToDamagegroup(trace.hitgroup) == shot->wanted_damagegroup) {
-						Console->ColorPrint("correction", Color(200, 255, 0));
-						it->miss_reason = "correction";
+						shot->miss_reason = "correction";
 					}
 					else {
-						if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f) {
-							Console->ColorPrint("pred. error", Color(255, 200, 0));
-							it->miss_reason = "prediction error";
-						}
-						else {
-							Console->ColorPrint("spread", Color(255, 200, 0));
-							it->miss_reason = "spread";
-						}
+						if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f)
+							shot->miss_reason = "prediction error";
+						else
+							shot->miss_reason = "spread";
 					}
 				}
 			}
-			else {
-				Console->ColorPrint("none", Color(255, 255, 255));
+
+
+			std::string hitbox = "\aACCENT" + GetDamagegroupName(shot->damagegroup) + "\a_MAIN_";
+			if (shot->damagegroup != shot->wanted_damagegroup)
+				hitbox += "(\aACCENT" + GetDamagegroupName(shot->wanted_damagegroup) + "\a_MAIN_)";
+
+			std::string damage = std::format("\aACCENT{}\a_MAIN_", shot->damage);
+			if (shot->wanted_damage != shot->damage)
+				damage += std::format("(\aACCENT{}\a_MAIN_)", shot->wanted_damage);
+
+			std::string extra_info; 
+#ifdef RESOLVER_DEBUG
+				std::string resolver;
+			switch (shot->record->resolver_data.resolver_type) {
+			case ResolverType::NONE:
+				break;
+			case ResolverType::FREESTAND:
+				resolver = "freestand";
+				break;
+			case ResolverType::LOGIC:
+				resolver = "logic";
+				break;
+			case ResolverType::ANIM:
+				resolver = "anim";
+				break;
+			case ResolverType::BRUTEFORCE:
+				resolver = "brute";
+				break;
+			case ResolverType::DEFAULT:
+				resolver = "default";
+				break;
+			case ResolverType::MEMORY:
+				resolver = "memory";
+				break;
 			}
 
-			Console->ColorPrint("]\n", Color(240, 240, 240));
+			if (!resolver.empty()) {
+				extra_info += " | resolver: \aACCENT" + resolver + " " + std::to_string(static_cast<int>(shot->record->resolver_data.side * shot->record->resolver_data.max_desync_delta + 0.5f)) + "\xC2\xB0\a_MAIN_";
+				extra_info += std::format(" | deltas: {} {} {}", (int)(shot->record->resolver_data.delta_negative * 1000), (int)(shot->record->resolver_data.delta_center * 1000), (int)(shot->record->resolver_data.delta_positive * 1000));
+			}
+#endif
+
+			if (shot->record->breaking_lag_comp)
+				extra_info += " | \aACCENTteleported\a_MAIN_";
+			if (shot->safe_point)
+				extra_info += " | \aACCENTsafe\a_MAIN_";
+			if (shot->record->shooting)
+				extra_info += " | \aACCENTonshot\a_MAIN_";
+			if (!shot->miss_reason.empty())
+				extra_info += " | mismatch: " + miss_color.find(shot->miss_reason)->second + shot->miss_reason + "\a_MAIN_";
+
+			Console->ArcticTag();
+			Console->Print(std::format("hit \aACCENT{} \a_MAIN_in the {} for {} (hc: \aACCENT{}%%\a_MAIN_ | bt: \aACCENT{}t\a_MAIN_{})\n", 
+				player->GetName(), 
+				hitbox, 
+				damage,
+				static_cast<int>(shot->hitchance * 100),
+				shot->backtrack,
+				extra_info
+			));
 		}
 		else {
 			CGameTrace trace;
 			Ray_t ray(shot->shoot_pos, shot->shoot_pos + direction * 8192);
 
-			Console->ColorPrint("missed shot due to ", Color(240, 240, 240));
-
 			if (shot->shoot_pos.DistTo(shot->end_pos) + 10.f < shot->client_shoot_pos.DistTo(shot->target_pos)) {
 				it->miss_reason = "occlusion";
-				Console->ColorPrint("occlusion\n", Color(255, 200, 0));
 			}
 			else if (!EngineTrace->ClipRayToPlayer(ray, MASK_SHOT_HULL | CONTENTS_GRATE, player, &trace) || trace.hit_entity != player) {
-				if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f || shot->hitchance == 1.f) {
+				if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f || shot->hitchance == 1.f)
 					it->miss_reason = "prediction error";
-					Console->ColorPrint("prediction error\n", Color(255, 200, 0));
-				}
-				else {
+				else
 					it->miss_reason = "spread";
-					Console->ColorPrint("spread\n", Color(255, 200, 0));
-				}
 			}
 			else {
 				Vector target_hit_point = shot->client_impacts[0];
@@ -313,7 +411,6 @@ void CShotManager::OnNetUpdate() {
 
 				if ((shot->hit_point - target_hit_point).LengthSqr() < 64.f && shot->impacts.size() > 1) {
 					it->miss_reason = "damage rejection";
-					Console->ColorPrint("damage rejection\n", Color(255, 20, 20));
 				}
 				else {
 					auto& records = LagCompensation->records(shot->record->player->EntIndex());
@@ -328,21 +425,17 @@ void CShotManager::OnNetUpdate() {
 						}
 					}
 
-					if (break_lag_comp) {
+					if (break_lag_comp || shot->safe_point) {
 						it->miss_reason = "lagcomp failure";
-						Console->ColorPrint("lagcomp failure\n", Color(200, 255, 0));
-					}
-					else if (shot->safe_point) {
-						it->miss_reason = "jitter correction";
-						Console->ColorPrint("jitter correction\n", Color(200, 255, 0));
 					}
 					else {
 						Resolver->OnMiss(player, shot->record);
 						it->miss_reason = "correction";
-						Console->ColorPrint("correction\n", Color(200, 255, 0));
 					}
 				}
 			}
+
+			LogMiss(shot);
 		}
 
 		LagCompensation->BacktrackEntity(backup_record);
@@ -352,7 +445,7 @@ void CShotManager::OnNetUpdate() {
 	}
 }
 
-void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, int hitchance, bool safe, LagRecord* record, Vector impacts[], int total_impacts) {
+void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, int damage, int damagegroup, float hitchance, bool safe, LagRecord* record, Vector impacts[], int total_impacts) {
 	RegisteredShot_t* shot = &m_RegisteredShots.emplace_back();
 
 	shot->client_shoot_pos = shoot_pos;
@@ -360,7 +453,7 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 	shot->client_angle = Math::VectorAngles(target_pos - shoot_pos);
 	shot->command_number = ctx.cmd->command_number;
 	shot->hitchance = hitchance;
-	shot->backtrack = GlobalVars->tickcount - record->update_tick;
+	shot->backtrack = max(GlobalVars->tickcount - record->update_tick, 0);
 	shot->record = record;
 	shot->player_angle = record->player->m_angEyeAngles();
 	shot->wanted_damage = damage;

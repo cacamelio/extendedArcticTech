@@ -60,7 +60,23 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 			}
 
 			if (config.misc.miscellaneous.logs->get(0) && !skip_hurt) {
-				Console->Log(std::format("hurt {}'s {} for {} damage ({} remaining)", victim->GetName(), GetHitgroupName(event->GetInt("hitgroup")), event->GetInt("dmg_health"), event->GetInt("health")));
+				std::string action = "hit";
+				std::string weapon = event->GetString("weapon");
+				if (weapon == "taser")
+					action = "zeused";
+				else if (weapon == "hegrenade")
+					action = "naded";
+				else if (weapon == "inferno")
+					action = "mollied";
+				else if (weapon == "knife")
+					action = "knifed";
+				std::string hitbox;
+				int hb = event->GetInt("hitgroup");
+				if (action == "hit" && hb != HITGROUP_GENERIC)
+					hitbox = " in the \aACCENT" + GetHitgroupName(hb) + "\a_MAIN_";
+
+				Console->ArcticTag();
+				Console->Print(std::format("{} \aACCENT{}\a_MAIN_{} for \aACCENT{}\a_MAIN_ damage (\aACCENT{}\a_MAIN_ remaining)\n", action, victim->GetName(), hitbox, event->GetInt("dmg_health"), event->GetInt("health")));
 			}
 		}
 

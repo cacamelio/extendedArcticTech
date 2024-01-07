@@ -293,6 +293,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AntiAim->Angles();
 
 	Ragebot->Run();
+	Ragebot->RestorePrediction();
 
 	cmd->viewangles.Normalize(config.misc.miscellaneous.anti_untrusted->get());
 
@@ -596,7 +597,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(6));
 		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
-		SkinChanger->Run(false);
 
 		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
 			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
@@ -608,7 +608,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 			World->Modulation();
 			ctx.update_nightmode = false;
 		}
-		SkinChanger->Run(true);
 
 		if (ctx.update_remove_blood) {
 			World->RemoveBlood();
@@ -618,7 +617,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	}
 	case FRAME_NET_UPDATE_START:
-		Miscellaneous::PreserveKillfeed();
+		//Miscellaneous::PreserveKillfeed();
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
@@ -629,7 +628,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
 		SkinChanger->MaskChanger();
-		SkinChanger->Run(true);
+		SkinChanger->Run();
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_END:
 		break;
@@ -752,26 +751,11 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 
 	Exploits->AdjustTickbase(tickbase, cmd);
 
-	const int backup_tickbase = tickbase;
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
 	oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
 	player->m_flVelocityModifier() = backup_velocity_modifier;
-
-	for (auto i = ctx.shifted_commands.begin(); i != ctx.shifted_commands.end();) {
-		auto command = *i;
-
-		if (cmd->command_number - command > 32) {
-			i = ctx.shifted_commands.erase(i);
-			continue;
-		}
-
-		if (command == cmd->command_number)
-			tickbase = backup_tickbase;
-
-		++i;
-	}
 
 	EnginePrediction->RunCommand(cmd);
 	Exploits->RunCommand(cmd);

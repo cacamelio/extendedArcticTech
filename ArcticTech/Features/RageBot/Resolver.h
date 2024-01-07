@@ -24,16 +24,27 @@ enum class ResolverType {
 	FREESTAND,
 	LOGIC,
 	ANIM,
-	BRUTEFORCE
+	BRUTEFORCE,
+	MEMORY,
+	DEFAULT,
 };
+
+enum EResolverLayer {
+	RESOLVER_LAYER_ZERO,
+	RESOLVER_LAYER_POSITIVE,
+	RESOLVER_LAYER_NEGATIVE
+};
+
+#define RESOLVER_DEBUG 1
 
 struct ResolverData_t {
 	R_PlayerState player_state;
 	R_AntiAimType antiaim_type;
 	ResolverType resolver_type;
 
-	AnimationLayer animlayers[3][13];
+	AnimationLayer animlayers[3];
 
+	float max_desync_delta = 0.f;
 	float delta_positive = 0.f;
 	float delta_negative = 0.f;
 	float delta_center = 0.f;
@@ -41,24 +52,28 @@ struct ResolverData_t {
 	int side = 0;
 };
 
-struct BruteForceData_t {
-	bool use = false;
-	int current_side = 0;
-	float last_shot = 0.f;
+struct ResolverDataStatic_t {
+	int brute_side = 0;
+	float brute_time = 0.f;
+	float last_resolved = 0.f;
+	ResolverType res_type_last = ResolverType::NONE;
+	int last_side = 0;
 
 	void reset() {
-		use = false;
-		current_side = 0;
-		last_shot = 0.f;
+		last_resolved = 0.f;
+		brute_side = 0;
+		brute_time = 0.f;
 	}
 };
 
 class CResolver {
-	BruteForceData_t brute_force_data[64];
+	ResolverDataStatic_t resolver_data[64];
+
+	float GetTime();
 public:
 	CResolver() {
 		for (int i = 0; i < 64; ++i) {
-			brute_force_data[i].reset();
+			resolver_data[i].reset();
 		}
 	}	
 

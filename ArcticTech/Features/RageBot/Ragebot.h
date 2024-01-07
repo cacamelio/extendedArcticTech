@@ -65,6 +65,19 @@ private:
 
 	SpreadValues_t spread_values[100];
 
+	struct {
+		int m_fFlags = 0;
+		float m_flDuckAmount = 0.f;
+		float m_flDuckSpeed = 0.f;
+		Vector m_vecOrigin;
+		Vector m_vecAbsOrigin;
+		Vector m_vecVelocity;
+		Vector m_vecAbsVelocity;
+		unsigned int m_hGroundEntity = 0;
+		
+		bool should_restore = false;
+	} pre_prediction;
+
 	weapon_settings_t settings;
 
 	float last_frametime_check = 0.f;
@@ -138,8 +151,10 @@ public:
 	void				UpdateUI(int idx = -1);
 
 	void				RunPrediction(const QAngle& angle);
+	void				RestorePrediction();
+
 	void				CalcSpreadValues();
-	void				AutoStop();
+	void				AutoStop(bool predict = false);
 	float				CalcHitchance(QAngle angles, LagRecord* target, int hitbox);
 	float				FastHitchance(LagRecord* target, float inaccuracy = -1.f, int hitbox_radius = 5); // fast hitchance approximation base on inaccuracy angle and distance
 	float				CalcMinDamage(CBasePlayer* target);

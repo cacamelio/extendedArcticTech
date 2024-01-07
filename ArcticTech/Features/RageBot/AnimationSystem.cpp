@@ -54,9 +54,6 @@ void CAnimationSystem::OnCreateMove() {
 	if (animstate->nLastUpdateFrame >= GlobalVars->framecount)
 		animstate->nLastUpdateFrame = GlobalVars->framecount - 1;
 
-	if (animstate->flLastUpdateTime >= GlobalVars->curtime)
-		animstate->flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
-
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
 	animstate->bLanding = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 	memcpy(local_layers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
@@ -125,18 +122,18 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 	if (animlayers != nullptr)
 		memcpy(player->GetAnimlayers(), animlayers, sizeof(AnimationLayer) * 13);
 
-	//bool backupMaintainSequenceTransitions = player->m_bMaintainSequenceTransitions();
+	bool backupMaintainSequenceTransitions = player->m_bMaintainSequenceTransitions();
 	int backupEffects = player->m_fEffects();
 
 	player->m_fEffects() |= EF_NOINTERP; // Disable interp
-	//player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
+	player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
 
 	hook_info.setup_bones = true;
 	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer == player ? GlobalVars->curtime : player->m_flSimulationTime());
 	hook_info.setup_bones = false;
 
 	player->m_fEffects() = backupEffects;
-	//player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
+	player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
 }
 
 void CAnimationSystem::DisableInterpolationFlags(CBasePlayer* player) {
@@ -155,8 +152,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	
 	record->player = player;
 	record->m_vecAbsOrigin = player->m_vecOrigin();
-
-	unupdated_animstate[idx] = *animstate;
 
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;
@@ -182,25 +177,30 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	GlobalVars->framecount = TIME_TO_TICKS(player->m_flSimulationTime());
 
 	memcpy(record->animlayers, player->GetAnimlayers(), 13 * sizeof(AnimationLayer));
-	record->animlayers[12].m_flWeight = 0.f;
+
+	if (record->prev_record) {
+		animstate->flMoveWeight = record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight;
+		animstate->flPrimaryCycle = record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flCycle;
+	}
+
+	unupdated_animstate[idx] = *animstate;
 
 	auto pose_params = player->m_flPoseParameter();
 
-	if (player->IsEnemy()) {
-		player->m_BoneAccessor().m_ReadableBones = 0;
-		player->m_BoneAccessor().m_WritableBones = 0;
-
-		player->m_nOcclusionFrame() = 0;
-		player->m_nOcclusionFlags() = 0;
-	}
-
-	player->SetAbsVelocity(player->m_vecVelocity());
+	player->m_vecAbsVelocity() = player->m_vecVelocity();
 	player->SetAbsOrigin(player->m_vecOrigin());
+
+	player->m_BoneAccessor().m_ReadableBones = 0;
+	player->m_BoneAccessor().m_WritableBones = 0;
+
+	player->m_nOcclusionFrame() = 0;
+	player->m_nOcclusionFlags() = 0;
 
 	if (player->IsEnemy()) {
 		Resolver->Run(player, record, records);
 
 		*animstate = unupdated_animstate[idx];
+		memcpy(player->GetAnimlayers(), record->animlayers, sizeof(AnimationLayer) * 13);
 
 		Resolver->Apply(record);
 		player->UpdateClientSideAnimation();
@@ -211,6 +211,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	if (!(player->m_fFlags() & FL_ONGROUND))
 		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat();
+
+	record->animlayers[12].m_flWeight = 0.f;
 
 	hook_info.disable_clamp_bones = true;
 	BuildMatrix(player, record->aim_matrix, 128, BONE_USED_BY_ANYTHING, record->animlayers);
@@ -283,10 +285,10 @@ void CAnimationSystem::RunInterpolation() {
 		if (!data->valid)
 			data->origin = data->net_origin;
 
-		float lerp_amt = 28.f;
+		float lerp_amt = 24.f;
 
 		if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && player->IsEnemy())
-			lerp_amt = 42.f; // speed up interpolation
+			lerp_amt = 34.f; // speed up interpolation
 
 		data->valid = true;
 		data->origin += (data->net_origin - data->origin) * std::clamp(GlobalVars->frametime * lerp_amt, 0.f, 0.8f);

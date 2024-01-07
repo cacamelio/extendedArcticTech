@@ -57,9 +57,6 @@
     <ClCompile Include="Utils\VMTHook.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\Animation.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\NetVars.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -253,9 +250,6 @@
     </ClInclude>
     <ClInclude Include="SDK\Interfaces\CGlobalVarsBase.h">
       <Filter>SDK\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Animation.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="SDK\Interfaces\IVEngineClient.h">
       <Filter>SDK\Interfaces</Filter>

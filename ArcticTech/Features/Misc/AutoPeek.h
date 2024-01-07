@@ -1,15 +1,15 @@
 #pragma once
-#include "../../Utils/Animation.h"
+
 #include "../../SDK/Misc/Vector.h"
 
 class CUserCmd;
 
 class CAutoPeek {
 	int block_buttons = 0;
-	bool returning;
+	bool returning = false;
+	bool prev_state = false;
 	Vector position;
-	Animation circleAnimation;
-
+	float anim = 0.f;
 public:
 
 	void CreateMove();
