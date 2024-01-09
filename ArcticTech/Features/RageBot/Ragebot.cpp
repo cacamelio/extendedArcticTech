@@ -609,11 +609,10 @@ void CRagebot::RunPrediction(const QAngle& angle) {
 	pre_prediction.m_hGroundEntity = Cheat.LocalPlayer->m_hGroundEntity();
 
 	CUserCmd stop_cmd = *ctx.cmd;
-	stop_cmd.viewangles = QAngle(0, 0, 0);
 	CUserCmd* backup_cmd = ctx.cmd;
 	ctx.cmd = &stop_cmd;
 	AutoStop(true);
-	EnginePrediction->Repredict(ctx.cmd, angle);
+	EnginePrediction->Repredict(ctx.cmd, QAngle(0, 0, 0));
 	ctx.cmd = backup_cmd;
 }
 
@@ -625,7 +624,7 @@ void CRagebot::RestorePrediction() {
 	Cheat.LocalPlayer->m_fFlags() = pre_prediction.m_fFlags;
 	Cheat.LocalPlayer->m_flDuckAmount() = pre_prediction.m_flDuckAmount;
 	Cheat.LocalPlayer->m_flDuckSpeed() = pre_prediction.m_flDuckSpeed;
-	Cheat.LocalPlayer->m_vecVelocity() = pre_prediction.m_vecAbsOrigin;
+	Cheat.LocalPlayer->m_vecVelocity() = pre_prediction.m_vecVelocity;
 	Cheat.LocalPlayer->m_vecAbsVelocity() = pre_prediction.m_vecAbsVelocity;
 	Cheat.LocalPlayer->m_hGroundEntity() = pre_prediction.m_hGroundEntity;
 }

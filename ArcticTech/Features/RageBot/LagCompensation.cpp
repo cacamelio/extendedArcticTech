@@ -119,48 +119,54 @@ void CLagCompensation::OnNetUpdate() {
 
 		auto& records = lag_records[pl->EntIndex()];
 
-		if (records.empty() || (pl->m_flSimulationTime() != pl->m_flOldSimulationTime() && pl->m_flSimulationTime() - pl->m_flOldSimulationTime() > -TICKS_TO_TIME(16))) {
-			LagRecord* prev_record = !records.empty() ? &records.back() : nullptr;
-			LagRecord* new_record = &records.emplace_back();
+		if (!records.empty() && pl->m_flSimulationTime() == pl->m_flOldSimulationTime())
+			continue;
 
-			new_record->prev_record = prev_record;
-			new_record->update_tick = GlobalVars->tickcount;
-			new_record->m_nChokedTicks = TIME_TO_TICKS(pl->m_flSimulationTime() - pl->m_flOldSimulationTime()) - 1;
-			new_record->m_flSimulationTime = pl->m_flSimulationTime();
+		LagRecord* prev_record = !records.empty() ? &records.back() : nullptr;
 
-			new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
-			new_record->exploiting = (EngineClient->GetLastTimeStamp() - new_record->m_flSimulationTime > TICKS_TO_TIME(7.f)) || (prev_record && prev_record->shifting_tickbase);
-
-			if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
-				max_simulation_time[i] = new_record->m_flSimulationTime;
-
-			last_update_tick[i] = GlobalVars->tickcount;
-
-			AnimationSystem->UpdateAnimations(pl, new_record, records);
-			RecordDataIntoTrack(pl, new_record);
-
-			if (prev_record)
-				new_record->breaking_lag_comp = (prev_record->m_vecOrigin - new_record->m_vecOrigin).LengthSqr() > 4096.f;
-
-			if (config.visuals.esp.shared_esp->get() && !EngineClient->IsVoiceRecording() && nc) {
-				if (config.visuals.esp.share_with_enemies->get() || !pl->IsTeammate()) {
-					SharedESP_t msg;
-
-					player_info_t pinfo;
-					EngineClient->GetPlayerInfo(i, &pinfo);
-
-					msg.m_iPlayer = pinfo.userId;
-					msg.m_ActiveWeapon = pl->GetActiveWeapon() ? pl->GetActiveWeapon()->m_iItemDefinitionIndex() : 0;
-					msg.m_iHealth = pl->m_iHealth();
-					msg.m_vecOrigin = new_record->m_vecOrigin;
-
-					NetMessages->SendNetMessage((SharedVoiceData_t*)&msg);
-				}
-			}
-
-			while (records.size() > (pl->IsTeammate() ? 4 : (TIME_TO_TICKS(0.4f) + 13))) // super puper proper lagcomp
-				records.pop_front();
+		if (prev_record && prev_record->animlayers[ANIMATION_LAYER_ALIVELOOP].m_flCycle == pl->GetAnimlayers()[ANIMATION_LAYER_ALIVELOOP].m_flCycle) {
+			pl->m_flOldSimulationTime() = pl->m_flSimulationTime();
+			continue;
 		}
+
+		LagRecord* new_record = &records.emplace_back();
+
+		new_record->prev_record = prev_record;
+		new_record->update_tick = GlobalVars->tickcount;			
+		new_record->m_flSimulationTime = pl->m_flSimulationTime();
+		new_record->m_flServerTime = EngineClient->GetLastTimeStamp();
+
+		new_record->shifting_tickbase = max_simulation_time[i] >= new_record->m_flSimulationTime;
+
+		if (new_record->m_flSimulationTime > max_simulation_time[i] || abs(max_simulation_time[i] - new_record->m_flSimulationTime) > 3.f)
+			max_simulation_time[i] = new_record->m_flSimulationTime;
+
+		last_update_tick[i] = GlobalVars->tickcount;
+
+		AnimationSystem->UpdateAnimations(pl, new_record, records);
+		RecordDataIntoTrack(pl, new_record);
+
+		if (prev_record)
+			new_record->breaking_lag_comp = (prev_record->m_vecOrigin - new_record->m_vecOrigin).LengthSqr() > 4096.f;
+
+		if (config.visuals.esp.shared_esp->get() && !EngineClient->IsVoiceRecording() && nc) {
+			if (config.visuals.esp.share_with_enemies->get() || !pl->IsTeammate()) {
+				SharedESP_t msg;
+
+				player_info_t pinfo;
+				EngineClient->GetPlayerInfo(i, &pinfo);
+
+				msg.m_iPlayer = pinfo.userId;
+				msg.m_ActiveWeapon = pl->GetActiveWeapon() ? pl->GetActiveWeapon()->m_iItemDefinitionIndex() : 0;
+				msg.m_iHealth = pl->m_iHealth();
+				msg.m_vecOrigin = new_record->m_vecOrigin;
+
+				NetMessages->SendNetMessage((SharedVoiceData_t*)&msg);
+			}
+		}
+
+		while (records.size() > (pl->IsTeammate() ? 4 : (TIME_TO_TICKS(0.4f) + 13))) // super puper proper lagcomp
+			records.pop_front();
 
 		INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
 		if (config.visuals.esp.show_server_hitboxes->get() && nci && nci->IsLoopback())

@@ -132,10 +132,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 
 		if (player && player->m_bDormant()) {
 			auto& esp_info = WorldESP->GetESPInfo(user_id_pl);
-			if (esp_info.m_nHealth == 0)
-				esp_info.m_nHealth = 100;
 			esp_info.m_iActiveWeapon = event->GetInt("defindex");
-			PlayerResource->m_bAlive()[user_id_pl] = true;
 		}
 
 		if (player == Cheat.LocalPlayer)
@@ -145,11 +142,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(user_id_pl));
 
 		if (player && player->m_bDormant()) {
-			auto& esp_info = WorldESP->GetESPInfo(user_id_pl);
-			if (esp_info.m_nHealth == 0)
-				esp_info.m_nHealth = 100;
-			PlayerResource->m_bAlive()[user_id_pl] = true;
-
 			std::string item = event->GetString("weapon");
 
 			if (item == "vest")

@@ -29,26 +29,21 @@ enum class ResolverType {
 	DEFAULT,
 };
 
-enum EResolverLayer {
-	RESOLVER_LAYER_ZERO,
-	RESOLVER_LAYER_POSITIVE,
-	RESOLVER_LAYER_NEGATIVE
+struct ResolverLayer_t {
+	float desync = 0.f;
+	float delta = 0.f;
 };
 
 #define RESOLVER_DEBUG 1
 
 struct ResolverData_t {
-	R_PlayerState player_state;
-	R_AntiAimType antiaim_type;
-	ResolverType resolver_type;
+	R_PlayerState player_state = R_PlayerState::STANDING;
+	R_AntiAimType antiaim_type = R_AntiAimType::UNKNOWN;
+	ResolverType resolver_type = ResolverType::NONE;
 
-	AnimationLayer animlayers[3];
+	ResolverLayer_t layers[5];
 
 	float max_desync_delta = 0.f;
-	float delta_positive = 0.f;
-	float delta_negative = 0.f;
-	float delta_center = 0.f;
-
 	int side = 0;
 };
 
@@ -58,6 +53,7 @@ struct ResolverDataStatic_t {
 	float last_resolved = 0.f;
 	ResolverType res_type_last = ResolverType::NONE;
 	int last_side = 0;
+	int missed_shots = 0;
 
 	void reset() {
 		last_resolved = 0.f;
@@ -82,6 +78,7 @@ public:
 	R_PlayerState	DetectPlayerState(CBasePlayer* player, AnimationLayer* animlayers);
 	R_AntiAimType	DetectAntiAim(CBasePlayer* player, const std::deque<LagRecord>& records);
 
+	void			SetupLayer(LagRecord* record, int idx, float delta);
 	void			SetupResolverLayers(CBasePlayer* player, LagRecord* record);
 
 	void			DetectFreestand(CBasePlayer* player, LagRecord* record, const std::deque<LagRecord>& records);

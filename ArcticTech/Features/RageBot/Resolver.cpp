@@ -92,37 +92,27 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 	return R_AntiAimType::UNKNOWN;
 }
 
+void CResolver::SetupLayer(LagRecord* record, int idx, float delta) {
+	CCSGOPlayerAnimationState* animstate = record->player->GetAnimstate();
+
+	QAngle angles = record->player->m_angEyeAngles();
+
+	animstate->flFootYaw = Math::AngleNormalize(angles.yaw + delta);
+	record->player->UpdateAnimationState(animstate, angles, true);
+	
+	auto& resolver_layer = record->resolver_data.layers[idx];
+	resolver_layer.desync = delta;
+	resolver_layer.delta = std::abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->player->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate) * 1000.f;
+
+	*animstate = *AnimationSystem->GetUnupdatedAnimstate(record->player->EntIndex());
+}
+
 void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
-	CCSGOPlayerAnimationState* animstate = player->GetAnimstate();
-	const auto poseparam_backup = player->m_flPoseParameter();
-
-	QAngle player_eye_angles = player->m_angEyeAngles();
-	float eyeYaw = player_eye_angles.yaw;
-
-	float zeroYaw = Math::AngleNormalize(eyeYaw);
-	float posYaw = Math::AngleNormalize(eyeYaw + record->resolver_data.max_desync_delta);
-	float negYaw = Math::AngleNormalize(eyeYaw - record->resolver_data.max_desync_delta);
-
-
-	// zero delta
-	animstate->flFootYaw = zeroYaw;
-
-	player->UpdateAnimationState(animstate, player_eye_angles, true);
-	record->resolver_data.animlayers[RESOLVER_LAYER_ZERO] = player->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_MOVE];
-
-	// positive delta
-	std::memcpy(animstate, AnimationSystem->GetUnupdatedAnimstate(player->EntIndex()), sizeof(CCSGOPlayerAnimationState));
-	animstate->flFootYaw = posYaw;
-
-	player->UpdateAnimationState(animstate, player_eye_angles, true);
-	record->resolver_data.animlayers[RESOLVER_LAYER_POSITIVE] = player->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_MOVE];
-
-	// negative delta
-	std::memcpy(animstate, AnimationSystem->GetUnupdatedAnimstate(player->EntIndex()), sizeof(CCSGOPlayerAnimationState));
-	animstate->flFootYaw = negYaw;
-
-	player->UpdateAnimationState(animstate, player_eye_angles, true);
-	record->resolver_data.animlayers[RESOLVER_LAYER_NEGATIVE] = player->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_MOVE];
+	SetupLayer(record, 0, 0.f);
+	SetupLayer(record, 1, record->resolver_data.max_desync_delta);
+	SetupLayer(record, 2, -record->resolver_data.max_desync_delta);
+	SetupLayer(record, 3, record->resolver_data.max_desync_delta * 0.6f);
+	SetupLayer(record, 4, -record->resolver_data.max_desync_delta * 0.6f);
 }
 
 void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record, const std::deque<LagRecord>& records) {
@@ -208,20 +198,17 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 
 	record->resolver_data.resolver_type = ResolverType::NONE;
 
-	record->resolver_data.delta_center = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[RESOLVER_LAYER_ZERO].m_flPlaybackRate) * 1000.f;
-	record->resolver_data.delta_positive = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[RESOLVER_LAYER_POSITIVE].m_flPlaybackRate) * 1000.f;
-	record->resolver_data.delta_negative = abs(record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flPlaybackRate - record->resolver_data.animlayers[RESOLVER_LAYER_NEGATIVE].m_flPlaybackRate) * 1000.f;
-
+	float min_delta = 1000.f;
+	for (auto& layer : record->resolver_data.layers) {
+		if (layer.delta < min_delta) {
+			min_delta = layer.delta;
+			if (layer.desync != 0.f) {
+				record->resolver_data.side = layer.desync < 0.f ? -1 : 1;
+				record->resolver_data.resolver_type = ResolverType::ANIM;
+			}
+		}
+	}
 	
-	if (record->resolver_data.delta_negative < record->resolver_data.delta_center && record->resolver_data.delta_positive > record->resolver_data.delta_center) {
-		record->resolver_data.side = -1;
-		record->resolver_data.resolver_type = ResolverType::ANIM;
-	}
-	else if (record->resolver_data.delta_negative > record->resolver_data.delta_center && record->resolver_data.delta_positive < record->resolver_data.delta_center) {
-		record->resolver_data.side = 1;
-		record->resolver_data.resolver_type = ResolverType::ANIM;
-	}
-
 	float vel_sqr = player->m_vecVelocity().LengthSqr();
 
 	if (vel_sqr < 64.f || 
@@ -274,8 +261,10 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 void CResolver::OnMiss(CBasePlayer* player, LagRecord* record) {
 	auto bf_data = &resolver_data[player->EntIndex()];
 
-	bf_data->brute_side = (record->resolver_data.side == 0) ? -1 : -record->resolver_data.side;
+	if (bf_data->missed_shots % 3 && bf_data->missed_shots > 0)
+		bf_data->brute_side = (record->resolver_data.side == 0) ? -1 : -record->resolver_data.side;
 	bf_data->brute_time = GetTime();
+	bf_data->missed_shots++;
 }
 
 void CResolver::OnHit(CBasePlayer* player, LagRecord* record) {
@@ -283,4 +272,5 @@ void CResolver::OnHit(CBasePlayer* player, LagRecord* record) {
 
 	bf_data->brute_side = record->resolver_data.side;
 	bf_data->brute_time = GetTime();
+	bf_data->missed_shots = 0;
 }

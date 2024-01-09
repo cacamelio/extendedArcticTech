@@ -456,3 +456,9 @@ CBasePlayer* CBasePlayer::GetObserverTarget() {
 void CBasePlayer::SetIcon(int level) {
 	PlayerResource->m_nPersonaDataPublicLevel()[EntIndex()] = level;
 }
+
+float& CBasePlayer::m_flLastCollisionChangeTime() {
+	static auto offset = *reinterpret_cast<int*>(Utils::PatternScan("client.dll", "F3 0F 5C 97 ? ? ? ? F3 0F 11 4C 24", 0x4));
+
+	return *(float*)((uintptr_t)this + offset);
+}

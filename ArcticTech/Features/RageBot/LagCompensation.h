@@ -39,11 +39,11 @@ struct LagRecord {
 	int m_nSequence = 0;
 	int m_fFlags = 0;
 	int m_nChokedTicks = 0;
+	float m_flServerTime = 0.f;
 	int update_tick = 0;
 
 	bool shifting_tickbase = false;
 	bool breaking_lag_comp = false;
-	bool exploiting = false;
 	bool invalid = false;
 	bool shooting = false;
 

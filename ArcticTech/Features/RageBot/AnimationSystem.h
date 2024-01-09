@@ -22,6 +22,13 @@ class CAnimationSystem {
 	AnimationLayer local_layers[13];
 	CCSGOPlayerAnimationState* prediction_animstate = new CCSGOPlayerAnimationState;
 
+	struct {
+		QAngle vangle;
+		QAngle abs_angles;
+		AnimationLayer layers[13];
+		std::array<float, 24> poseparams;
+	} local_anims;
+
 	Vector sent_abs_origin;
 public:
 	void	FrameStageNotify(EClientFrameStage stage);

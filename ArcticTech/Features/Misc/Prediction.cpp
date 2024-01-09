@@ -315,6 +315,9 @@ void CPrediction::RunCommand(CUserCmd* cmd) {
 }
 
 void CPrediction::NetUpdate() {
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
+		return;
+
 	auto data = local_data[ClientState->m_nCommandAck % MULTIPLAYER_BACKUP];
 
 	if (data.m_nSequence != ClientState->m_nCommandAck || data.m_nTickBase != Cheat.LocalPlayer->m_nTickBase())

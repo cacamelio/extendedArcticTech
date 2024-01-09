@@ -194,6 +194,16 @@ enum ETeamNumber {
     TEAM_CT = 3
 };
 
+enum CSGOActivities {
+    ACT_CSGO_JUMP = 985,
+    ACT_CSGO_FALL,
+    ACT_CSGO_CLIMB_LADDER,
+    ACT_CSGO_LAND_LIGHT,
+    ACT_CSGO_LAND_HEAVY,
+    ACT_CSGO_EXIT_LADDER_TOP,
+    ACT_CSGO_EXIT_LADDER_BOTTOM,
+};
+
 #pragma endregion
 
 class CBasePlayer;
@@ -399,8 +409,10 @@ public:
     NETVAR(m_iAccount, int, "DT_CSPlayer", "m_iAccount")
     PRED_DESC_MAP(m_vecNetworkOrigin, Vector, "m_vecNetworkOrigin")
     NETVAR(m_hGroundEntity, unsigned int, "DT_BasePlayer", "m_hGroundEntity")
+    NETVAR(m_flMaxspeed, float, "DT_BasePlayer", "m_flMaxspeed")
 
     bool& m_bMaintainSequenceTransitions();
+    float& m_flLastCollisionChangeTime();
 
     void SetModelIndex( int modelIndex );
 

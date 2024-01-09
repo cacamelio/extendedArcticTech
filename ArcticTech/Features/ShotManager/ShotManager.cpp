@@ -51,8 +51,10 @@ void CShotManager::LogMiss(RegisteredShot_t* shot) {
 	}
 
 	if (!resolver.empty()) {
-		extra_info += " | resolver: \aACCENT" + resolver + " " + std::to_string(static_cast<int>(shot->record->resolver_data.side * shot->record->resolver_data.max_desync_delta + 0.5f)) + "\xC2\xB0\a_MAIN_";
-		extra_info += std::format(" | deltas: {} {} {}", (int)(shot->record->resolver_data.delta_negative * 1000), (int)(shot->record->resolver_data.delta_center * 1000), (int)(shot->record->resolver_data.delta_positive * 1000));
+		extra_info += " | resolver: \aACCENT" + resolver + " " + std::to_string(static_cast<int>(shot->record->resolver_data.side * shot->record->resolver_data.max_desync_delta + 0.5f)) + "\xC2\xB0\a_MAIN_ | deltas: ";
+		for (auto& layer : shot->record->resolver_data.layers)
+			extra_info += std::format("{}({}) ", int(layer.delta * 1000.f), int(layer.desync));
+		extra_info += " | choked: " + std::to_string(shot->record->m_nChokedTicks);
 	}
 #endif
 	if (shot->record->shooting)
@@ -317,6 +319,7 @@ void CShotManager::OnNetUpdate() {
 				else {
 					if (HitgroupToDamagegroup(trace.hitgroup) == shot->wanted_damagegroup) {
 						shot->miss_reason = "correction";
+						Resolver->OnMiss(player, shot->record);
 					}
 					else {
 						if ((shot->shoot_pos - shot->client_shoot_pos).LengthSqr() > 1.f)
@@ -326,7 +329,6 @@ void CShotManager::OnNetUpdate() {
 					}
 				}
 			}
-
 
 			std::string hitbox = "\aACCENT" + GetDamagegroupName(shot->damagegroup) + "\a_MAIN_";
 			if (shot->damagegroup != shot->wanted_damagegroup)
@@ -362,9 +364,11 @@ void CShotManager::OnNetUpdate() {
 				break;
 			}
 
+
 			if (!resolver.empty()) {
-				extra_info += " | resolver: \aACCENT" + resolver + " " + std::to_string(static_cast<int>(shot->record->resolver_data.side * shot->record->resolver_data.max_desync_delta + 0.5f)) + "\xC2\xB0\a_MAIN_";
-				extra_info += std::format(" | deltas: {} {} {}", (int)(shot->record->resolver_data.delta_negative * 1000), (int)(shot->record->resolver_data.delta_center * 1000), (int)(shot->record->resolver_data.delta_positive * 1000));
+				extra_info += " | resolver: \aACCENT" + resolver + " " + std::to_string(static_cast<int>(shot->record->resolver_data.side * shot->record->resolver_data.max_desync_delta + 0.5f)) + "\xC2\xB0\a_MAIN_ | deltas: ";
+				for (auto& layer : shot->record->resolver_data.layers)
+					extra_info += std::format("{}({}) ", int(layer.delta * 1000.f), int(layer.desync));
 			}
 #endif
 

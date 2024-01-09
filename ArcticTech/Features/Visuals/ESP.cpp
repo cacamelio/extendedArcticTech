@@ -369,7 +369,7 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 	if (config.visuals.esp.flags->get(1) && info.player->m_bIsScoped() && !dormant)
 		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
 
-	if (config.visuals.esp.flags->get(3) && record && (shifting || record->exploiting) && !dormant)
+	if (config.visuals.esp.flags->get(3) && record && (shifting || (record->m_flSimulationTime < record->m_flServerTime - TICKS_TO_TIME(7.f))) && !dormant)
 		flags.push_back({ "X", shifting ? Color(210, 0, 40, 255 * info.m_flAlpha) : Color(215, 255 * info.m_flAlpha) });
 
 	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck && !dormant)
@@ -415,6 +415,11 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 		Render->Text(flag.flag, Vector2(info.m_BoundingBox[1].x + 3, info.m_BoundingBox[0].y + line_offset), dormant ? dormant_color : flag.color, SmallFont, TEXT_OUTLINED);
 		line_offset += 10;
 	}
+
+	//if (record) {
+	//	Render->Line(Render->WorldToScreen(record->m_vecOrigin), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color());
+	//	Render->Text(std::to_string((int)(record->m_vecVelocity.Q_Length())), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color(), SmallFont, TEXT_OUTLINED);
+	//}
 }
 
 void CWorldESP::DrawWeapon(const ESPInfo_t& info) {

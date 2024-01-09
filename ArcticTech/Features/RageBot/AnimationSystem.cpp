@@ -124,16 +124,19 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 
 	bool backupMaintainSequenceTransitions = player->m_bMaintainSequenceTransitions();
 	int backupEffects = player->m_fEffects();
+	int clientFlags = player->m_EntClientFlags();
 
+	player->m_EntClientFlags() |= 2;
 	player->m_fEffects() |= EF_NOINTERP; // Disable interp
 	player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
 
 	hook_info.setup_bones = true;
-	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer == player ? GlobalVars->curtime : player->m_flSimulationTime());
+	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer == player ? TICKS_TO_TIME(player->m_nTickBase()) : player->m_flSimulationTime());
 	hook_info.setup_bones = false;
 
 	player->m_fEffects() = backupEffects;
 	player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
+	player->m_EntClientFlags() = clientFlags;
 }
 
 void CAnimationSystem::DisableInterpolationFlags(CBasePlayer* player) {
@@ -179,14 +182,67 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	memcpy(record->animlayers, player->GetAnimlayers(), 13 * sizeof(AnimationLayer));
 
 	if (record->prev_record) {
-		animstate->flMoveWeight = record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight;
-		animstate->flPrimaryCycle = record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flCycle;
+		animstate->flMoveWeight = record->prev_record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight;
+		animstate->flPrimaryCycle = record->prev_record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flCycle;
+		animstate->flDurationInAir = 0.f;
+
+		float server_time_diff = record->m_flServerTime - record->prev_record->m_flServerTime;
+		float sim_time_diff = record->m_flSimulationTime - record->prev_record->m_flSimulationTime;
+		float time_diff = 0.f;
+
+		if (sim_time_diff < 0.f || abs(sim_time_diff - server_time_diff) > TICKS_TO_TIME(4)) // shifting tickbase
+			time_diff = server_time_diff;
+		else
+			time_diff = sim_time_diff;
+
+		if (time_diff <= GlobalVars->interval_per_tick)
+			time_diff = GlobalVars->interval_per_tick;
+
+		record->m_nChokedTicks = std::clamp(TIME_TO_TICKS(time_diff) - 1, 0, 14);
+
+		Vector origin_diff = player->m_vecOrigin() - record->prev_record->m_vecOrigin;
+
+		player->m_vecVelocity() = origin_diff / time_diff;
+
+		if (player->m_fFlags() & FL_ONGROUND) {
+			player->m_vecVelocity().z = 0.f;
+
+			float max_speed = 260.f;
+
+			auto weapon = player->GetActiveWeapon();
+			CCSWeaponData* weapon_info = nullptr;
+
+			if (weapon)
+				weapon_info = weapon->GetWeaponInfo();
+
+			if (weapon_info)
+				max_speed = player->m_bIsScoped() ? weapon_info->flMaxSpeedAlt : weapon_info->flMaxSpeed;
+
+			float vel_length = player->m_vecVelocity().Q_Length();
+			if (vel_length > max_speed)
+				player->m_vecVelocity() *= max_speed / vel_length;
+
+			if (record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight <= 0.f)
+				player->m_vecVelocity() = Vector(0, 0, 0);
+		}
+		else {
+			float last_vel = record->prev_record->m_vecVelocity.LengthSqr();
+			if (last_vel > (100.f * 100.f) && last_vel * 16.f < player->m_vecVelocity().LengthSqr()) // we teleported
+				player->m_vecVelocity() *= 0.22f; // 3/14 or 2/14 should be more correct
+
+			float initial_speed = cvars.sv_jump_impulse->GetFloat();
+			if (record->animlayers[ANIMATION_LAYER_MOVEMENT_JUMP_OR_FALL].m_nSequence == ACT_CSGO_FALL)
+				initial_speed = 0.f;
+
+			animstate->flDurationInAir = (initial_speed - player->m_vecVelocity().z) / cvars.sv_gravity->GetFloat() - max(sim_time_diff, 0.f);
+		}
 	}
 
 	unupdated_animstate[idx] = *animstate;
 
 	auto pose_params = player->m_flPoseParameter();
 
+	player->m_iEFlags() &= ~EFL_DIRTY_ABSVELOCITY;
 	player->m_vecAbsVelocity() = player->m_vecVelocity();
 	player->SetAbsOrigin(player->m_vecOrigin());
 
@@ -208,9 +264,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	else {
 		player->UpdateClientSideAnimation();
 	}
-
-	if (!(player->m_fFlags() & FL_ONGROUND))
-		animstate->flDurationInAir = (cvars.sv_jump_impulse->GetFloat() - player->m_flFallVelocity()) / cvars.sv_gravity->GetFloat();
 
 	record->animlayers[12].m_flWeight = 0.f;
 

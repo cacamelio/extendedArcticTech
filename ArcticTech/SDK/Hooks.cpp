@@ -581,6 +581,7 @@ void __fastcall hkDrawModelExecute(IVModelRender* thisptr, void* edx, void* ctx,
 void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFrameStage stage) {
 	static auto oFrameStageNotify = (tFrameStageNotify)Hooks::ClientVMT->GetOriginal(37);
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
+	Cheat.InGame = EngineClient->IsConnected() && EngineClient->IsInGame();
 
 	switch (stage) {
 	case FRAME_RENDER_START: {
@@ -617,7 +618,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		break;
 	}
 	case FRAME_NET_UPDATE_START:
-		//Miscellaneous::PreserveKillfeed();
+		Miscellaneous::PreserveKillfeed();
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
