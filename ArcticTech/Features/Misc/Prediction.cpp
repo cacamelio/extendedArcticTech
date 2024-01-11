@@ -51,6 +51,8 @@ void CPrediction::BackupData() {
 	pre_prediction.m_flDuckAmount = Cheat.LocalPlayer->m_flDuckAmount();
 	pre_prediction.m_flDuckSpeed = Cheat.LocalPlayer->m_flDuckSpeed();
 	pre_prediction.m_hGroundEntity = Cheat.LocalPlayer->m_hGroundEntity();
+	pre_prediction.m_vecMins = Cheat.LocalPlayer->m_vecMins();
+	pre_prediction.m_vecMaxs = Cheat.LocalPlayer->m_vecMaxs();
 
 	flOldCurrentTime = GlobalVars->curtime;
 	flOldFrameTime = GlobalVars->frametime;
@@ -159,6 +161,8 @@ void CPrediction::Repredict(CUserCmd* cmd, QAngle angles) {
 	Cheat.LocalPlayer->m_flDuckAmount() = pre_prediction.m_flDuckAmount;
 	Cheat.LocalPlayer->m_flDuckSpeed() = pre_prediction.m_flDuckSpeed;
 	Cheat.LocalPlayer->m_hGroundEntity() = pre_prediction.m_hGroundEntity;
+	Cheat.LocalPlayer->m_vecMins() = pre_prediction.m_vecMins;
+	Cheat.LocalPlayer->m_vecMaxs() = pre_prediction.m_vecMaxs;
 
 	GameMovement->StartTrackPredictionErrors(Cheat.LocalPlayer);
 	MoveHelper->SetHost(Cheat.LocalPlayer);

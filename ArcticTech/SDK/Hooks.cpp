@@ -842,18 +842,6 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	Exploits->HandleTeleport(oCL_Move);
 }
 
-QAngle* __fastcall hkGetEyeAngles(CBasePlayer* thisptr, void* edx) {
-	if (thisptr != Cheat.LocalPlayer)
-		return oGetEyeAngles(thisptr, edx);
-
-	static void* ShitAnimRoll = Utils::PatternScan("client.dll", "8B 55 0C 8B C8 E8 ? ? ? ? 83 C4 08 5E 8B E5");
-
-	if (_ReturnAddress() != ShitAnimRoll)
-		return oGetEyeAngles(thisptr, edx);
-
-	return &ctx.setup_bones_angle;
-}
-
 bool __fastcall hkSendNetMsg(INetChannel* thisptr, void* edx, INetMessage& msg, bool bForceReliable, bool bVoice) {
 	if (msg.GetType() == 14) // Return and don't send messsage if its FileCRCCheck
 		return true;
@@ -1170,7 +1158,6 @@ void Hooks::Initialize() {
 	oClampBonesInBBox = HookFunction<tClampBonesInBBox>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 70 56 57 8B F9 89 7C 24 38"), hkClampBonesInBBox);
 	oCalculateView = HookFunction<tCalculateView>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 14 53 56 57 FF 75 18"), hkCalculateView);
 	oSendNetMsg = HookFunction<tSendNetMsg>(Utils::PatternScan("engine.dll", "F1 8B 4D 04 E8 ? ? ? ? 8B 86 ? ? ? ? 85 C0 74 24 48 83 F8 02 77 2C 83 BE ? ? ? ? ? 8D 8E ? ? ? ? 74 06 32 C0 84 C0", -0x8), hkSendNetMsg);
-	oGetEyeAngles = HookFunction<tGetEyeAngles>(Utils::PatternScan("client.dll", "56 8B F1 85 F6 74 32"), hkGetEyeAngles);
 	oRenderSmokeOverlay = HookFunction<tRenderSmokeOverlay>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 30 80 7D 08 00"), hkRenderSmokeOverlay);
 	oShouldInterpolate = HookFunction<tShouldInterpolate>(Utils::PatternScan("client.dll", "56 8B F1 E8 ? ? ? ? 3B F0"), hkShouldInterpolate);
 	oPacketStart = HookFunction<tPacketStart>(Utils::PatternScan("engine.dll", "55 8B EC 8B 45 08 89 81 ? ? ? ? 8B 45 0C 89 81 ? ? ? ? 5D C2 08 00 CC CC CC CC CC CC CC 56"), hkPacketStart);
@@ -1240,7 +1227,6 @@ void Hooks::End() {
 	RemoveHook(oClampBonesInBBox, hkClampBonesInBBox);
 	RemoveHook(oCalculateView, hkCalculateView);
 	RemoveHook(oSendNetMsg, hkSendNetMsg);
-	RemoveHook(oGetEyeAngles, hkGetEyeAngles);
 	RemoveHook(oRenderSmokeOverlay, hkRenderSmokeOverlay);
 	RemoveHook(oShouldInterpolate, hkShouldInterpolate);
 	RemoveHook(oPacketStart, hkPacketStart);

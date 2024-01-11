@@ -41,11 +41,6 @@ void CLagCompensation::RecordDataIntoTrack(CBasePlayer* player, LagRecord* recor
 		record->bone_matrix_filled = true;
 	}
 
-	if (player->GetActiveWeapon())
-		if (player->GetActiveWeapon()->m_fLastShotTime() <= player->m_flSimulationTime())
-			if (player->GetActiveWeapon()->m_fLastShotTime() > player->m_flOldSimulationTime())
-				record->shooting = true;
-
 	memcpy(record->animlayers, player->GetAnimlayers(), sizeof(AnimationLayer) * 13);
 }
 

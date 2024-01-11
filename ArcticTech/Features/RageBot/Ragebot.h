@@ -73,6 +73,8 @@ private:
 		Vector m_vecAbsOrigin;
 		Vector m_vecVelocity;
 		Vector m_vecAbsVelocity;
+		Vector m_vecMins;
+		Vector m_vecMaxs;
 		unsigned int m_hGroundEntity = 0;
 		
 		bool should_restore = false;

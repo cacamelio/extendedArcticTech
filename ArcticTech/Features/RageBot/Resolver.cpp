@@ -98,6 +98,14 @@ void CResolver::SetupLayer(LagRecord* record, int idx, float delta) {
 	QAngle angles = record->player->m_angEyeAngles();
 
 	animstate->flFootYaw = Math::AngleNormalize(angles.yaw + delta);
+	
+	Vector vel = record->player->m_vecVelocity();
+	float flRawYawIdeal = (atan2(-vel.y, -vel.x) * 180 / M_PI);
+	if (flRawYawIdeal < 0)
+		flRawYawIdeal += 360;
+
+	animstate->flMoveYaw = Math::AngleNormalize(Math::AngleDiff(flRawYawIdeal, animstate->flFootYaw));
+
 	record->player->UpdateAnimationState(animstate, angles, true);
 	
 	auto& resolver_layer = record->resolver_data.layers[idx];

@@ -67,9 +67,12 @@ void CAnimationSystem::OnCreateMove() {
 		for (auto& cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
 			cb.func(Cheat.LocalPlayer);
 
-		ctx.setup_bones_angle = vangle;
-
+		QAngle backup_eye_angles = Cheat.LocalPlayer->m_angEyeAngles();
+		QAngle backup_render_angles = Cheat.LocalPlayer->v_angle();
+		Cheat.LocalPlayer->v_angle() = Cheat.LocalPlayer->m_angEyeAngles() = vangle;
 		BuildMatrix(Cheat.LocalPlayer, local_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
+		Cheat.LocalPlayer->v_angle() = backup_render_angles;
+		Cheat.LocalPlayer->m_angEyeAngles() = backup_eye_angles;
 	}
 
 	GlobalVars->curtime = curtimeBackup;
@@ -155,6 +158,11 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	
 	record->player = player;
 	record->m_vecAbsOrigin = player->m_vecOrigin();
+
+	if (player->GetActiveWeapon())
+		if (player->GetActiveWeapon()->m_fLastShotTime() <= player->m_flSimulationTime())
+			if (player->GetActiveWeapon()->m_fLastShotTime() > player->m_flOldSimulationTime())
+				record->shooting = true;
 
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;
