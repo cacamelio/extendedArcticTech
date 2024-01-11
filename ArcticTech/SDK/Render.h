@@ -199,7 +199,6 @@ class CRender
     bool clipping = false;
     bool renderInitialized = false;
     DWORD nFonts;
-    bool pop_deadzone_next_frame = false;
 
     struct backup_t {
         DWORD alphatest_enable;
@@ -209,13 +208,8 @@ class CRender
         DWORD srcblend;
         DWORD destblend;
     } state_backup;
-
-    IDirect3DPixelShader9* blurShader = nullptr;
-    ID3DXConstantTable* constantTable = nullptr;
 public:
     RECT clipRect;
-    bool bDeadZone = false;
-    Vector2 deadZone[2]{ Vector2(0, 0), Vector2(0, 0) };
    
     inline bool IsInitialized() { return renderInitialized; };
 
@@ -224,7 +218,6 @@ public:
     void                RenderDrawData();
     void                EndFrame();
     void                Reset();
-    void                SetAntiAliasing(bool value);
 
     void                BoxFilled(const Vector2& start, const Vector2& end, Color color, int rounding = 0);
     void                Box(const Vector2& start, const Vector2& end, Color color, int rounding = 0, int thickness = 1);
@@ -238,7 +231,6 @@ public:
     void                Circle3DGradient(const Vector& center, float radius, Color color, bool reverse = false);
     void                GlowCircle(const Vector2& center, float radius, Color color);
     void                GlowCircle2(const Vector2& center, float radius, Color centerColor, Color edgeColor);
-    void                Blur(const Vector2& start, const Vector2& end, float borderRadius = 0.f, float blurWeight = 8.f, Color multiplyColor = Color());
 
     void                AddFontFromMemory(void* file, unsigned int size);
     D3DXFont*           LoadFont(const std::string& fontname, int size, int weight = 400, int flags = CLEARTYPE_QUALITY);
@@ -257,11 +249,11 @@ public:
 
     void                UpdateViewMatrix(const ViewMatrix& vm);
     Vector2             WorldToScreen(const Vector& vecPos);
+    Vector2             GetOOF(const Vector& world);
+
 
     Vector2             GetMousePos();
-    bool                InBounds(Vector2 start, Vector2 end, bool ignore_deadzone = false);
-    void                PushDeadZone(Vector2 start, Vector2 end);
-    void                PopDeadZone();
+    bool                InBounds(Vector2 start, Vector2 end);
 };
 
 extern CRender* Render;

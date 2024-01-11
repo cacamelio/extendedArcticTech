@@ -250,8 +250,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 	auto pose_params = player->m_flPoseParameter();
 
-	player->m_iEFlags() &= ~EFL_DIRTY_ABSVELOCITY;
-	player->m_vecAbsVelocity() = player->m_vecVelocity();
+	player->SetAbsVelocity(player->m_vecVelocity());
 	player->SetAbsOrigin(player->m_vecOrigin());
 
 	player->m_BoneAccessor().m_ReadableBones = 0;
@@ -329,6 +328,9 @@ Vector CAnimationSystem::GetInterpolated(CBasePlayer* player) {
 }
 
 void CAnimationSystem::RunInterpolation() {
+	if (!Cheat.InGame)
+		return;
+
 	for (int i = 0; i < 64; i++) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
 

@@ -101,7 +101,7 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		LagCompensation->Invalidate(user_id_pl);
 		esp_info.m_flLastUpdateTime = 0.f;
 		esp_info.m_nHealth = 0;
-		if (PlayerResource)
+		if (PlayerResource && user_id_pl != local_id)
 			PlayerResource->m_bAlive()[user_id_pl] = false;
 
 		Ragebot->CalcSpreadValues(); // maybe we got bad values previously?

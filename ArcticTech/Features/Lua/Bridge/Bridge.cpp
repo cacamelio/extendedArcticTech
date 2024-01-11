@@ -512,10 +512,6 @@ namespace api {
 			return Render->LoadImageFromMemory(mem.data(), mem.size(), size.to_vec2());
 		}
 
-		void blur(Vector start, Vector end, sol::optional<float> borderRadius, sol::optional<float> blurWeight, sol::optional<Color> blurColor) {
-			Render->Blur(start.to_vec2(), end.to_vec2(), borderRadius.value_or(0.f), blurWeight.value_or(8.f), blurColor.value_or(Color()));
-		}
-
 		void line(Vector start, Vector end, Color col) {
 			Render->Line(start.to_vec2(), end.to_vec2(), col);
 		}
@@ -686,10 +682,6 @@ namespace api {
 
 		void pop_clip_rect() {
 			Render->PopClipRect();
-		}
-
-		void set_antialias(bool state) {
-			Render->SetAntiAliasing(state);
 		}
 	}
 
@@ -1700,7 +1692,6 @@ void CLua::Setup() {
 		"load_font", api::render::load_font,
 		"load_image", api::render::load_image,
 		"measure_text", api::render::measure_text,
-		"blur", api::render::blur,
 		"line", api::render::line,
 		"poly", api::render::poly,
 		"poly_line", api::render::poly_line,
@@ -1717,8 +1708,7 @@ void CLua::Setup() {
 		"vertex", api::render::vertex,
 		"push_clip_rect", api::render::push_clip_rect,
 		"pop_clip_rect", api::render::pop_clip_rect,
-		"world_to_screen", api::vector::to_screen,
-		"set_antialias", api::render::set_antialias
+		"world_to_screen", api::vector::to_screen
 	);
 
 	lua.create_named_table("common",

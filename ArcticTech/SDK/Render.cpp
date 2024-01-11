@@ -91,11 +91,6 @@ void CRender::Init(IDirect3DDevice9* dev) {
 void CRender::BeginFrame() {
 	if (!vecDrawData.empty())
 		vecDrawData.clear();
-
-	if (pop_deadzone_next_frame) {
-		pop_deadzone_next_frame = false;
-		bDeadZone = false;
-	}
 }
 
 void CRender::RenderDrawData() {
@@ -310,66 +305,6 @@ void CRender::RenderDrawData() {
 			device->SetRenderState(D3DRS_ANTIALIASEDLINEENABLE, object);
 			break;
 		}
-		case EDrawType::BLUR: {
-			static IDirect3DSurface9* rtBackup = nullptr;
-			static IDirect3DTexture9* blurTexture = nullptr;
-			static int backbufferWidth = 0;
-			static int backbufferHeight = 0;
-
-			const auto& object = std::any_cast<blur_command_t>(data.object);
-
-			IDirect3DPixelShader9* shader;
-			device->GetPixelShader(&shader);
-
-			IDirect3DSurface9* backBuffer;
-			device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer);
-			D3DSURFACE_DESC desc;
-			backBuffer->GetDesc(&desc);
-
-			if (backbufferWidth != desc.Width || backbufferHeight != desc.Height)
-			{
-				if (blurTexture)
-					blurTexture->Release();
-
-				backbufferWidth = desc.Width;
-				backbufferHeight = desc.Height;
-				device->CreateTexture(desc.Width, desc.Height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &blurTexture, nullptr);
-			}
-
-			device->GetRenderTarget(0, &rtBackup);
-
-			{
-				IDirect3DSurface9* surface;
-				blurTexture->GetSurfaceLevel(0, &surface);
-				device->StretchRect(backBuffer, NULL, surface, NULL, D3DTEXF_NONE);
-				device->SetRenderTarget(0, surface);
-				surface->Release();
-			}
-
-			backBuffer->Release();
-
-			device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-			device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-
-			device->SetPixelShader(blurShader);
-
-			constantTable->SetFloat(device, "screen_width", backbufferWidth);
-			constantTable->SetFloat(device, "screen_height", backbufferHeight);
-
-			D3DXVECTOR3 pos(0, 0, 0);
-			sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
-
-			device->SetRenderTarget(0, rtBackup);
-			rtBackup->Release();
-
-			device->SetPixelShader(nullptr);
-			sprite->Draw(blurTexture, NULL, NULL, &pos, 0xFFFFFFFF);
-
-			sprite->Flush();
-			device->SetTexture(0, 0);
-
-			device->SetPixelShader(shader);
-		}
 		}
 	};
 
@@ -401,10 +336,6 @@ void CRender::Reset() {
 		font->font->OnResetDevice();
 		font->_ts_font->OnResetDevice();
 	}
-}
-
-void CRender::SetAntiAliasing(bool value) {
-	vecDrawData.emplace_back(DrawCommand_t(EDrawType::SETANTIALIAS, value));
 }
 
 void CRender::BoxFilled(const Vector2& start, const Vector2& end, Color color, int rounding) {
@@ -643,10 +574,6 @@ void CRender::GlowCircle2(const Vector2& center, float radius, Color centerColor
 	vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLEFAN, segments - 1, vertex)));
 }
 
-void CRender::Blur(const Vector2& start, const Vector2& end, float borderRadius, float blurWeight, Color multiplyColor) {
-	vecDrawData.emplace_back(DrawCommand_t(EDrawType::BLUR, blur_command_t(start, end, borderRadius, blurWeight, multiplyColor)));
-}
-
 void CRender::AddFontFromMemory(void* file, unsigned int size) {
 	AddFontMemResourceEx(file, size, 0, &nFonts);
 }
@@ -781,6 +708,14 @@ Vector2 CRender::WorldToScreen(const Vector& pos) {
 	return res;
 }
 
+Vector2 CRender::GetOOF(const Vector& world) {
+	QAngle vangle;
+	EngineClient->GetViewAngles(&vangle);
+	QAngle angle_to_world = Math::VectorAngles(world - ctx.camera_postion);
+	float angle_diff = Math::AngleDiff(angle_to_world.yaw, vangle.yaw);
+	return Vector2().flt(cos(DEG2RAD(angle_diff + 90.f)), -sin(DEG2RAD(angle_diff + 90.f)));
+}
+
 Vector2 CRender::GetMousePos() {
 	POINT p;
 	GetCursorPos(&p);
@@ -789,23 +724,10 @@ Vector2 CRender::GetMousePos() {
 	return Vector2((int)p.x, (int)p.y);
 }
 
-bool CRender::InBounds(Vector2 start, Vector2 end, bool ignore_deadzone) {
+bool CRender::InBounds(Vector2 start, Vector2 end) {
 	Vector2 m = GetMousePos();
 
-	if (!ignore_deadzone && bDeadZone && (m.x >= deadZone[0].x && m.y >= deadZone[0].y && m.x <= deadZone[1].x && m.y <= deadZone[1].y))
-		return false;
-
 	return m.x >= start.x && m.y >= start.y && m.x <= end.x && m.y <= end.y;
-}
-
-void CRender::PushDeadZone(Vector2 start, Vector2 end) {
-	bDeadZone = true;
-	deadZone[0] = start;
-	deadZone[1] = end;
-}
-
-void CRender::PopDeadZone() {
-	pop_deadzone_next_frame = true;
 }
 
 CRender* Render = new CRender;

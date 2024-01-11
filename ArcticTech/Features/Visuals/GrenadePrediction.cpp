@@ -677,8 +677,6 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	grenade_data.path = pathPoints;
 	grenade_data.flLastUpdate = GlobalVars->realtime;
 
-	Vector2 pos = Render->WorldToScreen(vecDetonate);
-
 	Vector local_pos = Cheat.LocalPlayer->GetAbsOrigin();
 	CBasePlayer* obs = Cheat.LocalPlayer->GetObserverTarget();
 	if (obs && Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_CHASE || Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_IN_EYE)
@@ -694,6 +692,11 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 
 	if (flExpireTime - simulationTime < 0.1667f)
 		alpha *= max((flExpireTime - simulationTime), 0) * 6.f;
+
+	Vector2 pos = Render->WorldToScreen(vecDetonate);
+
+	if (pos.x <= 0.f || pos.y <= 0.f || pos.x >= Cheat.ScreenSize.x || pos.y >= Cheat.ScreenSize.y)
+		pos = Render->GetOOF(vecDetonate) * (Cheat.ScreenSize * 0.5f - Vector2(50, 50)) + Cheat.ScreenSize * 0.5f;
 
 	Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
 	Render->GlowCircle2(pos, circle_radius - 3.f, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 255 * alpha));

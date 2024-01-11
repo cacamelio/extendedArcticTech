@@ -238,6 +238,9 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 }
 
 void CShotManager::OnNetUpdate() {
+	if (!Cheat.InGame || !Cheat.LocalPlayer)
+		return;
+
 	int cmd_nr = ctx.cmd ? ctx.cmd->command_number : ClientState->m_nLastOutgoingCommand;
 
 	DetectUnregisteredShots();
@@ -246,7 +249,7 @@ void CShotManager::OnNetUpdate() {
 		if (it->acked)
 			break;
 
-		if (!it->recieved_events) { // haven't received events yet or unregistered
+		if (!it->recieved_events || it->impacts.empty()) { // haven't received events yet or unregistered
 			if (it->player_death) {
 				it->acked = true;
 				it->miss_reason = "player death";

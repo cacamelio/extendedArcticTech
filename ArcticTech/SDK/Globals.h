@@ -25,6 +25,7 @@ struct Ctx_t {
 	bool active_app = false;
 	bool console_visible = false;
 
+	Vector camera_postion;
 	CUserCmd* cmd = nullptr;
 	bool send_packet = true;
 	bool is_peeking = false;

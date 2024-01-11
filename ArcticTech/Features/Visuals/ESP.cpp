@@ -486,8 +486,8 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 
 		Vector2 pos = Render->WorldToScreen(grenade->GetAbsOrigin());
 
-		if (pos.Invalid())
-			return;
+		if (pos.x <= 0.f || pos.y <= 0.f || pos.x >= Cheat.ScreenSize.x || pos.y >= Cheat.ScreenSize.y)
+			pos = Render->GetOOF(grenade->GetAbsOrigin()) * (Cheat.ScreenSize * 0.5f - Vector2(50, 50)) + Cheat.ScreenSize * 0.5f;
 
 		float distance = (Cheat.LocalPlayer->GetAbsOrigin() - grenade->GetAbsOrigin()).Q_Length();
 

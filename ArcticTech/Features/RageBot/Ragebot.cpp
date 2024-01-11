@@ -113,7 +113,7 @@ float CRagebot::CalcMinDamage(CBasePlayer* player) {
 }
 
 void CRagebot::AutoStop(bool predict) {
-	if (ctx.cmd->buttons & IN_DUCK)
+	if (ctx.cmd->buttons & IN_DUCK && (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
 		return;
 
 	Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();

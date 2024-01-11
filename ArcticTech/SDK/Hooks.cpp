@@ -523,6 +523,8 @@ void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setu
 
 	setup->angles.roll = 0;
 
+	ctx.camera_postion = setup->origin;
+
 	oOverrideView(thisptr, edx, setup);
 }
 
@@ -580,8 +582,8 @@ void __fastcall hkDrawModelExecute(IVModelRender* thisptr, void* edx, void* ctx,
 
 void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFrameStage stage) {
 	static auto oFrameStageNotify = (tFrameStageNotify)Hooks::ClientVMT->GetOriginal(37);
-	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 	Cheat.InGame = EngineClient->IsConnected() && EngineClient->IsInGame();
+	Cheat.LocalPlayer = Cheat.InGame ? (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer()) : nullptr;
 
 	switch (stage) {
 	case FRAME_RENDER_START: {
@@ -670,7 +672,7 @@ bool __fastcall hkShouldSkipAnimationFrame(CBasePlayer* thisptr, void* edx) {
 }
 
 bool __fastcall hkShouldInterpolate(CBasePlayer* thisptr, void* edx) {
-	if (!Exploits->ShouldCharge() || thisptr != Cheat.LocalPlayer)
+	if (thisptr != Cheat.LocalPlayer || !Exploits->ShouldCharge())
 		return oShouldInterpolate(thisptr, edx);
 
 	AnimationSystem->DisableInterpolationFlags(thisptr);
@@ -714,6 +716,13 @@ bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBone
 	if (!ent->IsPlayer() || !ent->IsAlive())
 		return oSetupBones(thisptr, edx, pBoneToWorld, maxBones, mask, curTime);
 
+	if (hook_info.disable_interpolation) {
+		if (pBoneToWorld && maxBones != -1)
+			ent->CopyBones(pBoneToWorld);
+
+		return true;
+	}
+
 	if (ent == Cheat.LocalPlayer) {
 		memcpy(ent->GetCachedBoneData().Base(), AnimationSystem->GetLocalBoneMatrix(), ent->GetCachedBoneData().Count() * sizeof(matrix3x4_t));
 		AnimationSystem->CorrectLocalMatrix(ent->GetCachedBoneData().Base(), ent->GetCachedBoneData().Count());
@@ -721,9 +730,8 @@ bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBone
 		if (mask & BONE_USED_BY_ATTACHMENT)
 			Cheat.LocalPlayer->SetupBones_AttachmentHelper();
 
-		if (pBoneToWorld && maxBones != -1) {
+		if (pBoneToWorld && maxBones != -1)
 			ent->CopyBones(pBoneToWorld);
-		}
 
 		return true;
 	}
@@ -735,9 +743,8 @@ bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBone
 		ent->SetupBones_AttachmentHelper();
 	}
 
-	if (pBoneToWorld && maxBones != -1) {
+	if (pBoneToWorld && maxBones != -1)
 		ent->CopyBones(pBoneToWorld);
-	}
 
 	return true;
 }

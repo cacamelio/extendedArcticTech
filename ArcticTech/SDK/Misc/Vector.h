@@ -36,6 +36,12 @@ public:
 		y = _y;
 	}
 
+	Vector2& flt(float x_, float y_) {
+		x = x_;
+		y = y_;
+		return *this;
+	}
+
 	Vector2 operator+(const Vector2& o) const {
 		return Vector2(x + o.x, y + o.y);
 	}
@@ -50,6 +56,10 @@ public:
 
 	Vector2 operator/(const float o) const {
 		return Vector2(x / o, y / o);
+	}
+
+	Vector2 operator*(const Vector2& other) const {
+		return Vector2(x * other.x, y * other.y);
 	}
 
 	void operator+=(const Vector2& o) {

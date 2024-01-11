@@ -100,7 +100,7 @@ void CResolver::SetupLayer(LagRecord* record, int idx, float delta) {
 	animstate->flFootYaw = Math::AngleNormalize(angles.yaw + delta);
 	
 	Vector vel = record->player->m_vecVelocity();
-	float flRawYawIdeal = (atan2(-vel.y, -vel.x) * 180 / M_PI);
+	float flRawYawIdeal = atan2(-vel.y, -vel.x) * 180.f / M_PI;
 	if (flRawYawIdeal < 0)
 		flRawYawIdeal += 360;
 
@@ -219,10 +219,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	
 	float vel_sqr = player->m_vecVelocity().LengthSqr();
 
-	if (vel_sqr < 64.f || 
-		player->GetAnimstate()->flWalkToRunTransition < 0.35f || 
-		record->resolver_data.resolver_type == ResolverType::NONE || 
-		!(player->m_fFlags() & FL_ONGROUND)) {
+	if (vel_sqr < 64.f || record->resolver_data.resolver_type == ResolverType::NONE || !(player->m_fFlags() & FL_ONGROUND)) {
 		if (record->resolver_data.antiaim_type == R_AntiAimType::JITTER && records.size() > 16) {
 			float eyeYaw = player->m_angEyeAngles().yaw;
 			float prevEyeYaw = FindAvgYaw(records);

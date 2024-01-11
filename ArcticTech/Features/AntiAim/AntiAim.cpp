@@ -399,7 +399,7 @@ bool CAntiAim::IsPeeking() {
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
 
-		if (!player || player->IsTeammate() || !player->IsAlive() || player->m_bDormant())
+		if (!player || player->IsTeammate() || !player->IsAlive())
 			continue;
 
 		Vector target_vel = player->m_vecVelocity();

@@ -409,7 +409,7 @@ void CSkinChanger::MaskChanger()
 
 	static int oldMask = -1;
 
-	if (!Cheat.LocalPlayer)
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return;
 
 	auto mask = mask_models[config.skins.mask_changer_models->get()];
@@ -468,7 +468,7 @@ void CSkinChanger::AgentChanger( ) {
 void CSkinChanger::Run() {
 	static int last_knife = 0;
 
-	if ( !Cheat.InGame || !Cheat.LocalPlayer || !config.skins.override_knife->get() )
+	if ( !Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !config.skins.override_knife->get())
 		return;
 
 	auto my_weapons = Cheat.LocalPlayer->m_hMyWeapons( );
