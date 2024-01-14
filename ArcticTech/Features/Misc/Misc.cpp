@@ -137,7 +137,7 @@ void Miscellaneous::AutomaticGrenadeRelease() {
 	if (ctx.should_release_grenade && ctx.active_weapon && ctx.active_weapon->IsGrenade()) {
 		if (!prev_release) {
 			on_release_move = Vector(ctx.cmd->sidemove, ctx.cmd->forwardmove);
-			on_release_angle = ctx.cmd->viewangles;
+			on_release_angle = ctx.grenade_release_angle;
 		}
 
 		ctx.cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);

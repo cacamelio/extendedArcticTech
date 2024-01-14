@@ -412,6 +412,7 @@ public:
     NETVAR(m_flMaxspeed, float, "DT_BasePlayer", "m_flMaxspeed")
 
     bool& m_bMaintainSequenceTransitions();
+    bool& m_bUseNewAnimstate();
     float& m_flLastCollisionChangeTime();
 
     void SetModelIndex( int modelIndex );

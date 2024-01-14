@@ -29,9 +29,44 @@ void CMovement::Rotate(float angle) {
 	ctx.cmd->sidemove = new_sidemove;
 }
 
+void CMovement::EasyStrafe() {
+	if (!config.misc.movement.easy_strafe->get())
+		return;
+
+	int move_buttons = ctx.cmd->buttons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT);
+
+	if (move_buttons != last_move_buttons) {
+		last_pressed = move_buttons & (~last_move_buttons);
+		last_move_buttons = move_buttons;
+	}
+
+	if (last_pressed & IN_FORWARD)
+		ctx.cmd->buttons &= ~IN_BACK;
+	else if (last_pressed & IN_BACK)
+		ctx.cmd->buttons &= ~IN_FORWARD;
+	if (last_pressed & IN_MOVERIGHT)
+		ctx.cmd->buttons &= ~IN_MOVELEFT;
+	else if (last_pressed & IN_MOVELEFT)
+		ctx.cmd->buttons &= ~IN_MOVERIGHT;
+
+	if (ctx.cmd->buttons & IN_FORWARD)
+		ctx.cmd->forwardmove = 450.f;
+	else if (ctx.cmd->buttons & IN_BACK)
+		ctx.cmd->forwardmove = -450.f;
+
+	if (ctx.cmd->buttons & IN_MOVERIGHT)
+		ctx.cmd->sidemove = 450.f;
+	else if (ctx.cmd->buttons & IN_MOVELEFT)
+		ctx.cmd->sidemove = -450.f;
+}
+
 void CMovement::AutoStrafe() {
-	if (!Cheat.LocalPlayer || !config.misc.movement.auto_strafe->get() || !Cheat.InGame || Cheat.LocalPlayer->m_iHealth() == 0) return;
-	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER || ctx.cmd->buttons & IN_SPEED) return;
+	if (!config.misc.movement.auto_strafe->get()) 
+		return;
+
+	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_MoveType() == MOVETYPE_LADDER || ctx.cmd->buttons & IN_SPEED) 
+		return;
+
 	if (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
 		if (ctx.cmd->buttons & IN_JUMP)
 			last_strafe_tick = ctx.cmd->command_number;
@@ -57,6 +92,13 @@ void CMovement::AutoStrafe() {
 	if (speed_sqr > 256.f) {
 		float diff = Math::AngleDiff(target_yaw, last_yaw);
 		float max_diff = 20.f - config.misc.movement.auto_strafe_smooth->get() * 0.01f * 17.f;
+		float vel = Math::Q_sqrt(speed_sqr);
+
+		if (vel < 100.f)
+			max_diff *= 1.f + std::clamp(100.f - vel, 0.f, 50.f) * 0.02f;
+
+		if (diff < -179.f + max_diff)
+			diff = -diff;
 
 		if (ctx.cmd->buttons & IN_DUCK)
 			max_diff *= 0.7f;
@@ -71,7 +113,7 @@ void CMovement::AutoStrafe() {
 		if (abs(correct) < max_diff) {
 			strafe_side = -strafe_side;
 
-			float strafe_correct = min(90.f, RAD2DEG(std::asin(21.f / sqrt(speed_sqr)))) * strafe_side;
+			float strafe_correct = min(90.f, RAD2DEG(std::asin(21.f / vel))) * strafe_side;
 			new_angle.yaw += strafe_correct;
 			wish_side = strafe_correct > 0.f ? 1.f : -1.f;
 		}

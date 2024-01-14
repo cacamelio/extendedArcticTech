@@ -253,8 +253,10 @@ void GrenadePrediction::Draw() {
 
 			int rel_dmg = config.misc.miscellaneous.automatic_grenade_release->get();
 
-			if (maxDamage > rel_dmg && rel_dmg > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled())
+			if (maxDamage > rel_dmg && rel_dmg > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled()) {
 				ctx.should_release_grenade = true;
+				EngineClient->GetViewAngles(&ctx.grenade_release_angle);
+			}
 		}
 	}
 	else if (weaponId == Molotov || weaponId == IncGrenade) {
@@ -279,8 +281,10 @@ void GrenadePrediction::Draw() {
 			}
 		}
 
-		if (minDistance < 5.f && config.misc.miscellaneous.automatic_grenade_release->get() > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled())
+		if (minDistance < 6.f && config.misc.miscellaneous.automatic_grenade_release->get() > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled()) {
 			ctx.should_release_grenade = true;
+			EngineClient->GetViewAngles(&ctx.grenade_release_angle);
+		}
 	}
 
 	if (weaponId == Molotov || weaponId == IncGrenade) {
@@ -630,7 +634,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 			break;
 		}
 
-		float creation_time = owner->m_bDormant() ? entity->m_flCreationTime() : min(owner->m_flSimulationTime(), entity->m_flCreationTime());
+		float creation_time = (owner && owner->m_bDormant()) ? entity->m_flCreationTime() : min(owner->m_flSimulationTime(), entity->m_flCreationTime());
 		if (event) {
 			if (entity->m_flSimulationTime() - event->flThrowTime <= 2.f)
 				creation_time = event->flThrowTime;

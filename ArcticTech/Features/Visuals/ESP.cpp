@@ -339,6 +339,9 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 	struct ESPFlag_t {
 		std::string flag;
 		Color color;
+
+		ESPFlag_t(const std::string& f, Color c) : flag(f), color(c) {}
+		ESPFlag_t(const char* f, Color c) : flag(f), color(c) {}
 	};
 
 	bool dormant = info.m_bDormant;
@@ -358,25 +361,28 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 		if (info.player->m_bHasHelmet())
 			str = "HK";
 		if (!str.empty())
-			flags.push_back({ str, Color(215, 255 * info.m_flAlpha) });
+			flags.emplace_back(str, Color(215, 255 * info.m_flAlpha));
 	}
 
 	bool shifting = record && record->shifting_tickbase;
 
 	if (config.visuals.esp.flags->get(4) && info.player->EntIndex() == PlayerResource->m_iPlayerC4())
-		flags.push_back({ "BOMB", Color(210, 0, 40, 255 * info.m_flAlpha) });
+		flags.emplace_back("BOMB", Color(210, 0, 40, 255 * info.m_flAlpha));
 
 	if (config.visuals.esp.flags->get(1) && info.player->m_bIsScoped() && !dormant)
-		flags.push_back({ "ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha) });
+		flags.emplace_back("ZOOM", Color(120, 160, 200, 255 * info.m_flAlpha));
 
 	if (config.visuals.esp.flags->get(3) && record && (shifting || (record->m_flSimulationTime < record->m_flServerTime - TICKS_TO_TIME(7.f))) && !dormant)
-		flags.push_back({ "X", shifting ? Color(210, 0, 40, 255 * info.m_flAlpha) : Color(215, 255 * info.m_flAlpha) });
+		flags.emplace_back("X", shifting ? Color(210, 0, 40, 255 * info.m_flAlpha) : Color(215, 255 * info.m_flAlpha));
 
 	if (config.visuals.esp.flags->get(2) && info.m_bFakeDuck && !dormant)
-		flags.push_back({ "FD", Color(215, 255 * info.m_flAlpha) });
+		flags.emplace_back("FD", Color(215, 255 * info.m_flAlpha));
 
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
-		flags.push_back({ "LC", Color(210, 0, 40, 255 * info.m_flAlpha) });
+		flags.emplace_back("LC", Color(210, 0, 40, 255 * info.m_flAlpha));
+
+	if (config.visuals.esp.flags->get(7) && info.m_bHit)
+		flags.emplace_back("HIT", Color(215, 255 * info.m_flAlpha));
 
 	if (config.visuals.esp.flags->get(6) && record && !dormant && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive()) {
 		std::string rtype;
@@ -406,7 +412,7 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 		default:
 			break;
 		}
-		flags.push_back({ std::format("{}[{}]", rtype, (int)(record->resolver_data.side * info.player->GetMaxDesyncDelta())), Color(210, 255 * info.m_flAlpha) });
+		flags.emplace_back(std::format("{}[{}]", rtype, (int)(record->resolver_data.side * info.player->GetMaxDesyncDelta())), Color(210, 255 * info.m_flAlpha));
 	}
 
 	int line_offset = 0;
@@ -415,11 +421,6 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 		Render->Text(flag.flag, Vector2(info.m_BoundingBox[1].x + 3, info.m_BoundingBox[0].y + line_offset), dormant ? dormant_color : flag.color, SmallFont, TEXT_OUTLINED);
 		line_offset += 10;
 	}
-
-	//if (record) {
-	//	Render->Line(Render->WorldToScreen(record->m_vecOrigin), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color());
-	//	Render->Text(std::to_string((int)(record->m_vecVelocity.Q_Length())), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color(), SmallFont, TEXT_OUTLINED);
-	//}
 }
 
 void CWorldESP::DrawWeapon(const ESPInfo_t& info) {

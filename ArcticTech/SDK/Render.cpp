@@ -21,12 +21,6 @@ struct Vec4 {
 	float x, y, z, w;
 };
 
-struct QuadVertex
-{
-	float x, y, z, rhw = 1.f;
-};
-#define FVF_QUADVERTEX (D3DFVF_XYZRHW | D3DFVF_TEX1) // Flexible Vertex Format
-
 std::wstring utf8_convert(const std::string& str) {
 	int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.length()), nullptr, 0);
 	std::wstring result(size_needed, 0);

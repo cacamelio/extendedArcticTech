@@ -76,6 +76,7 @@ public:
 	float GetLerpTime();
 	bool ValidRecord(LagRecord* record);
 	void Invalidate(int index);
+	LagRecord* GetLastRecord(int idx);
 };
 
 extern CLagCompensation* LagCompensation;

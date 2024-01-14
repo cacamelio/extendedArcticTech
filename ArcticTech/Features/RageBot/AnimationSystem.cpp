@@ -208,6 +208,9 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
 		record->m_nChokedTicks = std::clamp(TIME_TO_TICKS(time_diff) - 1, 0, 14);
 
+		if (record->m_nChokedTicks == 0 && (record->shifting_tickbase || record->m_flServerTime - record->m_flSimulationTime >= TICKS_TO_TIME(7)))
+			record->m_nChokedTicks = 1;
+
 		Vector origin_diff = player->m_vecOrigin() - record->prev_record->m_vecOrigin;
 
 		player->m_vecVelocity() = origin_diff / time_diff;

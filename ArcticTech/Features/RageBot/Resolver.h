@@ -34,7 +34,7 @@ struct ResolverLayer_t {
 	float delta = 0.f;
 };
 
-#define RESOLVER_DEBUG 1
+//#define RESOLVER_DEBUG 1
 
 struct ResolverData_t {
 	R_PlayerState player_state = R_PlayerState::STANDING;

@@ -101,9 +101,6 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 		LagCompensation->Invalidate(user_id_pl);
 		esp_info.m_flLastUpdateTime = 0.f;
 		esp_info.m_nHealth = 0;
-		if (PlayerResource && user_id_pl != local_id)
-			PlayerResource->m_bAlive()[user_id_pl] = false;
-
 		Ragebot->CalcSpreadValues(); // maybe we got bad values previously?
 	}
 	else if (name == "round_start") {
@@ -140,9 +137,14 @@ void CEventListner::FireGameEvent(IGameEvent* event) {
 	}
 	else if (name == "item_purchase") {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(user_id_pl));
+		std::string item = event->GetString("weapon");
+
+		if (config.misc.miscellaneous.logs->get(2) && player) {
+			Console->ArcticTag();
+			Console->Print(std::format("\aACCENT{} \a_MAIN_bought\aACCENT {}\n", player->GetName(), item));
+		}
 
 		if (player && player->m_bDormant()) {
-			std::string item = event->GetString("weapon");
 
 			if (item == "vest")
 				player->m_ArmorValue() = 100;

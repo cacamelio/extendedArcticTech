@@ -12,6 +12,8 @@ class CAnimationSystem {
 		Vector net_origin;
 		matrix3x4_t original_matrix[128];
 		bool valid = false;
+
+		Vector backtrack_origin;
 	};
 
 	interpolate_data_t interpolate_data[64];
@@ -51,6 +53,7 @@ public:
 	void	InterpolateModel(CBasePlayer* player, matrix3x4_t* matrix);
 	void	ResetInterpolation();
 	void	InvalidateInterpolation(int i);
+	inline interpolate_data_t* GetInterpolateData(int idx) { return &interpolate_data[idx]; };
 };
 
 extern CAnimationSystem* AnimationSystem;

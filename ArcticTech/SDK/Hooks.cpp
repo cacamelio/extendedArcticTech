@@ -202,8 +202,9 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			cmd->buttons &= ~IN_JUMP;
 	}
 
-	AutoPeek->CreateMove();
+	Movement->EasyStrafe();
 	Movement->QuickStop();
+	AutoPeek->CreateMove();
 	AntiAim->FakeDuck();
 	AntiAim->SlowWalk();
 	AntiAim->JitterMove();
@@ -212,6 +213,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	if (ctx.active_weapon && ctx.active_weapon->ShootingWeapon() && Exploits->IsShifting())
 		cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
+
+	// pre_prediction
 
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
@@ -237,7 +240,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 		ctx.shifted_commands.emplace_back(cmd->command_number);
 		if (bSendPacket)
-			ctx.sented_commands.emplace_back(cmd->command_number);
+			ctx.sent_commands.emplace_back(cmd->command_number);
 
 		ctx.teleported_last_tick = true;
 
@@ -245,8 +248,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		verified->crc = cmd->GetChecksum();
 		return;
 	}
-
-	// pre_prediction
 
 	ctx.is_peeking = AntiAim->IsPeeking();
 
@@ -336,8 +337,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	bSendPacket = ctx.send_packet;
 	if (bSendPacket) {
-		ctx.sented_commands.emplace_back(cmd->command_number);
-		ctx.sent_angles = cmd->viewangles;
+		ctx.sent_commands.emplace_back(cmd->command_number);
 	} else {
 		auto net_channel = ClientState->m_NetChannel;
 
@@ -383,7 +383,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.should_buy = false;
 	}
 
-	//Console->Log(std::format("{}\t{}\t{}\t{}", bSendPacket, ctx.lc_exploit_change, ctx.lc_exploit, Exploits->charged_command));
+	//if (ctx.send_packet)
+	//	Console->Log(std::format("{}", Exploits->GetTickbaseInfo(ctx.cmd->command_number)->extra_commands));
 
 	ctx.teleported_last_tick = false;
 
@@ -665,10 +666,7 @@ bool __fastcall hkShouldSkipAnimationFrame(CBasePlayer* thisptr, void* edx) {
 	if (!thisptr->IsPlayer())
 		return oShouldSkipAnimationFrame(thisptr, edx);
 
-	if (Cheat.LocalPlayer == thisptr || !thisptr->IsTeammate())
-		return false;
-
-	return oShouldSkipAnimationFrame(thisptr, edx);
+	return false;
 }
 
 bool __fastcall hkShouldInterpolate(CBasePlayer* thisptr, void* edx) {
@@ -700,11 +698,18 @@ bool __fastcall hkIsHLTV(IVEngineClient* thisptr, void* edx) {
 	return oIsHLTV(thisptr, edx);
 }
 
-void __fastcall hkBuildTransformations(CBaseEntity* thisptr, void* edx, void* hdr, void* pos, void* q, const void* camera_transform, int bone_mask, void* bone_computed) {
-	if (thisptr)
-		thisptr->m_isJiggleBonesEnabled() = false;
+void __fastcall hkBuildTransformations(CBasePlayer* thisptr, void* edx, void* hdr, void* pos, void* q, const void* camera_transform, int bone_mask, void* bone_computed) {
+	if (!thisptr->IsPlayer())
+		return oBuildTransformations(thisptr, edx, hdr, pos, q, camera_transform, bone_mask, bone_computed);
+
+	bool use_new_anim = thisptr->m_bUseNewAnimstate();
+
+	thisptr->m_isJiggleBonesEnabled() = false;
+	thisptr->m_bUseNewAnimstate() = false;
 
 	oBuildTransformations(thisptr, edx, hdr, pos, q, camera_transform, bone_mask, bone_computed);
+
+	thisptr->m_bUseNewAnimstate() = use_new_anim;
 }
 
 bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBoneToWorld, int maxBones, int mask, float curTime) {
@@ -787,19 +792,19 @@ void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_seq
 	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return oPacketStart(thisptr, edx, incoming_sequence, outgoing_acknowledged);
 
-	for (auto it = ctx.sented_commands.begin(); it != ctx.sented_commands.end(); it++) {
+	for (auto it = ctx.sent_commands.begin(); it != ctx.sent_commands.end(); it++) {
 		if (*it == outgoing_acknowledged) {
 			oPacketStart(thisptr, edx, incoming_sequence, outgoing_acknowledged);
 			break;
 		}
 	}
 
-	ctx.sented_commands.erase(
+	ctx.sent_commands.erase(
 		std::remove_if(
-			ctx.sented_commands.begin(),
-			ctx.sented_commands.end(),
+			ctx.sent_commands.begin(),
+			ctx.sent_commands.end(),
 			[&](auto const& command) { return std::abs(command - outgoing_acknowledged) >= 150; }),
-		ctx.sented_commands.end());
+		ctx.sent_commands.end());
 }
 
 void __fastcall hkPacketEnd(CClientState* thisptr, void* edx) {
@@ -863,14 +868,11 @@ void __fastcall hkCalculateView(CBasePlayer* thisptr, void* edx, Vector& eyeOrig
 	if (!thisptr || thisptr != Cheat.LocalPlayer)
 		return oCalculateView(thisptr, edx, eyeOrigin, eyeAngle, z_near, z_far, fov);
 
-	static const uintptr_t m_bUseNewAnimstate_offset = *(uintptr_t*)Utils::PatternScan("client.dll", "80 BE ? ? ? ? ? 0F 84 ? ? ? ? 83 BE ? ? ? ? ? 0F 84", 0x2);
+	const bool backup = thisptr->m_bUseNewAnimstate();
 
-	bool& m_bUseNewAnimstate = *(bool*)(thisptr + m_bUseNewAnimstate_offset);
-	const bool backup = m_bUseNewAnimstate;
-
-	m_bUseNewAnimstate = false;
+	thisptr->m_bUseNewAnimstate() = false;
 	oCalculateView(thisptr, edx, eyeOrigin, eyeAngle, z_near, z_far, fov);
-	m_bUseNewAnimstate = backup;
+	thisptr->m_bUseNewAnimstate() = backup;
 }
 
 void __fastcall hkRenderSmokeOverlay(void* thisptr, void* edx, bool bPreViewModel) {
@@ -1092,6 +1094,9 @@ bool __fastcall hkCIsPaused(CClientState* state, void* edx) {
 }
 
 float __fastcall hkGetFOV(CBasePlayer* thisptr, void* edx) {
+	if (Cheat.LocalPlayer != thisptr)
+		return oGetFOV(thisptr, edx);
+
 	float backup_lerp = GlobalVars->interpolation_amount;
 
 	if (Exploits->ShouldCharge())
@@ -1195,6 +1200,7 @@ void Hooks::Initialize() {
 	EventListner->Register();
 
 	Memory->BytePatch(Utils::PatternScan("client.dll", "75 30 38 87"), { 0xEB }); // CameraThink sv_cheats check skip
+	Memory->BytePatch(Utils::PatternScan("engine.dll", "B8 ? ? ? ? 3B F0 0F 4F F0 89 5D"), { 0xB8, 0x11 }); // Bypass 15 tick limit
 }
 
 void Hooks::End() {

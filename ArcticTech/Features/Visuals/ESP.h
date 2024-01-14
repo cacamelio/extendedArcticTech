@@ -17,6 +17,7 @@ struct ESPInfo_t {
 	bool			m_bBreakingLagComp = false;
 	bool			m_bDormant = false;
 	bool			m_bValid = false;
+	bool			m_bHit = false;
 	float			m_flAlpha = 0.f;
 	float			m_flLastUpdateTime = 0.f;
 	float			m_flLastSharedData = 0.f;

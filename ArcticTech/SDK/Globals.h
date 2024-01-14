@@ -43,12 +43,12 @@ struct Ctx_t {
 	float last_shot_time = 0.f;
 	bool planting_bomb = false;
 	bool should_release_grenade = false;
+	QAngle grenade_release_angle;
 	bool no_fakeduck = false;
 
 	QAngle sent_angles;
 	QAngle shot_angles;
 	bool force_shot_angle = false;
-	QAngle setup_bones_angle;
 
 	CBaseCombatWeapon* active_weapon = nullptr;
 	CCSWeaponData* weapon_info = nullptr;
@@ -59,11 +59,11 @@ struct Ctx_t {
 	int corrected_tickbase = 0;
 
 	std::vector<int> shifted_commands;
-	std::vector<int> sented_commands;
+	std::vector<int> sent_commands;
 
 	void reset() {
 		shifted_commands.clear();
-		sented_commands.clear();
+		sent_commands.clear();
 		tickbase_shift = 0;
 		local_velocity = Vector();
 		last_local_velocity = Vector();

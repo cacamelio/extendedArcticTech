@@ -454,6 +454,9 @@ CBasePlayer* CBasePlayer::GetObserverTarget() {
 }
 
 void CBasePlayer::SetIcon(int level) {
+	if (!PlayerResource)
+		return;
+
 	PlayerResource->m_nPersonaDataPublicLevel()[EntIndex()] = level;
 }
 
@@ -461,4 +464,10 @@ float& CBasePlayer::m_flLastCollisionChangeTime() {
 	static auto offset = *reinterpret_cast<int*>(Utils::PatternScan("client.dll", "F3 0F 5C 97 ? ? ? ? F3 0F 11 4C 24", 0x4));
 
 	return *(float*)((uintptr_t)this + offset);
+}
+
+bool& CBasePlayer::m_bUseNewAnimstate() {
+	static auto offset = *reinterpret_cast<int*>(Utils::PatternScan("client.dll", "88 87 ? ? ? ? 75 ? 8B 47", 0x2));
+
+	return *(bool*)((uintptr_t)this + offset);
 }

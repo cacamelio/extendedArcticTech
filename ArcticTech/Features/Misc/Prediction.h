@@ -81,6 +81,7 @@ private:
 	float weaponRecoilIndex = 0.f;
 
 	bool has_prediction_errors = false;
+	int antifakeduck_ticks = 0;
 public:
 	struct {
 		float m_flNextPrimaryAttack = 0;

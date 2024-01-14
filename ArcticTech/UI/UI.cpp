@@ -119,7 +119,7 @@ void CMenu::SetupUI() {
 	config.visuals.esp.custom_health_color = player_esp->AddColorPicker("Custom health");
 	config.visuals.esp.name = player_esp->AddCheckBox("Name");
 	config.visuals.esp.name_color = player_esp->AddColorPicker("Name");
-	config.visuals.esp.flags = player_esp->AddMultiCombo("Flags", { "Armor", "Zoom", "Fake duck", "Exploit", "Break LC", "Bomb", "Resolver" });
+	config.visuals.esp.flags = player_esp->AddMultiCombo("Flags", { "Armor", "Zoom", "Fake duck", "Exploit", "Break LC", "Bomb", "Resolver", "Hit"});
 	config.visuals.esp.weapon_text = player_esp->AddCheckBox("Weapon text");
 	config.visuals.esp.weapon_text_color = player_esp->AddColorPicker("Weapon text");
 	config.visuals.esp.weapon_icon = player_esp->AddCheckBox("Weapon icon");
@@ -143,7 +143,7 @@ void CMenu::SetupUI() {
 	config.visuals.esp.ammo->SetVisible(false);
 	config.visuals.esp.ammo_color->SetVisible(false);
 
-	config.visuals.chams.chams_selector = chams->AddComboBox("Class", { "Player", "Shot", "Local", "Attachments", "Viewmodel" });
+	config.visuals.chams.chams_selector = chams->AddComboBox("Class", { "Player", "Shot", "Backtrack", "Local", "Attachments", "Viewmodel" });
 	config.visuals.chams.enemy = chams->AddCheckBox("Player");
 	config.visuals.chams.enemy_invisible = chams->AddCheckBox("Player behind wall");
 	config.visuals.chams.enemy_color = chams->AddColorPicker("Player", Color(150, 190, 70));
@@ -158,6 +158,12 @@ void CMenu::SetupUI() {
 	config.visuals.chams.shot_chams_thickness = chams->AddSliderFloat("Shot glow thickness", 0.1f, 9.f, 1.f, "%.1f");
 	config.visuals.chams.shot_chams_duration = chams->AddSliderInt("Shot chams duration", 1, 10, 4, "s");
 	config.visuals.chams.shot_chams_options = chams->AddMultiCombo("Shot chams options", { "Behind walls", "Last shot only" });
+	config.visuals.chams.backtrack_chams = chams->AddCheckBox("Backtrack");
+	config.visuals.chams.backtrack_chams_color = chams->AddColorPicker("Backtrack", Color(100, 100, 100));
+	config.visuals.chams.backtrack_chams_second_color = chams->AddColorPicker("Backtrack second color");
+	config.visuals.chams.backtrack_chams_type = chams->AddComboBox("Backtrack type", { "Default", "Solid", "Glow", "Glow outlined" });
+	config.visuals.chams.backtrack_chams_thickness = chams->AddSliderFloat("Backtrack glow thickness", 0.1f, 9.f, 1.f, "%.1f");
+	config.visuals.chams.backtrack_chams_interpolate = chams->AddCheckBox("Interpolate");
 	config.visuals.chams.local_player = chams->AddCheckBox("Local player");
 	config.visuals.chams.local_player_color = chams->AddColorPicker("Local player", Color(100, 100, 100));
 	config.visuals.chams.local_player_second_color = chams->AddColorPicker("Local second color");
@@ -242,6 +248,7 @@ void CMenu::SetupUI() {
 	config.misc.movement.auto_jump = movement->AddCheckBox("Auto jump");
 	config.misc.movement.auto_strafe = movement->AddCheckBox("Auto strafe");
 	config.misc.movement.auto_strafe_smooth = movement->AddSliderInt("Auto strafe smooth", 0, 100, 50, "%d%%");
+	config.misc.movement.easy_strafe = movement->AddCheckBox("Easy strafe");
 	config.misc.movement.super_toss = movement->AddComboBox("Super toss", {"Disabled", "Semi", "Full"});
 	config.misc.movement.edge_jump = movement->AddCheckBox("Edge jump");
 	config.misc.movement.edge_jump_key = movement->AddKeyBind("Edge jump");
@@ -605,23 +612,30 @@ void CMenu::SetupUI() {
 		config.visuals.chams.shot_chams_duration->SetVisible(config.visuals.chams.chams_selector->get() == 1);
 		config.visuals.chams.shot_chams_options->SetVisible(config.visuals.chams.chams_selector->get() == 1);
 
-		config.visuals.chams.local_player->SetVisible(config.visuals.chams.chams_selector->get() == 2);
-		config.visuals.chams.local_player_color->SetVisible(config.visuals.chams.chams_selector->get() == 2);
-		config.visuals.chams.local_player_type->SetVisible(config.visuals.chams.chams_selector->get() == 2);
-		config.visuals.chams.local_player_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 2);
-		config.visuals.chams.local_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.backtrack_chams->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.backtrack_chams_color->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.backtrack_chams_type->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.backtrack_chams_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.backtrack_chams_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 2);
+		config.visuals.chams.backtrack_chams_interpolate->SetVisible(config.visuals.chams.chams_selector->get() == 2);
 
-		config.visuals.chams.attachments->SetVisible(config.visuals.chams.chams_selector->get() == 3);
-		config.visuals.chams.attachments_color->SetVisible(config.visuals.chams.chams_selector->get() == 3);
-		config.visuals.chams.attachments_type->SetVisible(config.visuals.chams.chams_selector->get() == 3);
-		config.visuals.chams.attachments_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 3);
-		config.visuals.chams.attachments_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.local_player->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.local_player_color->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.local_player_type->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.local_player_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 3);
+		config.visuals.chams.local_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 3);
 
-		config.visuals.chams.viewmodel->SetVisible(config.visuals.chams.chams_selector->get() == 4);
-		config.visuals.chams.viewmodel_color->SetVisible(config.visuals.chams.chams_selector->get() == 4);
-		config.visuals.chams.viewmodel_type->SetVisible(config.visuals.chams.chams_selector->get() == 4);
-		config.visuals.chams.viewmodel_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 4);
-		config.visuals.chams.viewmodel_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.attachments->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.attachments_color->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.attachments_type->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.attachments_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+		config.visuals.chams.attachments_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 4);
+
+		config.visuals.chams.viewmodel->SetVisible(config.visuals.chams.chams_selector->get() == 5);
+		config.visuals.chams.viewmodel_color->SetVisible(config.visuals.chams.chams_selector->get() == 5);
+		config.visuals.chams.viewmodel_type->SetVisible(config.visuals.chams.chams_selector->get() == 5);
+		config.visuals.chams.viewmodel_second_color->SetVisible(config.visuals.chams.chams_selector->get() == 5);
+		config.visuals.chams.viewmodel_glow_thickness->SetVisible(config.visuals.chams.chams_selector->get() == 5);
 	});
 
 	config.visuals.effects.fov->SetCallback([]() {

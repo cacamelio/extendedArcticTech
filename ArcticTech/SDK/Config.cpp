@@ -217,6 +217,12 @@ void CConfig::Init() {
     add(config.visuals.chams.shot_chams_thickness);
     add(config.visuals.chams.shot_chams_duration);
     add(config.visuals.chams.shot_chams_options);
+    add(config.visuals.chams.backtrack_chams);
+    add(config.visuals.chams.backtrack_chams_color);
+    add(config.visuals.chams.backtrack_chams_type);
+    add(config.visuals.chams.backtrack_chams_second_color);
+    add(config.visuals.chams.backtrack_chams_thickness);
+    add(config.visuals.chams.backtrack_chams_interpolate);
     add(config.visuals.chams.local_player);
     add(config.visuals.chams.local_player_color);
     add(config.visuals.chams.local_player_type);
@@ -290,6 +296,7 @@ void CConfig::Init() {
     add(config.misc.movement.auto_jump);
     add(config.misc.movement.auto_strafe);
     add(config.misc.movement.auto_strafe_smooth);
+    add(config.misc.movement.easy_strafe);
     add(config.misc.movement.super_toss);
     add(config.misc.movement.edge_jump);
     add(config.misc.movement.edge_jump_key);

@@ -20,6 +20,7 @@ static const std::unordered_map<std::string_view, std::string> miss_color = {
 	{"occlusion", "\aFFE59E"},
 	{"correction", "\aEAFFA6"},
 	{"lagcomp failure", "\aEAFFA6"},
+	{"unknown", "\aEAFFA6"},
 	{"death", "\aE6B1B1"},
 	{"damage rejection", "\aE6B1B1"},
 	{"unregistered shot", "\aE6B1B1"},
@@ -432,8 +433,11 @@ void CShotManager::OnNetUpdate() {
 						}
 					}
 
-					if (break_lag_comp || shot->safe_point) {
+					if (break_lag_comp) {
 						it->miss_reason = "lagcomp failure";
+					}
+					else if (shot->safe_point) {
+						it->miss_reason = "unknown";
 					}
 					else {
 						Resolver->OnMiss(player, shot->record);

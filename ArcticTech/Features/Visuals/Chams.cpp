@@ -3,8 +3,8 @@
 #include "../../SDK/Globals.h"
 #include "../../Utils/Utils.h"
 #include "../RageBot/LagCompensation.h"
+#include "../RageBot/AnimationSystem.h"
 #include "../../SDK/Misc/KeyValues.h"
-#include "../../Utils/Console.h"
 #include "../Lua/Bridge/Bridge.h"
 
 #include <format>
@@ -21,13 +21,13 @@ enum MaterialType {
 enum ClassOfEntity {
 	Enemy,
 	Shot,
+	Backtrack,
 	LocalPlayer,
 	ViewModel,
 	Attachment,
 	TotalClasses
 };
 
-Vector interpolatedBacktrackChams[64];
 CChams* Chams = new CChams;
 
 void CChams::LoadChams() {
@@ -78,6 +78,13 @@ void CChams::UpdateSettings() {
 	materials[ClassOfEntity::Shot].primaryColor = config.visuals.chams.shot_chams_color->get();
 	materials[ClassOfEntity::Shot].secondaryColor = config.visuals.chams.shot_chams_second_color->get();
 	materials[ClassOfEntity::Shot].glowThickness = config.visuals.chams.shot_chams_thickness->get();
+
+	materials[ClassOfEntity::Backtrack].enabled = config.visuals.chams.backtrack_chams->get();
+	materials[ClassOfEntity::Backtrack].type = config.visuals.chams.backtrack_chams_type->get();
+	materials[ClassOfEntity::Backtrack].addZ = false;
+	materials[ClassOfEntity::Backtrack].primaryColor = config.visuals.chams.backtrack_chams_color->get();
+	materials[ClassOfEntity::Backtrack].secondaryColor = config.visuals.chams.backtrack_chams_second_color->get();
+	materials[ClassOfEntity::Backtrack].glowThickness = config.visuals.chams.backtrack_chams_thickness->get();
 
 	materials[ClassOfEntity::LocalPlayer].enabled = config.visuals.chams.local_player->get();
 	materials[ClassOfEntity::LocalPlayer].type = config.visuals.chams.local_player_type->get();
@@ -194,6 +201,26 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 			auto result = cb.func(Cheat.LocalPlayer, addAlpha);
 			if (result.valid() && result.get_type() == sol::type::number)
 				addAlpha = result.get<float>();
+		}
+	}
+
+	if (config.visuals.chams.backtrack_chams->get() && entType == ClassOfEntity::Enemy && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive()) {
+		auto& backtrack_mat = materials[Backtrack];
+		LagRecord* last_record = LagCompensation->GetLastRecord(info.entity_index);
+		auto lerp_data = AnimationSystem->GetInterpolateData(info.entity_index);
+		if (last_record) {
+			if ((lerp_data->backtrack_origin - last_record->m_vecOrigin).LengthSqr() > 4096.f || !config.visuals.chams.backtrack_chams_interpolate->get())
+				lerp_data->backtrack_origin = last_record->m_vecOrigin;
+			else
+				lerp_data->backtrack_origin += (last_record->m_vecOrigin - lerp_data->backtrack_origin) * std::clamp(GlobalVars->frametime * 44.f, 0.01f, 1.f);
+			
+			if ((lerp_data->backtrack_origin - lerp_data->origin).LengthSqr() > 1.f) {
+				matrix3x4_t backtrack_matrix[128];
+				memcpy(backtrack_matrix, last_record->bone_matrix, sizeof(matrix3x4_t) * 128);
+				Utils::MatrixMove(backtrack_matrix, 128, last_record->m_vecOrigin, lerp_data->backtrack_origin);
+				DrawModel(backtrack_mat, 1.f, backtrack_matrix, true);
+				_boneToWorld = pBoneToWorld;
+			}
 		}
 	}
 

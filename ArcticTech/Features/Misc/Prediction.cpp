@@ -319,16 +319,21 @@ void CPrediction::RunCommand(CUserCmd* cmd) {
 }
 
 void CPrediction::NetUpdate() {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
+	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive()) {
+		antifakeduck_ticks = 0;
 		return;
+	}
 
 	auto data = local_data[ClientState->m_nCommandAck % MULTIPLAYER_BACKUP];
 
 	if (data.m_nSequence != ClientState->m_nCommandAck || data.m_nTickBase != Cheat.LocalPlayer->m_nTickBase())
 		return;
 
-	if (data.m_nButtons & IN_BULLRUSH && !(Cheat.LocalPlayer->m_nOldButtons() & IN_BULLRUSH))
-		ctx.no_fakeduck = true;
+	if (data.m_nButtons & IN_BULLRUSH && !(Cheat.LocalPlayer->m_nOldButtons() & IN_BULLRUSH)) {
+		antifakeduck_ticks++;
+		if (antifakeduck_ticks > 64)
+			ctx.no_fakeduck = true;
+	}
 }
 
 CPrediction* EnginePrediction = new CPrediction;

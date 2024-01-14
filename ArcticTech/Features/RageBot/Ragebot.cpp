@@ -116,6 +116,9 @@ void CRagebot::AutoStop(bool predict) {
 	if (ctx.cmd->buttons & IN_DUCK && (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
 		return;
 
+	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) && !settings.auto_stop->get(2))
+		return;
+
 	Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 	QAngle direction = Math::VectorAngles(vec_speed);
 
@@ -237,7 +240,7 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 	for (auto i = records.rbegin(); i != records.rend(); i = std::next(i)) {
 		const auto record = &*i;
 		if (!LagCompensation->ValidRecord(record)) {
-			if (record->breaking_lag_comp)
+			if (record->breaking_lag_comp || record->invalid)
 				break;
 
 			continue;
@@ -264,9 +267,9 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 
 	if (target_records.empty()) {
 		// TODO: should be extrapolation here
-
-		if (!records.back().shifting_tickbase)
-			target_records.push(&records.back());
+		auto last_record = &records.back();
+		if (!last_record->shifting_tickbase && !last_record->invalid)
+			target_records.push(last_record);
 	}
 
 	return target_records;

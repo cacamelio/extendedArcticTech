@@ -33,7 +33,7 @@ class CChams {
 	matrix3x4_t* _boneToWorld;
 
 	IMaterial* baseMaterials[3];
-	ChamsMaterial materials[5];
+	ChamsMaterial materials[6];
 
 	std::vector<ShotChams_t> shot_chams;
 public:

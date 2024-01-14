@@ -112,7 +112,7 @@ void CLagCompensation::OnNetUpdate() {
 		if (!pl || !pl->IsAlive() || pl == Cheat.LocalPlayer || pl->m_bDormant())
 			continue;
 
-		auto& records = lag_records[pl->EntIndex()];
+		auto& records = lag_records[i];
 
 		if (!records.empty() && pl->m_flSimulationTime() == pl->m_flOldSimulationTime())
 			continue;
@@ -210,6 +210,22 @@ bool CLagCompensation::ValidRecord(LagRecord* record) {
 	float deltaTime = correct - (TICKS_TO_TIME(ctx.corrected_tickbase) - record->m_flSimulationTime);
 
 	return std::abs(deltaTime) < (0.2f - (ctx.tickbase_shift > 0 ? GlobalVars->interval_per_tick : 0.f));
+}
+
+LagRecord* CLagCompensation::GetLastRecord(int idx) {
+	LagRecord* record = nullptr;
+	auto& records = lag_records[idx];
+	for (auto it = records.rbegin(); it != records.rend(); it++) {
+		if (!ValidRecord(&*it)) {
+			if (it->breaking_lag_comp || it->invalid)
+				break;
+
+			continue;
+		}
+		record = &*it;
+	}
+
+	return record;
 }
 
 void CLagCompensation::Reset(int index) {

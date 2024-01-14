@@ -161,6 +161,13 @@ struct config_t {
             CSliderInt* shot_chams_duration;
             CMultiCombo* shot_chams_options;
 
+            CCheckBox* backtrack_chams;
+            CColorPicker* backtrack_chams_color;
+            CComboBox* backtrack_chams_type;
+            CColorPicker* backtrack_chams_second_color;
+            CSliderFloat* backtrack_chams_thickness;
+            CCheckBox* backtrack_chams_interpolate;
+
             CCheckBox* local_player;
             CColorPicker* local_player_color;
             CComboBox* local_player_type;
@@ -252,6 +259,7 @@ struct config_t {
         struct movement_t {
             CCheckBox* auto_jump;
             CCheckBox* auto_strafe;
+            CCheckBox* easy_strafe;
             CComboBox* super_toss;
             CSliderInt* auto_strafe_smooth;
             CCheckBox* edge_jump;
