@@ -165,7 +165,7 @@ public:
 
 	void				AddPoint(const AimPoint_t& point);
 	void				GetMultipoints(LagRecord* record, int hitbox, float scale);
-	std::queue<LagRecord*> SelectRecords(CBasePlayer* player);
+	void				SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& records);
 	void				SelectPoints(LagRecord* record);
 	bool				CompareRecords(LagRecord* a, LagRecord* b);
 

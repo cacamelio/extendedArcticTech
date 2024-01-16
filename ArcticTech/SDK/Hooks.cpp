@@ -29,6 +29,7 @@
 #include "../Features/Misc/EventListner.h"
 #include "../Features/Visuals/SkinChanger.h"
 #include "../Features/ShotManager/ShotManager.h"
+#include "../Features/Misc/PingReducer.h"
 
 #include "Misc/xorstr.h"
 
@@ -171,6 +172,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (!cmd || !cmd->command_number)
 		return;
 
+	EnginePrediction->Update();
+
 	Exploits->PrePrediction(); // update tickbase info
 
 	ctx.cmd = cmd;
@@ -202,8 +205,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			cmd->buttons &= ~IN_JUMP;
 	}
 
-	Movement->EasyStrafe();
 	Movement->QuickStop();
+	Movement->EasyStrafe();
 	AutoPeek->CreateMove();
 	AntiAim->FakeDuck();
 	AntiAim->SlowWalk();
@@ -272,16 +275,16 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	if (config.misc.movement.edge_jump->get() && !(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) && EnginePrediction->pre_prediction.m_fFlags & FL_ONGROUND)
 		cmd->buttons |= IN_JUMP;
 
-	if (ctx.active_weapon->ShootingWeapon() && !ctx.active_weapon->CanShoot() && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
+	if ((ctx.active_weapon->ShootingWeapon() || ctx.active_weapon->IsKnife()) && !ctx.active_weapon->CanShoot() && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
 		cmd->buttons &= ~IN_ATTACK;
 
-	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
+	if ((ctx.active_weapon->ShootingWeapon() || ctx.active_weapon->IsKnife()) && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
 		if (Exploits->GetExploitType() == CExploits::E_DoubleTap)
 			Exploits->ForceTeleport();
 		else if (Exploits->GetExploitType() == CExploits::E_HideShots)
 			Exploits->HideShot();
 
-		if (!config.misc.miscellaneous.gamesense_mode->get())
+		if (!config.misc.miscellaneous.gamesense_mode->get() && !ctx.active_weapon->IsKnife())
 			ShotManager->ProcessManualShot();
 	}
 
@@ -433,12 +436,6 @@ char* __fastcall hk_get_halloween_mask_model_addon( void* ecx, void* edx )
 }
 
 bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count, const void* msg) {
-	static ConVar* cl_threaded_bone_setup = CVar->FindVar("cl_threaded_bone_setup");
-	static ConVar* cl_interp = CVar->FindVar("cl_interp");
-	static ConVar* cl_interp_ratio = CVar->FindVar("cl_interp_ratio");
-	static ConVar* net_earliertempents = CVar->FindVar("net_earliertempents");
-	static ConVar* zoom_sensitivity_ratio_mouse = CVar->FindVar("zoom_sensitivity_ratio_mouse");
-
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
 	if (state == 6) { // SIGNONSTATE_FULL
@@ -451,11 +448,10 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		World->Fog();
 		World->Smoke();
 
-		cl_threaded_bone_setup->SetInt(1);
-		net_earliertempents->SetInt(1);
-		cl_interp->SetFloat(0.015625f);
-		cl_interp_ratio->SetInt(2);
-		zoom_sensitivity_ratio_mouse->SetFloat(1.f);
+		cvars.cl_threaded_bone_setup->SetInt(1);
+		cvars.net_earliertempents->SetInt(1);
+		cvars.cl_interp->SetFloat(0.015625f);
+		cvars.cl_interp_ratio->SetInt(2);
 
 		GrenadePrediction::PrecacheParticles();
 		Ragebot->CalcSpreadValues();
@@ -836,8 +832,7 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
 		return oCL_Move(accamulatedExtraSamples, bFinalTick);
 
-	if (config.misc.miscellaneous.ping_reducer->get())
-		NetMessages->ReadPackets();
+	PingReducer->ReadPackets(bFinalTick);
 
 	Exploits->Run();
 
@@ -846,6 +841,7 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 		ctx.shifted_last_tick++;
 
 		Exploits->charged_command = ClientState->m_nLastOutgoingCommand;
+
 		return;
 	}
 
@@ -979,15 +975,6 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 	return oListLeavesInBox(ecx, edx, map_min, map_max, list, size);
 }
 
-bool __fastcall hkInPrediction(IPrediction* ecx, void* edx) {
-	static auto setup_bones = Utils::PatternScan("client.dll", "84 C0 74 0A F3 0F 10 05 ? ? ? ? EB 05");
-
-	if (_ReturnAddress() == setup_bones)
-		return false;
-
-	return oInPrediction(ecx, edx);
-}
-
 void __fastcall hkCL_DispatchSound(const SoundInfo_t& snd, void* edx) {
 	WorldESP->ProcessSound(snd);
 	oCL_DispatchSound(snd, edx);
@@ -1045,19 +1032,6 @@ void __fastcall hkCalcViewModel(CBaseViewModel* vm, void* edx, CBasePlayer* play
 	oCalcViewModel(vm, edx, player, eyePosition, eyeAngles);
 }
 
-bool __fastcall hkSVCMsg_TempEntities(CClientState* thisptr, void* edx, const void* msg) {
-	auto old_maxclients = thisptr->m_nMaxClients;
-
-	// nope https://github.com/perilouswithadollarsign/cstrike15_src/blob/HEAD/engine/servermsghandler.cpp#L817
-	thisptr->m_nMaxClients = 1;
-	bool result = oSVCMsg_TempEntities(thisptr, edx, msg);
-	thisptr->m_nMaxClients = old_maxclients;
-
-	EngineClient->FireEvents();
-
-	return result;
-}
-
 void __fastcall hkResetLatched(CBasePlayer* thisptr, void* edx) {
 	if (!Cheat.LocalPlayer || thisptr != Cheat.LocalPlayer || EnginePrediction->HasPredictionErrors())
 		return oResetLatched(thisptr, edx);
@@ -1084,15 +1058,6 @@ void __fastcall hkEstimateAbsVelocity(CBaseEntity* ent, void* edx, Vector& vel) 
 	oEstimateAbsVelocity(ent, edx, vel);
 }
 
-bool __fastcall hkCIsPaused(CClientState* state, void* edx) {
-	static auto cl_readpackets = Utils::PatternScan("engine.dll", "84 C0 75 ? FF 86");
-
-	if (_ReturnAddress() == cl_readpackets && hook_info.read_packets)
-		return true;
-
-	return oCIsPaused(state, edx);
-}
-
 float __fastcall hkGetFOV(CBasePlayer* thisptr, void* edx) {
 	if (Cheat.LocalPlayer != thisptr)
 		return oGetFOV(thisptr, edx);
@@ -1116,6 +1081,13 @@ bool __fastcall hkIsConnected(IVEngineClient* thisptr, void* edx) {
 		return false;
 
 	return oIsConnected(thisptr, edx);
+}
+
+void __fastcall hkReadPackets(bool final_tick) {
+	if (!PingReducer->AllowReadPackets())
+		return;
+
+	oReadPackets(final_tick);
 }
 
 void Hooks::Initialize() {
@@ -1184,23 +1156,21 @@ void Hooks::Initialize() {
 	oShouldDrawViewModel = HookFunction<tShouldDrawViewModel>(Utils::PatternScan("client.dll", "55 8B EC 51 57 E8"), hkShouldDrawViewModel);
 	oPerformScreenOverlay = HookFunction<tPerformScreenOverlay>(Utils::PatternScan("client.dll", "55 8B EC 51 A1 ? ? ? ? 53 56 8B D9 B9 ? ? ? ? 57 89 5D FC FF 50 34 85 C0 75 36"), hkPerformScreenOverlay);
 	oListLeavesInBox = HookFunction<tListLeavesInBox>(Utils::PatternScan("engine.dll", "55 8B EC 83 EC 18 8B 4D 0C"), hkListLeavesInBox);
-	oInPrediction = HookFunction<tInPrediction>(Utils::PatternScan("client.dll", "8A 41 08 C3"), hkInPrediction);
 	oCL_DispatchSound = HookFunction<tCL_DispatchSound>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 8B F1 8D 4D 98 E8"), hkCL_DispatchSound);
 	oInterpolateViewModel = HookFunction<tInterpolateViewModel>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 0C 53 56 8B F1 57 83 BE"), hkInterpolateViewModel);
 	oCalcViewModel = HookFunction<tCalcViewModel>(Utils::PatternScan("client.dll", "55 8B EC 83 EC 58 56 57"), hkCalcViewModel);
-	oSVCMsg_TempEntities = HookFunction<tSVCMsg_TempEntities>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 F8 83 EC 4C A1 ? ? ? ? 80"), hkSVCMsg_TempEntities);
 	oResetLatched = HookFunction<tResetLatched>(Utils::PatternScan("client.dll", "56 8B F1 57 8B BE ? ? ? ? 85 FF 74 ? 8B CF E8 ? ? ? ? 68"), hkResetLatched);
 	oGetExposureRange = HookFunction<tGetExposureRange>(Utils::PatternScan("client.dll", "55 8B EC 51 80 3D ? ? ? ? ? 0F 57"), hkGetExposureRange);
 	oEstimateAbsVelocity = HookFunction<tEstimateAbsVelocity>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 ? 83 EC ? 56 8B F1 85 F6 74 ? 8B 06 8B 80 ? ? ? ? FF D0 84 C0 74 ? 8A 86"), hkEstimateAbsVelocity);
 	//oInterpolatePlayer = HookFunction<tInterpolatePlayer>(Utils::PatternScan("client.dll", "55 8B EC 83 EC ? 56 8B F1 83 BE ? ? ? ? ? 0F 85"), hkInterpolatePlayer);
-	oCIsPaused = HookFunction<tCIsPaused>(Utils::PatternScan("engine.dll", "80 B9 ? ? ? ? ? 75 ? 80 3D"), hkCIsPaused);
 	oGetFOV = HookFunction<tGetFOV>(Utils::PatternScan("client.dll", "55 8B EC 83 EC ? 56 8B F1 57 8B 06 FF 90 ? ? ? ? 83 F8"), hkGetFOV);
 	oIsConnected = HookFunction<tIsConnected>(Utils::PatternScan("engine.dll", "A1 ? ? ? ? 83 B8 ? ? ? ? ? 0F 9D C0 C3 55"), hkIsConnected);
+	oReadPackets = HookFunction<tReadPackets>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"), hkReadPackets);
 
 	EventListner->Register();
 
 	Memory->BytePatch(Utils::PatternScan("client.dll", "75 30 38 87"), { 0xEB }); // CameraThink sv_cheats check skip
-	Memory->BytePatch(Utils::PatternScan("engine.dll", "B8 ? ? ? ? 3B F0 0F 4F F0 89 5D"), { 0xB8, 0x11 }); // Bypass 15 tick limit
+	//Memory->BytePatch(Utils::PatternScan("engine.dll", "B8 ? ? ? ? 3B F0 0F 4F F0 89 5D"), { 0xB8, 0x11 }); // Bypass 15 tick limit
 }
 
 void Hooks::End() {
@@ -1254,16 +1224,14 @@ void Hooks::End() {
 	RemoveHook(oShouldDrawViewModel, hkShouldDrawViewModel);
 	RemoveHook(oPerformScreenOverlay, hkPerformScreenOverlay);
 	RemoveHook(oListLeavesInBox, hkListLeavesInBox);
-	RemoveHook(oInPrediction, hkInPrediction);
 	RemoveHook(oCL_DispatchSound, hkCL_DispatchSound);
 	RemoveHook(oInterpolateViewModel, hkInterpolateViewModel);
 	RemoveHook(oCalcViewModel, hkCalcViewModel);
-	RemoveHook(oSVCMsg_TempEntities, hkSVCMsg_TempEntities);
 	RemoveHook(oResetLatched, hkResetLatched);
 	RemoveHook(oGetExposureRange, hkGetExposureRange);
 	RemoveHook(oEstimateAbsVelocity, hkEstimateAbsVelocity);
 	//RemoveHook(oInterpolatePlayer, hkInterpolatePlayer);
-	RemoveHook(oCIsPaused, hkCIsPaused);
 	RemoveHook(oGetFOV, hkGetFOV);
 	RemoveHook(oIsConnected, hkIsConnected);
+	RemoveHook(oReadPackets, hkReadPackets);
 }

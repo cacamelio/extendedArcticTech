@@ -54,7 +54,6 @@ typedef void(__fastcall* tTraceBlood)(CGameTrace*, int);
 typedef void(__fastcall* tCL_DispatchSound)(const SoundInfo_t&, void*);
 typedef bool(__fastcall* tInterpolateViewModel)(CBaseEntity*, void*, float);
 typedef void(__fastcall* tCalcViewModel)(CBaseViewModel*, void*, CBasePlayer*, const Vector&, const QAngle&);
-typedef bool(__fastcall* tSVCMsg_TempEntities)(CClientState*, void*, const void*);
 typedef void(__fastcall* tResetLatched)(CBasePlayer*, void*);
 typedef void(__fastcall* tGetExposureRange)(float*, float*);
 typedef void(__fastcall* tEstimateAbsVelocity)(CBaseEntity*, void*, Vector&);
@@ -62,6 +61,7 @@ typedef bool(__fastcall* tInterpolatePlayer)(CBasePlayer*, void*, float);
 typedef bool(__fastcall* tCIsPaused)(CClientState*, void*);
 typedef float(__fastcall* tGetFOV)(CBasePlayer*, void*);
 typedef bool(__fastcall* tIsConnected)(IVEngineClient*, void*);
+typedef void(__fastcall* tReadPackets)(bool);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -95,7 +95,6 @@ inline tTraceBlood oTraceBlood;
 inline tCL_DispatchSound oCL_DispatchSound;
 inline tInterpolateViewModel oInterpolateViewModel;
 inline tCalcViewModel oCalcViewModel;
-inline tSVCMsg_TempEntities oSVCMsg_TempEntities;
 inline tResetLatched oResetLatched;
 inline tGetExposureRange oGetExposureRange;
 inline tEstimateAbsVelocity oEstimateAbsVelocity;
@@ -103,6 +102,7 @@ inline tInterpolatePlayer oInterpolatePlayer;
 inline tCIsPaused oCIsPaused;
 inline tGetFOV oGetFOV;
 inline tIsConnected oIsConnected;
+inline tReadPackets oReadPackets;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

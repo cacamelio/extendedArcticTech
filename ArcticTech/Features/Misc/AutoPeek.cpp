@@ -29,7 +29,7 @@ void CAutoPeek::Draw() {
 
 	if (state && anim < 1.f)
 		anim = std::clamp(anim + GlobalVars->frametime * 4.f, 0.f, 1.f);
-	else if (anim > 0.f)
+	else if (!state && anim > 0.f)
 		anim = std::clamp(anim - GlobalVars->frametime * 4.f, 0.f, 1.f);
 
 	if (anim > 0.f)
@@ -51,28 +51,30 @@ void CAutoPeek::CreateMove() {
 			returning = false;
 	}
 
-	if (!returning)
+	if (!returning && (!config.ragebot.aimbot.peek_assist_on_release->get() || distance_sqr < 16.f || ctx.cmd->buttons & (IN_MOVELEFT | IN_MOVERIGHT | IN_FORWARD | IN_BACK)))
 		return;
 
-	block_buttons &= ctx.cmd->buttons; // if player will release buttons, they will not be blocked
-	ctx.cmd->buttons &= ~block_buttons;
+	if (returning) {
+		block_buttons &= ctx.cmd->buttons; // if player will release buttons, they will not be blocked
+		ctx.cmd->buttons &= ~block_buttons;
 
-	if (block_buttons & IN_FORWARD && ctx.cmd->forwardmove > 0.f)
-		ctx.cmd->forwardmove = 0.f;
+		if (block_buttons & IN_FORWARD && ctx.cmd->forwardmove > 0.f)
+			ctx.cmd->forwardmove = 0.f;
 
-	if (block_buttons & IN_BACK && ctx.cmd->forwardmove < 0.f)
-		ctx.cmd->forwardmove = 0.f;
+		if (block_buttons & IN_BACK && ctx.cmd->forwardmove < 0.f)
+			ctx.cmd->forwardmove = 0.f;
 
-	if (block_buttons & IN_MOVELEFT && ctx.cmd->sidemove < 0.f)
-		ctx.cmd->sidemove = 0.f;
+		if (block_buttons & IN_MOVELEFT && ctx.cmd->sidemove < 0.f)
+			ctx.cmd->sidemove = 0.f;
 
-	if (block_buttons & IN_MOVERIGHT && ctx.cmd->sidemove > 0.f)
-		ctx.cmd->sidemove = 0.f;
+		if (block_buttons & IN_MOVERIGHT && ctx.cmd->sidemove > 0.f)
+			ctx.cmd->sidemove = 0.f;
 
-	if (distance_sqr < 16.f) {
-		if (block_buttons == 0)
-			returning = false;
-		return;
+		if (distance_sqr < 16.f) {
+			if (block_buttons == 0)
+				returning = false;
+			return;
+		}
 	}
 
 	QAngle ang = Utils::VectorToAngle(Cheat.LocalPlayer->m_vecOrigin(), position);

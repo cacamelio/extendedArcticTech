@@ -6,47 +6,15 @@ class Color {
 public:
 	unsigned char r, g, b, a;
 
-	Color() {
-		r = g = b = a = 255;
-	}
+	constexpr Color() : r(255), g(255), b(255), a(255) {}
 
-	explicit Color(int _r) {
-		r = g = b = _r;
-		a = 255;
-	}
+	constexpr explicit Color(int _r) : r(_r), g(_r), b(_r), a(255) {}
 
-	Color(int _r, int _g) {
-		r = g = b = _r;
-		a = _g;
-	}
+	constexpr Color(int _r, int _g) : r(_r), g(_r), b(_r), a(_g) {}
 
-	Color(int _r, int _g, int _b) {
-		r = (unsigned char)_r;
-		g = (unsigned char)_g;
-		b = (unsigned char)_b;
-		a = (unsigned char)255;
-	}
+	constexpr Color(int _r, int _g, int _b) : r(_r), g(_g), b(_b), a(255) {}
 
-	Color(int _r, int _g, int _b, int _a) {
-		r = (unsigned char)_r;
-		g = (unsigned char)_g;
-		b = (unsigned char)_b;
-		a = (unsigned char)_a;
-	}
-
-	//Color(float _r, float _g, float _b) {
-	//	r = static_cast<unsigned char>(_r);
-	//	g = static_cast<unsigned char>(_g);
-	//	b = static_cast<unsigned char>(_b);
-	//	a = (unsigned char)255;
-	//}
-
-	//Color(float _r, float _g, float _b, float _a) {
-	//	r = static_cast<unsigned char>(_r);
-	//	g = static_cast<unsigned char>(_g);
-	//	b = static_cast<unsigned char>(_b);
-	//	a = static_cast<unsigned char>(_a);
-	//}
+	constexpr Color(int _r, int _g, int _b, int _a) : r(_r), g(_g), b(_b), a(_a) {}
 
 	void FromHSV(int _h, int _s = 100, int _v = 100, int A = 255) {
 		float H = (float)_h;

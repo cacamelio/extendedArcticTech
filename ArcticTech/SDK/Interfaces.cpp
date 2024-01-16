@@ -100,9 +100,12 @@ void Interfaces::Initialize() {
 	cvars.cl_foot_contact_shadows = CVar->FindVar("cl_foot_contact_shadows");
 	cvars.cl_lagcompensation = CVar->FindVar("cl_lagcompensation");
 	cvars.cl_interp_ratio = CVar->FindVar("cl_interp_ratio");
+	cvars.cl_interp = CVar->FindVar("cl_interp");
 	cvars.weapon_debug_spread_show = CVar->FindVar("weapon_debug_spread_show");
 	cvars.r_drawsprites = CVar->FindVar("r_drawsprites");
 	cvars.zoom_sensitivity_ratio_mouse = CVar->FindVar("zoom_sensitivity_ratio_mouse");
 	cvars.mp_damage_headshot_only = CVar->FindVar("mp_damage_headshot_only");
 	cvars.mp_friendlyfire = CVar->FindVar("mp_friendlyfire");
+	cvars.net_earliertempents = CVar->FindVar("net_earliertempents");
+	cvars.cl_threaded_bone_setup = CVar->FindVar("cl_threaded_bone_setup");
 }

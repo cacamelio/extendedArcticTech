@@ -97,12 +97,15 @@ struct CVars {
 	ConVar* cl_csm_shadows;
 	ConVar* cl_foot_contact_shadows;
 	ConVar* cl_lagcompensation;
+	ConVar* cl_interp;
 	ConVar* cl_interp_ratio;
 	ConVar* weapon_debug_spread_show;
 	ConVar* r_drawsprites;
 	ConVar* zoom_sensitivity_ratio_mouse;
 	ConVar* mp_damage_headshot_only;
 	ConVar* mp_friendlyfire;
+	ConVar* net_earliertempents;
+	ConVar* cl_threaded_bone_setup;
 };
 
 extern CheatState_t Cheat;

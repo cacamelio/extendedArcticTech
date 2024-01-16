@@ -88,7 +88,7 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 
 		if (player)
 			Console->Log(std::format("recieved msg from {} [format: {}] [xuid_low: {}] [xuid_high: {}] [seq: {}] [sect: {}] [uso: {}]", player->GetName(), msg.format, msg.xuid_low, msg.xuid_high, msg.sequence_bytes, msg.section_number, msg.uncompressed_sample_offset));
-}
+	}
 #endif
 
 	player_info_t info;
@@ -104,29 +104,4 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 		handler(data);
 
 	delete data;
-}
-
-void CNetMessages::ReadPackets() {
-	static auto CL_ReadPackets = reinterpret_cast<void(__fastcall*)(bool)>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"));
-
-	int backup_flags = 0;
-	int backup_tickbase = 0;
-	Vector backup_abs_origin;
-	if (Cheat.LocalPlayer) {
-		backup_flags = Cheat.LocalPlayer->m_fFlags();
-		backup_tickbase = Cheat.LocalPlayer->m_nTickBase();
-		backup_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
-	}
-
-	GlobalVars->store();
-	hook_info.read_packets = true;
-	CL_ReadPackets(false);
-	hook_info.read_packets = false;
-	GlobalVars->restore();
-
-	if (Cheat.LocalPlayer) {
-		Cheat.LocalPlayer->m_fFlags() = backup_flags;
-		Cheat.LocalPlayer->m_nTickBase() = backup_tickbase;
-		Cheat.LocalPlayer->SetAbsOrigin(backup_abs_origin);
-	}
 }

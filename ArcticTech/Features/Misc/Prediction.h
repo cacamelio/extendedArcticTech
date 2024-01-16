@@ -112,6 +112,7 @@ public:
 	void RunThink(CBasePlayer* player);
 	void BackupData();
 
+	void Update();
 	void Start(CUserCmd* cmd);
 	void End();
 	void Repredict(CUserCmd* cmd, QAngle angles);

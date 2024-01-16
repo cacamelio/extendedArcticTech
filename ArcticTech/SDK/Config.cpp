@@ -70,6 +70,7 @@ void CConfig::Init() {
     add(config.ragebot.aimbot.peek_assist);
     add(config.ragebot.aimbot.peek_assist_color);
     add(config.ragebot.aimbot.peek_assist_keybind);
+    add(config.ragebot.aimbot.peek_assist_on_release);
     add(config.ragebot.aimbot.show_aimpoints);
     add(config.ragebot.aimbot.roll_resolver);
     add(config.ragebot.aimbot.roll_resolver_key);

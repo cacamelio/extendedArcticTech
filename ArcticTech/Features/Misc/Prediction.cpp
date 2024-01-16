@@ -64,11 +64,13 @@ void CPrediction::BackupData() {
 	nBackupTickBase = Cheat.LocalPlayer->m_nTickBase();
 }
 
+void CPrediction::Update() {
+	Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
+}
+
 void CPrediction::Start(CUserCmd* cmd) {
 	if (!MoveHelper)
 		return;
-
-	Prediction->Update(ClientState->m_nDeltaTick, ClientState->m_nDeltaTick > 0, ClientState->m_nLastCommandAck, ClientState->m_nLastOutgoingCommand + ClientState->m_nChokedCommands);
 
 	local_data[cmd->command_number % MULTIPLAYER_BACKUP].init(cmd);
 
@@ -80,8 +82,8 @@ void CPrediction::Start(CUserCmd* cmd) {
 	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 	GlobalVars->frametime = Prediction->bEnginePaused ? 0.f : GlobalVars->interval_per_tick;
 
-	Prediction->bIsFirstTimePredicted = false;
 	Prediction->bInPrediction = true;
+	Prediction->bIsFirstTimePredicted = false;
 
 	GameMovement->StartTrackPredictionErrors(Cheat.LocalPlayer);
 

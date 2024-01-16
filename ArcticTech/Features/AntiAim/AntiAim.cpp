@@ -88,7 +88,7 @@ void CAntiAim::Angles() {
 	if (!ctx.active_weapon || ctx.active_weapon->ThrowingGrenade())
 		return;
 
-	if ((ctx.active_weapon->ShootingWeapon() || (ctx.active_weapon->GetWeaponInfo() && ctx.active_weapon->GetWeaponInfo()->nWeaponType == WEAPONTYPE_KNIFE)) && ctx.active_weapon->CanShoot() && ctx.cmd->buttons & IN_ATTACK)
+	if ((ctx.active_weapon->ShootingWeapon() || ctx.active_weapon->IsKnife()) && ctx.active_weapon->CanShoot() && ctx.cmd->buttons & IN_ATTACK)
 		return;
 
 	target = GetNearestTarget();

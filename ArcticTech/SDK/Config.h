@@ -62,6 +62,7 @@ struct config_t {
             CCheckBox* peek_assist;
             CColorPicker* peek_assist_color;
             CKeyBind* peek_assist_keybind;
+            CCheckBox* peek_assist_on_release;
             CCheckBox* show_aimpoints;
             CCheckBox* roll_resolver;
             CKeyBind* roll_resolver_key;

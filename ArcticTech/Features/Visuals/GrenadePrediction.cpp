@@ -648,10 +648,10 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 
 	flThrowTime = grenade_data.flThrowTime;
 
-	pathPoints.push_back(entity->GetAbsOrigin());
-
 	float simulationTime = entity->m_flSimulationTime();
 	Predict(entity->m_vecOrigin(), entity->m_vecVelocity(), flThrowTime, TIME_TO_TICKS(simulationTime - flThrowTime));
+
+	pathPoints.insert(pathPoints.begin(), entity->GetAbsOrigin());
 
 	float timeInAir = flExpireTime - flThrowTime;
 

@@ -222,23 +222,23 @@ bool CRagebot::CompareRecords(LagRecord* a, LagRecord* b) {
 	return true;
 }
 
-std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
-	std::queue<LagRecord*> target_records;
+void CRagebot::SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& target_records) {
 	auto& records = LagCompensation->records(player->EntIndex());
 
 	if (records.empty())
-		return target_records;
+		return;
 
-	if (Exploits->IsShifting()) {
+	if (Exploits->IsShifting() || !cvars.cl_lagcompensation->GetInt()) {
 		target_records.push(&records.back());
-		return target_records;
+		return;
 	}
 
 	bool ex_back = config.ragebot.aimbot.extended_backtrack->get() && !frametime_issues;
 
-	LagRecord* last_valid_record{ nullptr };
-	for (auto i = records.rbegin(); i != records.rend(); i = std::next(i)) {
-		const auto record = &*i;
+	LagRecord* last_valid_record = nullptr;
+	for (int i = records.size() - 1; i >= 0; i--) {
+		const auto record = &records[i];
+
 		if (!LagCompensation->ValidRecord(record)) {
 			if (record->breaking_lag_comp || record->invalid)
 				break;
@@ -271,8 +271,6 @@ std::queue<LagRecord*> CRagebot::SelectRecords(CBasePlayer* player){
 		if (!last_record->shifting_tickbase && !last_record->invalid)
 			target_records.push(last_record);
 	}
-
-	return target_records;
 }
 
 void CRagebot::AddPoint(const AimPoint_t& point) {
@@ -362,7 +360,7 @@ void CRagebot::SelectPoints(LagRecord* record) {
 
 		{
 			std::lock_guard<std::mutex> lock(scan_mutex);
-			thread_work.push(AimPoint_t({ record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false, dont_shoot_next_points }));
+			thread_work.emplace(record->player->GetHitboxCenter(hitbox, record->clamped_matrix), hitbox, false, dont_shoot_next_points);
 			selected_points++;
 			scan_condition.notify_one();
 		}
@@ -535,7 +533,8 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 }
 
 void CRagebot::ScanTarget(CBasePlayer* target) {
-	std::queue<LagRecord*> records = SelectRecords(target);
+	std::queue<LagRecord*> records;
+	SelectRecords(target, records);
 
 	if (records.empty())
 		return;

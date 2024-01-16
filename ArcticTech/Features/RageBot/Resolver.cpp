@@ -92,6 +92,25 @@ R_AntiAimType CResolver::DetectAntiAim(CBasePlayer* player, const std::deque<Lag
 	return R_AntiAimType::UNKNOWN;
 }
 
+float ValveAngleDiff(float destAngle, float srcAngle)
+{
+	float delta;
+
+	delta = fmodf(destAngle - srcAngle, 360.0f);
+	if (destAngle > srcAngle)
+	{
+		if (delta >= 180)
+			delta -= 360;
+	}
+	else
+	{
+		if (delta <= -180)
+			delta += 360;
+	}
+	return delta;
+}
+
+
 void CResolver::SetupLayer(LagRecord* record, int idx, float delta) {
 	CCSGOPlayerAnimationState* animstate = record->player->GetAnimstate();
 
@@ -104,7 +123,9 @@ void CResolver::SetupLayer(LagRecord* record, int idx, float delta) {
 	if (flRawYawIdeal < 0)
 		flRawYawIdeal += 360;
 
-	animstate->flMoveYaw = Math::AngleNormalize(Math::AngleDiff(flRawYawIdeal, animstate->flFootYaw));
+	animstate->flMoveYaw = Math::AngleNormalize(ValveAngleDiff(flRawYawIdeal, animstate->flFootYaw));
+	if (record->prev_record)
+		memcpy(record->player->GetAnimlayers(), record->prev_record->animlayers, sizeof(AnimationLayer) * 13);
 
 	record->player->UpdateAnimationState(animstate, angles, true);
 	
