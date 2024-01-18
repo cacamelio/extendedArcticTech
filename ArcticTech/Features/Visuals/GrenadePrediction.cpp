@@ -633,8 +633,10 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 			iter_found = it;
 			break;
 		}
+		float creation_time = entity->m_flCreationTime();
+		if (owner && !owner->m_bDormant())
+			creation_time = min(owner->m_flSimulationTime(), creation_time);
 
-		float creation_time = (owner && owner->m_bDormant()) ? entity->m_flCreationTime() : min(owner->m_flSimulationTime(), entity->m_flCreationTime());
 		if (event) {
 			if (entity->m_flSimulationTime() - event->flThrowTime <= 2.f)
 				creation_time = event->flThrowTime;

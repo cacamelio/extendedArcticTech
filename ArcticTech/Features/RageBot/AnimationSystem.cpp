@@ -192,6 +192,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	if (record->prev_record) {
 		animstate->flMoveWeight = record->prev_record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight;
 		animstate->flPrimaryCycle = record->prev_record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flCycle;
+		animstate->flAccelerationWeight = record->prev_record->animlayers[ANIMATION_LAYER_MOVEMENT_STRAFECHANGE].m_flWeight;
 		animstate->flDurationInAir = 0.f;
 
 		float server_time_diff = record->m_flServerTime - record->prev_record->m_flServerTime;
@@ -207,9 +208,6 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 			time_diff = GlobalVars->interval_per_tick;
 
 		record->m_nChokedTicks = std::clamp(TIME_TO_TICKS(time_diff) - 1, 0, 14);
-
-		if (record->m_nChokedTicks == 0 && (record->shifting_tickbase || record->m_flServerTime - record->m_flSimulationTime >= TICKS_TO_TIME(7)))
-			record->m_nChokedTicks = 1;
 
 		Vector origin_diff = player->m_vecOrigin() - record->prev_record->m_vecOrigin;
 
@@ -244,6 +242,8 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 			float initial_speed = cvars.sv_jump_impulse->GetFloat();
 			if (record->animlayers[ANIMATION_LAYER_MOVEMENT_JUMP_OR_FALL].m_nSequence == ACT_CSGO_FALL)
 				initial_speed = 0.f;
+
+			// TODO: can use ANIMATION_LAYER_JUMP_OR_FALL maybe
 
 			animstate->flDurationInAir = (initial_speed - player->m_vecVelocity().z) / cvars.sv_gravity->GetFloat() - max(sim_time_diff, 0.f);
 		}

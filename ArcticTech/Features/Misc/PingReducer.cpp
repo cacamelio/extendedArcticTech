@@ -42,6 +42,9 @@ void CPingReducer::ReadPackets(bool final_tick) {
 	oReadPackets(final_tick);
 	shared_data.read();
 
+	if (!Cheat.LocalPlayer)
+		return;
+
 	backup_data.write();
 
 	Cheat.LocalPlayer->m_fFlags() = backup_flags;
