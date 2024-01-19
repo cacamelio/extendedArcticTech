@@ -318,6 +318,9 @@ void CAntiAim::LegMovement() {
 	ctx.cmd->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVERIGHT | IN_MOVELEFT);
 
 	int target_type = config.antiaim.misc.leg_movement->get();
+	if (config.ragebot.aimbot.peek_assist->get() && config.ragebot.aimbot.peek_assist_keybind->get())
+		target_type = 1;
+
 	if (target_type == 1 && ctx.send_packet && !(ctx.cmd->buttons & IN_USE && ctx.tickbase_shift == 13)) {
 		target_type = 2;
 	}

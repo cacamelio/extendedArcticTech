@@ -127,7 +127,7 @@ void CResolver::SetupLayer(LagRecord* record, int idx, float delta) {
 	if (record->prev_record)
 		memcpy(record->player->GetAnimlayers(), record->prev_record->animlayers, sizeof(AnimationLayer) * 13);
 
-	record->player->UpdateAnimationState(animstate, angles, true);
+	record->player->UpdateAnimationState(animstate, angles);
 	
 	auto& resolver_layer = record->resolver_data.layers[idx];
 	resolver_layer.desync = delta;
@@ -240,7 +240,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	
 	float vel_sqr = player->m_vecVelocity().LengthSqr();
 
-	if (vel_sqr < 64.f || record->resolver_data.resolver_type == ResolverType::NONE || !(player->m_fFlags() & FL_ONGROUND)) {
+	if (vel_sqr < 256.f || record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight <= 0.f || record->resolver_data.resolver_type == ResolverType::NONE || !(player->m_fFlags() & FL_ONGROUND)) {
 		if (record->resolver_data.antiaim_type == R_AntiAimType::JITTER && records.size() > 16) {
 			float eyeYaw = player->m_angEyeAngles().yaw;
 			float prevEyeYaw = FindAvgYaw(records);

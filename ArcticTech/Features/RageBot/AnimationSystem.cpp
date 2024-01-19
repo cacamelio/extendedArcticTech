@@ -11,7 +11,7 @@ void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 }
 
 void FixLegMovement(AnimationLayer* server_layers) {
-	if (config.antiaim.misc.leg_movement->get() != 1)
+	if (config.antiaim.misc.leg_movement->get() != 1 && !(config.ragebot.aimbot.peek_assist->get() && config.ragebot.aimbot.peek_assist_keybind->get()))
 		return;
 
 	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND))
@@ -35,10 +35,11 @@ void FixLegMovement(AnimationLayer* server_layers) {
 
 void CAnimationSystem::OnCreateMove() {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
+	AnimationLayer* animlayers = Cheat.LocalPlayer->GetAnimlayers();
 
 	AnimationLayer animlayers_backup[13];
 	float curtimeBackup = GlobalVars->curtime;
-	memcpy(animlayers_backup, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
+	memcpy(animlayers_backup, animlayers, sizeof(AnimationLayer) * 13);
 
 	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 
@@ -54,9 +55,11 @@ void CAnimationSystem::OnCreateMove() {
 	if (animstate->nLastUpdateFrame >= GlobalVars->framecount)
 		animstate->nLastUpdateFrame = GlobalVars->framecount - 1;
 
+	animstate->flLastUpdateTime = local_anims.last_update;
+
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
-	animstate->bLanding = Cheat.LocalPlayer->GetAnimlayers()[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
-	memcpy(local_layers, Cheat.LocalPlayer->GetAnimlayers(), sizeof(AnimationLayer) * 13);
+	animstate->bLanding = animlayers[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
+	memcpy(local_layers, animlayers, sizeof(AnimationLayer) * 13);
 
 	if (ctx.send_packet && !Exploits->IsHidingShot() && animstate->nLastUpdateFrame == GlobalVars->framecount) {
 		FixLegMovement(animlayers_backup);
@@ -75,8 +78,10 @@ void CAnimationSystem::OnCreateMove() {
 		Cheat.LocalPlayer->m_angEyeAngles() = backup_eye_angles;
 	}
 
+	local_anims.last_update = GlobalVars->curtime;
+
 	GlobalVars->curtime = curtimeBackup;
-	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayers_backup, sizeof(AnimationLayer) * 13);
+	memcpy(animlayers, animlayers_backup, sizeof(AnimationLayer) * 13);
 }
 
 void CAnimationSystem::UpdatePredictionAnimation() {
@@ -153,9 +158,9 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 	CCSGOPlayerAnimationState* animstate = player->GetAnimstate();
 	const int idx = player->EntIndex();
 
-	if (!animstate)
+	if (!animstate || animstate->pEntity != player)
 		return;
-	
+
 	record->player = player;
 	record->m_vecAbsOrigin = player->m_vecOrigin();
 
@@ -239,15 +244,12 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 			if (last_vel > (100.f * 100.f) && last_vel * 16.f < player->m_vecVelocity().LengthSqr()) // we teleported
 				player->m_vecVelocity() *= 0.22f; // 3/14 or 2/14 should be more correct
 
-			float initial_speed = cvars.sv_jump_impulse->GetFloat();
-			if (record->animlayers[ANIMATION_LAYER_MOVEMENT_JUMP_OR_FALL].m_nSequence == ACT_CSGO_FALL)
-				initial_speed = 0.f;
-
-			// TODO: can use ANIMATION_LAYER_JUMP_OR_FALL maybe
-
-			animstate->flDurationInAir = (initial_speed - player->m_vecVelocity().z) / cvars.sv_gravity->GetFloat() - max(sim_time_diff, 0.f);
+			animstate->flDurationInAir = record->prev_record->animlayers[ANIMATION_LAYER_MOVEMENT_JUMP_OR_FALL].m_flCycle / record->prev_record->animlayers[ANIMATION_LAYER_MOVEMENT_JUMP_OR_FALL].m_flPlaybackRate;
 		}
 	}
+
+	if (animstate->nLastUpdateFrame >= GlobalVars->framecount)
+		animstate->nLastUpdateFrame = GlobalVars->framecount - 1;
 
 	unupdated_animstate[idx] = *animstate;
 

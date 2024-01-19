@@ -211,9 +211,9 @@ void CBasePlayer::UpdateAnimationState(CCSGOPlayerAnimationState* state, const Q
 
 	__asm {
 		movss xmm2, eyePitch
-		movss xmm1, eyeYaw
-		mov ecx, state
 		push bForce
+		mov ecx, state
+		movss xmm1, eyeYaw
 		call fn
 	}
 }

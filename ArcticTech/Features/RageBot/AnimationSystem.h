@@ -29,6 +29,7 @@ class CAnimationSystem {
 		QAngle abs_angles;
 		AnimationLayer layers[13];
 		std::array<float, 24> poseparams;
+		float last_update = 0.f;
 	} local_anims;
 
 	Vector sent_abs_origin;

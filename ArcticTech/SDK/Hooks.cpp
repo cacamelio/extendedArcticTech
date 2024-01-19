@@ -81,11 +81,6 @@ HRESULT __stdcall hkPresent(IDirect3DDevice9* thisptr, const RECT* src, const RE
 
 	Cheat.InGame = EngineClient->IsConnected() && EngineClient->IsInGame();
 
-	if (Cheat.InGame && !PlayerResource)
-		PlayerResource = **(CCSPlayerResource***)(Utils::PatternScan("client.dll", "8B 3D ? ? ? ? 85 FF 0F 84 ? ? ? ? 81 C7", 0x2));
-	else if (!Cheat.InGame)
-		PlayerResource = nullptr;
-
 	if (thisptr->BeginScene() == D3D_OK) {
 		Render->RenderDrawData();
 		Menu->Draw();
@@ -174,10 +169,10 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	EnginePrediction->Update();
 
-	Exploits->PrePrediction(); // update tickbase info
-
 	ctx.cmd = cmd;
 	ctx.send_packet = true;
+
+	Exploits->PrePrediction(); // update tickbase info
 
 	CUserCmd_lua lua_cmd;
 	lua_cmd.command_number = cmd->command_number;
@@ -339,19 +334,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	Exploits->Shift();
 
 	bSendPacket = ctx.send_packet;
-	if (bSendPacket) {
-		ctx.sent_commands.emplace_back(cmd->command_number);
-	} else {
-		auto net_channel = ClientState->m_NetChannel;
-
-		if (net_channel->m_nChokedPackets > 0) {
-			auto backup_choke = net_channel->m_nChokedPackets;
-			net_channel->m_nChokedPackets = 0;
-			net_channel->SendDatagram();
-			--net_channel->m_nOutSequenceNr;
-			net_channel->m_nChokedPackets = backup_choke;
-		}
-	}
 
 	if (ctx.should_buy) {
 		std::string buy_command = "";
@@ -581,6 +563,12 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	static auto oFrameStageNotify = (tFrameStageNotify)Hooks::ClientVMT->GetOriginal(37);
 	Cheat.InGame = EngineClient->IsConnected() && EngineClient->IsInGame();
 	Cheat.LocalPlayer = Cheat.InGame ? (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer()) : nullptr;
+	
+	static auto player_res_pat = *(CCSPlayerResource***)(Utils::PatternScan("client.dll", "8B 3D ? ? ? ? 85 FF 0F 84 ? ? ? ? 81 C7", 0x2));
+	if (Cheat.InGame)
+		PlayerResource = *player_res_pat;
+	else if (!Cheat.InGame)
+		PlayerResource = nullptr;
 
 	switch (stage) {
 	case FRAME_RENDER_START: {
@@ -829,8 +817,11 @@ void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t*
 void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 
-	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
-		return oCL_Move(accamulatedExtraSamples, bFinalTick);
+	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive()) {
+		oCL_Move(accamulatedExtraSamples, bFinalTick);
+		ctx.sent_commands.emplace_back(ClientState->m_nLastOutgoingCommand);
+		return;
+	}
 
 	PingReducer->ReadPackets(bFinalTick);
 
@@ -841,11 +832,27 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 		ctx.shifted_last_tick++;
 
 		Exploits->charged_command = ClientState->m_nLastOutgoingCommand;
+		Exploits->force_charge = false;
 
 		return;
 	}
 
 	oCL_Move(accamulatedExtraSamples, bFinalTick);
+
+	if (ClientState->m_nChokedCommands == 0) {
+		ctx.sent_commands.emplace_back(ClientState->m_nLastOutgoingCommand);
+	}
+	else {
+		auto net_channel = ClientState->m_NetChannel;
+
+		if (net_channel) {
+			auto backup_choke = net_channel->m_nChokedPackets;
+			net_channel->m_nChokedPackets = 0;
+			net_channel->m_nOutSequenceNr--;
+			net_channel->SendDatagram();
+			net_channel->m_nChokedPackets = backup_choke;
+		}
+	}
 
 	Exploits->HandleTeleport(oCL_Move);
 }

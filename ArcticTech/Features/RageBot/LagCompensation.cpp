@@ -119,6 +119,11 @@ void CLagCompensation::OnNetUpdate() {
 
 		LagRecord* prev_record = !records.empty() ? &records.back() : nullptr;
 
+		if (prev_record && prev_record->player != pl) {
+			records.clear();
+			prev_record = nullptr;
+		}
+
 		if (prev_record && prev_record->animlayers[ANIMATION_LAYER_ALIVELOOP].m_flCycle == pl->GetAnimlayers()[ANIMATION_LAYER_ALIVELOOP].m_flCycle) {
 			pl->m_flOldSimulationTime() = pl->m_flSimulationTime();
 			continue;
