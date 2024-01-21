@@ -451,6 +451,44 @@ namespace api {
 		}
 	} 
 
+	namespace cvar {
+		sol::object find(sol::this_state state, ICvar* self, std::string name) {
+			auto res = self->FindVar(name.c_str());
+
+			if (res)
+				return sol::make_object(state, res);
+
+			return sol::nil;
+		}
+
+		int convar_int(ConVar* cvar, sol::optional<int> new_value) {
+			int val = cvar->GetInt();
+
+			if (new_value.has_value())
+				cvar->SetInt(new_value.value());
+
+			return val;
+		}
+
+		float convar_float(ConVar* cvar, sol::optional<float> new_value) {
+			float val = cvar->GetFloat();
+
+			if (new_value.has_value())
+				cvar->SetFloat(new_value.value());
+
+			return val;
+		}
+
+		std::string convar_string(ConVar* cvar, sol::optional<std::string> new_value) {
+			std::string val = cvar->GetString();
+
+			if (new_value.has_value())
+				cvar->SetString(new_value.value().c_str());
+
+			return val;
+		}
+	}
+
 	namespace vector {
 		Vector closes_ray_point(Vector self, Vector start, Vector end) {
 			return EngineTrace->ClosestPoint(start, end, self);
@@ -494,6 +532,10 @@ namespace api {
 			}
 
 			return result;
+		}
+
+		Vector camera_position() {
+			return ctx.camera_postion;
 		}
 
 		DXImage get_weapon_icon(int weap_id) {
@@ -737,8 +779,8 @@ namespace api {
 			return Vector(pt.x, pt.y);
 		}
 
-		void send_voice_message(SharedVoiceData_t voice_data) {
-			NetMessages->SendNetMessage(&voice_data);
+		void send_voice_message(VoiceDataOther voice_data) {
+			NetMessages->SendDataRaw(&voice_data);
 		}
 	}
 
@@ -1193,6 +1235,15 @@ namespace api {
 		Vector get_hitbox_position(CBasePlayer* self, int hb) {
 			return self->GetHitboxCenter(hb);
 		}
+
+		std::tuple<Vector, Vector> get_bbox(sol::this_state state, CBasePlayer* self) {
+			auto& info = WorldESP->GetESPInfo(self->EntIndex());
+
+			Vector mins(info.m_BoundingBox[0].x, info.m_BoundingBox[0].y);
+			Vector maxs(info.m_BoundingBox[1].x, info.m_BoundingBox[1].y);
+
+			return std::make_tuple(mins, maxs);
+		}
 	}
 
 	namespace network {
@@ -1409,6 +1460,7 @@ void CLua::Setup() {
 		"can_shoot", &CBaseCombatWeapon::CanShoot,
 		"get_icon", &CBaseCombatWeapon::GetIcon,
 		"is_grenade", &CBaseCombatWeapon::IsGrenade,
+		"is_knife", &CBaseCombatWeapon::IsKnife,
 		"get_weapon_info", &CBaseCombatWeapon::GetWeaponInfo,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
@@ -1491,6 +1543,7 @@ void CLua::Setup() {
 		"get_animlayers", &api::entity::get_anim_layers,
 		"get_simulation_time", api::entity::get_simulation_time,
 		"get_dormant_last_update", &api::entity::get_dormant_last_update,
+		"get_bounding_box", api::entity::get_bbox,
 		"set_icon", &CBasePlayer::SetIcon,
 		"__index", api::entity::get_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
@@ -1526,7 +1579,7 @@ void CLua::Setup() {
 
 	lua.new_usertype<RegisteredShot_t>("shot_t", sol::no_constructor, 
 		"client_shoot_pos", &RegisteredShot_t::client_shoot_pos,
-		"vector_pos", &RegisteredShot_t::target_pos,
+		"target_pos", &RegisteredShot_t::target_pos,
 		"client_angle", &RegisteredShot_t::client_angle,
 		"command_number", &RegisteredShot_t::command_number,
 		"wanted_damage", &RegisteredShot_t::wanted_damage,
@@ -1593,11 +1646,12 @@ void CLua::Setup() {
 		"get_voice_data", &CSVCMsg_VoiceData_Lua::get_voice_data
 	);
 
-	lua.new_usertype<SharedVoiceData_t>("voice_data", sol::call_constructor, sol::constructors<SharedVoiceData_t()>(),
-		"xuid_high", &SharedVoiceData_t::xuid_high,
-		"sequence_bytes", &SharedVoiceData_t::sequence_bytes,
-		"section_number", &SharedVoiceData_t::section_number,
-		"uncompressed_sample_offset", &SharedVoiceData_t::uncompressed_sample_offset
+	lua.new_usertype<VoiceDataOther>("voice_data", sol::call_constructor, sol::constructors<VoiceDataOther()>(),
+		"xuid_low", &VoiceDataOther::xuid_low,
+		"xuid_high", &VoiceDataOther::xuid_high,
+		"sequence_bytes", &VoiceDataOther::sequence_bytes,
+		"section_number", &VoiceDataOther::section_number,
+		"uncompressed_sample_offset", &VoiceDataOther::uncompressed_sample_offset
 	);
 
 	lua.new_usertype<IMaterial>("material_t", sol::no_constructor,
@@ -1631,6 +1685,12 @@ void CLua::Setup() {
 	lua.new_usertype<FireBulletData_t>("fire_bullet_t", sol::no_constructor, 
 		"damage", &FireBulletData_t::damage,
 		"trace", &FireBulletData_t::enterTrace
+	);
+
+	lua.new_usertype<ConVar>("convar", sol::no_constructor,
+		"int", api::cvar::convar_int,
+		"float", api::cvar::convar_float,
+		"string", api::cvar::convar_string
 	);
 
 	// _G
@@ -1687,6 +1747,7 @@ void CLua::Setup() {
 	lua.create_named_table("render",
 		"screen_size", api::render::screen_size,
 		"camera_angles", api::render::camera_angles,
+		"camera_position", api::render::camera_position,
 		"get_weapon_icon", api::render::get_weapon_icon,
 		"add_font", api::render::add_font,
 		"load_font", api::render::load_font,
@@ -1726,6 +1787,12 @@ void CLua::Setup() {
 		"stringify", api::json::stringify,
 		"parse", api::json::parse
 	);
+
+	lua.new_usertype<ICvar>("ccvar",
+		"find", api::cvar::find,
+		"__index", api::cvar::find
+	);
+	lua["cvar"] = CVar;
 
 	// utils
 	lua.create_named_table("utils",

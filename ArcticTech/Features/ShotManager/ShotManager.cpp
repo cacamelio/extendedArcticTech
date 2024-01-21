@@ -106,8 +106,7 @@ void CShotManager::DetectUnregisteredShots() {
 
 		LogMiss(&*it);
 
-		for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
-			callback.func(*it);
+		LUA_CALL_HOOK(LUA_AIM_ACK, &*it);
 
 		break;
 	}
@@ -218,8 +217,7 @@ bool CShotManager::OnEvent(IGameEvent* event) {
 
 				LogMiss(&*it);
 
-				for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
-					callback.func(*it);
+				LUA_CALL_HOOK(LUA_AIM_ACK, &*it);
 			}
 
 			return false;
@@ -257,8 +255,7 @@ void CShotManager::OnNetUpdate() {
 
 				LogMiss(&*it);
 
-				for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
-					callback.func(&*it);
+				LUA_CALL_HOOK(LUA_AIM_ACK, &*it);
 			}
 
 			if (cmd_nr - it->command_number > 64) {
@@ -451,8 +448,7 @@ void CShotManager::OnNetUpdate() {
 
 		LagCompensation->BacktrackEntity(backup_record);
 
-		for (auto& callback : Lua->hooks.getHooks(LUA_AIM_ACK))
-			callback.func(shot);
+		LUA_CALL_HOOK(LUA_AIM_ACK, shot);
 	}
 }
 
@@ -474,8 +470,7 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 	for (int i = 0; i < total_impacts; i++)
 		shot->client_impacts.push_back(impacts[i]);
 
-	for (auto& callback : Lua->hooks.getHooks(LUA_AIM_SHOT))
-		callback.func(shot);
+	LUA_CALL_HOOK(LUA_AIM_SHOT, shot);
 
 	while (m_RegisteredShots.size() > 8)
 		m_RegisteredShots.erase(m_RegisteredShots.begin());

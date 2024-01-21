@@ -9,6 +9,8 @@ struct LuaHook_t {
 	sol::protected_function func;
 };
 
+#define LUA_CALL_HOOK(hk, ...) for (auto& callback : Lua->hooks.getHooks(hk)) { auto res = callback.func(__VA_ARGS__); if (!res.valid()) { sol::error er = res; Console->Error(er.what()); }}
+
 enum ELuaCallbacks {
 	LUA_RENDER,
 	LUA_CREATEMOVE,

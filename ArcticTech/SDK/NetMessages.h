@@ -107,7 +107,8 @@ struct CSVCMsg_VoiceData_Lua {
 };
 
 struct VoiceDataOther {
-	uint64_t xuid{};
+	uint32_t xuid_low{};
+	uint32_t xuid_high{};
 	int32_t sequence_bytes{};
 	uint32_t section_number{};
 	uint32_t uncompressed_sample_offset{};
@@ -130,6 +131,7 @@ class CNetMessages {
 public:
 
 	void SendNetMessage(SharedVoiceData_t* data);
+	void SendDataRaw(VoiceDataOther* data);
 	void AddVoiceDataCallback(tRecieveVoiceDataCallback callback) {
 		m_voiceDataCallbacks.emplace_back(callback);
 	}

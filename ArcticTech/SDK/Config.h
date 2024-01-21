@@ -137,6 +137,7 @@ struct config_t {
             CCheckBox* show_server_hitboxes;
             CCheckBox* shared_esp;
             CCheckBox* share_with_enemies;
+            CCheckBox* anti_fatality;
             CCheckBox* hitmarker;
             CColorPicker* hitmarker_color;
             CCheckBox* damage_marker;

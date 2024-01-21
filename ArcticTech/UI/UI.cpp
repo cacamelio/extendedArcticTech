@@ -133,11 +133,13 @@ void CMenu::SetupUI() {
 	config.visuals.esp.show_server_hitboxes = player_esp->AddCheckBox("Show sever hitboxes");
 	config.visuals.esp.shared_esp = player_esp->AddCheckBox("Shared ESP");
 	config.visuals.esp.share_with_enemies = player_esp->AddCheckBox("Share with enemies");
+	config.visuals.esp.anti_fatality = player_esp->AddCheckBox("Anti fatality");
 	config.visuals.esp.hitmarker = player_esp->AddCheckBox("Hitmarker");
 	config.visuals.esp.hitmarker_color = player_esp->AddColorPicker("Hitmarker");
 	config.visuals.esp.damage_marker = player_esp->AddCheckBox("Damage marker");
 	config.visuals.esp.damage_marker_color = player_esp->AddColorPicker("Damage marker");
 
+	config.visuals.esp.anti_fatality->SetVisible(false);
 	config.visuals.esp.show_server_hitboxes->SetVisible(false);
 	config.visuals.esp.bounding_box->SetVisible(false);
 	config.visuals.esp.box_color->SetVisible(false);

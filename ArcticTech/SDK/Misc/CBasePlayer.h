@@ -312,15 +312,25 @@ struct AnimationLayer {
     void* m_pStudioHdr;			 //0x0008
     int m_nDispatchSequence;     //0x000C
     int m_nDispatchSequence_2;   //0x0010
-    uint32_t m_nOrder;           //0x0014
-    uint32_t m_nSequence;        //0x0018
-    float m_flPrevCycle;       //0x001C
-    float m_flWeight;          //0x0020
-    float m_flWeightDeltaRate; //0x0024
-    float m_flPlaybackRate;    //0x0028
-    float m_flCycle;           //0x002C
-    CBasePlayer* m_pOwner;       //0x0030
+    uint32_t m_nOrder = 0;           //0x0014
+    uint32_t m_nSequence = 0;        //0x0018
+    float m_flPrevCycle = 0.f;       //0x001C
+    float m_flWeight = 0.f;          //0x0020
+    float m_flWeightDeltaRate = 0.f; //0x0024
+    float m_flPlaybackRate = 0.f;    //0x0028
+    float m_flCycle = 0.f;           //0x002C
+    CBasePlayer* m_pOwner = nullptr;       //0x0030
     char pad_0038[4];            //0x0034
+
+    void set_data(const AnimationLayer& other) {
+        if (m_pOwner != other.m_pOwner)
+            return;
+
+        m_flWeight = other.m_flWeight;
+        m_flPlaybackRate = other.m_flPlaybackRate;
+        m_nSequence = other.m_nSequence;
+        m_flCycle = other.m_flCycle;
+    }
 };
 
 class CUserCmd;

@@ -116,8 +116,7 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	World->Crosshair();
 	DebugOverlay->RenderOverlays();
 
-	for (auto& callback : Lua->hooks.getHooks(LUA_RENDER))
-		callback.func();
+	LUA_CALL_HOOK(LUA_RENDER);
 
 	Render->EndFrame();
 
@@ -182,9 +181,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	lua_cmd.random_seed = cmd->random_seed;
 	lua_cmd.buttons = cmd->buttons;
 
-	for (auto& callback : Lua->hooks.getHooks(LUA_CREATEMOVE)) {
-		callback.func(&lua_cmd);
-	}
+	LUA_CALL_HOOK(LUA_CREATEMOVE, &lua_cmd);
 
 	cmd->buttons = lua_cmd.buttons;
 	cmd->sidemove = lua_cmd.move.y;
@@ -214,6 +211,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	// pre_prediction
 
+	EnginePrediction->Update();
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
 
@@ -236,7 +234,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		Exploits->UpdateTickbase();
 		Exploits->Shift(); // we actually will not shift here, only update tickbase info
 
-		ctx.shifted_commands.emplace_back(cmd->command_number);
 		if (bSendPacket)
 			ctx.sent_commands.emplace_back(cmd->command_number);
 
@@ -285,8 +282,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	AntiAim->lua_override.reset();
 
-	for (auto& cb : Lua->hooks.getHooks(LUA_ANTIAIM))
-		cb.func(&AntiAim->lua_override);
+	LUA_CALL_HOOK(LUA_ANTIAIM, &AntiAim->lua_override);
 
 	AntiAim->FakeLag();
 	AntiAim->Angles();
@@ -441,8 +437,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		Resolver->Reset();
 		SkinChanger->InitCustomModels();
 
-		for (auto& callback : Lua->hooks.getHooks(LUA_LEVELINIT))
-			callback.func();
+		LUA_CALL_HOOK(LUA_LEVELINIT);
 	}
 
 	return result;
@@ -612,6 +607,9 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		EnginePrediction->NetUpdate();
 		Exploits->NetUpdate();
 		ShotManager->OnNetUpdate();
+
+		if (config.visuals.esp.anti_fatality->get())
+			WorldESP->AntiFatality();
 		break;
 	case FRAME_NET_UPDATE_POSTDATAUPDATE_START:
 		SkinChanger->AgentChanger();
@@ -623,6 +621,8 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	}
 
 	AnimationSystem->FrameStageNotify(stage);
+
+	LUA_CALL_HOOK(LUA_FRAMESTAGE, stage);
 
 	oFrameStageNotify(thisptr, edx, stage);
 }
@@ -773,7 +773,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 }
 
 void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_sequence, int outgoing_acknowledged) {
-	if (!Cheat.InGame || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
+	if (!Cheat.InGame || !Cheat.LocalPlayer->IsAlive())
 		return oPacketStart(thisptr, edx, incoming_sequence, outgoing_acknowledged);
 
 	for (auto it = ctx.sent_commands.begin(); it != ctx.sent_commands.end(); it++) {
@@ -817,7 +817,7 @@ void __fastcall hkClampBonesInBBox(CBasePlayer* thisptr, void* edx, matrix3x4_t*
 void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 	Cheat.LocalPlayer = (CBasePlayer*)EntityList->GetClientEntity(EngineClient->GetLocalPlayer());
 
-	if (!Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive()) {
+	if (!Cheat.LocalPlayer->IsAlive()) {
 		oCL_Move(accamulatedExtraSamples, bFinalTick);
 		ctx.sent_commands.emplace_back(ClientState->m_nLastOutgoingCommand);
 		return;
@@ -846,11 +846,11 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 		auto net_channel = ClientState->m_NetChannel;
 
 		if (net_channel) {
-			auto backup_choke = net_channel->m_nChokedPackets;
+			auto backup_choke = ClientState->m_nChokedCommands;
 			net_channel->m_nChokedPackets = 0;
 			net_channel->m_nOutSequenceNr--;
 			net_channel->SendDatagram();
-			net_channel->m_nChokedPackets = backup_choke;
+			ClientState->m_nChokedCommands = backup_choke;
 		}
 	}
 
@@ -957,7 +957,7 @@ void __fastcall hkPerformScreenOverlay(void* viewrender, void* edx, int x, int y
 int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const Vector& maxs, unsigned int* list, int size) {
 	static void* insert_into_tree = Utils::PatternScan("client.dll", "56 52 FF 50 18", 0x5);
 
-	if (!config.visuals.chams.disable_model_occlusion->get() || _ReturnAddress() != insert_into_tree)
+	if (_ReturnAddress() != insert_into_tree)
 		return oListLeavesInBox(ecx, edx, mins, maxs, list, size);
 
 	// get current renderable info from stack ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L1470 )
@@ -978,8 +978,29 @@ int __fastcall hkListLeavesInBox(void* ecx, void* edx, const Vector& mins, const
 	// extend world space bounds to maximum ( https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/client/clientleafsystem.cpp#L707 )
 	static const Vector map_min = Vector(-16384.0f, -16384.0f, -16384.0f);
 	static const Vector map_max = Vector(16384.0f, 16384.0f, 16384.0f);
-
+	
+	if (!config.visuals.chams.disable_model_occlusion->get())
+		return oListLeavesInBox(ecx, edx, mins, maxs, list, size);
 	return oListLeavesInBox(ecx, edx, map_min, map_max, list, size);
+}
+
+void __fastcall hkAddRenderableToList(void* ecx, void* edx, IClientRenderable* pRenderable, bool bRenderWithViewModels, int nType, int nModelType, int nSplitscreenEnabled) {
+	auto renderable_addr = (uintptr_t)pRenderable;
+	if (!renderable_addr || renderable_addr == 0x4)
+		return oAddRenderableToList(ecx, edx, pRenderable, bRenderWithViewModels, nType, nModelType, nSplitscreenEnabled);
+
+	auto entity = (CBaseEntity*)(renderable_addr - 0x4);
+	int index = entity->EntIndex();
+
+	if (index < 1 || index > 64)
+		return oAddRenderableToList(ecx, edx, pRenderable, bRenderWithViewModels, nType, nModelType, nSplitscreenEnabled);
+
+	if (index == EngineClient->GetLocalPlayer())
+		nType = 1;
+	else
+		nType = 2;
+
+	oAddRenderableToList(ecx, edx, pRenderable, bRenderWithViewModels, nType, nModelType, nSplitscreenEnabled);
 }
 
 void __fastcall hkCL_DispatchSound(const SoundInfo_t& snd, void* edx) {
@@ -998,7 +1019,7 @@ bool __fastcall hkInterpolateViewModel(CBaseViewModel* vm, void* edx, float curT
 	pred_tick = Exploits->GetInterpolateTick();
 
 	if (Exploits->ShouldCharge())
-		GlobalVars->interpolation_amount = 0.f;
+		GlobalVars->interpolation_amount = 1.f;
 
 	auto result = oInterpolateViewModel(vm, edx, curTime);
 
@@ -1173,6 +1194,7 @@ void Hooks::Initialize() {
 	oGetFOV = HookFunction<tGetFOV>(Utils::PatternScan("client.dll", "55 8B EC 83 EC ? 56 8B F1 57 8B 06 FF 90 ? ? ? ? 83 F8"), hkGetFOV);
 	oIsConnected = HookFunction<tIsConnected>(Utils::PatternScan("engine.dll", "A1 ? ? ? ? 83 B8 ? ? ? ? ? 0F 9D C0 C3 55"), hkIsConnected);
 	oReadPackets = HookFunction<tReadPackets>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"), hkReadPackets);
+	oAddRenderableToList = HookFunction<tAddRenderableToList>(Utils::PatternScan("client.dll", "55 8B EC 56 8B 75 08 57 FF 75 18"), hkAddRenderableToList);
 
 	EventListner->Register();
 
@@ -1241,4 +1263,5 @@ void Hooks::End() {
 	RemoveHook(oGetFOV, hkGetFOV);
 	RemoveHook(oIsConnected, hkIsConnected);
 	RemoveHook(oReadPackets, hkReadPackets);
+	RemoveHook(oAddRenderableToList, hkAddRenderableToList);
 }

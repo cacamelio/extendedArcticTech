@@ -43,8 +43,7 @@ void CAnimationSystem::OnCreateMove() {
 
 	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 
-	for (auto& cb : Lua->hooks.getHooks(LUA_PRE_ANIMUPDATE))
-		cb.func(Cheat.LocalPlayer);
+	LUA_CALL_HOOK(LUA_PRE_ANIMUPDATE, Cheat.LocalPlayer);
 
 	QAngle vangle = ctx.cmd->viewangles;
 	if (ctx.send_packet && ctx.force_shot_angle) {
@@ -59,7 +58,6 @@ void CAnimationSystem::OnCreateMove() {
 
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
 	animstate->bLanding = animlayers[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
-	memcpy(local_layers, animlayers, sizeof(AnimationLayer) * 13);
 
 	if (ctx.send_packet && !Exploits->IsHidingShot() && animstate->nLastUpdateFrame == GlobalVars->framecount) {
 		FixLegMovement(animlayers_backup);
@@ -67,8 +65,7 @@ void CAnimationSystem::OnCreateMove() {
 		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flFootYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
 
-		for (auto& cb : Lua->hooks.getHooks(LUA_POST_ANIMUPDATE))
-			cb.func(Cheat.LocalPlayer);
+		LUA_CALL_HOOK(LUA_POST_ANIMUPDATE, Cheat.LocalPlayer);
 
 		QAngle backup_eye_angles = Cheat.LocalPlayer->m_angEyeAngles();
 		QAngle backup_render_angles = Cheat.LocalPlayer->v_angle();
@@ -79,6 +76,7 @@ void CAnimationSystem::OnCreateMove() {
 	}
 
 	local_anims.last_update = GlobalVars->curtime;
+	memcpy(local_layers, animlayers, sizeof(AnimationLayer) * 13);
 
 	GlobalVars->curtime = curtimeBackup;
 	memcpy(animlayers, animlayers_backup, sizeof(AnimationLayer) * 13);
@@ -235,6 +233,23 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 			float vel_length = player->m_vecVelocity().Q_Length();
 			if (vel_length > max_speed)
 				player->m_vecVelocity() *= max_speed / vel_length;
+
+			float anim_speed = 0.f;
+
+			if (record->prev_record->m_fFlags & FL_ONGROUND
+				&& record->animlayers[11].m_flWeight > 0.f
+				&& record->animlayers[11].m_flWeight < 1.f
+				&& record->animlayers[11].m_flPlaybackRate == record->prev_record->animlayers[11].m_flPlaybackRate) {
+				auto anim_modifier = 0.35f * (1.f - record->animlayers[11].m_flWeight);
+				if (anim_modifier > 0.f && anim_modifier < 1.f) {
+					float vel_mod = anim_modifier + 0.55f;
+					if (vel_mod < 0.9f || vel_length < vel_mod * max_speed)
+						anim_speed = max_speed * vel_mod;
+				}
+			}
+
+			if (anim_speed > 0.f)
+				player->m_vecVelocity() *= anim_speed / player->m_vecVelocity().Q_Length();
 
 			if (record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight <= 0.f)
 				player->m_vecVelocity() = Vector(0, 0, 0);

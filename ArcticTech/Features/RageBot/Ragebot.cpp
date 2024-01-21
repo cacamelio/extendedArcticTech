@@ -246,6 +246,9 @@ void CRagebot::SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& target
 			continue;
 		}
 
+		if (!target_records.empty() && CompareRecords(record, target_records.back()))
+			continue;
+
 		if (ex_back) {
 			target_records.push(record);
 			continue;

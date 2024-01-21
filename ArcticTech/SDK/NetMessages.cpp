@@ -48,6 +48,31 @@ void CNetMessages::SendNetMessage(SharedVoiceData_t* data) {
 	}
 }
 
+void CNetMessages::SendDataRaw(VoiceDataOther* data) {
+	CCLCMsg_VoiceData_t msg;
+
+	msg.has_bits() = 63;
+	msg.format() = 0;
+
+	msg.xuid_low() = data->xuid_low;
+	msg.xuid_high() = data->xuid_high;
+	msg.section_number() = data->section_number;
+	msg.sequence_bytes() = data->sequence_bytes;
+	msg.uncompressed_sample_offset() = data->uncompressed_sample_offset;
+
+
+	//player_info_t pinfo;
+	//if (EngineClient->GetPlayerInfo(EngineClient->GetLocalPlayer(), &pinfo)) {
+	//	msg.xuid() = pinfo.steamID64;
+	//	msg.has_bits() |= VoiceData_Has::Xuid;
+	//}
+
+	INetChannel* netChan = ClientState->m_NetChannel;
+
+	if (netChan)
+		netChan->SendNetMsg(&msg, false, true);
+}
+
 bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	if (msg.client + 1 == EngineClient->GetLocalPlayer())
 		return true;
@@ -66,12 +91,11 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	lua_voice_data.uncompressed_sample_offset = msg.uncompressed_sample_offset;
 	lua_voice_data.format = msg.format;
 
-	for (auto& func : Lua->hooks.getHooks(LUA_VOICE_DATA)) {
-		func.func(lua_voice_data);
-	}
+	LUA_CALL_HOOK(LUA_VOICE_DATA, lua_voice_data);
 
 	VoiceDataOther data_o;
-	data_o.xuid = msg.xuid;
+	data_o.xuid_low = msg.xuid_low;
+	data_o.xuid_high = msg.xuid_high;
 	data_o.section_number = msg.section_number;
 	data_o.sequence_bytes = msg.sequence_bytes;
 	data_o.uncompressed_sample_offset = msg.uncompressed_sample_offset;
@@ -94,14 +118,12 @@ bool CNetMessages::OnVoiceDataRecieved(const CSVCMsg_VoiceData& msg) {
 	player_info_t info;
 	EngineClient->GetPlayerInfo(msg.client + 1, &info);
 
-	SharedVoiceData_t* data = new SharedVoiceData_t;
-	data->xuid_high = msg.xuid_high;
-	data->section_number = msg.section_number;
-	data->sequence_bytes = msg.sequence_bytes;
-	data->uncompressed_sample_offset = msg.uncompressed_sample_offset;
+	SharedVoiceData_t data;
+	data.xuid_high = msg.xuid_high;
+	data.section_number = msg.section_number;
+	data.sequence_bytes = msg.sequence_bytes;
+	data.uncompressed_sample_offset = msg.uncompressed_sample_offset;
 
 	for (auto handler : m_arcticDataCallbacks)
-		handler(data);
-
-	delete data;
+		handler(&data);
 }

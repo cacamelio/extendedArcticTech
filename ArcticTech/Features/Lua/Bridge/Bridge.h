@@ -7,7 +7,6 @@
 #pragma comment(lib, "lua51.lib")
 #pragma comment(lib, "luajit.lib")
 
-
 #define SOL_SAFE_FUNCTION_CALLS 1
 #define SOL_SAFE_FUNCTION 1
 #include "../Hook/Hook.h"

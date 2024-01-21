@@ -90,6 +90,7 @@ public:
 	ESPInfo_t&	GetESPInfo(int idx) { return esp_info[idx]; };
 	void		ProcessSound(const SoundInfo_t& sound);
 	void		RegisterCallback();
+	void		AntiFatality();
 
 	void		UpdatePlayer(int id);
 	void		Draw();

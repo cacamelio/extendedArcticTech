@@ -62,6 +62,7 @@ typedef bool(__fastcall* tCIsPaused)(CClientState*, void*);
 typedef float(__fastcall* tGetFOV)(CBasePlayer*, void*);
 typedef bool(__fastcall* tIsConnected)(IVEngineClient*, void*);
 typedef void(__fastcall* tReadPackets)(bool);
+typedef void(__fastcall* tAddRenderableToList)(void*, void*, IClientRenderable*, bool, int, int, int);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -103,6 +104,7 @@ inline tCIsPaused oCIsPaused;
 inline tGetFOV oGetFOV;
 inline tIsConnected oIsConnected;
 inline tReadPackets oReadPackets;
+inline tAddRenderableToList oAddRenderableToList;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

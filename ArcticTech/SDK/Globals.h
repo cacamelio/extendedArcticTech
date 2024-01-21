@@ -58,11 +58,9 @@ struct Ctx_t {
 
 	int corrected_tickbase = 0;
 
-	std::vector<int> shifted_commands;
 	std::vector<int> sent_commands;
 
 	void reset() {
-		shifted_commands.clear();
 		sent_commands.clear();
 		tickbase_shift = 0;
 		local_velocity = Vector();

@@ -200,6 +200,7 @@ void CConfig::Init() {
     add(config.visuals.esp.hitsound);
     add(config.visuals.esp.shared_esp);
     add(config.visuals.esp.share_with_enemies);
+    add(config.visuals.esp.anti_fatality);
     add(config.visuals.esp.hitmarker);
     add(config.visuals.esp.hitmarker_color);
     add(config.visuals.esp.damage_marker);

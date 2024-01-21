@@ -180,6 +180,9 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 				return true;
 			else if (code == 1)
 				return false;
+		} else {
+			sol::error er = result;
+			Console->Error(er.what());
 		}
 	}
 
@@ -201,6 +204,10 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 			auto result = cb.func(Cheat.LocalPlayer, addAlpha);
 			if (result.valid() && result.get_type() == sol::type::number)
 				addAlpha = result.get<float>();
+			else if (!result.valid()) {
+				sol::error er = result;
+				Console->Error(er.what());
+			}
 		}
 	}
 

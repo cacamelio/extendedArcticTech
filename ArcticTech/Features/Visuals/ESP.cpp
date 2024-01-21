@@ -55,6 +55,9 @@ void ParseOtherShared(const VoiceDataOther* data) {
 	if (fatal_data->identifier != 0x7FFA && fatal_data->identifier != 0x7FFB)
 		return;
 
+	if (fatal_data->server_tick == 0xDEADC0DE)
+		return;
+
 	int ent_index = EngineClient->GetPlayerForUserID(fatal_data->user_id);
 	auto& esp_info = WorldESP->GetESPInfo(ent_index);
 	const auto player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(ent_index));
@@ -122,6 +125,24 @@ void CWorldESP::ProcessSound(const SoundInfo_t& sound) {
 
 	info.m_flLastUpdateTime = GlobalVars->curtime;
 	info.m_bValid = true;
+}
+
+void CWorldESP::AntiFatality() {
+	SharedEsp_Fatality data;
+	data.identifier = 0x7FFA;
+	data.server_tick = 0xDEADC0DE;
+	data.weapon_id = Ssg08;
+	data.pos = Vector(12, 12, 13);
+
+	for (int i = 0; i < GlobalVars->max_clients; i++) {
+		CBasePlayer* pl = (CBasePlayer*)EntityList->GetClientEntity(i);
+		if (!pl)
+			continue;
+		player_info_t info;
+		EngineClient->GetPlayerInfo(i, &info);
+		data.user_id = info.userId;
+		NetMessages->SendDataRaw((VoiceDataOther*)&data);
+	}
 }
 
 void CWorldESP::UpdatePlayer(int id) {
@@ -206,13 +227,22 @@ void CWorldESP::UpdatePlayer(int id) {
 
 	Vector2 head = Render->WorldToScreen(info.m_vecOrigin + Vector(0, 0, playerHeight));
 	Vector2 feet = Render->WorldToScreen(info.m_vecOrigin);
-	int h = feet.y - head.y;
-	int w = (h / playerHeight) * 32;
-	int bboxCenter = (feet.x + head.x) * 0.5f;
-	info.m_BoundingBox[0] = Vector2(bboxCenter - w * 0.5f, head.y);
-	info.m_BoundingBox[1] = Vector2(bboxCenter + w * 0.5f, feet.y);
 
-	info.m_bValid = info.m_BoundingBox[0].x > 0 && info.m_BoundingBox[0].y > 0 && info.m_BoundingBox[1].x < Cheat.ScreenSize.x&& info.m_BoundingBox[1].y < Cheat.ScreenSize.y;
+	if (!head.Invalid() && !feet.Invalid()) {
+		if (head.y > feet.y)
+			std::swap(head.y, head.x);
+
+		int h = feet.y - head.y;
+		int w = (h / playerHeight) * 32;
+		int bboxCenter = (feet.x + head.x) * 0.5f;
+		info.m_BoundingBox[0] = Vector2(bboxCenter - w * 0.5f, head.y);
+		info.m_BoundingBox[1] = Vector2(bboxCenter + w * 0.5f, feet.y);
+
+		info.m_bValid = info.m_BoundingBox[0].x > 0 && info.m_BoundingBox[0].y > 0 && info.m_BoundingBox[1].x < Cheat.ScreenSize.x && info.m_BoundingBox[1].y < Cheat.ScreenSize.y;
+	}
+	else {
+		info.m_bValid = false;
+	}
 
 	if (info.m_bDormant) {
 		float unupdatedTime = GlobalVars->curtime - info.m_flLastUpdateTime;
@@ -381,10 +411,10 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 	if (config.visuals.esp.flags->get(5) && info.m_bBreakingLagComp && !dormant)
 		flags.emplace_back("LC", Color(210, 0, 40, 255 * info.m_flAlpha));
 
-	if (config.visuals.esp.flags->get(7) && info.m_bHit)
+	if (config.visuals.esp.flags->get(7) && info.m_bHit && Cheat.LocalPlayer->IsAlive())
 		flags.emplace_back("HIT", Color(215, 255 * info.m_flAlpha));
 
-	if (config.visuals.esp.flags->get(6) && record && !dormant && Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive()) {
+	if (config.visuals.esp.flags->get(6) && record && !dormant && Cheat.LocalPlayer->IsAlive()) {
 		std::string rtype;
 		switch (record->resolver_data.resolver_type)
 		{
@@ -421,6 +451,11 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 		Render->Text(flag.flag, Vector2(info.m_BoundingBox[1].x + 3, info.m_BoundingBox[0].y + line_offset), dormant ? dormant_color : flag.color, SmallFont, TEXT_OUTLINED);
 		line_offset += 10;
 	}
+
+	//if (record) {
+	//	Render->Line(Render->WorldToScreen(record->m_vecOrigin), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color());
+	//	Render->Text(std::to_string(record->m_vecVelocity.Q_Length()), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color(), SmallFont, TEXT_OUTLINED);
+	//}
 }
 
 void CWorldESP::DrawWeapon(const ESPInfo_t& info) {

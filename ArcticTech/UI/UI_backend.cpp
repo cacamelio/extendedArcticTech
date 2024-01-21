@@ -16,6 +16,7 @@
 #include "../SDK/Interfaces.h"
 #include "../SDK/Misc/xorstr.h"
 #include "../SDK/Globals.h"
+#include "../Utils/Console.h"
 
 #include "../Features/RageBot/Ragebot.h"
 
@@ -309,8 +310,13 @@ void CCheckBox::Render() {
     if (ImGui::Checkbox(name.c_str(), &value)) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 
     if (additional) {
@@ -323,8 +329,13 @@ void CSliderInt::Render() {
     if (ImGui::SliderInt(name.c_str(), &value, min, max, format.c_str(), flags)) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
@@ -332,8 +343,13 @@ void CSliderFloat::Render() {
     if (ImGui::SliderFloat(name.c_str(), &value, min, max, format.c_str(), flags)) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
@@ -344,8 +360,13 @@ void CKeyBind::Render() {
 
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
@@ -362,8 +383,13 @@ void CColorPicker::Render() {
     if (ImGui::ColorEdit4(name.c_str(), value, ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_AlphaBar | (has_alpha ? 0 : ImGuiColorEditFlags_NoAlpha))) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
@@ -371,8 +397,13 @@ void CComboBox::Render() {
     if (ImGui::Combo(name.c_str(), &value, elements.data(), static_cast<int>(elements.size()), 5, ImGui::GetContentRegionMax().x - ImGui::GetStyle().WindowPadding.x)) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
@@ -380,8 +411,13 @@ void CMultiCombo::Render() {
     if (ImGui::MultiCombo(name.c_str(), value, elements.data(), elements.size(), ImGui::GetContentRegionMax().x - ImGui::GetStyle().WindowPadding.x)) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
@@ -389,8 +425,13 @@ void CButton::Render() {
     if (ImGui::Button(name.c_str())) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
@@ -398,8 +439,13 @@ void CInputBox::Render() {
     if (ImGui::TextField(name.c_str(), nullptr, buf, 64, flags)) {
         for (auto& cb : callbacks)
             cb();
-        for (auto lcb : lua_callbacks)
-            lcb.func();
+        for (auto lcb : lua_callbacks) {
+            auto res = lcb.func();
+            if (!res.valid()) {
+                sol::error er = res;
+                Console->Error(er.what());
+            }
+        }
     }
 }
 
