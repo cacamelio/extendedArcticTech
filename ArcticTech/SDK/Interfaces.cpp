@@ -108,4 +108,7 @@ void Interfaces::Initialize() {
 	cvars.mp_friendlyfire = CVar->FindVar("mp_friendlyfire");
 	cvars.net_earliertempents = CVar->FindVar("net_earliertempents");
 	cvars.cl_threaded_bone_setup = CVar->FindVar("cl_threaded_bone_setup");
+	cvars.dsp_slow_cpu = CVar->FindVar("dsp_slow_cpu");
+	cvars.r_eyegloss = CVar->FindVar("r_eyegloss");
+	cvars.r_eyemove = CVar->FindVar("r_eyemove");
 }

@@ -287,7 +287,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 void CResolver::OnMiss(CBasePlayer* player, LagRecord* record) {
 	auto bf_data = &resolver_data[player->EntIndex()];
 
-	if (bf_data->missed_shots % 3 && bf_data->missed_shots > 0)
+	if (bf_data->missed_shots % 3 || bf_data->missed_shots == 0)
 		bf_data->brute_side = (record->resolver_data.side == 0) ? -1 : -record->resolver_data.side;
 	bf_data->brute_time = GetTime();
 	bf_data->missed_shots++;

@@ -276,6 +276,14 @@ namespace api {
 		}
 	}
 
+	float to_time(int ticks) {
+		return TICKS_TO_TIME(ticks);
+	}
+
+	int to_ticks(float time) {
+		return TIME_TO_TICKS(time);
+	}
+
 	namespace client {
 		void add_callback(sol::this_state state, std::string event_name, sol::protected_function func) {
 			const std::string script_name = GetCurrentScript(state);
@@ -403,6 +411,16 @@ namespace api {
 
 		bool is_recording_voice() {
 			return EngineClient->IsVoiceRecording();
+		}
+
+		SYSTEMTIME get_local_time() {
+			SYSTEMTIME time;
+			GetLocalTime(&time);
+			return time;
+		}
+
+		uint32_t get_unix_time() {
+			return std::time(0);
 		}
 	}
 
@@ -767,6 +785,30 @@ namespace api {
 			return data;
 		}
 
+		int get_model_index(std::string model) {
+			return ModelInfoClient->GetModelIndex(model.c_str());
+		}
+
+		bool precache_model(std::string model) {
+			const auto modelprecache = NetworkStringTableContainer->FindTable("modelprecache");
+
+			if (modelprecache) {
+				int MdlNum = modelprecache->AddString(false, model.c_str());
+
+				if (MdlNum == NULL)
+					return false;
+			}
+			return true;
+		}
+
+		INetChannelInfo* get_net_channel() {
+			return EngineClient->GetNetChannelInfo();
+		}
+
+		void set_clantag(std::string tag) {
+			Utils::SetClantag(tag.c_str());
+		}
+
 		bool is_key_pressed(int key) {
 			return GetAsyncKeyState(key) & 0x8000;
 		}
@@ -1081,6 +1123,10 @@ namespace api {
 			return reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(EngineClient->GetLocalPlayer()));
 		}
 
+		CCSPlayerResource* get_player_resource() {
+			return PlayerResource;
+		}
+
 		sol::table get_simulation_time(sol::this_state state, CBasePlayer* pl) {
 			sol::table result(state, sol::new_table{});
 			result[1] = pl->m_flSimulationTime();
@@ -1122,6 +1168,13 @@ namespace api {
 				switch (array_prop.m_RecvType)
 				{
 				case DPT_Int:
+					if (array_prop.m_ProxyFn) {
+						if (array_prop.m_ProxyFn == recvproxy_int32_to_int8)
+							return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<bool*>((uintptr_t)ent + prop.offset)));
+						else if (array_prop.m_ProxyFn == recvproxy_int32_to_int16)
+							return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<short*>((uintptr_t)ent + prop.offset)));
+					}
+
 					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<int*>((uintptr_t)ent + prop.offset)));
 				case DPT_Float:
 					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<float*>((uintptr_t)ent + prop.offset)));
@@ -1137,6 +1190,13 @@ namespace api {
 				switch (dt_prop.m_RecvType)
 				{
 				case DPT_Int:
+					if (dt_prop.m_ProxyFn) {
+						if (dt_prop.m_ProxyFn == recvproxy_int32_to_int8)
+							return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<bool*>((uintptr_t)ent + prop.offset)));
+						else if (dt_prop.m_ProxyFn == recvproxy_int32_to_int16)
+							return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<short*>((uintptr_t)ent + prop.offset)));
+					}
+
 					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<int*>((uintptr_t)ent + prop.offset)));
 				case DPT_Float:
 					return sol::make_object(state, ArrayWrapper_Lua(reinterpret_cast<float*>((uintptr_t)ent + prop.offset)));
@@ -1153,6 +1213,39 @@ namespace api {
 			}
 
  			return sol::nil;
+		}
+
+		void set_prop(sol::this_state state, CBaseEntity* ent, std::string prop_name, sol::object new_value) {
+			static auto recvproxy_int32_to_int8 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 8A 48 08 8B 45 10");
+			static auto recvproxy_int32_to_int16 = Utils::PatternScan("client.dll", "55 8B EC 8B 45 08 66 8B 48 08 8B 45 10 66 89 08");
+
+			auto prop = NetVars::FindProp(ent->GetClientClass()->m_pRecvTable, prop_name);
+
+			if (prop.offset == 0)
+				return;
+
+			switch (prop.prop->m_RecvType)
+			{
+			case DPT_Int: {
+				if (prop.prop->m_ProxyFn) {
+					if (prop.prop->m_ProxyFn == recvproxy_int32_to_int8)
+						*reinterpret_cast<bool*>((uintptr_t)ent + prop.offset) = new_value.as<bool>();
+					else if (prop.prop->m_ProxyFn == recvproxy_int32_to_int16)
+						*reinterpret_cast<short*>((uintptr_t)ent + prop.offset) = new_value.as<short>();
+					return;
+				}
+
+				*reinterpret_cast<int*>((uintptr_t)ent + prop.offset) = new_value.as<int>();
+				return;
+			}
+			case DPT_Float:
+				*reinterpret_cast<float*>((uintptr_t)ent + prop.offset) = new_value.as<float>();
+				return;
+			case DPT_Vector:
+			case DPT_VectorXY:
+				*reinterpret_cast<Vector*>((uintptr_t)ent + prop.offset) = new_value.as<Vector>();
+				return;
+			}
 		}
 
 		Vector obb_maxs(sol::this_state state, CBaseEntity* ent) {
@@ -1196,6 +1289,10 @@ namespace api {
 
 		float get_dormant_last_update(CBasePlayer* pl) {
 			return WorldESP->GetESPInfo(pl->EntIndex()).m_flLastUpdateTime;
+		}
+
+		float get_esp_alpha(CBasePlayer* pl) {
+			return WorldESP->GetESPInfo(pl->EntIndex()).m_flAlpha;
 		}
 
 		uintptr_t ptr(CBaseEntity* ent) {
@@ -1366,9 +1463,15 @@ void CLua::Setup() {
 	std::filesystem::create_directory(std::filesystem::current_path().string() + "/at/scripts/cfg");
 
 	lua = sol::state(sol::c_call<decltype(&LuaErrorHandler), &LuaErrorHandler>);
-	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::jit, sol::lib::ffi, sol::lib::bit32);
+	lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::math, sol::lib::table, sol::lib::debug, sol::lib::package, sol::lib::jit, sol::lib::ffi, sol::lib::bit32, sol::lib::os);
 
 	lua["math"]["angle_diff"] = Math::AngleDiff;
+	lua["to_ticks"] = api::to_ticks;
+	lua["to_time"] = api::to_ticks;
+	lua["print"] = api::print;
+	lua["error"] = api::error;
+	lua["print_raw"] = api::print_raw;
+	lua["safe_call"] = api::safe_call;
 
 	// usertypes
 	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor, 
@@ -1446,10 +1549,12 @@ void CLua::Setup() {
 		"collision_origin", api::entity::collision_origin,
 		"is_player", api::entity::is_player,
 		"is_weapon", api::entity::is_weapon,
+		"set_model_index", &CBaseEntity::SetModelIndex,
 		"ptr", api::entity::ptr,
 		"get_classid", api::entity::get_classid,
 		"get_classname", api::entity::get_classname,
-		"__index", api::entity::get_prop
+		"__index", api::entity::get_prop,
+		"__newindex", api::entity::set_prop
 	);
 
 	lua.new_usertype<CBaseCombatWeapon>("weapon_t", sol::no_constructor,
@@ -1463,6 +1568,7 @@ void CLua::Setup() {
 		"is_knife", &CBaseCombatWeapon::IsKnife,
 		"get_weapon_info", &CBaseCombatWeapon::GetWeaponInfo,
 		"__index", api::entity::get_prop,
+		"__newindex", api::entity::set_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
 
@@ -1538,14 +1644,22 @@ void CLua::Setup() {
 		"get_player_info", api::entity::get_player_info,
 		"get_eye_position", &CBasePlayer::GetEyePosition,
 		"get_bone_position", &CBasePlayer::GetBonePosition,
-		"get_hitbox_position", &api::entity::get_hitbox_position,
+		"get_hitbox_position", api::entity::get_hitbox_position,
 		"get_animstate", &CBasePlayer::GetAnimstate,
-		"get_animlayers", &api::entity::get_anim_layers,
+		"get_animlayers", api::entity::get_anim_layers,
 		"get_simulation_time", api::entity::get_simulation_time,
-		"get_dormant_last_update", &api::entity::get_dormant_last_update,
+		"get_dormant_last_update", api::entity::get_dormant_last_update,
+		"get_esp_alpha", api::entity::get_esp_alpha,
 		"get_bounding_box", api::entity::get_bbox,
 		"set_icon", &CBasePlayer::SetIcon,
 		"__index", api::entity::get_prop,
+		"__newindex", api::entity::set_prop,
+		sol::base_classes, sol::bases<CBaseEntity>()
+	);
+
+	lua.new_usertype<CCSPlayerResource>("player_resource_t", sol::no_constructor,
+		"__index", api::entity::get_prop,
+		"__newindex", api::entity::set_prop,
 		sol::base_classes, sol::bases<CBaseEntity>()
 	);
 
@@ -1566,6 +1680,7 @@ void CLua::Setup() {
 	);
 
 	DEF_LUA_ARR(int);
+	DEF_LUA_ARR(bool);
 	DEF_LUA_ARR(float);
 	DEF_LUA_ARR(Vector);
 	DEF_LUA_ARR(char*);
@@ -1693,11 +1808,37 @@ void CLua::Setup() {
 		"string", api::cvar::convar_string
 	);
 
-	// _G
-	lua["print"] = api::print;
-	lua["error"] = api::error;
-	lua["print_raw"] = api::print_raw;
-	lua["safe_call"] = api::safe_call;
+	lua.new_usertype<SYSTEMTIME>("systime_t", sol::no_constructor,
+		"year", &SYSTEMTIME::wYear,
+		"month", &SYSTEMTIME::wMonth,
+		"day", &SYSTEMTIME::wDay,
+		"day_of_week", &SYSTEMTIME::wDayOfWeek,
+		"hour", &SYSTEMTIME::wHour,
+		"minute", &SYSTEMTIME::wMinute,
+		"second", &SYSTEMTIME::wSecond,
+		"millisecond", &SYSTEMTIME::wMilliseconds
+	);
+
+	lua.new_usertype<INetChannelInfo>("net_channel_info_t", sol::no_constructor, 
+		"get_name", &INetChannelInfo::GetName,
+		"get_address", &INetChannelInfo::GetAddress,
+		"get_time", &INetChannelInfo::GetTime,
+		"get_time_connected", &INetChannelInfo::GetTimeConnected,
+		"get_timeout_seconds", &INetChannelInfo::GetTimeoutSeconds,
+		"get_time_since_last_received", &INetChannelInfo::GetTimeSinceLastReceived,
+		"get_latency", &INetChannelInfo::GetLatency,
+		"get_avg_latency", &INetChannelInfo::GetAvgLatency,
+		"get_loss", &INetChannelInfo::GetAvgLoss,
+		"get_choke", &INetChannelInfo::GetAvgChoke,
+		"get_packets", &INetChannelInfo::GetAvgPackets,
+		"get_data", &INetChannelInfo::GetAvgData,
+		"get_sequence", &INetChannelInfo::GetSequenceNr,
+		"is_loopback", &INetChannelInfo::IsLoopback,
+		"is_timing_out", &INetChannelInfo::IsTimingOut,
+		"is_playback", &INetChannelInfo::IsPlayback,
+		"is_valid_packet", &INetChannelInfo::IsValidPacket,
+		"get_packet_time", &INetChannelInfo::GetPacketTime
+	);
 
 	// client
 	lua.create_named_table("client",
@@ -1709,7 +1850,9 @@ void CLua::Setup() {
 	// entity
 	lua.create_named_table("entity",
 		"get", api::entity::get,
-		"get_local_player", api::entity::get_local_player
+		"get_local_player", api::entity::get_local_player,
+		"get_player_resource", api::entity::get_player_resource,
+		"from_handle", api::entity::from_handle
 	);
 
 	// ui
@@ -1773,7 +1916,11 @@ void CLua::Setup() {
 	);
 
 	lua.create_named_table("common",
-		"get_map_shortname", api::common::get_map_shortname
+		"get_map_name", api::common::get_map_name,
+		"get_map_shortname", api::common::get_map_shortname,
+		"get_local_time", api::common::get_local_time,
+		"get_unix_time", api::common::get_unix_time,
+		"is_recording_voice", api::common::is_recording_voice
 	);
 
 	lua.create_named_table("files",
@@ -1805,6 +1952,10 @@ void CLua::Setup() {
 		"trace_line", api::utils::trace_line,
 		"trace_hull", api::utils::trace_hull,
 		"trace_bullet", api::utils::trace_bullet,
+		"get_model_index", api::utils::get_model_index,
+		"precache_model", api::utils::precache_model,
+		"set_clantag", api::utils::set_clantag,
+		"get_net_channel", api::utils::get_net_channel,
 		"is_key_pressed", api::utils::is_key_pressed,
 		"get_mouse_position", api::utils::get_mouse_position,
 		"send_voice_message", api::utils::send_voice_message
@@ -1878,8 +2029,6 @@ void CLua::LoadScript( int id ) {
 	script.loaded = true;
 	script.env = new sol::environment(lua, sol::create, lua.globals());
 
-	sol::environment& env = *script.env;
-
 	bool error_load = false;
 
 	auto load_result_func = [&error_load, script](lua_State* state, sol::protected_function_result result) {
@@ -1892,23 +2041,25 @@ void CLua::LoadScript( int id ) {
 		return result;
 	};
 
-	lua.safe_script_file(path, env, load_result_func);
+	lua.safe_script_file(path, *script.env, load_result_func);
 
 	LuaLoadConfig(&script);
 
 	if (error_load)
-	{
 		UnloadScript(id);
-
-		RefreshUI();
-		return;
-	}
 
 	RefreshUI();
 }
 
+struct PendingDeallocation_t {
+	float time = 0.f;
+	sol::environment* env;
+};
+static std::vector<PendingDeallocation_t> pending_deallocations;
+
+
 void CLua::UnloadScript(int id) {
-	if (id == -1 )
+	if (id == -1)
 		return;
 
 	LuaScript_t& script = scripts[id];
@@ -1958,8 +2109,10 @@ void CLua::UnloadScript(int id) {
 	}
 
 	hooks.unregisterHooks(id);
+
+	pending_deallocations.emplace_back(GlobalVars->realtime + 5.f, script.env);
+
 	script.loaded = false;
-	delete script.env;
 	script.env = nullptr;
 
 	RefreshUI();
@@ -2054,6 +2207,18 @@ std::vector<std::string> CLua::GetLoadedScripts() {
 	}
 
 	return result;
+}
+
+void CLua::OnFrameUpdate() {
+	for (auto it = pending_deallocations.begin(); it != pending_deallocations.end();) {
+		if (it->time < GlobalVars->realtime) {
+			it++;
+			continue;
+		}
+
+		delete it->env;
+		it = pending_deallocations.erase(it);
+	}
 }
 
 CLua* Lua = new CLua;

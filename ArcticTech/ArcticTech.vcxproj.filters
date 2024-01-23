@@ -338,9 +338,6 @@
     <ClInclude Include="SDK\Interfaces\IGameEvents.h">
       <Filter>SDK\Interfaces</Filter>
     </ClInclude>
-    <ClInclude Include="SDK\Interfaces\CCSPlayerResource.h">
-      <Filter>SDK\Interfaces</Filter>
-    </ClInclude>
     <ClInclude Include="SDK\Misc\UtlVector.h">
       <Filter>SDK\Misc</Filter>
     </ClInclude>
@@ -552,6 +549,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Features\Misc\PingReducer.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\Interfaces\CCSPlayerResource.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

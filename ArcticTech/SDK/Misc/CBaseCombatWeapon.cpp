@@ -8,6 +8,11 @@
 #include "../../Features/RageBot/Exploits.h"
 
 
+std::string CCSWeaponData::GetName() {
+	const wchar_t* name = Localize->FindSafe(szHudName);
+	return Localize->utf16le_to_utf8(name);
+}
+
 CCSWeaponData* CBaseCombatWeapon::GetWeaponInfo() {
 	if (!this)
 		return nullptr;

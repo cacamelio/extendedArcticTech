@@ -290,19 +290,6 @@ struct CCSGOPlayerAnimationState
     float		flAimPitchMin;
     float		flAimPitchMax;
     int         iAnimsetVersion;
-
-    float& YawDesyncAdjustement()
-    {
-        return *(float*)((uintptr_t)this + 0x334);
-    }
-
-    void SetTickInterval() {
-        if (nLastUpdateFrame > GlobalVars->framecount - 1)
-            nLastUpdateFrame = GlobalVars->framecount - 1;
-
-        if (flLastUpdateTime >= GlobalVars->curtime)
-            flLastUpdateTime = GlobalVars->curtime - GlobalVars->interval_per_tick;
-    }
 };
 static_assert(sizeof(CCSGOPlayerAnimationState) == 0x348);
 
@@ -348,7 +335,7 @@ public:
     int m_WritableBones;		// Which bones can be written.
 };
 
-
+class CStudioHdr;
 
 #define MAX_WEAPONS 64
 #define MAX_VIEWMODELS 2

@@ -430,6 +430,9 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		cvars.net_earliertempents->SetInt(1);
 		cvars.cl_interp->SetFloat(0.015625f);
 		cvars.cl_interp_ratio->SetInt(2);
+		cvars.r_eyegloss->SetInt(0);
+		cvars.r_eyemove->SetInt(0);
+		cvars.dsp_slow_cpu->SetInt(1);
 
 		GrenadePrediction::PrecacheParticles();
 		Ragebot->CalcSpreadValues();
@@ -601,6 +604,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	}
 	case FRAME_NET_UPDATE_START:
 		Miscellaneous::PreserveKillfeed();
+		Lua->OnFrameUpdate();
 		break;
 	case FRAME_NET_UPDATE_END:
 		LagCompensation->OnNetUpdate();
@@ -847,6 +851,7 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 
 		if (net_channel) {
 			auto backup_choke = ClientState->m_nChokedCommands;
+			ClientState->m_nChokedCommands = 0;
 			net_channel->m_nChokedPackets = 0;
 			net_channel->m_nOutSequenceNr--;
 			net_channel->SendDatagram();
@@ -1200,6 +1205,11 @@ void Hooks::Initialize() {
 
 	Memory->BytePatch(Utils::PatternScan("client.dll", "75 30 38 87"), { 0xEB }); // CameraThink sv_cheats check skip
 	//Memory->BytePatch(Utils::PatternScan("engine.dll", "B8 ? ? ? ? 3B F0 0F 4F F0 89 5D"), { 0xB8, 0x11 }); // Bypass 15 tick limit
+
+	const char* fart[]{ "client.dll", "engine.dll", "server.dll", "studiorender.dll", "materialsystem.dll", "shaderapidx9.dll", "vstdlib.dll", "vguimatsurface.dll" };
+	long long amongus = 0x69690004C201B0;
+	for (auto sex : fart) 
+		WriteProcessMemory(GetCurrentProcess(), (LPVOID)Utils::PatternScan(sex, "55 8B EC 56 8B F1 33 C0 57 8B 7D 08"), &amongus, 7, 0);
 }
 
 void Hooks::End() {

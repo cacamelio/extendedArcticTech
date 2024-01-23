@@ -348,6 +348,7 @@ void GrenadePrediction::Predict(const Vector& orign, const Vector& velocity, flo
 	nCollisionGroup = COLLISION_GROUP_PROJECTILE;
 	nBouncesCount = 0;
 	pLastHitEntity = 0;
+	broken_breakables.clear();
 	pathPoints.clear();
 	collisionPoints.clear();
 	detonate = false;
@@ -436,9 +437,8 @@ bool GrenadePrediction::PhysicsSimulate() {
 
 	PhysicsPushEntity(vecMove, trace);
 
-	if (detonate) {
+	if (detonate)
 		return true;
-	}
 
 	if (trace.fraction != 1.f) {
 		pathPoints.push_back(vecOrigin);
@@ -450,36 +450,48 @@ bool GrenadePrediction::PhysicsSimulate() {
 	return false;
 }
 
-void GrenadePrediction::TraceHull(Vector& src, Vector& end, uint32_t mask, void* ignore, int collisionGroup, CGameTrace& trace) {
-	static auto pTraceFilterSimple = Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 83 EC 7C 56 52", 0x3D);
+class CTraceFilterSkipBreakables : public ITraceFilter {
+public:
+	void* m_pIgnore = nullptr;
+	int m_nCollisionGroup = 0;
+	void* extra_func = nullptr;
+	std::vector<CBaseEntity*>* breakables = nullptr;
 
-	std::uintptr_t filter[4] = {
-			*reinterpret_cast<std::uintptr_t*> (pTraceFilterSimple),
-			reinterpret_cast<std::uintptr_t>   (ignore),
-			 (uintptr_t)(nCollisionGroup),
-			0
-	};
+	CTraceFilterSkipBreakables(void* skip, int collision_group, std::vector<CBaseEntity*>* breakables_) : m_pIgnore(skip), m_nCollisionGroup(collision_group), breakables(breakables_) {}
+
+	virtual bool ShouldHitEntity(IHandleEntity* ent, int mask) override {
+		static auto filter_simple_should_hit = reinterpret_cast<bool(__thiscall*)(void*, void*, int)>(Utils::PatternScan("client.dll", "55 8B EC 8B 55 ? 56 8B 75 ? 57 8B F9"));
+		if (!filter_simple_should_hit(this, ent, mask))
+			return false;
+
+		for (auto breakable : *breakables)
+			if ((CBaseEntity*)ent == breakable)
+				return false;
+
+		return true;
+	}
+
+	virtual TraceType GetTraceType() const override {
+		return TraceType::TRACE_EVERYTHING;
+	}
+};
+
+void GrenadePrediction::TraceHull(Vector& src, Vector& end, uint32_t mask, void* ignore, int collisionGroup, CGameTrace& trace) {
+	auto filter = CTraceFilterSkipBreakables(ignore, collisionGroup, &broken_breakables);
 
 	auto ray = Ray_t();
 
 	ray.Init(src, end, Vector(-2, -2, -2), Vector(2, 2, 2));
 
-	return EngineTrace->TraceRay(ray, mask, (CTraceFilter*)(filter), &trace);
+	return EngineTrace->TraceRay(ray, mask, &filter, &trace);
 }
 
 void GrenadePrediction::TraceLine(Vector& src, Vector& end, uint32_t mask, void* ignore, int collisionGroup, CGameTrace& trace) {
-	static auto pTraceFilterSimple = Utils::PatternScan("client.dll", "55 8B EC 83 E4 F0 83 EC 7C 56 52", 0x3D);
-
-	std::uintptr_t filter[4] = {
-			*reinterpret_cast<std::uintptr_t*> (pTraceFilterSimple),
-			reinterpret_cast<std::uintptr_t>   (ignore),
-			(uintptr_t)(nCollisionGroup),
-			0
-	};
+	auto filter = CTraceFilterSkipBreakables(ignore, collisionGroup, &broken_breakables);
 
 	auto ray = Ray_t();
 	ray.Init(src, end);
-	return EngineTrace->TraceRay(ray, mask, (CTraceFilter*)(filter), &trace);
+	return EngineTrace->TraceRay(ray, mask, &filter, &trace);
 }
 
 void GrenadePrediction::PhysicsTraceEntity(Vector& vecSrc, Vector& vecDst, uint32_t nMask, CGameTrace& pTrace) {
@@ -532,6 +544,7 @@ void GrenadePrediction::PerformFlyCollisionResolution(CGameTrace& pTrace) {
 		CBaseEntity* pEntity = reinterpret_cast<CBaseEntity*>(pTrace.hit_entity);
 		if (pEntity->IsBreakable()) {
 			vecVelocity *= 0.4f;
+			broken_breakables.push_back(pEntity);
 			return;
 		}
 

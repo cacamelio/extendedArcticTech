@@ -371,7 +371,7 @@ void CAntiAim::JitterMove() {
 bool CAntiAim::IsPeeking() {
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 	auto norm_vel = velocity.Q_Normalized();
-	Vector move_factor = velocity * TICKS_TO_TIME((ctx.cmd->buttons & IN_USE) ? 2.1f : 4.2f);
+	Vector move_factor = velocity * TICKS_TO_TIME((ctx.cmd->buttons & IN_USE) ? 2.2f : 4.3f);
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();

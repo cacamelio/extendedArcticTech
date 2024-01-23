@@ -74,6 +74,7 @@ public:
 	void UnloadAll();
 	void ReloadAll();
 	std::vector<std::string> GetLoadedScripts();
+	void OnFrameUpdate();
 
 	void RefreshScripts();
 	void RefreshUI();

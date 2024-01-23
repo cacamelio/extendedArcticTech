@@ -104,6 +104,9 @@ struct CVars {
 	ConVar* mp_friendlyfire;
 	ConVar* net_earliertempents;
 	ConVar* cl_threaded_bone_setup;
+	ConVar* dsp_slow_cpu;
+	ConVar* r_eyemove;
+	ConVar* r_eyegloss;
 };
 
 extern CheatState_t Cheat;

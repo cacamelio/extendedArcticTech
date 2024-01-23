@@ -1,6 +1,7 @@
 #include "CBaseEntity.h"
 #include "../../Utils/VitualFunction.h"
 #include "../../Utils/Utils.h"
+#include "../Interfaces.h"
 
 bool CBaseEntity::IsPlayer() {
 	return CallVFunction<bool(__thiscall*)(CBaseEntity*)>(this, 158)(this);
@@ -81,6 +82,21 @@ Vector CBaseEntity::GetWorldPosition() {
 
 bool CBaseEntity::IsBreakable() {
 	static auto _isBreakalbe = (bool(__thiscall*)(CBaseEntity*))Utils::PatternScan("client.dll", "55 8B EC 51 56 8B F1 85 F6 74 68");
+
+	auto v1 = GetClientClass();
+	if (!v1)
+		return false;
+
+	auto v2 = v1->m_ClassID;
+	if (v2 == C_BASE_BUTTON || v2 == C_PHYSICS_PROP)
+		return false;
+
+	auto v3 = (int)v1->m_pNetworkName;
+	if (*(DWORD*)v3 == 0x65724243 && *(DWORD*)(v3 + 7) == 0x53656C62) // intact window
+		return true;
+
+	if (*(DWORD*)v3 == 0x73614243 && *(DWORD*)(v3 + 7) == 0x79746974) // broken window
+		return true;
 
 	return _isBreakalbe(this);
 }

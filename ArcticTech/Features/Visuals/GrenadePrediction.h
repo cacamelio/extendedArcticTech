@@ -29,6 +29,7 @@ protected:
 	int nCollisionGroup;
 	CBasePlayer* owner;
 	CBaseEntity* pLastHitEntity;
+	std::vector<CBaseEntity*> broken_breakables;
 	int nBouncesCount;
 
 public:

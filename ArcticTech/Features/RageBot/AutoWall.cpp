@@ -93,12 +93,12 @@ bool CAutoWall::TraceToExit(CGameTrace& enterTrace, CGameTrace& exitTrace, const
 	switch (enterMaterial) {
 	case CHAR_TEX_PLASTER:
 		maxDistance = 50.f;
-		rayExtension = 6.f;
+		rayExtension = 4.f;
 		break;
 	case CHAR_TEX_ROCK:
 	case CHAR_TEX_CONCRETE:
 		maxDistance = 40.f;
-		rayExtension = 6.f;
+		rayExtension = 4.f;
 		break;
 	case CHAR_TEX_METAL:
 		maxDistance = 30.f;
@@ -184,7 +184,7 @@ bool CAutoWall::HandleBulletPenetration(CBasePlayer* attacker, CCSWeaponData* we
 		return false;
 
 	CGameTrace exitTrace;
-	if (!TraceToExit(enterTrace, exitTrace, enterTrace.endpos, direction, enterMaterial) && !(EngineTrace->GetPointContents(enterTrace.endpos, MASK_SHOT_HULL, nullptr) & MASK_SHOT_HULL))
+	if (!TraceToExit(enterTrace, exitTrace, enterTrace.endpos, direction, enterMaterial) && !(EngineTrace->GetPointContents_WorldOnly(enterTrace.endpos, MASK_SHOT_HULL) & MASK_SHOT_HULL))
 		return false;
 
 	float finalDamageModifier = 0.16f;

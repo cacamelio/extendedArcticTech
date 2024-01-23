@@ -311,7 +311,6 @@ bool CSkinChanger::LoadModel( const char* thisModelName )
 
 	if ( CustomModel )
 	{
-		ModelInfoClient->GetModelIndex( thisModelName );
 		int MdlNum = CustomModel->AddString(false, thisModelName);
 
 		if ( MdlNum == NULL )

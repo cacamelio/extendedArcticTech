@@ -1,22 +1,8 @@
 #pragma once
 
-#include "../../Utils/NetVars.h"
-#include "../../SDK/Misc/Vector.h"
+#include "../Misc/CBaseEntity.h"
 
-#define NETVAR(func, type, table, netvar)								\
-	type& func##() {								\
-		static int _##func = NetVars::GetNetVar(table, netvar);	\
-		return *(type*)(this + _##func);				\
-	}	
-
-#define PNETVAR(func, type, table, netvar)								\
-	type* func##() {								\
-		static int _##func = NetVars::GetNetVar(table, netvar);	\
-		return (type*)((uintptr_t)this + _##func);				\
-	}	
-
-
-class CCSPlayerResource
+class CCSPlayerResource : public CBaseEntity
 {
 public:
 	NETVAR(m_bombsiteCenterA, Vector, "DT_CSPlayerResource", "m_bombsiteCenterA");

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CBaseEntity.h"
+#include "../Render.h"
 
 #include <string>
 
@@ -71,10 +72,7 @@ public:
 	float flRecoilMagnitudeVariance[2]; // 0x01A8
 	int iSpreadSeed;				// 0x01B0
 
-    std::string GetName() {
-        const wchar_t* name = Localize->FindSafe(szHudName);
-        return Localize->utf16le_to_utf8(name);
-    }
+	std::string GetName();
 };
 
 enum WeaponId : short {

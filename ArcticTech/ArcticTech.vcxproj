@@ -206,6 +206,7 @@
     <ClInclude Include="Resources\hegrenade.h" />
     <ClInclude Include="Resources\inferno.h" />
     <ClInclude Include="Resources\molotov.h" />
+    <ClInclude Include="SDK\Interfaces\CCSPlayerResource.h" />
     <ClInclude Include="SDK\Interfaces\CGameRules.h" />
     <ClInclude Include="SDK\Interfaces\CHud.h" />
     <ClInclude Include="SDK\Interfaces\CStaticPropManager.h" />
@@ -214,7 +215,6 @@
     <ClInclude Include="SDK\Interfaces\ISteamHTTP.h" />
     <ClInclude Include="SDK\Interfaces\NetworkStringTable.h" />
     <ClInclude Include="SDK\Interfaces.h" />
-    <ClInclude Include="SDK\Interfaces\CCSPlayerResource.h" />
     <ClInclude Include="SDK\Interfaces\CGlobalVarsBase.h" />
     <ClInclude Include="SDK\Interfaces\CGlowObjectManager.h" />
     <ClInclude Include="SDK\Interfaces\CInput.h" />
