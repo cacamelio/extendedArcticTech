@@ -189,8 +189,8 @@ public:
 	virtual CSentence* GetSentence(CAudioSource* pAudioSource) = 0; // 15
 	virtual float                 GetSentenceLength(CAudioSource* pAudioSource) = 0;
 	virtual bool                  IsStreaming(CAudioSource* pAudioSource) const = 0;
-	virtual void                  GetViewAngles(QAngle* va) = 0;
-	virtual void                  SetViewAngles(QAngle* va) = 0;
+	virtual void                  GetViewAngles(QAngle& va) = 0;
+	virtual void                  SetViewAngles(const QAngle& va) = 0;
 	virtual int                   GetMaxClients(void) = 0; // 20
 	virtual const char* Key_LookupBinding(const char* pBinding) = 0;
 	virtual const char* Key_BindingForKey(int& code) = 0;

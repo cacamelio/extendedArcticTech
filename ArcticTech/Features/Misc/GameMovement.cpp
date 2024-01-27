@@ -70,6 +70,8 @@ void CMovement::AutoStrafe() {
 	if (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
 		if (ctx.cmd->buttons & IN_JUMP)
 			last_strafe_tick = ctx.cmd->command_number;
+		else
+			last_yaw = RAD2DEG(std::atan2f(ctx.local_velocity.y, ctx.local_velocity.x));
 		return;
 	}
 
@@ -196,7 +198,7 @@ void CMovement::QuickStop() {
 	Vector vec_speed = Cheat.LocalPlayer->m_vecVelocity();
 	QAngle direction = Math::VectorAngles(vec_speed);
 
-	QAngle view; EngineClient->GetViewAngles(&view);
+	QAngle view; EngineClient->GetViewAngles(view);
 	direction.yaw = view.yaw - direction.yaw;
 	direction.Normalize();
 

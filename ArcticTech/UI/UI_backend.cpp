@@ -123,7 +123,7 @@ void CMenu::Draw() {
 
             ImGui::GetWindowDrawList()->AddImage(pic::logo.texture, window_pos + ImVec2(181 / 2 - 128 / 2 + item_spacing.x / 2, item_spacing.y - 16), window_pos + ImVec2(181 / 2 + 128 / 2 + item_spacing.x / 2, item_spacing.y - 16 + 128), ImVec2(0, 0), ImVec2(1, 1));
 
-            //ImGui::GetWindowDrawList()->AddText(font::general, font::general->FontSize, window_pos + ImVec2(220, 35), ImColor(255, 255, 255), xorstr("Created by Penguin. May only be distributed with permission from Penguin. Credits: @shialex"));
+            ImGui::GetWindowDrawList()->AddText(font::general, font::general->FontSize, window_pos + ImVec2(220, 35), ImColor(255, 255, 255, 120), xorstr("credits: @nadoclient"));
 
             static int tabs = 0;
 
@@ -696,8 +696,8 @@ CInputBox* CMenuGroupbox::AddInput(const std::string& name, const std::string& i
     item->parent = this;
     item->flags = flags;
     
-    ZeroMemory(item->buf, 64);
-    std::memcpy(item->buf, init.c_str(), init.size());
+    memset(item->buf, 0, 64);
+    std::memcpy(item->buf, init.c_str(), min(init.size(), 64));
 
     widgets.push_back(item);
 

@@ -42,7 +42,6 @@ namespace Utils {
 	QAngle	VectorToAngle(Vector src, Vector dst);
 	void	VectorTransform(const Vector& vec1, const matrix3x4_t& mat, Vector& out);
 	float	GetFOV(QAngle& angle1, QAngle& angle2);
-	float	GetServerTime(CUserCmd* cmd);
 
 	void	MatrixMove(matrix3x4_t* matrix, int size, const Vector& from, const Vector& to);
 	void	MatrixMove(const matrix3x4_t* base, matrix3x4_t* result, int size, const Vector& from, const Vector& to);
@@ -52,6 +51,4 @@ namespace Utils {
 	void	HandleInput(std::string& str, int key);
 
 	void    SetClantag(const char* tag);
-	template<class C>
-	C* FindHudElement(const char* szName);
 }

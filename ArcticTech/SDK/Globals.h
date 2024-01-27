@@ -107,6 +107,8 @@ struct CVars {
 	ConVar* dsp_slow_cpu;
 	ConVar* r_eyemove;
 	ConVar* r_eyegloss;
+	ConVar* cl_pred_doresetlatch;
+	ConVar* sv_clockcorrection_msecs;
 };
 
 extern CheatState_t Cheat;

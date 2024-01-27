@@ -30,6 +30,8 @@ class CAnimationSystem {
 		AnimationLayer layers[13];
 		std::array<float, 24> poseparams;
 		float last_update = 0.f;
+
+		int command_number = 0;
 	} local_anims;
 
 	Vector sent_abs_origin;

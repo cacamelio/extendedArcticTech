@@ -230,7 +230,7 @@ void CWorldESP::UpdatePlayer(int id) {
 
 	if (!head.Invalid() && !feet.Invalid()) {
 		if (head.y > feet.y)
-			std::swap(head.y, head.x);
+			std::swap(head.y, feet.y);
 
 		int h = feet.y - head.y;
 		int w = (h / playerHeight) * 32;
@@ -247,12 +247,12 @@ void CWorldESP::UpdatePlayer(int id) {
 	if (info.m_bDormant) {
 		float unupdatedTime = GlobalVars->curtime - info.m_flLastUpdateTime;
 
-		if (unupdatedTime > 5)
-			info.m_flAlpha = (10 - unupdatedTime) * 0.2f;
+		if (unupdatedTime > 6)
+			info.m_flAlpha = max((6 - unupdatedTime) * 0.33f, 0.f);
 		else
 			info.m_flAlpha = 1.f;
 
-		if (unupdatedTime > 10)
+		if (unupdatedTime > 6)
 			info.m_bValid = false;
 	}
 	else {
@@ -527,11 +527,11 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 
 		float distance = (Cheat.LocalPlayer->GetAbsOrigin() - grenade->GetAbsOrigin()).Q_Length();
 
-		if (distance > 700)
+		if (distance > 600)
 			return;
 
-		float distance_alpha = std::clamp(1.f - (distance - 600.f) / 100.f, 0.f, 1.f);
-		float circle_radius = 30.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
+		float distance_alpha = std::clamp(1.f - (distance - 500.f) / 100.f, 0.f, 1.f);
+		float circle_radius = 29.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
 
 		float alpha = distance_alpha;
 		float end_time = grenade->m_flInfernoSpawnTime() + 7.03125f;
@@ -542,8 +542,8 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 			alpha = (GlobalVars->curtime - grenade->m_flInfernoSpawnTime()) * 6.f;
 
 		Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
-		Render->GlowCircle2(pos, circle_radius - 3, Color(40, 40, 40, 255 * alpha), Color(20, 20, 20, 215 * alpha));
-		Render->GlowCircle(pos, circle_radius - 5, Color(255, 50, 50, std::clamp((380 - distance) / 200.f, 0.f, 1.f) * 215 * alpha));
+		Render->GlowCircle2(pos, circle_radius - 2, Color(40, 40, 40, 230 * alpha), Color(20, 20, 20, 230 * alpha));
+		Render->GlowCircle(pos, circle_radius - 4, Color(255, 50, 50, std::clamp((380 - distance) / 200.f, 0.f, 1.f) * 215 * alpha));
 
 		Render->Image(Resources::Inferno, pos - Vector2(15, 15), Color(255, 255, 255, 230 * alpha));
 
@@ -675,8 +675,14 @@ void CWorldESP::RenderMarkers() {
 		float alpha = std::clamp((1.5f - timer) * 2.f, 0.f, 1.f);
 
 		Vector world_pos = it->position + Vector(0, 0, timer * 30.f);
+		Vector2 pos = Render->WorldToScreen(world_pos);
 
-		Render->Text(std::to_string(it->damage), Render->WorldToScreen(world_pos), config.visuals.esp.damage_marker_color->get().alpha_modulatef(alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
+		if (pos.Invalid()) {
+			it++;
+			continue;
+		}
+
+		Render->Text(std::to_string(it->damage), pos, config.visuals.esp.damage_marker_color->get().alpha_modulatef(alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
 
 		it++;
 	}
@@ -691,6 +697,11 @@ void CWorldESP::RenderMarkers() {
 		float alpha = std::clamp(3.f - timer, 0.f, 1.f);
 
 		Vector2 pos = Render->WorldToScreen(it->position);
+
+		if (pos.Invalid()) {
+			it++;
+			continue;
+		}
 
 		Render->Line(pos + Vector2(2, 2), pos + Vector2(5, 5), config.visuals.esp.hitmarker_color->get().alpha_modulatef(alpha));
 		Render->Line(pos - Vector2(2, 2), pos - Vector2(5, 5), config.visuals.esp.hitmarker_color->get().alpha_modulatef(alpha));

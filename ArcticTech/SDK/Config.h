@@ -323,7 +323,8 @@ public:
         for (const auto& file : std::filesystem::directory_iterator(std::filesystem::current_path().string() + "/at"))
             if (file.path().extension() == ".cfg") {
                 std::string fname = file.path().stem().string();
-                char* cfg_name = new char[fname.size()];
+                char* cfg_name = new char[fname.size() + 1];
+                cfg_name[fname.size()] = '\0';
                 std::strcpy(cfg_name, fname.c_str());
                 result.push_back(cfg_name);
             }

@@ -408,11 +408,6 @@ void* __fastcall hkAllocKeyValuesMemory(IKeyValuesSystem* thisptr, void* edx, in
 	return oAllocKeyValuesMemory(thisptr, edx, iSize);
 }
 
-char* __fastcall hk_get_halloween_mask_model_addon( void* ecx, void* edx )
-{
-	return ( char* )"models/player/holiday/facemasks/facemask_dallas.mdl";
-}
-
 bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count, const void* msg) {
 	bool result = oSetSignonState(thisptr, edx, state, count, msg);
 
@@ -439,6 +434,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		ShotManager->Reset();
 		Resolver->Reset();
 		SkinChanger->InitCustomModels();
+		NadeWarning->Precache();
 
 		LUA_CALL_HOOK(LUA_LEVELINIT);
 	}
@@ -527,7 +523,6 @@ void __fastcall hkDoPostScreenEffects(IClientMode* thisptr, void* edx, CViewSetu
 
 	Chams->RenderShotChams();
 	Glow::Run();
-	NadeWarning->RenderPaths();
 
 	oDoPostScreenEffects(thisptr, edx, setup);
 }
@@ -586,6 +581,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 
 		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
 			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
+		NadeWarning->RenderPaths();
 
 		break;
 	}
@@ -600,6 +596,8 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 			ctx.update_remove_blood = false;
 		}
 
+		NadeWarning->ClearBeams();
+
 		break;
 	}
 	case FRAME_NET_UPDATE_START:
@@ -610,7 +608,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		LagCompensation->OnNetUpdate();
 		EnginePrediction->NetUpdate();
 		Exploits->NetUpdate();
-		ShotManager->OnNetUpdate();
 
 		if (config.visuals.esp.anti_fatality->get())
 			WorldESP->AntiFatality();
@@ -626,9 +623,15 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 
 	AnimationSystem->FrameStageNotify(stage);
 
-	LUA_CALL_HOOK(LUA_FRAMESTAGE, stage);
+	switch (stage) {
+	case FRAME_NET_UPDATE_END:
+		ShotManager->OnNetUpdate();
+		break;
+	}
 
 	oFrameStageNotify(thisptr, edx, stage);
+
+	LUA_CALL_HOOK(LUA_FRAMESTAGE, stage);
 }
 
 void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
@@ -780,19 +783,15 @@ void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_seq
 	if (!Cheat.InGame || !Cheat.LocalPlayer->IsAlive())
 		return oPacketStart(thisptr, edx, incoming_sequence, outgoing_acknowledged);
 
-	for (auto it = ctx.sent_commands.begin(); it != ctx.sent_commands.end(); it++) {
-		if (*it == outgoing_acknowledged) {
-			oPacketStart(thisptr, edx, incoming_sequence, outgoing_acknowledged);
-			break;
-		}
-	}
+	ctx.sent_commands.erase(std::ranges::remove_if(ctx.sent_commands, [&](const uint32_t& cmd) { return abs(static_cast<int32_t>(outgoing_acknowledged - cmd)) >= 150; }).begin(), ctx.sent_commands.end());
 
-	ctx.sent_commands.erase(
-		std::remove_if(
-			ctx.sent_commands.begin(),
-			ctx.sent_commands.end(),
-			[&](auto const& command) { return std::abs(command - outgoing_acknowledged) >= 150; }),
-		ctx.sent_commands.end());
+	// rollback the ack count to what we aimed for.
+	auto target_acknowledged = outgoing_acknowledged;
+	for (const auto cmd : ctx.sent_commands)
+		if (outgoing_acknowledged >= cmd)
+			target_acknowledged = cmd;
+
+	oPacketStart(thisptr, edx, incoming_sequence, target_acknowledged);
 }
 
 void __fastcall hkPacketEnd(CClientState* thisptr, void* edx) {
@@ -843,10 +842,11 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 
 	oCL_Move(accamulatedExtraSamples, bFinalTick);
 
-	if (ClientState->m_nChokedCommands == 0) {
+	Exploits->HandleTeleport(oCL_Move);
+
+	if (ClientState->m_nChokedCommands == 0 || ctx.tickbase_shift > 7) {
 		ctx.sent_commands.emplace_back(ClientState->m_nLastOutgoingCommand);
-	}
-	else {
+	} else {
 		auto net_channel = ClientState->m_NetChannel;
 
 		if (net_channel) {
@@ -858,8 +858,6 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 			ClientState->m_nChokedCommands = backup_choke;
 		}
 	}
-
-	Exploits->HandleTeleport(oCL_Move);
 }
 
 bool __fastcall hkSendNetMsg(INetChannel* thisptr, void* edx, INetMessage& msg, bool bForceReliable, bool bVoice) {
@@ -1039,17 +1037,7 @@ bool __fastcall hkInterpolatePlayer(CBasePlayer* pl, void* edx, float curTime) {
 	if (pl != Cheat.LocalPlayer || !pl)
 		return oInterpolatePlayer(pl, edx, curTime);
 
-	int& pred_tick = pl->m_nFinalPredictedTick();
-	auto backup_pred_tick = pred_tick;
-
-	pred_tick = Exploits->GetInterpolateTick();
-	//if (Exploits->ShouldCharge())
-	//	pred_tick = Cheat.LocalPlayer->m_nTickBase();
-
 	bool result = oInterpolatePlayer(pl, edx, curTime);
-
-	pred_tick = backup_pred_tick;
-
 	return result;
 }
 
@@ -1123,6 +1111,12 @@ void __fastcall hkReadPackets(bool final_tick) {
 	oReadPackets(final_tick);
 }
 
+void __fastcall hkClientCmd_Unrestricted(IVEngineClient* engineClient, void* edx, const char* cmd, bool a2) {
+	LUA_CALL_HOOK(LUA_CONSOLE_INPUT, std::string(cmd));
+
+	oClientCmd_Unrestricted(engineClient, edx, cmd, a2);
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1130,6 +1124,7 @@ void Hooks::Initialize() {
 	Chams->LoadChams();
 	SkinChanger->LoadKnifeModels();
 	Ragebot->CreateThreads();
+	GrenadeWarning::Setup();
 
 	DirectXDeviceVMT = new VMT(DirectXDevice);
 	SurfaceVMT = new VMT(Surface);
@@ -1200,6 +1195,7 @@ void Hooks::Initialize() {
 	oIsConnected = HookFunction<tIsConnected>(Utils::PatternScan("engine.dll", "A1 ? ? ? ? 83 B8 ? ? ? ? ? 0F 9D C0 C3 55"), hkIsConnected);
 	oReadPackets = HookFunction<tReadPackets>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"), hkReadPackets);
 	oAddRenderableToList = HookFunction<tAddRenderableToList>(Utils::PatternScan("client.dll", "55 8B EC 56 8B 75 08 57 FF 75 18"), hkAddRenderableToList);
+	oClientCmd_Unrestricted = HookFunction<tClientCmd_Unrestricted>(Utils::PatternScan("engine.dll", "55 8B EC 8B 0D ? ? ? ? 81 F9 ? ? ? ? 75 ? F3 0F 10 05 ? ? ? ? 0F 2E 05 ? ? ? ? 8B 0D ? ? ? ? 9F F6 C4 ? 7A ? 39 0D ? ? ? ? 75 ? A1 ? ? ? ? 33 05 ? ? ? ? A9 ? ? ? ? 74 ? 8B 15 ? ? ? ? 85 D2 74 ? 8B 02 8B CA 68 ? ? ? ? FF 90 ? ? ? ? 8B 0D ? ? ? ? 81 F1 ? ? ? ? EB ? 8B 01 FF 50 ? 8B C8 A1"), hkClientCmd_Unrestricted);
 
 	EventListner->Register();
 
@@ -1274,4 +1270,5 @@ void Hooks::End() {
 	RemoveHook(oIsConnected, hkIsConnected);
 	RemoveHook(oReadPackets, hkReadPackets);
 	RemoveHook(oAddRenderableToList, hkAddRenderableToList);
+	RemoveHook(oClientCmd_Unrestricted, hkClientCmd_Unrestricted);
 }

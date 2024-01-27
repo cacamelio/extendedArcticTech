@@ -1,21 +1,5 @@
 #pragma once
 
-inline int UtlMemory_CalcNewAllocationCount(int nAllocationCount, int nGrowSize, int nNewSize, int nBytesItem)
-{
-    if (nGrowSize)
-        nAllocationCount = ((1 + ((nNewSize - 1) / nGrowSize)) * nGrowSize);
-    else
-    {
-        if (!nAllocationCount)
-            nAllocationCount = (31 + nBytesItem) / nBytesItem;
-
-        while (nAllocationCount < nNewSize)
-            nAllocationCount *= 2;
-    }
-
-    return nAllocationCount;
-}
-
 template< class T, class I = int >
 class CUtlMemory
 {

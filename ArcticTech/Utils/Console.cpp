@@ -24,8 +24,8 @@ void CGameConsole::ArcticTag() {
 	CVar->ConsoleColorPrintf(Color(99, 130, 255), "arctic | ");
 }
 
-void CGameConsole::Print(const std::string& msg) {
-	Color current_clr(232);
+void CGameConsole::Print(const std::string& msg, Color color_def) {
+	Color current_clr = color_def;
 	std::string str;
 	std::string clr_to_parse;
 	int clr_digits = -1;

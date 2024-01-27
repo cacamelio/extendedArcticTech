@@ -153,9 +153,6 @@
     <ClCompile Include="Features\Lua\Hook\Hook.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Features\Lua\Protect\Protect.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="Features\Misc\AutoPeek.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -461,9 +458,6 @@
     <ClInclude Include="Features\Lua\Hook\Hook.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Features\Lua\Protect\Protect.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="Features\Lua\Sol.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
@@ -552,6 +546,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="SDK\Interfaces\CCSPlayerResource.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\gradient_material.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

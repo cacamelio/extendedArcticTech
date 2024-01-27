@@ -79,7 +79,7 @@ void CAutoPeek::CreateMove() {
 
 	QAngle ang = Utils::VectorToAngle(Cheat.LocalPlayer->m_vecOrigin(), position);
 	QAngle vang;
-	EngineClient->GetViewAngles(&vang);
+	EngineClient->GetViewAngles(vang);
 	ang.yaw = vang.yaw - ang.yaw;
 	ang.Normalize();
 

@@ -55,7 +55,6 @@ void CAnimationSystem::OnCreateMove() {
 		animstate->nLastUpdateFrame = GlobalVars->framecount - 1;
 
 	animstate->flLastUpdateTime = local_anims.last_update;
-
 	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
 	animstate->bLanding = animlayers[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 
@@ -76,7 +75,6 @@ void CAnimationSystem::OnCreateMove() {
 	}
 
 	local_anims.last_update = GlobalVars->curtime;
-	memcpy(local_layers, animlayers, sizeof(AnimationLayer) * 13);
 
 	GlobalVars->curtime = curtimeBackup;
 	memcpy(animlayers, animlayers_backup, sizeof(AnimationLayer) * 13);

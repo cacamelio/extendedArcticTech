@@ -123,6 +123,7 @@ public:
 
 	void PatchAttackPacket(CUserCmd* cmd, bool restore);
 	void RunCommand(CUserCmd* cmd);
+	int	 PredictTickbase();
 
 	CPrediction() {
 		predictionRandomSeed = *(int**)Utils::PatternScan("client.dll", "8B 47 40 A3", 0x4); // 0x10DA7244

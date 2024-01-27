@@ -5,6 +5,7 @@
 #include "../../SDK/Misc/CBaseCombatWeapon.h"
 #include <vector>
 #include <unordered_map>
+#include <queue>
 
 class GrenadePrediction {
 private:
@@ -66,6 +67,13 @@ class GrenadeWarning : public GrenadePrediction {
 	std::vector<ThrownGrenade_t> thrown_grenades;
 
 public:
+	std::queue<Beam_t*> beams_to_free;
+
+	static void Setup();
+	void RenderBeam(const Vector& start, const Vector& end, Color clr);
+	void Precache();
+	void ClearBeams();
+
 	void Warning(CBaseGrenade* entity, int weapId);
 	void OnEvent(IGameEvent* event);
 	void RenderPaths();

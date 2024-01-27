@@ -111,4 +111,6 @@ void Interfaces::Initialize() {
 	cvars.dsp_slow_cpu = CVar->FindVar("dsp_slow_cpu");
 	cvars.r_eyegloss = CVar->FindVar("r_eyegloss");
 	cvars.r_eyemove = CVar->FindVar("r_eyemove");
+	cvars.cl_pred_doresetlatch = CVar->FindVar("cl_pred_doresetlatch");
+	cvars.sv_clockcorrection_msecs = CVar->FindVar("sv_clockcorrection_msecs");
 }

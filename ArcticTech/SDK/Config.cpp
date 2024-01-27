@@ -10,7 +10,7 @@ CConfig* Config = new CConfig;
 // callbacks
 void on_config_list_changed() {
     std::string cfg_name = Config->config_list->get_name();
-    memcpy(Config->config_name->buf, cfg_name.c_str(), cfg_name.size() + 1);
+    memcpy(Config->config_name->buf, cfg_name.c_str(), min(cfg_name.size() + 1, 63));
 
     Config->config_list->UpdateList(Config->GetAllConfigs());
 };

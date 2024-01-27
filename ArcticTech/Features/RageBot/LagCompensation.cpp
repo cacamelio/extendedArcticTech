@@ -80,20 +80,11 @@ void LagRecord::BuildMatrix() {
 
 	auto backup_eye_angle = player->m_angEyeAngles();
 
-	bool broken_record = abs(Math::AngleDiff(m_angEyeAngles.yaw, player->m_angEyeAngles().yaw)) >= 30.f;
-
-	if (broken_record)
-		player->m_angEyeAngles() = m_angEyeAngles;
-	else if (prev_record)
-		player->m_angEyeAngles() = prev_record->m_angEyeAngles;
-
 	player->ClampBonesInBBox(safe_matrix, BONE_USED_BY_HITBOX);
-
-	player->m_angEyeAngles() = backup_eye_angle;
 
 	if (config.ragebot.aimbot.roll_resolver->get())
 		player->m_angEyeAngles().roll = config.ragebot.aimbot.roll_angle->get() * (resolver_data.side != 0 ? resolver_data.side : 1);
-
+	
 	player->ClampBonesInBBox(clamped_matrix, BONE_USED_BY_ANYTHING);
 
 	player->m_angEyeAngles() = backup_eye_angle;

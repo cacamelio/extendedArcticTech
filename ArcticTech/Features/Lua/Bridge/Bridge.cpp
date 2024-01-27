@@ -264,7 +264,7 @@ namespace api {
 	}
 
 	void print_raw(std::string msg, sol::optional<Color> color) {
-		Console->ColorPrint(msg, color.value_or(Color(255, 255, 255)));
+		Console->Print(msg, color.value_or(Color(255, 255, 255)));
 	}
 
 	void safe_call(sol::protected_function func) {
@@ -317,6 +317,8 @@ namespace api {
 				Lua->hooks.registerHook(LUA_LOCAL_ALPHA, script_id, func);
 			else if (event_name == "draw_chams")
 				Lua->hooks.registerHook(LUA_DRAW_CHAMS, script_id, func);
+			else if (event_name == "console_input")
+				Lua->hooks.registerHook(LUA_CONSOLE_INPUT, script_id, func);
 			else
 				Console->Error(std::format("[{}] unknown callback: {}", GetCurrentScript(state), event_name));
 		}
@@ -543,10 +545,10 @@ namespace api {
 
 		QAngle camera_angles(sol::optional<QAngle> angle) {
 			QAngle result;
-			EngineClient->GetViewAngles(&result);
+			EngineClient->GetViewAngles(result);
 
 			if (angle.has_value()) {
-				EngineClient->SetViewAngles(&angle.value());
+				EngineClient->SetViewAngles(angle.value());
 			}
 
 			return result;
@@ -1333,7 +1335,7 @@ namespace api {
 			return self->GetHitboxCenter(hb);
 		}
 
-		std::tuple<Vector, Vector> get_bbox(sol::this_state state, CBasePlayer* self) {
+		auto get_bbox(sol::this_state state, CBasePlayer* self) {
 			auto& info = WorldESP->GetESPInfo(self->EntIndex());
 
 			Vector mins(info.m_BoundingBox[0].x, info.m_BoundingBox[0].y);
@@ -1803,9 +1805,22 @@ void CLua::Setup() {
 	);
 
 	lua.new_usertype<ConVar>("convar", sol::no_constructor,
+		"get_name", &ConVar::GetName,
 		"int", api::cvar::convar_int,
 		"float", api::cvar::convar_float,
-		"string", api::cvar::convar_string
+		"string", api::cvar::convar_string,
+
+		"add_flag", &ConVar::SetFlag,
+		"remove_flag", &ConVar::RemoveFlag,
+
+		"description", &ConVar::m_pszHelpString,
+		"flags", &ConVar::m_nFlags,
+		"parent", &ConVar::m_pParent,
+		"default", &ConVar::m_pszDefaultValue,
+		"has_min", &ConVar::m_bHasMin,
+		"has_max", &ConVar::m_bHasMax,
+		"min", &ConVar::m_fMinVal,
+		"max", &ConVar::m_fMaxVal
 	);
 
 	lua.new_usertype<SYSTEMTIME>("systime_t", sol::no_constructor,

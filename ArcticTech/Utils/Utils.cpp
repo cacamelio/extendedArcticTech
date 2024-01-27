@@ -215,25 +215,6 @@ void Utils::VectorTransform(const Vector& vec1, const matrix3x4_t& mat, Vector& 
     out.z = vec1.Dot(Vector(mat[2][0],  mat[2][1],  mat[2][2])) + mat[2][3];
 }
 
-float Utils::GetServerTime(CUserCmd* cmd) {
-    static int iTick = 0;
-
-    if (cmd != nullptr)
-    {
-        static CUserCmd* pLastCmd = nullptr;
-
-        // if command was not predicted - increment tickbase
-        if (pLastCmd == nullptr || pLastCmd->hasbeenpredicted)
-            iTick = Cheat.LocalPlayer->m_nTickBase();
-        else
-            iTick++;
-
-        pLastCmd = cmd;
-    }
-
-    return TICKS_TO_TIME(iTick);
-}
-
 void Utils::MatrixMove(matrix3x4_t* matrix, int size, const Vector& from, const Vector& to) {
     for (int i = 0; i < size; i++) {
         matrix[i][0][3] = matrix[i][0][3] - from.x + to.x;

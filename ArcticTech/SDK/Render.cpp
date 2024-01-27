@@ -704,7 +704,7 @@ Vector2 CRender::WorldToScreen(const Vector& pos) {
 
 Vector2 CRender::GetOOF(const Vector& world) {
 	QAngle vangle;
-	EngineClient->GetViewAngles(&vangle);
+	EngineClient->GetViewAngles(vangle);
 	QAngle angle_to_world = Math::VectorAngles(world - ctx.camera_postion);
 	float angle_diff = Math::AngleDiff(angle_to_world.yaw, vangle.yaw);
 	return Vector2().flt(cos(DEG2RAD(angle_diff + 90.f)), -sin(DEG2RAD(angle_diff + 90.f)));

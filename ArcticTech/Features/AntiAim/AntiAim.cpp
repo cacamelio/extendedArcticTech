@@ -193,7 +193,7 @@ void CAntiAim::Desync() {
 CBasePlayer* CAntiAim::GetNearestTarget() {
 	float nearestFov = 360.f;
 	Vector eyePos = Cheat.LocalPlayer->GetEyePosition();
-	QAngle viewAngle; EngineClient->GetViewAngles(&viewAngle);
+	QAngle viewAngle; EngineClient->GetViewAngles(viewAngle);
 	CBasePlayer* nearestPlayer = nullptr;
 
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
@@ -371,10 +371,12 @@ void CAntiAim::JitterMove() {
 bool CAntiAim::IsPeeking() {
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
 	auto norm_vel = velocity.Q_Normalized();
-	Vector move_factor = velocity * TICKS_TO_TIME((ctx.cmd->buttons & IN_USE) ? 2.2f : 4.3f);
+	Vector move_factor = velocity * TICKS_TO_TIME((ctx.cmd->buttons & IN_USE) ? 2.4f : 4.4f) + norm_vel * 8.f;
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();
 	Vector backup_origin = Cheat.LocalPlayer->m_vecOrigin();
+
+	hook_info.disable_interpolation = true;
 
 	memcpy(Cheat.LocalPlayer->GetCachedBoneData().Base(), AnimationSystem->GetLocalBoneMatrix(), sizeof(matrix3x4_t) * Cheat.LocalPlayer->GetCachedBoneData().Count());
 	Utils::MatrixMove(Cheat.LocalPlayer->GetCachedBoneData().Base(), Cheat.LocalPlayer->GetCachedBoneData().Count(), AnimationSystem->GetLocalSentAbsOrigin(), Cheat.LocalPlayer->GetAbsOrigin() + move_factor);
@@ -383,16 +385,14 @@ bool CAntiAim::IsPeeking() {
 	Cheat.LocalPlayer->ForceBoneCache();
 
 	Vector scan_points[] = {
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD) + norm_vel * 7.f,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS) + norm_vel * 9.5f,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT) + norm_vel * 3.f,
-		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT) + norm_vel * 3.f
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT)
 	};
 
 	auto backup_active_weapon = ctx.active_weapon;
 	auto backup_weapon_data = ctx.weapon_info;
-
-	hook_info.disable_interpolation = true;
 
 	bool peeked = false;
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
@@ -414,7 +414,7 @@ bool CAntiAim::IsPeeking() {
 
 		for (int i = 0; i < 4; i++) {
 			FireBulletData_t data;
-			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && (data.damage > 1.f || (!data.enterTrace.hit_entity && (data.enterTrace.endpos - ctx.shoot_position).LengthSqr() > (scan_points[i] - ctx.shoot_position).LengthSqr()))) {
+			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage > 1.f) {
 				info.m_bHit = true;
 				peeked = true;
 				break;

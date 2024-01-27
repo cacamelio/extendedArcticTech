@@ -102,7 +102,6 @@
     <ClCompile Include="Features\AntiAim\AntiAim.cpp" />
     <ClCompile Include="Features\Lua\Bridge\Bridge.cpp" />
     <ClCompile Include="Features\Lua\Hook\Hook.cpp" />
-    <ClCompile Include="Features\Lua\Protect\Protect.cpp" />
     <ClCompile Include="Features\Misc\AutoPeek.cpp" />
     <ClCompile Include="Features\Misc\GameMovement.cpp" />
     <ClCompile Include="Features\Misc\EventListner.cpp" />
@@ -166,7 +165,6 @@
     <ClInclude Include="Features\AntiAim\AntiAim.h" />
     <ClInclude Include="Features\Lua\Bridge\Bridge.h" />
     <ClInclude Include="Features\Lua\Hook\Hook.h" />
-    <ClInclude Include="Features\Lua\Protect\Protect.h" />
     <ClInclude Include="Features\Lua\Sol.hpp" />
     <ClInclude Include="Features\Misc\AutoPeek.h" />
     <ClInclude Include="Features\Misc\GameMovement.h" />
@@ -201,6 +199,7 @@
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="detours.h" />
+    <ClInclude Include="Resources\gradient_material.h" />
     <ClInclude Include="SDK\Config.h" />
     <ClInclude Include="SDK\Hooks.h" />
     <ClInclude Include="Resources\hegrenade.h" />

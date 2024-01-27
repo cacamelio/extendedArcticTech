@@ -338,4 +338,23 @@ void CPrediction::NetUpdate() {
 	}
 }
 
+int CPrediction::PredictTickbase() {
+	static int iTick = 0;
+
+	if (ctx.cmd != nullptr)
+	{
+		static CUserCmd* pLastCmd = nullptr;
+
+		// if command was not predicted - increment tickbase
+		if (pLastCmd == nullptr || pLastCmd->hasbeenpredicted)
+			iTick = Cheat.LocalPlayer->m_nTickBase();
+		else
+			iTick++;
+
+		pLastCmd = ctx.cmd;
+	}
+
+	return iTick;
+}
+
 CPrediction* EnginePrediction = new CPrediction;

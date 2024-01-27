@@ -129,11 +129,6 @@ void CWorld::Fog() {
 	}
 }
 
-void CWorld::DisablePostProcessing( )
-{
-
-}
-
 void CWorld::SkyBox() {
 	static auto load_skybox = reinterpret_cast<void(__fastcall*)(const char*)>(Utils::PatternScan("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 57 8B F9 C7 45"));
 
@@ -159,7 +154,7 @@ void CWorld::ProcessCamera(CViewSetup* view_setup) {
 
 	if (config.visuals.effects.thirdperson->get() && Cheat.LocalPlayer->IsAlive()) {
 		Input->m_fCameraInThirdPerson = true;
-		QAngle angles; EngineClient->GetViewAngles(&angles);
+		QAngle angles; EngineClient->GetViewAngles(angles);
 		QAngle backAngle = QAngle(angles.yaw - 180, -angles.pitch, 0);
 		backAngle.Normalize();
 		Vector cameraDirection = Math::AngleVectors(angles);
@@ -265,7 +260,7 @@ void CWorld::Crosshair() {
 	Vector eyePos = (ctx.fake_duck ? Vector(0, 0, 64) : Cheat.LocalPlayer->m_vecViewOffset()) + Cheat.LocalPlayer->GetAbsOrigin();
 
 	QAngle viewAngle;
-	EngineClient->GetViewAngles(&viewAngle);
+	EngineClient->GetViewAngles(viewAngle);
 
 	Vector direction = Math::AngleVectors(viewAngle);
 

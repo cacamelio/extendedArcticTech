@@ -1,5 +1,6 @@
 #pragma once
 #include "../Misc/Color.h"
+#include "../Misc/UtlVector.h"
 
 //-----------------------------------------------------------------------------
 // Forward declarations
@@ -54,23 +55,71 @@ typedef void(*FnChangeCallback_t)(ConVar* var, const char* pOldValue, float flOl
 
 
 class ConVar {
+	void* __vfptr;
 public:
+	struct CVValue_t
+	{
+		char*	m_pszString;
+		int		m_StringLength;
+		float	m_fValue;
+		int		m_nValue;
+	};
+
+	ConVar*			m_pNext;
+	bool			m_bRegistered;
+	const char*		m_pszName;
+	const char*		m_pszHelpString;
+	int				m_nFlags;
+	ConVar*			m_pParent;
+	const char*		m_pszDefaultValue;
+	CVValue_t		m_Value;
+	bool			m_bHasMin;
+	float			m_fMinVal;
+	bool			m_bHasMax;
+	float			m_fMaxVal;
+	CUtlVector<FnChangeCallback_t> m_pCallbacks;
 
 	virtual void null0() = 0;
 	virtual void null1() = 0;
 	virtual void null2() = 0;
 	virtual void null3() = 0;
 	virtual void null4() = 0;
-	virtual void null5() = 0;
+	virtual const char* GetName() = 0;
+private:
 	virtual void null6() = 0;
 	virtual void null7() = 0;
 	virtual void null8() = 0;
 	virtual void null9() = 0;
 	virtual void null10() = 0;
-	virtual const char* GetString() = 0;
+	virtual void null11() = 0;
+public:
 	virtual float GetFloat() = 0;
 	virtual int GetInt() = 0;
 	virtual void SetString(const char* pValue) = 0;
 	virtual void SetFloat(float flValue) = 0;
 	virtual void SetInt(int nValue) = 0;
+
+	void SetFlag(int flag) {
+		m_nFlags |= flag;
+	}
+
+	void RemoveFlag(int flag) {
+		m_nFlags &= ~flag;
+	}
+
+	int GetFlags() const {
+		return m_nFlags;
+	}
+
+	bool IsFlagSet(int flag) const {
+		return m_nFlags & flag;
+	}
+
+	void RemoveCallbacks() {
+		m_pCallbacks.RemoveAll();
+	}
+
+	std::string GetString() const {
+		return m_Value.m_pszString;
+	}
 };

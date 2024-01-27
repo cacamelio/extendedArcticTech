@@ -136,7 +136,7 @@ void CRagebot::AutoStop(bool predict) {
 		return;
 	}
 
-	QAngle view; EngineClient->GetViewAngles(&view);
+	QAngle view; EngineClient->GetViewAngles(view);
 	direction.yaw = predict ? direction.yaw : (view.yaw - direction.yaw);
 	direction.Normalize();
 
@@ -276,9 +276,9 @@ void CRagebot::SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& target
 	}
 }
 
-void CRagebot::AddPoint(const AimPoint_t& point) {
+void CRagebot::AddPoint(AimPoint_t&& point) {
 	std::lock_guard<std::mutex> lock(scan_mutex);
-	thread_work.push(point);
+	thread_work.emplace(point);
 	selected_points++;
 	scan_condition.notify_one();
 }
@@ -319,13 +319,15 @@ void CRagebot::GetMultipoints(LagRecord* record, int hitbox_id, float scale) {
 	case HITBOX_HEAD:
 		for (auto& vert : verts)
 			AddPoint(AimPoint_t{ Math::VectorTransform(vert, boneMatrix), hitbox_id, true, dont_shoot_next_points });
-		AddPoint(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true, dont_shoot_next_points });
+		if (record->m_angEyeAngles.pitch > 85.f && center.z >= ctx.shoot_position.z - 16.f) // extra point on top of head
+			AddPoint(AimPoint_t{ Vector(center.x, center.y, center.z + width * scale * 0.89f), hitbox_id, true, dont_shoot_next_points });
 		break;
 	case HITBOX_STOMACH:
 	case HITBOX_PELVIS:
+		AddPoint(AimPoint_t{ Math::VectorTransform(verts[1], boneMatrix), hitbox_id, true, dont_shoot_next_points });
+		[[ fallthrough ]];
 	case HITBOX_CHEST:
 	case HITBOX_UPPER_CHEST:
-		AddPoint(AimPoint_t{ Math::VectorTransform(verts[1], boneMatrix), hitbox_id, true, dont_shoot_next_points });
 		AddPoint(AimPoint_t{ Math::VectorTransform(verts[2], boneMatrix), hitbox_id, true, dont_shoot_next_points });
 		AddPoint(AimPoint_t{ Math::VectorTransform(verts[3], boneMatrix), hitbox_id, true, dont_shoot_next_points });
 		break;
@@ -679,7 +681,7 @@ void CRagebot::Run() {
 		DormantAimbot();
 
 	if (!Exploits->IsShifting()) {
-		QAngle vangle; EngineClient->GetViewAngles(&vangle);
+		QAngle vangle; EngineClient->GetViewAngles(vangle);
 		RunPrediction(vangle);
 	}
 
@@ -878,7 +880,6 @@ void CRagebot::Zeusbot() {
 				if (!config.antiaim.misc.fake_duck->get())
 					ctx.send_packet = true;
 
-				memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
 				Chams->AddShotChams(record);
 
 				LagCompensation->BacktrackEntity(backup_record);
