@@ -3,6 +3,7 @@
 #include "IEngineTrace.h"
 
 class CBaseEntity;
+class CBasePlayer;
 class IClientNetworkable;
 class ClientClass;
 class CCSWeaponData;
@@ -19,6 +20,8 @@ public:
     virtual int                   GetHighestEntityIndex(void) = 0;
     virtual void                  SetMaxEntities(int maxEnts) = 0;
     virtual int                   GetMaxEntities() = 0;
+
+    CBasePlayer* GetLocalOrSpec();
 };
 
 class IWeaponSystem {

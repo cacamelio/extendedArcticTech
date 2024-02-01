@@ -247,7 +247,7 @@ void CWorldESP::UpdatePlayer(int id) {
 	if (info.m_bDormant) {
 		float unupdatedTime = GlobalVars->curtime - info.m_flLastUpdateTime;
 
-		if (unupdatedTime > 6)
+		if (unupdatedTime > 3)
 			info.m_flAlpha = max((6 - unupdatedTime) * 0.33f, 0.f);
 		else
 			info.m_flAlpha = 1.f;

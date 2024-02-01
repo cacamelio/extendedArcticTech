@@ -33,7 +33,7 @@ void FixLegMovement(AnimationLayer* server_layers) {
 		layers[ANIMATION_LAYER_MOVEMENT_STRAFECHANGE].m_flWeight = server_layers[ANIMATION_LAYER_MOVEMENT_STRAFECHANGE].m_flWeight;
 }
 
-void CAnimationSystem::OnCreateMove() {
+void CAnimationSystem::UpdateLocalAnimations(CUserCmd* cmd) {
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 	AnimationLayer* animlayers = Cheat.LocalPlayer->GetAnimlayers();
 
@@ -45,7 +45,7 @@ void CAnimationSystem::OnCreateMove() {
 
 	LUA_CALL_HOOK(LUA_PRE_ANIMUPDATE, Cheat.LocalPlayer);
 
-	QAngle vangle = ctx.cmd->viewangles;
+	QAngle vangle = cmd->viewangles;
 	if (ctx.send_packet && ctx.force_shot_angle) {
 		vangle = ctx.shot_angles;
 		ctx.force_shot_angle = false;
@@ -74,10 +74,14 @@ void CAnimationSystem::OnCreateMove() {
 		Cheat.LocalPlayer->m_angEyeAngles() = backup_eye_angles;
 	}
 
+	memcpy(local_anims.layers, animlayers, sizeof(AnimationLayer) * 13);
+
 	local_anims.last_update = GlobalVars->curtime;
 
 	GlobalVars->curtime = curtimeBackup;
 	memcpy(animlayers, animlayers_backup, sizeof(AnimationLayer) * 13);
+
+	Cheat.LocalPlayer->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
 }
 
 void CAnimationSystem::UpdatePredictionAnimation() {
@@ -93,7 +97,7 @@ void CAnimationSystem::UpdatePredictionAnimation() {
 	Cheat.LocalPlayer->m_flPoseParameter()[12] = (ctx.cmd->viewangles.pitch + 90.f) / 180.f;
 	Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flFootYaw));
 
-	BuildMatrix(Cheat.LocalPlayer, prediction_matrix, 128, BONE_USED_BY_HITBOX, local_layers);
+	BuildMatrix(Cheat.LocalPlayer, prediction_matrix, 128, BONE_USED_BY_HITBOX, local_anims.layers);
 
 	Cheat.LocalPlayer->m_flPoseParameter() = poseparam_backup;
 	memcpy(Cheat.LocalPlayer->GetAnimlayers(), animlayer_backup, sizeof(AnimationLayer) * 13);

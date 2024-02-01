@@ -31,7 +31,6 @@ struct Ctx_t {
 	bool is_peeking = false;
 	int tickbase_shift = 0;
 	int shifted_last_tick = 0;
-	bool teleported_last_tick = false;
 	Vector local_velocity;
 	Vector last_local_velocity;
 	bool update_nightmode = false;
@@ -55,6 +54,7 @@ struct Ctx_t {
 	Vector shoot_position;
 	bool fake_duck = false;
 	int grenade_throw_tick = 0;
+	bool switch_to_main_weapon = true;
 
 	int corrected_tickbase = 0;
 
@@ -109,6 +109,8 @@ struct CVars {
 	ConVar* r_eyegloss;
 	ConVar* cl_pred_doresetlatch;
 	ConVar* sv_clockcorrection_msecs;
+	ConVar* sv_maxusrcmdprocessticks;
+	ConVar* sv_infinite_ammo;
 };
 
 extern CheatState_t Cheat;

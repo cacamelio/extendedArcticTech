@@ -70,7 +70,7 @@ public:
 	std::queue<Beam_t*> beams_to_free;
 
 	static void Setup();
-	void RenderBeam(const Vector& start, const Vector& end, Color clr);
+	void RenderBeam(const std::vector<Vector> points, Color clr, int segments = 2);
 	void Precache();
 	void ClearBeams();
 

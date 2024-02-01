@@ -55,7 +55,6 @@ typedef void(*FnChangeCallback_t)(ConVar* var, const char* pOldValue, float flOl
 
 
 class ConVar {
-	void* __vfptr;
 public:
 	struct CVValue_t
 	{
@@ -66,13 +65,17 @@ public:
 	};
 
 	ConVar*			m_pNext;
-	bool			m_bRegistered;
+	int				m_nOriginalFlags;
 	const char*		m_pszName;
 	const char*		m_pszHelpString;
 	int				m_nFlags;
+private:
+	void* __vfptr_ConVar;
+public:
 	ConVar*			m_pParent;
 	const char*		m_pszDefaultValue;
 	CVValue_t		m_Value;
+	CVValue_t		m_OriginalValue;
 	bool			m_bHasMin;
 	float			m_fMinVal;
 	bool			m_bHasMax;

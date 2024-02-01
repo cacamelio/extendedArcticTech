@@ -88,45 +88,53 @@ void Miscellaneous::FastThrow() {
 	if (ctx.tickbase_shift > 0) {
 		Exploits->LC_OverrideTickbase(ctx.tickbase_shift);
 
-		if (fast_throw_triggred)
-			Exploits->LC_OverrideTickbase(0);
-
 		if (grenade->m_flThrowTime() > 0.f)
 			fast_throw_triggred = true;
+
+		if (fast_throw_triggred)
+			Exploits->LC_OverrideTickbase(0);
 	}
 
-	if (ctx.cmd->command_number == ctx.grenade_throw_tick + 8 && ctx.grenade_throw_tick != 0) {
-		CBaseCombatWeapon* best_weapon = nullptr;
-		auto weapons = Cheat.LocalPlayer->m_hMyWeapons();
-		int best_type = WEAPONTYPE_KNIFE;
-		for (int i = 0; i < MAX_WEAPONS; i++) {
-			auto weap = weapons[i];
-			if (weap == INVALID_EHANDLE_INDEX)
-				break;
+	if (ctx.cmd->command_number == ctx.grenade_throw_tick + 8 && ctx.grenade_throw_tick != 0)
+		ctx.switch_to_main_weapon = true;
+}
 
-			CBaseCombatWeapon* weapon = reinterpret_cast<CBaseCombatWeapon*>(EntityList->GetClientEntityFromHandle(weap));
 
-			if (!weapon)
-				continue;
+void Miscellaneous::FastSwitch() {
+	if (!ctx.switch_to_main_weapon)
+		return;
 
-			CCSWeaponData* weap_info = weapon->GetWeaponInfo();
+	ctx.switch_to_main_weapon = false;
+	CBaseCombatWeapon* best_weapon = nullptr;
+	auto weapons = Cheat.LocalPlayer->m_hMyWeapons();
+	int best_type = WEAPONTYPE_KNIFE;
+	for (int i = 0; i < MAX_WEAPONS; i++) {
+		auto weap = weapons[i];
+		if (weap == INVALID_EHANDLE_INDEX)
+			break;
 
-			if (!weap_info)
-				continue;
+		CBaseCombatWeapon* weapon = reinterpret_cast<CBaseCombatWeapon*>(EntityList->GetClientEntityFromHandle(weap));
 
-			if (weap_info->nWeaponType >= WEAPONTYPE_SUBMACHINEGUN && weap_info->nWeaponType <= WEAPONTYPE_MACHINEGUN) {
-				best_weapon = weapon;
-				best_type = weap_info->nWeaponType;
-			}
-			else if (weap_info->nWeaponType == WEAPONTYPE_PISTOL && best_type == WEAPONTYPE_KNIFE) {
-				best_weapon = weapon;
-				best_type = weap_info->nWeaponType;
-			}
+		if (!weapon)
+			continue;
+
+		CCSWeaponData* weap_info = weapon->GetWeaponInfo();
+
+		if (!weap_info)
+			continue;
+
+		if (weap_info->nWeaponType >= WEAPONTYPE_SUBMACHINEGUN && weap_info->nWeaponType <= WEAPONTYPE_MACHINEGUN) {
+			best_weapon = weapon;
+			best_type = weap_info->nWeaponType;
 		}
-
-		if (best_weapon)
-			ctx.cmd->weaponselect = best_weapon->EntIndex();
+		else if (weap_info->nWeaponType == WEAPONTYPE_PISTOL && best_type == WEAPONTYPE_KNIFE) {
+			best_weapon = weapon;
+			best_type = weap_info->nWeaponType;
+		}
 	}
+
+	if (best_weapon)
+		ctx.cmd->weaponselect = best_weapon->EntIndex();
 }
 
 void Miscellaneous::AutomaticGrenadeRelease() {

@@ -113,4 +113,6 @@ void Interfaces::Initialize() {
 	cvars.r_eyemove = CVar->FindVar("r_eyemove");
 	cvars.cl_pred_doresetlatch = CVar->FindVar("cl_pred_doresetlatch");
 	cvars.sv_clockcorrection_msecs = CVar->FindVar("sv_clockcorrection_msecs");
+	cvars.sv_maxusrcmdprocessticks = CVar->FindVar("sv_maxusrcmdprocessticks");
+	cvars.sv_infinite_ammo = CVar->FindVar("sv_infinite_ammo");
 }

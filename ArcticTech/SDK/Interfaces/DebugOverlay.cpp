@@ -197,14 +197,12 @@ void IVDebugOverlay::RenderOverlays() {
 
         Render->PolyFilled(background, it->col);
 
-        Color edge_color = it->col.alpha_modulate(min((int)(it->col.a * 1.8f), 255));
-
-        Render->PolyLine({ scr_verts[0], scr_verts[1], scr_verts[2], scr_verts[3], scr_verts[0] }, edge_color);
-        Render->PolyLine({ scr_verts[4], scr_verts[5], scr_verts[6], scr_verts[7], scr_verts[4] }, edge_color);
-        Render->Line(scr_verts[0], scr_verts[4], edge_color);
-        Render->Line(scr_verts[1], scr_verts[5], edge_color);
-        Render->Line(scr_verts[2], scr_verts[6], edge_color);
-        Render->Line(scr_verts[3], scr_verts[7], edge_color);
+        Render->PolyLine({ scr_verts[0], scr_verts[1], scr_verts[2], scr_verts[3], scr_verts[0] }, it->col);
+        Render->PolyLine({ scr_verts[4], scr_verts[5], scr_verts[6], scr_verts[7], scr_verts[4] }, it->col);
+        Render->Line(scr_verts[0], scr_verts[4], it->col);
+        Render->Line(scr_verts[1], scr_verts[5], it->col);
+        Render->Line(scr_verts[2], scr_verts[6], it->col);
+        Render->Line(scr_verts[3], scr_verts[7], it->col);
 
         it++;
     }

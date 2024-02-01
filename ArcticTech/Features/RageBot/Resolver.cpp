@@ -140,8 +140,8 @@ void CResolver::SetupResolverLayers(CBasePlayer* player, LagRecord* record) {
 	SetupLayer(record, 0, 0.f);
 	SetupLayer(record, 1, record->resolver_data.max_desync_delta);
 	SetupLayer(record, 2, -record->resolver_data.max_desync_delta);
-	SetupLayer(record, 3, record->resolver_data.max_desync_delta * 0.67f);
-	SetupLayer(record, 4, -record->resolver_data.max_desync_delta * 0.67f);
+	SetupLayer(record, 3, record->resolver_data.max_desync_delta * 0.6f);
+	SetupLayer(record, 4, -record->resolver_data.max_desync_delta * 0.6f);
 }
 
 void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record, const std::deque<LagRecord>& records) {

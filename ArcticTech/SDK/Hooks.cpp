@@ -205,13 +205,14 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 	AntiAim->JitterMove();
 	Movement->AutoStrafe();
 	Miscellaneous::AutomaticGrenadeRelease();
+	Miscellaneous::FastThrow();
+	Miscellaneous::FastSwitch();
 
 	if (ctx.active_weapon && ctx.active_weapon->ShootingWeapon() && Exploits->IsShifting())
 		cmd->buttons &= ~(IN_ATTACK | IN_ATTACK2);
 
 	// pre_prediction
 
-	EnginePrediction->Update();
 	EnginePrediction->Start(cmd);
 	QAngle eyeYaw = cmd->viewangles;
 
@@ -223,7 +224,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.send_packet = bSendPacket = ctx.tickbase_shift == 1;
 
 		cmd->viewangles.Normalize();
-		AnimationSystem->OnCreateMove();
+		AnimationSystem->UpdateLocalAnimations(cmd);
 
 		EnginePrediction->End();
 
@@ -234,10 +235,7 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		Exploits->UpdateTickbase();
 		Exploits->Shift(); // we actually will not shift here, only update tickbase info
 
-		if (bSendPacket)
-			ctx.sent_commands.emplace_back(cmd->command_number);
-
-		ctx.teleported_last_tick = true;
+		ctx.sent_commands.emplace_back(cmd->command_number);
 
 		verified->cmd = *cmd;
 		verified->crc = cmd->GetChecksum();
@@ -310,8 +308,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	AntiAim->LegMovement();
 
-	Miscellaneous::FastThrow();
-
 	if (ctx.active_weapon->ShootingWeapon() && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK) {
 		ctx.last_shot_time = GlobalVars->realtime;
 		ctx.shot_angles = cmd->viewangles;
@@ -320,7 +316,10 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 			ctx.force_shot_angle = true;
 	}
 
-	AnimationSystem->OnCreateMove();
+	if (cvars.sv_infinite_ammo->GetInt() == 0 && ctx.active_weapon && ctx.active_weapon->m_iItemDefinitionIndex() == Taser && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK)
+		ctx.switch_to_main_weapon = true;
+
+	AnimationSystem->UpdateLocalAnimations(cmd);
 
 	EnginePrediction->End();
 
@@ -358,16 +357,13 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		if (config.misc.miscellaneous.auto_buy->get(11))
 			buy_command += "buy defuser; ";
 
-		if (!buy_command.empty() && Cheat.LocalPlayer && Cheat.LocalPlayer->m_iAccount() > 1000)
+		if (!buy_command.empty() && Cheat.LocalPlayer->m_iAccount() > 1000)
 			EngineClient->ExecuteClientCmd(buy_command.c_str());
 
 		ctx.should_buy = false;
 	}
 
-	//if (ctx.send_packet)
-	//	Console->Log(std::format("{}", Exploits->GetTickbaseInfo(ctx.cmd->command_number)->extra_commands));
-
-	ctx.teleported_last_tick = false;
+	//Console->Log(std::format("{} {} {}", cmd->command_number, bSendPacket, Exploits->GetTickbaseInfo(ctx.cmd->command_number)->extra_commands));
 
 	verified->cmd = *cmd;
 	verified->crc = cmd->GetChecksum();
@@ -596,8 +592,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 			ctx.update_remove_blood = false;
 		}
 
-		NadeWarning->ClearBeams();
-
 		break;
 	}
 	case FRAME_NET_UPDATE_START:
@@ -608,6 +602,7 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		LagCompensation->OnNetUpdate();
 		EnginePrediction->NetUpdate();
 		Exploits->NetUpdate();
+		ShotManager->OnNetUpdate();
 
 		if (config.visuals.esp.anti_fatality->get())
 			WorldESP->AntiFatality();
@@ -622,12 +617,6 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 	}
 
 	AnimationSystem->FrameStageNotify(stage);
-
-	switch (stage) {
-	case FRAME_NET_UPDATE_END:
-		ShotManager->OnNetUpdate();
-		break;
-	}
 
 	oFrameStageNotify(thisptr, edx, stage);
 
@@ -751,9 +740,13 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
-	int& tickbase = player->m_nTickBase();
+	if (cmd->tick_count == INT_MAX) {
+		player->m_nTickBase()++;
+		cmd->hasbeenpredicted = true;
+		return;
+	}
 
-	Exploits->AdjustTickbase(tickbase, cmd);
+	Exploits->AdjustPlayerTimeBase(player->m_nTickBase(), cmd);
 
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
 
@@ -840,22 +833,20 @@ void __cdecl hkCL_Move(float accamulatedExtraSamples, bool bFinalTick) {
 		return;
 	}
 
+	EnginePrediction->Update();
 	oCL_Move(accamulatedExtraSamples, bFinalTick);
 
 	Exploits->HandleTeleport(oCL_Move);
 
-	if (ClientState->m_nChokedCommands == 0 || ctx.tickbase_shift > 7) {
+	if (ClientState->m_nChokedCommands == 0) {
 		ctx.sent_commands.emplace_back(ClientState->m_nLastOutgoingCommand);
 	} else {
 		auto net_channel = ClientState->m_NetChannel;
 
 		if (net_channel) {
-			auto backup_choke = ClientState->m_nChokedCommands;
-			ClientState->m_nChokedCommands = 0;
 			net_channel->m_nChokedPackets = 0;
 			net_channel->m_nOutSequenceNr--;
 			net_channel->SendDatagram();
-			ClientState->m_nChokedCommands = backup_choke;
 		}
 	}
 }
@@ -1117,6 +1108,30 @@ void __fastcall hkClientCmd_Unrestricted(IVEngineClient* engineClient, void* edx
 	oClientCmd_Unrestricted(engineClient, edx, cmd, a2);
 }
 
+void hkUpdateBeam(Beam_t* beam, void* pcbeam) { // TODO: make asm proxy
+	float frametime;
+	__asm movss frametime, xmm2;
+	Vector attachments[10];
+	if (beam->type == TE_BEAMSPLINE)
+		memcpy(attachments, beam->attachemnt, beam->numAttachment * sizeof(Vector));
+	
+	__asm {
+		movss xmm2, frametime
+		push pcbeam
+		push beam
+		call oUpdateBeam
+	}
+
+	if (beam->type == TE_BEAMSPLINE)
+		memcpy(beam->attachemnt, attachments, beam->numAttachment * sizeof(Vector));
+}
+
+bool __fastcall hkNETMsg_Tick(CClientState* state, void* edx, const CNETMsg_Tick& msg) {
+	Exploits->UpdateServerClock(msg.tick);
+
+	return oNETMsg_Tick(state, edx, msg);
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1196,6 +1211,8 @@ void Hooks::Initialize() {
 	oReadPackets = HookFunction<tReadPackets>(Utils::PatternScan("engine.dll", "53 8A D9 8B 0D ? ? ? ? 56 57 8B B9"), hkReadPackets);
 	oAddRenderableToList = HookFunction<tAddRenderableToList>(Utils::PatternScan("client.dll", "55 8B EC 56 8B 75 08 57 FF 75 18"), hkAddRenderableToList);
 	oClientCmd_Unrestricted = HookFunction<tClientCmd_Unrestricted>(Utils::PatternScan("engine.dll", "55 8B EC 8B 0D ? ? ? ? 81 F9 ? ? ? ? 75 ? F3 0F 10 05 ? ? ? ? 0F 2E 05 ? ? ? ? 8B 0D ? ? ? ? 9F F6 C4 ? 7A ? 39 0D ? ? ? ? 75 ? A1 ? ? ? ? 33 05 ? ? ? ? A9 ? ? ? ? 74 ? 8B 15 ? ? ? ? 85 D2 74 ? 8B 02 8B CA 68 ? ? ? ? FF 90 ? ? ? ? 8B 0D ? ? ? ? 81 F1 ? ? ? ? EB ? 8B 01 FF 50 ? 8B C8 A1"), hkClientCmd_Unrestricted);
+	oUpdateBeam = HookFunction<tUpdateBeam>(Utils::PatternScan("client.dll", "53 8B DC 83 EC ? 83 E4 ? 83 C4 ? 55 8B 6B ? 89 6C 24 ? 8B EC 83 EC ? 56 8B 73 ? 0F 28 C2"), hkUpdateBeam);
+	oNETMsg_Tick = HookFunction<tNETMsg_Tick>(Utils::PatternScan("engine.dll", "55 8B EC 53 56 8B F1 8B 0D ? ? ? ? 57"), hkNETMsg_Tick);
 
 	EventListner->Register();
 
@@ -1271,4 +1288,6 @@ void Hooks::End() {
 	RemoveHook(oReadPackets, hkReadPackets);
 	RemoveHook(oAddRenderableToList, hkAddRenderableToList);
 	RemoveHook(oClientCmd_Unrestricted, hkClientCmd_Unrestricted);
+	RemoveHook(oUpdateBeam, hkUpdateBeam);
+	RemoveHook(oNETMsg_Tick, hkNETMsg_Tick);
 }

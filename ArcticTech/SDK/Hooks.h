@@ -64,6 +64,8 @@ typedef bool(__fastcall* tIsConnected)(IVEngineClient*, void*);
 typedef void(__fastcall* tReadPackets)(bool);
 typedef void(__fastcall* tAddRenderableToList)(void*, void*, IClientRenderable*, bool, int, int, int);
 typedef void(__fastcall* tClientCmd_Unrestricted)(IVEngineClient*, void*, const char*, bool);
+typedef void(* tUpdateBeam)(float, Beam_t*, void*);
+typedef bool(__fastcall* tNETMsg_Tick)(CClientState*, void*, const CNETMsg_Tick&);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -107,6 +109,8 @@ inline tIsConnected oIsConnected;
 inline tReadPackets oReadPackets;
 inline tAddRenderableToList oAddRenderableToList;
 inline tClientCmd_Unrestricted oClientCmd_Unrestricted;
+inline tUpdateBeam oUpdateBeam;
+inline tNETMsg_Tick oNETMsg_Tick;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

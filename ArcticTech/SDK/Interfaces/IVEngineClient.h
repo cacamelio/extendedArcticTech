@@ -28,6 +28,13 @@ class IAchievementMgr;
 #define FLOW_INCOMING	1
 #define MAX_FLOWS		2		// in & out
 
+struct CNETMsg_Tick {
+private:
+	char pad_[0x8];
+public:
+	int tick;
+};
+
 class INetChannelInfo
 {
 public:

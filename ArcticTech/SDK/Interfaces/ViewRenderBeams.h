@@ -66,6 +66,49 @@ struct BeamInfo_t
 	}
 };
 
+#define NOISE_DIVISIONS		128
+#define MAX_BEAM_ENTS 10
+class Beam_t {
+public:
+	char pad_0x0[0xC];
+	Vector			m_Mins;
+	Vector			m_Maxs;
+	void*			m_queryHandleHalo;
+	float			m_haloProxySize;
+	Beam_t*			next;
+	int				type;
+	int				flags;
+	int				numAttachment;
+	Vector			attachemnt[MAX_BEAM_ENTS];
+	Vector			delta;
+	float			t;
+	float			freq;
+	float			die;
+	float			width;
+	float			endWidth;
+	float			fadeLength;
+	float			amplitude;
+	float			life;
+	float			r, g, b;
+	float			brightness;
+	float			speed;
+	float			frameRate;
+	float			frame;
+	int				segments;
+	unsigned int	entity[MAX_BEAM_ENTS];
+	int				attachmentIndex[MAX_BEAM_ENTS];
+	int				modelIndex;
+	int				haloIndex;
+	float			haloScale;
+	int				frameCount;
+	float			rgNoise[NOISE_DIVISIONS + 1];
+	void*			trail;
+	float			start_radius;
+	float			end_radius;
+	bool			m_bCalculatedNoise;
+	float			m_flHDRColorScale;
+};
+
 enum
 {
 	TE_BEAMPOINTS = 0x00,		// beam effect between two points
@@ -106,7 +149,6 @@ enum
 
 class ITraceFilter;
 class C_Beam;
-class Beam_t;
 
 class IViewRenderBeams {
 public:

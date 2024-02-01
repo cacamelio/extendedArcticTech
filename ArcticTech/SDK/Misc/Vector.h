@@ -100,37 +100,37 @@ class Vector {
 public:
 	float x, y, z;
 
-	Vector() {
+	Vector() noexcept {
 		x = 0;
 		y = 0;
 		z = 0;
 	}
 
-	Vector(float _x, float _y) {
+	Vector(float _x, float _y) noexcept {
 		x = _x;
 		y = _y;
 		z = 0;
 	}
 
-	Vector(float _x, float _y, float _z) {
+	Vector(float _x, float _y, float _z) noexcept {
 		x = _x;
 		y = _y;
 		z = _z;
 	}
 
-	Vector(const float* xyz) {
+	Vector(const float* xyz) noexcept {
 		memcpy(this, xyz, 12);
 	}
 
-	Vector operator+(Vector o) const {
+	Vector operator+(Vector o) const noexcept {
 		return Vector(x + o.x, y + o.y, z + o.z);
 	}
 
-	Vector operator-(Vector o) const {
+	Vector operator-(Vector o) const noexcept {
 		return Vector(x - o.x, y - o.y, z - o.z);
 	}
 
-	Vector operator*(float o) const {
+	Vector operator*(float o) const noexcept {
 		return Vector(x * o, y * o, z * o);
 	}
 
@@ -138,31 +138,31 @@ public:
 		return Vector(x / o, y / o, z / o);
 	}
 
-	void operator+=(Vector o) {
+	void operator+=(Vector o) noexcept {
 		x += o.x;
 		y += o.y;
 		z += o.z;
 	}
 
-	void operator-=(const Vector& o) {
+	void operator-=(const Vector& o) noexcept {
 		x -= o.x;
 		y -= o.y;
 		z -= o.z;
 	}
 
-	void operator*=(const Vector& o) {
+	void operator*=(const Vector& o) noexcept {
 		x *= o.x;
 		y *= o.y;
 		z *= o.z;
 	}
 
-	void operator/=(const Vector& o) {
+	void operator/=(const Vector& o) noexcept {
 		x /= o.x;
 		y /= o.y;
 		z /= o.z;
 	}
 
-	void operator*=(float o) {
+	void operator*=(float o) noexcept {
 		x *= o;
 		y *= o;
 		z *= o;
@@ -178,12 +178,16 @@ public:
 		return ((float*)this)[i];
 	}
 
-	bool operator==(const Vector& o) const {
+	bool operator==(const Vector& o) const noexcept {
 		return (x == o.x && y == o.y && z == o.z);
 	}
 
-	bool operator!=(const Vector& o) const {
+	bool operator!=(const Vector& o) const noexcept {
 		return (x != o.x || y != o.y || z != o.z);
+	}
+
+	bool operator>(float other) const noexcept {
+		return LengthSqr() > other * other;
 	}
 
 	void Init(float ix = 0.0f, float iy = 0.0f, float iz = 0.0f)
@@ -258,6 +262,10 @@ public:
 
 	void Interpolate(const Vector& other, float frac) {
 		*this += (other - *this) * frac;
+	}
+
+	float CosBetween(const Vector& other) const {
+		return Dot(other) / (Q_Length() * other.Q_Length());
 	}
 
 	Vector2 to_vec2() const {

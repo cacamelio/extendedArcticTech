@@ -1,15 +1,8 @@
-﻿#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-
-#include <Windows.h>
+﻿#include <Windows.h>
 #include <locale.h>
 
 #include "SDK/Interfaces.h"
 #include "SDK/Hooks.h"
-#include "Utils/Utils.h"
-#include "SDK/Config.h"
-#include "Features/Visuals/Chams.h"
-#include "SDK/Globals.h"
 #include "Features/Visuals/SkinChanger.h"
 #include "Features/Lua/Bridge/Bridge.h"
 

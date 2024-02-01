@@ -1476,7 +1476,7 @@ void CLua::Setup() {
 	lua["safe_call"] = api::safe_call;
 
 	// usertypes
-	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor, 
+	lua.new_usertype<IBaseWidget>("ui_element_t", sol::no_constructor,
 		"set_callback", api::ui::element_set_callback,
 		"visible", api::ui::element_set_visible,
 		"type", api::ui::element_type,
@@ -1526,7 +1526,7 @@ void CLua::Setup() {
 		"to_screen", api::vector::to_screen
 	);
 
-	lua.new_usertype<DXImage>("image_t", sol::no_constructor, 
+	lua.new_usertype<DXImage>("image_t", sol::no_constructor,
 		"width", &DXImage::width,
 		"height", &DXImage::height
 	);
@@ -1636,7 +1636,7 @@ void CLua::Setup() {
 		"owner", &AnimationLayer::m_pOwner
 	);
 
-	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor, 
+	lua.new_usertype<CBasePlayer>("player_t", sol::no_constructor,
 		"get_name", &CBasePlayer::GetName,
 		"get_active_weapon", &CBasePlayer::GetActiveWeapon,
 		"is_alive", &CBasePlayer::IsAlive,
@@ -1688,13 +1688,13 @@ void CLua::Setup() {
 	DEF_LUA_ARR(char*);
 	DEF_LUA_ARR(AnimationLayer);
 
-	lua.new_usertype<QAngle>("qangle", sol::call_constructor, sol::constructors<QAngle(), QAngle(float, float), QAngle(float, float, float)>(), 
+	lua.new_usertype<QAngle>("qangle", sol::call_constructor, sol::constructors<QAngle(), QAngle(float, float), QAngle(float, float, float)>(),
 		"pitch", &QAngle::pitch,
 		"yaw", &QAngle::yaw,
 		"roll", &QAngle::roll
 	);
 
-	lua.new_usertype<RegisteredShot_t>("shot_t", sol::no_constructor, 
+	lua.new_usertype<RegisteredShot_t>("shot_t", sol::no_constructor,
 		"client_shoot_pos", &RegisteredShot_t::client_shoot_pos,
 		"target_pos", &RegisteredShot_t::target_pos,
 		"client_angle", &RegisteredShot_t::client_angle,
@@ -1789,7 +1789,7 @@ void CLua::Setup() {
 		"__index", api::client::event_index
 	);
 
-	lua.new_usertype<LuaAntiAim_t>("antiaim_context_t", sol::no_constructor, 
+	lua.new_usertype<LuaAntiAim_t>("antiaim_context_t", sol::no_constructor,
 		"yaw", &LuaAntiAim_t::override_yaw,
 		"pitch", &LuaAntiAim_t::override_pitch,
 		"yaw_offset", &LuaAntiAim_t::override_yaw_offset,
@@ -1799,7 +1799,7 @@ void CLua::Setup() {
 		"desync_side", &LuaAntiAim_t::override_desync_side
 	);
 
-	lua.new_usertype<FireBulletData_t>("fire_bullet_t", sol::no_constructor, 
+	lua.new_usertype<FireBulletData_t>("fire_bullet_t", sol::no_constructor,
 		"damage", &FireBulletData_t::damage,
 		"trace", &FireBulletData_t::enterTrace
 	);
@@ -1834,7 +1834,7 @@ void CLua::Setup() {
 		"millisecond", &SYSTEMTIME::wMilliseconds
 	);
 
-	lua.new_usertype<INetChannelInfo>("net_channel_info_t", sol::no_constructor, 
+	lua.new_usertype<INetChannelInfo>("net_channel_info_t", sol::no_constructor,
 		"get_name", &INetChannelInfo::GetName,
 		"get_address", &INetChannelInfo::GetAddress,
 		"get_time", &INetChannelInfo::GetTime,
@@ -1945,7 +1945,7 @@ void CLua::Setup() {
 		"exists", api::files::exists
 	);
 
-	lua.create_named_table("json", 
+	lua.create_named_table("json",
 		"stringify", api::json::stringify,
 		"parse", api::json::parse
 	);

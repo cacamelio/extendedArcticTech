@@ -261,33 +261,6 @@ void GrenadePrediction::Draw() {
 			}
 		}
 	}
-	else if (weaponId == Molotov || weaponId == IncGrenade) {
-		float minDistance = 10.f;
-
-		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
-			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
-
-			if (!player || player->IsTeammate() || !player->IsPlayer() || !player->IsAlive() || player->m_bDormant())
-				continue;
-
-			CGameTrace tr = EngineTrace->TraceRay(vecDetonate + Vector(0, 0, 16), player->m_vecOrigin() + Vector(0, 0, 32), 0x1, player);
-
-			if (tr.fraction == 1.f) {
-				float dist = (player->m_vecOrigin() - vecDetonate).Q_Length2D() / 12.f;
-
-				if (dist < minDistance) {
-					additional_info = std::format("{:.2}ft", dist);
-					hit = true;
-					minDistance = dist;
-				}
-			}
-		}
-
-		if (minDistance < 6.f && config.misc.miscellaneous.automatic_grenade_release->get() > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled()) {
-			ctx.should_release_grenade = true;
-			EngineClient->GetViewAngles(ctx.grenade_release_angle);
-		}
-	}
 
 	if (weaponId == Molotov || weaponId == IncGrenade) {
 		Ray_t ray;
@@ -326,6 +299,33 @@ void GrenadePrediction::Draw() {
 		}
 	}
 
+	if (weaponId == Molotov || weaponId == IncGrenade) {
+		float minDistance = 10.f;
+
+		for (int i = 0; i < ClientState->m_nMaxClients; i++) {
+			CBasePlayer* player = (CBasePlayer*)EntityList->GetClientEntity(i);
+
+			if (!player || player->IsTeammate() || !player->IsPlayer() || !player->IsAlive() || player->m_bDormant())
+				continue;
+
+			CGameTrace tr = EngineTrace->TraceRay(vecDetonate + Vector(0, 0, 16), player->m_vecOrigin() + Vector(0, 0, 32), 0x1, player);
+
+			if (tr.fraction == 1.f) {
+				float dist = (player->m_vecOrigin() - vecDetonate).Q_Length2D() / 12.f;
+
+				if (dist < minDistance) {
+					additional_info = std::format("{:.2}ft", dist);
+					hit = true;
+					minDistance = dist;
+				}
+			}
+		}
+
+		if (minDistance < 6.f && config.misc.miscellaneous.automatic_grenade_release->get() > 0 && reinterpret_cast<CBaseGrenade*>(ctx.active_weapon)->m_bPinPulled()) {
+			ctx.should_release_grenade = true;
+			EngineClient->GetViewAngles(ctx.grenade_release_angle);
+		}
+	}
 
 	Render->PolyLine(scrPoints, hit ? config.visuals.other_esp.grenade_trajectory_hit_color->get() : config.visuals.other_esp.grenade_trajectory_color->get());
 
@@ -335,7 +335,7 @@ void GrenadePrediction::Draw() {
 		Render->CircleFilled(w2s, 2, Color(255, 255, 255, 255));
 	}
 
-	Render->CircleFilled(Render->WorldToScreen(vecDetonate), 3, Color(255, 0, 0));
+	Render->CircleFilled(Render->WorldToScreen(vecDetonate), 2, Color(255, 0, 0));
 
 	if (!additional_info.empty() && hit) {
 		auto sc_pos = Render->WorldToScreen(vecDetonate);
@@ -621,6 +621,8 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	if (!Cheat.InGame || !config.visuals.other_esp.grenade_proximity_warning->get())
 		return;
 
+	auto local = EntityList->GetLocalOrSpec();
+
 	pathPoints.clear();
 	collisionPoints.clear();
 
@@ -698,10 +700,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	grenade_data.path = pathPoints;
 	grenade_data.flLastUpdate = GlobalVars->realtime;
 
-	Vector local_pos = Cheat.LocalPlayer->GetAbsOrigin();
-	CBasePlayer* obs = Cheat.LocalPlayer->GetObserverTarget();
-	if (obs && Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_CHASE || Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_IN_EYE)
-		local_pos = obs->GetAbsOrigin();
+	Vector local_pos = local->GetAbsOrigin();
 
 	float distance = (local_pos - vecDetonate).Q_Length();
 
@@ -723,14 +722,14 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	Render->GlowCircle2(pos, circle_radius - 2.f, Color(40, 40, 40, 230 * alpha), Color(20, 20, 20, 230 * alpha));
 
 	if (weapId == HeGrenade) {
-		float damage = CalcDamage(vecDetonate + Vector(0, 0, 0.25f), Cheat.LocalPlayer, entity);
+		float damage = CalcDamage(vecDetonate + Vector(0, 0, 0.25f), local, entity);
 		if (damage > 0)
-			Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, min(damage / Cheat.LocalPlayer->m_iHealth() * 2.f, 1) * 210));
+			Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, min(damage / local->m_iHealth() * 2.f, 1) * 210));
 
 		Render->Text(std::to_string(int(damage)).c_str(), pos + Vector2(0, 13), Color(255, 255, 255, 255 * alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
 		Render->Image(Resources::HeGrenade, pos - Vector2(10, 21), Color(255, 255, 255, 230 * alpha));
 	} else if (weapId == Molotov) {
-		float distance = (vecDetonate - Cheat.LocalPlayer->GetAbsOrigin()).Length2D();
+		float distance = (vecDetonate - local->GetAbsOrigin()).Length2D();
 
 		Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, std::clamp((430 - distance) / 250.f, 0.f, 1.f) * 210));
 		Render->Image(Resources::Molotov, pos - Vector2(10, 18), Color(255, 255, 255, 230 * alpha));
@@ -793,11 +792,11 @@ void GrenadeWarning::Precache() {
 		modelprecache->AddString(false, "sprites/gradient_material.vmt");
 }
 
-void GrenadeWarning::RenderBeam(const Vector& start, const Vector& end, Color clr) {
+void GrenadeWarning::RenderBeam(const std::vector<Vector> points, Color clr, int segments) {
 	BeamInfo_t beam_info;
-	beam_info.m_vecStart = start;
-	beam_info.m_vecEnd = end;
-	beam_info.m_nType = TE_BEAMPOINTS;
+	beam_info.m_vecStart = points.front();
+	beam_info.m_vecEnd = points.back();
+	beam_info.m_nType = TE_BEAMSPLINE;
 	beam_info.m_pszModelName = "sprites/gradient_material.vmt";
 	beam_info.m_flHaloScale = 0.f;
 	beam_info.m_flLife = 1.f;
@@ -812,12 +811,20 @@ void GrenadeWarning::RenderBeam(const Vector& start, const Vector& end, Color cl
 	beam_info.m_flRed = clr.r;
 	beam_info.m_flGreen = clr.g;
 	beam_info.m_flBlue = clr.b;
-	beam_info.m_nSegments = 2;
+	beam_info.m_nSegments = segments;
 	beam_info.m_bRenderable = true;
 	beam_info.m_nFlags = FBEAM_ONLYNOISEONCE | FBEAM_NOTILE | FBEAM_HALOBEAM;
 	auto beam = ViewRenderBeams->CreateBeamPoints(beam_info);
 	
 	if (beam) {
+		beam->numAttachment = points.size();
+
+		for (int i = 0; i < beam->numAttachment; i++) {
+			beam->entity[i] = 0;
+			beam->attachemnt[i] = points[i];
+			beam->attachmentIndex[i] = 0;
+		}
+
 		ViewRenderBeams->DrawBeam(beam);
 		beams_to_free.push(beam);
 	}
@@ -826,30 +833,42 @@ void GrenadeWarning::RenderBeam(const Vector& start, const Vector& end, Color cl
 void GrenadeWarning::ClearBeams() {
 	while (!beams_to_free.empty()) {
 		auto beam = beams_to_free.front();
-		*(float*)((uintptr_t)beam + 0xC8) = 0.f; // beam->die = 0.f;
+		beam->modelIndex = 0;
+		beam->die = 0.f;
 		beams_to_free.pop();
   	}
-
-	ViewRenderBeams->KillDeadBeams(nullptr);
 }
 
 void GrenadeWarning::RenderPaths() {
-	float curtime_backup = GlobalVars->curtime;
-	//GlobalVars->curtime -= 0.01f;
+	ClearBeams();
+
+	std::vector<Vector> points;
+	points.reserve(10);
 	for (auto& nade : grenade_warnings) {
 		auto& data = nade.second;
 
 		if (GlobalVars->realtime - data.flLastUpdate > 0.1f || data.path.size() <= 3)
 			continue;
+		
+		points.push_back(data.path[0]);
+		for (int i = 0; i < data.path.size(); i++) {
+			if (points.size() < 9) {
+				points.push_back(data.path[i]);
+				continue;
+			}
 
-		for (int i = 1; i < data.path.size(); i++) {
-			Vector start = data.path[i - 1];
-			Vector end = data.path[i];
-			RenderBeam(start, end, config.visuals.other_esp.grenade_predict_color->get());
-			//GlowObjectManager->AddGlowBox(end, Math::VectorAngles(start - end), Vector(0, -0.4, -0.4), Vector((start - end).Q_Length(), 0.4, 0.4), config.visuals.other_esp.grenade_predict_color->get(), 0.02f);
+			points.push_back(data.path[i]);
+			RenderBeam(points, config.visuals.other_esp.grenade_predict_color->get(), 2);
+			points.clear();
+			points.push_back(data.path[i - 1]);
+			points.push_back(data.path[i]);
+		}
+
+		if (points.size() > 1) {
+			RenderBeam(points, config.visuals.other_esp.grenade_predict_color->get());
+			points.clear();
 		}
 	}
-	//GlobalVars->curtime = curtime_backup;
 }
 
 void GrenadeWarning::OnEvent(IGameEvent* event) {

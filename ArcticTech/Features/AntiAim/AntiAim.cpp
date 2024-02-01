@@ -11,8 +11,6 @@
 #include "../Visuals/ESP.h"
 
 void CAntiAim::FakeLag() {
-	static ConVar* sv_maxusrcmdprocessticks = CVar->FindVar("sv_maxusrcmdprocessticks");
-
 	if (Cheat.LocalPlayer->m_MoveType() == MOVETYPE_NOCLIP || Cheat.LocalPlayer->m_fFlags() & FL_FROZEN || GameRules()->IsFreezePeriod())
 		return;
 
@@ -28,10 +26,10 @@ void CAntiAim::FakeLag() {
 		return;
 
 	fakelag = 0;
-	fakelag_limit = min(sv_maxusrcmdprocessticks->GetInt(), config.antiaim.fakelag.limit->get());
+	fakelag_limit = min(cvars.sv_maxusrcmdprocessticks->GetInt(), config.antiaim.fakelag.limit->get());
 
 	if (ctx.tickbase_shift > 0)
-		fakelag_limit = max((sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 1);
+		fakelag_limit = max((cvars.sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 1);
 
 	if (config.ragebot.aimbot.doubletap->get() && (GlobalVars->realtime - ctx.last_shot_time) < 0.3f)
 		fakelag_limit = 2;
@@ -42,15 +40,13 @@ void CAntiAim::FakeLag() {
 		} else {
 			fakelag = fakelag_limit;
 
-			if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
-				if ((Cheat.LocalPlayer->m_vecOrigin() - ctx.local_sent_origin).LengthSqr() > 4096.f)
-					fakelag = 1;
-			} else {
-				if (config.antiaim.fakelag.variability->get() > 0)
-					fakelag -= Utils::RandomInt(0, config.antiaim.fakelag.variability->get());
-			}
+			if (Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND && config.antiaim.fakelag.variability->get() > 0)
+				fakelag -= Utils::RandomInt(0, config.antiaim.fakelag.variability->get());
 		}
 	}
+
+	if (Cheat.LocalPlayer->m_vecOrigin() - ctx.local_sent_origin > 64.f)
+		fakelag = 1;
 
 	if (lua_override.override_bits & LuaAntiAim_t::OverrideFakeLag)
 		fakelag = lua_override.fakelag;
@@ -66,7 +62,7 @@ void CAntiAim::FakeLag() {
 
 	static bool hasPeeked = false;
 
-	if (ctx.is_peeking && !ctx.fake_duck) {
+	if (ctx.is_peeking && !ctx.fake_duck && Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND) {
 		if (!hasPeeked) {
 			hasPeeked = true;
 
@@ -401,7 +397,7 @@ bool CAntiAim::IsPeeking() {
 		auto& info = WorldESP->GetESPInfo(i);
 		info.m_bHit = false;
 
-		if (!player || player->IsTeammate() || !player->IsAlive())
+		if (!player || player->IsTeammate() || !player->IsAlive() || info.m_flAlpha < 0.1f || !info.m_bValid)
 			continue;
 
 		Vector target_vel = player->m_vecVelocity();

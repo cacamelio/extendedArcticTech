@@ -243,6 +243,7 @@
     <ClInclude Include="SDK\Misc\checksum_crc.h" />
     <ClInclude Include="SDK\Misc\Color.h" />
     <ClInclude Include="SDK\Misc\CUserCmd.h" />
+    <ClInclude Include="SDK\Misc\fnv1a.h" />
     <ClInclude Include="SDK\Misc\KeyValues.h" />
     <ClInclude Include="SDK\Misc\Matrix.h" />
     <ClInclude Include="SDK\Misc\MoveMsg.h" />
