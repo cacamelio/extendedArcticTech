@@ -131,17 +131,19 @@ bool CChams::OnDrawModelExecute(void* ctx, const DrawModelState_t& state, const 
 		auto ent = state.m_pRenderable->GetIClientUnknown()->GetBaseEntity();
 		auto shadow_parent = state.m_pRenderable->GetShadowParent();
 
-		if (EntityList->GetClientEntityFromHandle(ent->moveparent()) == Cheat.LocalPlayer)
-			isAttachment = true;
-		else if (EntityList->GetClientEntityFromHandle(ent->m_hOwnerEntity()) == Cheat.LocalPlayer)
-			isAttachment = true;
-		else if (shadow_parent && shadow_parent->GetIClientUnknown()->GetBaseEntity() == Cheat.LocalPlayer)
-			isAttachment = true;
+		if (ent) {
+			if (EntityList->GetClientEntityFromHandle(ent->moveparent()) == Cheat.LocalPlayer)
+				isAttachment = true;
+			else if (EntityList->GetClientEntityFromHandle(ent->m_hOwnerEntity()) == Cheat.LocalPlayer)
+				isAttachment = true;
+			else if (shadow_parent && shadow_parent->GetIClientUnknown()->GetBaseEntity() == Cheat.LocalPlayer)
+				isAttachment = true;
 
-		auto cl_class = ent->GetClientClass();
+			auto cl_class = ent->GetClientClass();
 
-		if (cl_class && cl_class->m_ClassID == C_PLANTED_C4)
-			isAttachment = false;
+			if (cl_class && cl_class->m_ClassID == C_PLANTED_C4)
+				isAttachment = false;
+		}
 	}
 
 	ClassOfEntity entType;

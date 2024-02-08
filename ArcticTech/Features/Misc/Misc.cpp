@@ -75,7 +75,7 @@ void Miscellaneous::FastThrow() {
 
 	CBaseGrenade* grenade = reinterpret_cast<CBaseGrenade*>(ctx.active_weapon);
 
-	if (!(ctx.cmd->buttons & IN_ATTACK) && (nLastButtons & IN_ATTACK) && grenade->m_bPinPulled())
+	if (!(ctx.cmd->buttons & (IN_ATTACK | IN_ATTACK2)) && (nLastButtons & (IN_ATTACK | IN_ATTACK2)) && grenade->m_bPinPulled())
 		ctx.grenade_throw_tick = ctx.cmd->command_number;
 
 	nLastButtons = ctx.cmd->buttons;

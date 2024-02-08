@@ -111,6 +111,8 @@ struct CVars {
 	ConVar* sv_clockcorrection_msecs;
 	ConVar* sv_maxusrcmdprocessticks;
 	ConVar* sv_infinite_ammo;
+	ConVar* sensitivity;
+	ConVar* default_fov;
 };
 
 extern CheatState_t Cheat;

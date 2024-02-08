@@ -22,9 +22,10 @@ void Glow::Run() {
 			col = config.visuals.esp.glow_color->get();
 		else if ((classId == C_BASE_CS_GRENADE || classId == C_BASE_CS_GRENADE_PROJECTILE || classId == C_MOLOTOV_PROJECTILE || classId == C_DECOY_PROJECTILE || classId == C_SMOKE_GRENADE_PROJECTILE) && config.visuals.other_esp.grenades->get())
 			col = config.visuals.other_esp.grenade_predict_color->get();
-		else if (classId == C_PLANTED_C4)
+		else if (classId == C_PLANTED_C4) {
 			col = config.visuals.other_esp.bomb_color->get();
-		else
+			col.alpha_modulatef(col.a * 0.8f);
+		} else
 			continue;
 
 		glowObject.m_flGlowAlpha = col.a / 255.f;

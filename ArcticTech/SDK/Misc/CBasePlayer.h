@@ -290,6 +290,9 @@ struct CCSGOPlayerAnimationState
     float		flAimPitchMin;
     float		flAimPitchMax;
     int         iAnimsetVersion;
+
+    void        Update(const QAngle& angles, bool bForce = false);
+    void        ForceUpdate();
 };
 static_assert(sizeof(CCSGOPlayerAnimationState) == 0x348);
 
@@ -486,7 +489,6 @@ public:
     void                ModifyEyePosition(Vector& eye_position);
     Vector              GetShootPosition();
     void                UpdateClientSideAnimation();
-    void                UpdateAnimationState(CCSGOPlayerAnimationState* state, const QAngle& angles, bool bForce = false);
     AnimationLayer*     GetAnimlayers();
     CBaseCombatWeapon*  GetActiveWeapon();
     bool                SetupBones(matrix3x4_t* boneToWorld, int maxBones, int mask, float curTime = 0.f);

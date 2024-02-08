@@ -2,6 +2,7 @@
 
 #include <DirectXMath.h>
 
+
 float Math::Lerp(float a, float b, float perc) {
 	return a + (b - a) * perc;
 }

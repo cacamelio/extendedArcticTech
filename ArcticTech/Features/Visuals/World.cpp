@@ -148,9 +148,26 @@ void CWorld::SkyBox() {
 	}
 }
 
-void CWorld::ProcessCamera(CViewSetup* view_setup) {
+void CWorld::ProcessCamera(CViewSetup* setup) {
+	m_flFOVOverriden = 0.f;
+
 	if (!Cheat.InGame || !Cheat.LocalPlayer)
 		return;
+
+	float player_fov = config.visuals.effects.fov->get();
+	if (Cheat.LocalPlayer->IsAlive() && Cheat.LocalPlayer->m_bIsScoped() && ctx.active_weapon) {
+		switch (ctx.active_weapon->m_zoomLevel()) {
+		case 1:
+			player_fov += (setup->fov - player_fov) * config.visuals.effects.fov_zoom->get() * 0.01f;
+			break;
+		case 2:
+			player_fov += (setup->fov - player_fov) * config.visuals.effects.fov_second_zoom->get() * 0.01f;
+			break;
+		}
+	}
+
+	setup->fov = player_fov;
+	m_flFOVOverriden = player_fov;
 
 	if (config.visuals.effects.thirdperson->get() && Cheat.LocalPlayer->IsAlive()) {
 		Input->m_fCameraInThirdPerson = true;
@@ -181,12 +198,36 @@ void CWorld::ProcessCamera(CViewSetup* view_setup) {
 		CBasePlayer* observer = (CBasePlayer*)EntityList->GetClientEntityFromHandle(Cheat.LocalPlayer->m_hObserverTarget());
 
 		if (observer) {
-			Vector dir = Math::AngleVectors(view_setup->angles);
+			Vector dir = Math::AngleVectors(setup->angles);
 			Vector origin = AnimationSystem->GetInterpolated(observer) + Vector(0, 0, 64 - observer->m_flDuckAmount() * 28);
 			CGameTrace trace = EngineTrace->TraceHull(origin, 
 				origin - dir * config.visuals.effects.thirdperson_distance->get(), Vector(-20, -20, -20), Vector(20, 20, 20), CONTENTS_SOLID, observer);
-			view_setup->origin = trace.endpos;
+			setup->origin = trace.endpos;
 		}
+	}
+}
+
+void CWorld::OverrideSensitivity() {
+	if (m_flFOVOverriden == 0.f || !Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive())
+		return;
+	
+	int iDefaultFOV = cvars.default_fov->GetInt();
+	int	localFOV = m_flFOVOverriden;
+
+	CSGOHud->m_flFOVSensitivityAdjust = 1.0f;
+
+	if (CSGOHud->m_flMouseSensitivityFactor) {
+		CSGOHud->m_flMouseSensitivity = cvars.sensitivity->GetFloat() * CSGOHud->m_flMouseSensitivityFactor;
+	} else {
+		if (iDefaultFOV == 0)
+			return;
+
+		float zoomSensitivity = cvars.zoom_sensitivity_ratio_mouse->GetFloat();
+
+		CSGOHud->m_flFOVSensitivityAdjust =
+			((float)localFOV / (float)iDefaultFOV) * // linear fov downscale
+			zoomSensitivity; // sensitivity scale factor
+		CSGOHud->m_flMouseSensitivity = CSGOHud->m_flFOVSensitivityAdjust * cvars.sensitivity->GetFloat(); // regular sensitivity
 	}
 }
 

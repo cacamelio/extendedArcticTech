@@ -60,8 +60,6 @@ void CPrediction::BackupData() {
 
 	bOldIsFirstPrediction = Prediction->bIsFirstTimePredicted;
 	bOldInPrediction = Prediction->bInPrediction;
-
-	nBackupTickBase = Cheat.LocalPlayer->m_nTickBase();
 }
 
 void CPrediction::Update() {
@@ -93,25 +91,22 @@ void CPrediction::Start(CUserCmd* cmd) {
 	Prediction->CheckMovingGround(Cheat.LocalPlayer, GlobalVars->frametime);
 	Prediction->SetLocalViewAngles(cmd->viewangles);
 
-	RunPreThink(Cheat.LocalPlayer);
-	RunThink(Cheat.LocalPlayer);
+	//RunPreThink(Cheat.LocalPlayer);
+	//RunThink(Cheat.LocalPlayer);
 
 	MoveHelper->SetHost(Cheat.LocalPlayer);
 	Prediction->SetupMove(Cheat.LocalPlayer, cmd, MoveHelper, &moveData);
 	GameMovement->ProcessMovement(Cheat.LocalPlayer, &moveData);
 	Prediction->FinishMove(Cheat.LocalPlayer, cmd, &moveData);
 
-	MoveHelper->ProcessImpacts();
+	//MoveHelper->ProcessImpacts();
 
-	Cheat.LocalPlayer->PostThink();
+	//Cheat.LocalPlayer->PostThink();
 
 	Cheat.LocalPlayer->m_flVelocityModifier() = backup_velocity_modifier;
 
 	GameMovement->FinishTrackPredictionErrors(Cheat.LocalPlayer);
 	MoveHelper->SetHost(nullptr);
-
-	if (!Prediction->bEnginePaused && !Exploits->IsShifting())
-		Cheat.LocalPlayer->m_nTickBase()++;
 
 	if (ctx.active_weapon) {
 		ctx.active_weapon->UpdateAccuracyPenality();
@@ -144,8 +139,6 @@ void CPrediction::End() {
 
 	Prediction->bInPrediction = bOldInPrediction;
 	Prediction->bIsFirstTimePredicted = bOldIsFirstPrediction;
-
-	Cheat.LocalPlayer->m_nTickBase() = nBackupTickBase;
 }
 
 void CPrediction::Repredict(CUserCmd* cmd, QAngle angles) {

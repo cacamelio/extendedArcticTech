@@ -127,7 +127,8 @@ void CResolver::SetupLayer(LagRecord* record, int idx, float delta) {
 	if (record->prev_record)
 		memcpy(record->player->GetAnimlayers(), record->prev_record->animlayers, sizeof(AnimationLayer) * 13);
 
-	record->player->UpdateAnimationState(animstate, angles);
+	animstate->ForceUpdate();
+	animstate->Update(angles);
 	
 	auto& resolver_layer = record->resolver_data.layers[idx];
 	resolver_layer.desync = delta;
@@ -212,13 +213,13 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 
 	record->resolver_data.max_desync_delta = player->GetMaxDesyncDelta();
 
-#ifndef RESOLVER_DEBUG
+//#ifndef RESOLVER_DEBUG
 	if (!record->m_nChokedTicks || player->m_bIsDefusing()) {
 		record->resolver_data.side = 0;
 		record->resolver_data.resolver_type = ResolverType::NONE;
 		return;
 	}
-#endif
+//#endif
 
 	record->resolver_data.player_state = DetectPlayerState(player, record->animlayers);
 	record->resolver_data.antiaim_type = DetectAntiAim(player, records);

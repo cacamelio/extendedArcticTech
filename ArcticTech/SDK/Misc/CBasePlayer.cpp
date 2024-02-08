@@ -4,6 +4,34 @@
 
 #include "../../Features/RageBot/AnimationSystem.h"
 
+
+void CCSGOPlayerAnimationState::Update(const QAngle& angles, bool bForce) {
+	static auto fn = Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 18 56 57 8B F9 F3 0F 11 54 24");
+
+	// xmm2 eye yaw
+	// xmm1 eye pitch
+	// bForce on stack
+	// ecx animstate
+
+	//fn(state, nullptr, 0.0f, angles.yaw, angles.pitch, nullptr);
+
+	float eyeYaw = angles.yaw;
+	float eyePitch = angles.pitch;
+
+	__asm {
+		movss xmm2, eyePitch
+		push bForce
+		mov ecx, this
+		movss xmm1, eyeYaw
+		call fn
+	}
+}
+
+void CCSGOPlayerAnimationState::ForceUpdate() {
+	if (nLastUpdateFrame >= GlobalVars->framecount)
+		nLastUpdateFrame = GlobalVars->framecount - 1;
+}
+
 bool CBasePlayer::IsTeammate() {
 	if (!Cheat.LocalPlayer || !this)
 		return false;
@@ -194,28 +222,6 @@ void CBasePlayer::UpdateClientSideAnimation() {
 
 	if (this != Cheat.LocalPlayer)
 		m_bClientSideAnimation() = false;
-}
-
-void CBasePlayer::UpdateAnimationState(CCSGOPlayerAnimationState* state, const QAngle& angles, bool bForce) {
-	static auto fn = Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 83 EC 18 56 57 8B F9 F3 0F 11 54 24");
-
-	// xmm2 eye yaw
-	// xmm1 eye pitch
-	// bForce on stack
-	// ecx animstate
-
-	//fn(state, nullptr, 0.0f, angles.yaw, angles.pitch, nullptr);
-
-	float eyeYaw = angles.yaw;
-	float eyePitch = angles.pitch;
-
-	__asm {
-		movss xmm2, eyePitch
-		push bForce
-		mov ecx, state
-		movss xmm1, eyeYaw
-		call fn
-	}
 }
 
 AnimationLayer* CBasePlayer::GetAnimlayers()

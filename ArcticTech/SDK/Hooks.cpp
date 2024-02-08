@@ -224,8 +224,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		ctx.send_packet = bSendPacket = ctx.tickbase_shift == 1;
 
 		cmd->viewangles.Normalize();
-		AnimationSystem->UpdateLocalAnimations(cmd);
-
 		EnginePrediction->End();
 
 		Utils::FixMovement(cmd, eyeYaw);
@@ -318,8 +316,6 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	if (cvars.sv_infinite_ammo->GetInt() == 0 && ctx.active_weapon && ctx.active_weapon->m_iItemDefinitionIndex() == Taser && ctx.active_weapon->CanShoot() && cmd->buttons & IN_ATTACK)
 		ctx.switch_to_main_weapon = true;
-
-	AnimationSystem->UpdateLocalAnimations(cmd);
 
 	EnginePrediction->End();
 
@@ -453,33 +449,6 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 void __fastcall hkOverrideView(IClientMode* thisptr, void* edx, CViewSetup* setup) {
 	static tOverrideView oOverrideView = (tOverrideView)Hooks::ClientModeVMT->GetOriginal(18);
 
-	if (!Cheat.InGame || !Cheat.LocalPlayer)
-		return oOverrideView(thisptr, edx, setup);
-
-	if (config.visuals.effects.fov->get() != 90) {
-		float fov = config.visuals.effects.fov->get();;
-
-		if (Cheat.LocalPlayer->IsAlive() && Cheat.LocalPlayer->m_bIsScoped()) {
-			CBaseCombatWeapon* weap = Cheat.LocalPlayer->GetActiveWeapon();
-
-			if (weap) {
-				switch (weap->m_zoomLevel())
-				{
-				case 1:
-					fov -= (fov - setup->fov) * config.visuals.effects.fov_zoom->get() * 0.01f;
-					break;
-				case 2:
-					fov -= (fov - setup->fov) * config.visuals.effects.fov_second_zoom->get() * 0.01f;
-					break;
-				default:
-					break;
-				}
-			}
-		}
-
-		setup->fov = fov;
-	}
-
 	World->ProcessCamera(setup);
 
 	if (Cheat.LocalPlayer && Cheat.LocalPlayer->IsAlive() && ctx.fake_duck)
@@ -573,10 +542,10 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.cl_csm_shadows->SetInt(!config.visuals.effects.removals->get(2));
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(6));
-		cvars.zoom_sensitivity_ratio_mouse->SetInt(!config.visuals.effects.removals->get(5));
 
 		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
 			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
+
 		NadeWarning->RenderPaths();
 
 		break;
@@ -629,16 +598,12 @@ void __fastcall hkUpdateClientSideAnimation(CBasePlayer* thisptr, void* edx) {
 	if (!thisptr->IsPlayer())
 		return oUpdateClientSideAnimation(thisptr, edx);
 
-	if (thisptr == Cheat.LocalPlayer) {
-		CCSGOPlayerAnimationState* animstate = thisptr->GetAnimstate();
+	CCSGOPlayerAnimationState* animstate = thisptr->GetAnimstate();
 
-		if (animstate)
-			animstate->pEntity = nullptr; // do not update animstate
-
+	if (thisptr == Cheat.LocalPlayer && animstate) {
+		animstate->pEntity = nullptr; // do not update animstate
 		oUpdateClientSideAnimation(thisptr, edx);
-
-		if (animstate)
-			animstate->pEntity = thisptr;
+		animstate->pEntity = thisptr;
 	}
 }
 
@@ -740,12 +705,6 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
-	if (cmd->tick_count == INT_MAX) {
-		player->m_nTickBase()++;
-		cmd->hasbeenpredicted = true;
-		return;
-	}
-
 	Exploits->AdjustPlayerTimeBase(player->m_nTickBase(), cmd);
 
 	const float backup_velocity_modifier = player->m_flVelocityModifier();
@@ -761,15 +720,22 @@ void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* playe
 }
 
 void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
-	const int tick_base = thisptr->m_nTickBase();
-	C_CommandContext* c_ctx = thisptr->GetCommandContext();
+	C_CommandContext* context = thisptr->GetCommandContext();
 
-	if (thisptr != Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || thisptr->m_nSimulationTick() == GlobalVars->tickcount || !c_ctx->needsprocessing)
+	if (context->cmd.tick_count == INT_MAX) {
+		auto old_tick = context->cmd.command_number - 1;
+		EnginePrediction->RestoreNetvars(old_tick);
+		context->needsprocessing = false;
+		return;
+	}
+
+	if (thisptr != Cheat.LocalPlayer || !Cheat.LocalPlayer->IsAlive() || !Cheat.LocalPlayer->GetModel() || thisptr->m_nSimulationTick() == GlobalVars->tickcount || !context->needsprocessing)
 		return oPhysicsSimulate(thisptr, edx);
 
 	oPhysicsSimulate(thisptr, edx);
 
-	EnginePrediction->StoreNetvars(c_ctx->cmd.command_number);
+	AnimationSystem->UpdateLocalAnimations(&context->cmd);
+	EnginePrediction->StoreNetvars(context->cmd.command_number);
 }
 
 void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_sequence, int outgoing_acknowledged) {

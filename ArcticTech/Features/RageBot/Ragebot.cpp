@@ -55,6 +55,8 @@ weapon_settings_t CRagebot::GetWeaponSettings(int weaponId) {
 	case Usp_s:
 	case Tec9:
 	case P250:
+	case Hkp2000:
+	case Elite:
 		settings = config.ragebot.weapons.pistol;
 		break;
 	}
@@ -880,7 +882,8 @@ void CRagebot::Zeusbot() {
 				if (!config.antiaim.misc.fake_duck->get())
 					ctx.send_packet = true;
 
-				Chams->AddShotChams(record);
+				if (config.visuals.chams.shot_chams->get())
+					Chams->AddShotChams(record);
 
 				LagCompensation->BacktrackEntity(backup_record);
 				delete backup_record;
@@ -989,8 +992,10 @@ void CRagebot::Knifebot() {
 
 			ctx.last_shot_time = GlobalVars->realtime + 0.5f; // prevent from charging
 
-			memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
-			Chams->AddShotChams(record);
+			if (config.visuals.chams.shot_chams->get()) {
+				memcpy(record->clamped_matrix, record->bone_matrix, sizeof(matrix3x4_t) * 128);
+				Chams->AddShotChams(record);
+			}
 
 			LagCompensation->BacktrackEntity(backup_record);
 			delete backup_record;

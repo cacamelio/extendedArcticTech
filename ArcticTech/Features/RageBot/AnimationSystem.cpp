@@ -34,35 +34,43 @@ void FixLegMovement(AnimationLayer* server_layers) {
 }
 
 void CAnimationSystem::UpdateLocalAnimations(CUserCmd* cmd) {
+	if (local_anims.command_number == cmd->command_number)
+		return;
+
+	local_anims.command_number = cmd->command_number;
+
 	CCSGOPlayerAnimationState* animstate = Cheat.LocalPlayer->GetAnimstate();
 	AnimationLayer* animlayers = Cheat.LocalPlayer->GetAnimlayers();
 
 	AnimationLayer animlayers_backup[13];
 	float curtimeBackup = GlobalVars->curtime;
+	float frametimeBackup = GlobalVars->frametime;
 	memcpy(animlayers_backup, animlayers, sizeof(AnimationLayer) * 13);
 
-	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
+	auto tb_info = Exploits->GetTickbaseInfo(cmd->command_number);
+
+	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - 1);
 
 	LUA_CALL_HOOK(LUA_PRE_ANIMUPDATE, Cheat.LocalPlayer);
 
+	bool bSendPacket = tb_info->sent;
+
 	QAngle vangle = cmd->viewangles;
-	if (ctx.send_packet && ctx.force_shot_angle) {
+	if (bSendPacket && ctx.force_shot_angle) {
 		vangle = ctx.shot_angles;
 		ctx.force_shot_angle = false;
 	}	
 
-	if (animstate->nLastUpdateFrame >= GlobalVars->framecount)
-		animstate->nLastUpdateFrame = GlobalVars->framecount - 1;
-
 	animstate->flLastUpdateTime = local_anims.last_update;
-	Cheat.LocalPlayer->UpdateAnimationState(animstate, vangle);
+	animstate->ForceUpdate();
+	animstate->Update(vangle);
 	animstate->bLanding = animlayers[ANIMATION_LAYER_MOVEMENT_LAND_OR_CLIMB].m_flWeight > 0.f && animstate->bOnGround; // fuck valve broken code that sets bLanding to false
 
-	if (ctx.send_packet && !Exploits->IsHidingShot() && animstate->nLastUpdateFrame == GlobalVars->framecount) {
+	if (bSendPacket && !Exploits->IsHidingShot(cmd) && animstate->nLastUpdateFrame == GlobalVars->framecount) {
 		FixLegMovement(animlayers_backup);
 
-		Cheat.LocalPlayer->SetAbsAngles(QAngle(0, animstate->flFootYaw, 0));
 		sent_abs_origin = Cheat.LocalPlayer->GetAbsOrigin();
+		Cheat.LocalPlayer->SetAbsAngles(QAngle(0.f, animstate->flFootYaw));
 
 		LUA_CALL_HOOK(LUA_POST_ANIMUPDATE, Cheat.LocalPlayer);
 
@@ -80,8 +88,6 @@ void CAnimationSystem::UpdateLocalAnimations(CUserCmd* cmd) {
 
 	GlobalVars->curtime = curtimeBackup;
 	memcpy(animlayers, animlayers_backup, sizeof(AnimationLayer) * 13);
-
-	Cheat.LocalPlayer->InvalidatePhysicsRecursive(ANIMATION_CHANGED);
 }
 
 void CAnimationSystem::UpdatePredictionAnimation() {

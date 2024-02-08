@@ -702,12 +702,15 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 
 	Vector local_pos = local->GetAbsOrigin();
 
+	if (Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_ROAMING)
+		local_pos = ctx.shoot_position;
+
 	float distance = (local_pos - vecDetonate).Q_Length();
 
-	if (!shouldDrawCircle || distance > 700)
+	if (!shouldDrawCircle || distance > 550)
 		return;
 
-	float alpha = std::clamp(1.f - (distance - 500.f) / 100.f, 0.f, 1.f);
+	float alpha = std::clamp(1.f - (distance - 500.f) / 50.f, 0.f, 1.f);
 	float circle_radius = 29.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
 
 	if (flExpireTime - simulationTime < 0.1667f)

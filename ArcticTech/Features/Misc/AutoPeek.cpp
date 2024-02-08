@@ -33,7 +33,7 @@ void CAutoPeek::Draw() {
 		anim = std::clamp(anim - GlobalVars->frametime * 4.f, 0.f, 1.f);
 
 	if (anim > 0.f)
-		Render->Circle3DGradient(position, 22.f, config.ragebot.aimbot.peek_assist_color->get().alpha_modulatef(anim));
+		Render->Circle3DGradient(position, 23.f, config.ragebot.aimbot.peek_assist_color->get().alpha_modulatef(anim));
 }
 
 void CAutoPeek::CreateMove() {

@@ -69,7 +69,6 @@ private:
 	float flOldCurrentTime = 0.f;
 	float flOldFrameTime = 0.f;
 	int iOldTickcount = 0;
-	int nBackupTickBase = 0;
 	bool bOldIsFirstPrediction = false;
 	bool bOldInPrediction = false;
 	local_data_t local_data[MULTIPLAYER_BACKUP];

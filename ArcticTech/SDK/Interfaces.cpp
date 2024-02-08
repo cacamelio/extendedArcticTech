@@ -115,4 +115,6 @@ void Interfaces::Initialize() {
 	cvars.sv_clockcorrection_msecs = CVar->FindVar("sv_clockcorrection_msecs");
 	cvars.sv_maxusrcmdprocessticks = CVar->FindVar("sv_maxusrcmdprocessticks");
 	cvars.sv_infinite_ammo = CVar->FindVar("sv_infinite_ammo");
+	cvars.sensitivity = CVar->FindVar("sensitivity");
+	cvars.default_fov = CVar->FindVar("default_fov");
 }

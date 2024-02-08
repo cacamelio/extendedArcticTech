@@ -516,8 +516,9 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 
 	if (cl_class->m_ClassID == C_INFERNO) {
 		CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(grenade->m_hOwnerEntity()));
+		CBasePlayer* local = EntityList->GetLocalOrSpec();
 
-		if (owner != Cheat.LocalPlayer && owner->IsTeammate() && !cvars.mp_friendlyfire->GetInt())
+		if (owner != local && owner->m_iTeamNum() == local->m_iTeamNum() && !cvars.mp_friendlyfire->GetInt())
 			return;
 
 		Vector2 pos = Render->WorldToScreen(grenade->GetAbsOrigin());
@@ -525,21 +526,26 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 		if (pos.x <= 0.f || pos.y <= 0.f || pos.x >= Cheat.ScreenSize.x || pos.y >= Cheat.ScreenSize.y)
 			pos = Render->GetOOF(grenade->GetAbsOrigin()) * (Cheat.ScreenSize * 0.5f - Vector2(50, 50)) + Cheat.ScreenSize * 0.5f;
 
-		float distance = (Cheat.LocalPlayer->GetAbsOrigin() - grenade->GetAbsOrigin()).Q_Length();
+		Vector camera_pos = local->GetAbsOrigin();
 
-		if (distance > 600)
+		if (Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_ROAMING)
+			camera_pos = ctx.camera_postion;
+
+		float distance = (camera_pos - grenade->GetAbsOrigin()).Q_Length();
+
+		if (distance > 550)
 			return;
 
-		float distance_alpha = std::clamp(1.f - (distance - 500.f) / 100.f, 0.f, 1.f);
+		float distance_alpha = std::clamp(1.f - (distance - 500.f) / 50.f, 0.f, 1.f);
 		float circle_radius = 29.f - std::clamp((distance - 180.f) / 100.f, 0.f, 6.f);
 
 		float alpha = distance_alpha;
 		float end_time = grenade->m_flInfernoSpawnTime() + 7.03125f;
 
 		if (end_time - 0.25f < GlobalVars->curtime)
-			alpha = (end_time - GlobalVars->curtime) * 4.f;
+			alpha *= (end_time - GlobalVars->curtime) * 4.f;
 		else if (GlobalVars->curtime - grenade->m_flInfernoSpawnTime() < 0.1667f)
-			alpha = (GlobalVars->curtime - grenade->m_flInfernoSpawnTime()) * 6.f;
+			alpha *= (GlobalVars->curtime - grenade->m_flInfernoSpawnTime()) * 6.f;
 
 		Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
 		Render->GlowCircle2(pos, circle_radius - 2, Color(40, 40, 40, 230 * alpha), Color(20, 20, 20, 230 * alpha));
@@ -563,8 +569,6 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 		name = "DECOY";
 		break;
 	case GRENADE_TYPE_FIRE:
-		if (thrower_teammate)
-			break;
 		name = "MOLLY";
 		weapId = Molotov;
 		break;
@@ -586,7 +590,7 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 			break;
 		}
 
-		if (thrower_teammate || grenade->m_nExplodeEffectTickBegin() > 0)
+		if (grenade->m_nExplodeEffectTickBegin() > 0)
 			break;
 
 		name = "FRAG";
@@ -603,7 +607,7 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 	if (weapId == -1)
 		return;
 
-	if (config.visuals.other_esp.grenade_proximity_warning->get())
+	if (config.visuals.other_esp.grenade_proximity_warning->get() && !thrower_teammate)
 		NadeWarning->Warning(grenade, weapId);
 }
 
@@ -627,9 +631,9 @@ void CWorldESP::DrawBomb(CBaseEntity* ent, ClientClass* cl_class) {
 			CBasePlayer* bomb_defuser =	reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(planted_c4->m_hBombDefuser()));
 
 			if (bomb_defuser != nullptr) {
-				Render->Text(std::format("DEF {:.1f}S", planted_c4->m_flDefuseCountDown() - GlobalVars->curtime), pos + Vector2(0, 11), planted_c4->m_flDefuseCountDown() > planted_c4->m_flC4Blow() ? Color(255, 0, 0) : Color(255), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+				Render->Text(std::format("DEF {:.1f}S", planted_c4->m_flDefuseCountDown() - GlobalVars->curtime), pos + Vector2(0, 10), planted_c4->m_flDefuseCountDown() > planted_c4->m_flC4Blow() ? Color(255, 0, 0) : Color(255), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
 			} else {
-				Render->Text(std::format("{:.1f}S", planted_c4->m_flC4Blow() - GlobalVars->curtime), pos + Vector2(0, 11), config.visuals.other_esp.bomb_color->get(), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+				Render->Text(std::format("{:.1f}S", planted_c4->m_flC4Blow() - GlobalVars->curtime), pos + Vector2(0, 10), Color(255), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
 			}
 		}
 	}
@@ -649,7 +653,7 @@ void CWorldESP::DrawBomb(CBaseEntity* ent, ClientClass* cl_class) {
 
 		float round_end_time = GameRules()->m_fRoundStartTime() + GameRules()->m_iRoundTime();
 
-		Render->Text(std::format("PLANT: {:.1f}S", c4->m_fArmedTime() - GlobalVars->curtime), pos + Vector2(0, 11), c4->m_fArmedTime() > round_end_time ? Color(255, 0, 0) : Color(255), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
+		Render->Text(std::format("PLANT: {:.1f}S", c4->m_fArmedTime() - GlobalVars->curtime), pos + Vector2(0, 10), c4->m_fArmedTime() > round_end_time ? Color(255, 0, 0) : Color(255), SmallFont, TEXT_CENTERED | TEXT_OUTLINED);
 	}
 }
 

@@ -254,6 +254,28 @@ void ScriptSaveButton() {
 	}
 }
 
+class CLuaTraceFilter : public ITraceFilter {
+	sol::protected_function func;
+public:
+	CLuaTraceFilter(const sol::protected_function& func_) : func(func_) {}
+
+	virtual bool ShouldHitEntity(IHandleEntity* ent, int mask) override {
+		auto res = func(reinterpret_cast<CBaseEntity*>(ent));
+
+		if (!res.valid()) {
+			sol::error er = res;
+			Console->Error(er.what());
+			return false;
+		}
+
+		return res.get<bool>();
+	}
+
+	virtual TraceType GetTraceType() const override {
+		return TraceType::TRACE_EVERYTHING;
+	}
+};
+
 namespace api {
 	void print(sol::this_state staet, sol::object msg) {
 		Console->Log(lua["tostring"](msg));
@@ -772,12 +794,30 @@ namespace api {
 			return reinterpret_cast<uintptr_t>(Utils::PatternScan(module_name.c_str(), pattern.c_str()));
 		}
 
-		CGameTrace trace_line(Vector start, Vector end, int mask, CBaseEntity* skip_entity) {
-			return EngineTrace->TraceRay(start, end, mask, skip_entity);
+		CGameTrace trace_line(Vector start, Vector end, int mask, sol::object filter) {
+			if (filter.is<sol::function>()) {
+				sol::protected_function filter_func = filter.as<sol::protected_function>();
+				CLuaTraceFilter filter(filter_func);
+				Ray_t ray(start, end);
+				CGameTrace trace;
+				EngineTrace->TraceRay(ray, mask, &filter, &trace);
+				return trace;
+			}
+
+			return EngineTrace->TraceRay(start, end, mask, filter.as<CBaseEntity*>());
 		}
 
-		CGameTrace trace_hull(Vector start, Vector end, Vector mins, Vector maxs, int mask, CBaseEntity* skip) {
-			return EngineTrace->TraceHull(start, end, mins, maxs, mask, skip);
+		CGameTrace trace_hull(Vector start, Vector end, Vector mins, Vector maxs, int mask, sol::object filter) {
+			if (filter.is<sol::function>()) {
+				sol::protected_function filter_func = filter.as<sol::protected_function>();
+				CLuaTraceFilter filter(filter_func);
+				Ray_t ray(start, end, mins, maxs);
+				CGameTrace trace;
+				EngineTrace->TraceRay(ray, mask, &filter, &trace);
+				return trace;
+			}
+
+			return EngineTrace->TraceHull(start, end, mins, maxs, mask, filter.as<CBaseEntity*>());
 		}
 
 		FireBulletData_t trace_bullet(CBasePlayer* attacker, Vector start, Vector end, sol::optional<CBasePlayer*> target) {
