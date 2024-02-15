@@ -88,6 +88,11 @@ void Miscellaneous::FastThrow() {
 	if (ctx.tickbase_shift > 0) {
 		Exploits->LC_OverrideTickbase(ctx.tickbase_shift);
 
+		float arm_time = max(Cheat.LocalPlayer->m_flNextAttack(), grenade->m_flNextPrimaryAttack());
+
+		if (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) + TICKS_TO_TIME(ctx.tickbase_shift - 7) > arm_time)
+			Exploits->LC_OverrideTickbase(7);
+
 		if (grenade->m_flThrowTime() > 0.f)
 			fast_throw_triggred = true;
 

@@ -1443,6 +1443,14 @@ namespace api {
 		void override_tickbase_shift(int tb) {
 			Exploits->LC_OverrideTickbase(tb);
 		}
+
+		bool is_peeking() {
+			return ctx.is_peeking;
+		}
+
+		void override_doubletap_speed(int newspeed) {
+			Exploits->OverrideDoubleTapSpeed(newspeed);
+		}
 	}
 
 	namespace materials {
@@ -2031,7 +2039,9 @@ void CLua::Setup() {
 		"force_charge", api::rage::force_charge,
 		"is_shifting", api::rage::is_shifting,
 		"override_tickbase_shift", api::rage::override_tickbase_shift,
-		"get_antiaim_yaw", api::rage::get_antiaim_yaw
+		"get_antiaim_yaw", api::rage::get_antiaim_yaw,
+		"is_peeking", api::rage::is_peeking,
+		"override_doubletap_speed", api::rage::override_doubletap_speed
 	);
 
 	lua.create_named_table("materials", 

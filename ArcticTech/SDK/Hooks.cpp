@@ -326,7 +326,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 
 	bSendPacket = ctx.send_packet;
 
-	if (ctx.should_buy) {
+	if (ctx.should_buy > 0) {
+		ctx.should_buy--;
 		std::string buy_command = "";
 		if (config.misc.miscellaneous.auto_buy->get(0))
 			buy_command += "buy awp; ";
@@ -353,10 +354,8 @@ void __stdcall CreateMove(int sequence_number, float sample_frametime, bool acti
 		if (config.misc.miscellaneous.auto_buy->get(11))
 			buy_command += "buy defuser; ";
 
-		if (!buy_command.empty() && Cheat.LocalPlayer->m_iAccount() > 1000)
+		if (!buy_command.empty() && Cheat.LocalPlayer->m_iAccount() > 1000 && ctx.should_buy == 0)
 			EngineClient->ExecuteClientCmd(buy_command.c_str());
-
-		ctx.should_buy = false;
 	}
 
 	//Console->Log(std::format("{} {} {}", cmd->command_number, bSendPacket, Exploits->GetTickbaseInfo(ctx.cmd->command_number)->extra_commands));
@@ -1183,7 +1182,7 @@ void Hooks::Initialize() {
 	EventListner->Register();
 
 	Memory->BytePatch(Utils::PatternScan("client.dll", "75 30 38 87"), { 0xEB }); // CameraThink sv_cheats check skip
-	//Memory->BytePatch(Utils::PatternScan("engine.dll", "B8 ? ? ? ? 3B F0 0F 4F F0 89 5D"), { 0xB8, 0x11 }); // Bypass 15 tick limit
+	Memory->BytePatch(Utils::PatternScan("engine.dll", "B8 ? ? ? ? 3B F0 0F 4F F0 89 5D"), { 0xB8, 0x3E }); // Bypass 15 tick limit
 
 	const char* fart[]{ "client.dll", "engine.dll", "server.dll", "studiorender.dll", "materialsystem.dll", "shaderapidx9.dll", "vstdlib.dll", "vguimatsurface.dll" };
 	long long amongus = 0x69690004C201B0;

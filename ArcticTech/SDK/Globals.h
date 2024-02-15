@@ -37,7 +37,7 @@ struct Ctx_t {
 	bool update_remove_blood = false;
 	Vector local_sent_origin;
 	bool breaking_lag_compensation = false;
-	bool should_buy = false;
+	int should_buy = 0;
 	QAngle leg_slide_angle;
 	float last_shot_time = 0.f;
 	bool planting_bomb = false;

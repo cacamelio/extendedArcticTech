@@ -120,7 +120,7 @@ void CMenu::SetupUI() {
 	config.visuals.esp.custom_health_color = player_esp->AddColorPicker("Custom health");
 	config.visuals.esp.name = player_esp->AddCheckBox("Name");
 	config.visuals.esp.name_color = player_esp->AddColorPicker("Name");
-	config.visuals.esp.flags = player_esp->AddMultiCombo("Flags", { "Armor", "Zoom", "Fake duck", "Exploit", "Break LC", "Bomb", "Resolver", "Hit"});
+	config.visuals.esp.flags = player_esp->AddMultiCombo("Flags", { "Armor", "Zoom", "Fake duck", "Exploit", "Break LC", "Bomb", "Resolver", "Hit", "Onshot"});
 	config.visuals.esp.weapon_text = player_esp->AddCheckBox("Weapon text");
 	config.visuals.esp.weapon_text_color = player_esp->AddColorPicker("Weapon text");
 	config.visuals.esp.weapon_icon = player_esp->AddCheckBox("Weapon icon");

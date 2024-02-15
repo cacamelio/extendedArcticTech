@@ -49,7 +49,7 @@ void CAnimationSystem::UpdateLocalAnimations(CUserCmd* cmd) {
 
 	auto tb_info = Exploits->GetTickbaseInfo(cmd->command_number);
 
-	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase() - 1);
+	GlobalVars->curtime = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
 
 	LUA_CALL_HOOK(LUA_PRE_ANIMUPDATE, Cheat.LocalPlayer);
 
@@ -77,6 +77,13 @@ void CAnimationSystem::UpdateLocalAnimations(CUserCmd* cmd) {
 		QAngle backup_eye_angles = Cheat.LocalPlayer->m_angEyeAngles();
 		QAngle backup_render_angles = Cheat.LocalPlayer->v_angle();
 		Cheat.LocalPlayer->v_angle() = Cheat.LocalPlayer->m_angEyeAngles() = vangle;
+
+		Cheat.LocalPlayer->m_BoneAccessor().m_ReadableBones = 0;
+		Cheat.LocalPlayer->m_BoneAccessor().m_WritableBones = 0;
+
+		Cheat.LocalPlayer->m_nOcclusionFrame() = 0;
+		Cheat.LocalPlayer->m_nOcclusionFlags() = 0;
+
 		BuildMatrix(Cheat.LocalPlayer, local_matrix, 128, BONE_USED_BY_ANYTHING, nullptr);
 		Cheat.LocalPlayer->v_angle() = backup_render_angles;
 		Cheat.LocalPlayer->m_angEyeAngles() = backup_eye_angles;
@@ -142,14 +149,14 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 
 	player->m_EntClientFlags() |= 2;
 	player->m_fEffects() |= EF_NOINTERP; // Disable interp
-	player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
+	//player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
 
 	hook_info.setup_bones = true;
 	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer == player ? TICKS_TO_TIME(player->m_nTickBase()) : player->m_flSimulationTime());
 	hook_info.setup_bones = false;
 
 	player->m_fEffects() = backupEffects;
-	player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
+	//player->m_bMaintainSequenceTransitions() = backupMaintainSequenceTransitions;
 	player->m_EntClientFlags() = clientFlags;
 }
 

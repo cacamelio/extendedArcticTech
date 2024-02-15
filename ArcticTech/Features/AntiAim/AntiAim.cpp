@@ -26,7 +26,7 @@ void CAntiAim::FakeLag() {
 		return;
 
 	fakelag = 0;
-	fakelag_limit = min(cvars.sv_maxusrcmdprocessticks->GetInt(), config.antiaim.fakelag.limit->get());
+	fakelag_limit = min(cvars.sv_maxusrcmdprocessticks->GetInt() - 1, config.antiaim.fakelag.limit->get());
 
 	if (ctx.tickbase_shift > 0)
 		fakelag_limit = max((cvars.sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 1);

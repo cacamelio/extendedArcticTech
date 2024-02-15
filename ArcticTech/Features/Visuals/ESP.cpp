@@ -414,6 +414,27 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 	if (config.visuals.esp.flags->get(7) && info.m_bHit && Cheat.LocalPlayer->IsAlive())
 		flags.emplace_back("HIT", Color(215, 255 * info.m_flAlpha));
 
+	if (config.visuals.esp.flags->get(8) && !records.empty()) {
+		bool onshot = false;
+		for (auto it = records.rbegin(); it != records.rend(); it++) {
+			auto record = &*it;
+			if (!LagCompensation->ValidRecord(record)) {
+				if (record->breaking_lag_comp || record->invalid)
+					break;
+
+				continue;
+			}
+
+			if (record->shooting) {
+				onshot = true;
+				break;
+			}
+		}
+
+		if (onshot)
+			flags.emplace_back("O", Color(215, 255 * info.m_flAlpha));
+	}
+
 	if (config.visuals.esp.flags->get(6) && record && !dormant && Cheat.LocalPlayer->IsAlive()) {
 		std::string rtype;
 		switch (record->resolver_data.resolver_type)
