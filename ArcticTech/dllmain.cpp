@@ -132,7 +132,11 @@ void Initialize(HMODULE hModule) {
 
 
     setlocale(LC_ALL, "ru_RI.UTF-8");
+
+#ifdef _DEBUG
     AddVectoredExceptionHandler(true, ExceptionHandler);
+#endif
+
     Interfaces::Initialize();
     Hooks::Initialize();
     Lua->Setup();
