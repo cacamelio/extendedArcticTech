@@ -74,4 +74,5 @@ extern CHud*			  CSGOHud;
 
 namespace Interfaces {
 	void Initialize();
+	inline bool Panic = false;
 }

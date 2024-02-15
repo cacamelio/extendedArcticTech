@@ -66,6 +66,7 @@ typedef void(__fastcall* tAddRenderableToList)(void*, void*, IClientRenderable*,
 typedef void(__fastcall* tClientCmd_Unrestricted)(IVEngineClient*, void*, const char*, bool);
 typedef void(* tUpdateBeam)(float, Beam_t*, void*);
 typedef bool(__fastcall* tNETMsg_Tick)(CClientState*, void*, const CNETMsg_Tick&);
+typedef void(__fastcall* tShutDown)(uintptr_t, uintptr_t);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -111,6 +112,7 @@ inline tAddRenderableToList oAddRenderableToList;
 inline tClientCmd_Unrestricted oClientCmd_Unrestricted;
 inline tUpdateBeam oUpdateBeam;
 inline tNETMsg_Tick oNETMsg_Tick;
+inline tShutDown oShutDown;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

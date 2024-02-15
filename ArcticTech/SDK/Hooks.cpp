@@ -1097,6 +1097,11 @@ bool __fastcall hkNETMsg_Tick(CClientState* state, void* edx, const CNETMsg_Tick
 	return oNETMsg_Tick(state, edx, msg);
 }
 
+void __fastcall hkShutDown(uintptr_t ecx, uintptr_t edx) {
+	Interfaces::Panic = true;
+	oShutDown(ecx, edx);
+}
+
 void Hooks::Initialize() {
 	oWndProc = (WNDPROC)(SetWindowLongPtr(FindWindowA("Valve001", nullptr), GWL_WNDPROC, (LONG_PTR)hkWndProc));
 
@@ -1139,6 +1144,7 @@ void Hooks::Initialize() {
 	ClientVMT->Hook(7, hkLevelShutdown);
 	PredictionVMT->Hook(19, hkRunCommand);
 	KeyValuesVMT->Hook(2, hkAllocKeyValuesMemory);
+	ClientVMT->Hook(4, hkShutDown);
 
 	oUpdateClientSideAnimation = HookFunction<tUpdateClientSideAnimation>(Utils::PatternScan("client.dll", "55 8B EC 51 56 8B F1 80 BE ? ? ? ? ? 74"), hkUpdateClientSideAnimation);
 	oDoExtraBoneProcessing = HookFunction<tDoExtraBoneProcessing>(Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 81 EC ? ? ? ? 53 56 8B F1 57 89 74 24 1C"), hkDoExtraBoneProcessing);
@@ -1214,6 +1220,7 @@ void Hooks::End() {
 	//ClientVMT->UnHook(40);
 	KeyValuesVMT->UnHook(2);
 	ModelCacheVMT->UnHook(10);
+	ClientVMT->UnHook(4);
 
 	RemoveHook(oPresent, hkPresent);
 	//RemoveHook(oReset, hkReset);
