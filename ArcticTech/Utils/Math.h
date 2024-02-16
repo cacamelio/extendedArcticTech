@@ -35,6 +35,10 @@ namespace Math {
 		return C + (D - C) * cVal;
 	}
 
+	void RotateTrianglePoints(Vector2 points[3], float rotation);
+
+	Vector AngleFromVectors(Vector a, Vector b);
+
 	float			Lerp(float a, float b, float perc);
 	float			AngleNormalize(float angle);
 	float           NormalizeYaw(float f);

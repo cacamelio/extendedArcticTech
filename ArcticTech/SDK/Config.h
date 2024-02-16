@@ -221,6 +221,7 @@ struct config_t {
             CCheckBox* props_color_enable;
             CColorPicker* props_color;
             CCheckBox* thirdperson;
+            CCheckBox* thirdperson_dead;
             CKeyBind* thirdperson_bind;
             CSliderInt* thirdperson_distance;
             CSliderFloat* aspect_ratio;

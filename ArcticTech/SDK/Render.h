@@ -232,6 +232,8 @@ public:
     void                GlowCircle(const Vector2& center, float radius, Color color);
     void                GlowCircle2(const Vector2& center, float radius, Color centerColor, Color edgeColor);
 
+    void Arc(const Vector2& center, float radius, float startAngle, float endAngle, Color color, int numSegments);
+
     void                AddFontFromMemory(void* file, unsigned int size);
     D3DXFont*           LoadFont(const std::string& fontname, int size, int weight = 400, int flags = CLEARTYPE_QUALITY);
     Vector2             CalcTextSize(const std::string& text, D3DXFont* font);

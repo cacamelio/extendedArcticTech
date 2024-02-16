@@ -62,6 +62,11 @@ public:
 		return Vector2(x * other.x, y * other.y);
 	}
 
+	Vector2 operator/(const Vector2& o) const {
+		return Vector2(x / o.x, y / o.y);
+	}
+
+
 	void operator+=(const Vector2& o) {
 		x += o.x;
 		y += o.y;

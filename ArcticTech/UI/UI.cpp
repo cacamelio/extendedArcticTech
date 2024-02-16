@@ -216,6 +216,7 @@ void CMenu::SetupUI() {
 	config.visuals.effects.props_color_enable = effects->AddCheckBox("Props color");
 	config.visuals.effects.props_color = effects->AddColorPicker("Props color");
 	config.visuals.effects.thirdperson = effects->AddCheckBox("Force thirdperson");
+	config.visuals.effects.thirdperson_dead = effects->AddCheckBox("Force thirdperson while dead");
 	config.visuals.effects.thirdperson_bind = effects->AddKeyBind("Force thirdperson");
 	config.visuals.effects.thirdperson_distance = effects->AddSliderInt("Thirdperson distance", 25, 200, 100);
 	config.visuals.effects.aspect_ratio = effects->AddSliderFloat("Aspect ratio", 0, 2, 0, "%.2f");

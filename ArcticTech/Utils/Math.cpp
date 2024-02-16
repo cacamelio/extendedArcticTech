@@ -2,7 +2,48 @@
 
 #include <DirectXMath.h>
 
+void Math::RotateTrianglePoints(Vector2 points[3], float rotation)
+{
+	const auto points_center = (points[0] + points[1] + points[2]) / Vector2(3.f, 3.f);
+	for (int i = 0; i < 3; i++)
+	{
+		Vector2& point = points[i];
 
+		point -= points_center;
+
+		const auto temp_x = point.x;
+		const auto temp_y = point.y;
+
+		const auto theta = rotation;
+		const auto c = std::cos(theta);
+		const auto s = std::sin(theta);
+
+		point.x = temp_x * c - temp_y * s;
+		point.y = temp_x * s + temp_y * c;
+
+		point += points_center;
+	}
+}
+
+
+
+Vector Math::AngleFromVectors(Vector a, Vector b)
+{
+	Vector angles{};
+
+	Vector delta = a - b;
+	float hyp = delta.Length();
+
+	// 57.295f - pi in degrees
+	angles.y = std::atan(delta.y / delta.x) * 57.2957795131f;
+	angles.x = std::atan(-delta.z / hyp) * -57.2957795131f;
+	angles.z = 0.0f;
+
+	if (delta.x >= 0.0f)
+		angles.y += 180.0f;
+
+	return angles;
+}
 float Math::Lerp(float a, float b, float perc) {
 	return a + (b - a) * perc;
 }

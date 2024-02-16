@@ -57,14 +57,14 @@ void CMenu::Setup() {
     ImGui_ImplDX9_Init(DirectXDevice);
 
     pic::logo = Render->LoadImageFromMemory(ui_logo, sizeof(ui_logo), Vector2(128, 128));
-    pic::tab::aimbot = Render->LoadImageFromMemory(aimbot, sizeof(aimbot), Vector2(14, 14));
-    pic::tab::antiaim = Render->LoadImageFromMemory(anti_aimbot, sizeof(anti_aimbot), Vector2(14.74f, 14.f));
-    pic::tab::visuals = Render->LoadImageFromMemory(visuals, sizeof(visuals), Vector2(14, 9.33f));
-    pic::tab::misc = Render->LoadImageFromMemory(misc, sizeof(misc), Vector2(14, 11.74f));
-    pic::tab::players = Render->LoadImageFromMemory(players, sizeof(players), Vector2(8.75f, 14.f));
-    pic::tab::skins = Render->LoadImageFromMemory(skins, sizeof(skins), Vector2(16, 16));
-    pic::tab::configs = Render->LoadImageFromMemory(configs, sizeof(configs), Vector2(13.4f, 14.f));
-    pic::tab::scripts = Render->LoadImageFromMemory(scripts, sizeof(scripts), Vector2(15, 12));
+    pic::tab::aimbot = Render->LoadImageFromMemory(aimbot, sizeof(aimbot), Vector2(20.f, 20.f));
+    pic::tab::antiaim = Render->LoadImageFromMemory(anti_aimbot, sizeof(anti_aimbot), Vector2(20.f, 20.f));
+    pic::tab::visuals = Render->LoadImageFromMemory(visuals, sizeof(visuals), Vector2(20.f, 20.f));
+    pic::tab::misc = Render->LoadImageFromMemory(misc, sizeof(misc), Vector2(20.f, 20.f));
+    pic::tab::players = Render->LoadImageFromMemory(players, sizeof(players), Vector2(20.f, 20.f));
+    pic::tab::skins = Render->LoadImageFromMemory(skins, sizeof(skins), Vector2(20.f, 20.f));
+    pic::tab::configs = Render->LoadImageFromMemory(configs, sizeof(configs), Vector2(20.f, 20.f));
+    pic::tab::scripts = Render->LoadImageFromMemory(scripts, sizeof(scripts), Vector2(20.f, 20.f));
 
     m_WindowSize = ImVec2(950, 750);
     m_ItemSpacing = ImVec2(24, 24);

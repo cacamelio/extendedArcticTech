@@ -265,6 +265,7 @@ void CConfig::Init() {
     add(config.visuals.effects.props_color_enable);
     add(config.visuals.effects.props_color);
     add(config.visuals.effects.thirdperson);
+    add(config.visuals.effects.thirdperson_dead);
     add(config.visuals.effects.thirdperson_bind);
     add(config.visuals.effects.thirdperson_distance);
     add(config.visuals.effects.aspect_ratio);

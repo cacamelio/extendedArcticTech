@@ -190,8 +190,15 @@ void CWorld::ProcessCamera(CViewSetup* setup) {
 
 		Input->m_vecCameraOffset = Vector(angles.pitch, angles.yaw, distance);
 	}
+
 	else {
 		Input->m_fCameraInThirdPerson = false;
+
+		if (config.visuals.effects.thirdperson_dead->get() && Cheat.LocalPlayer->m_iObserverMode() == 4)
+		{
+			Cheat.LocalPlayer->m_iObserverMode() = 5;
+		}
+
 	}
 
 	if (Cheat.LocalPlayer && (!Cheat.LocalPlayer->IsAlive() || Cheat.LocalPlayer->m_iTeamNum() == 1) && Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_CHASE) { // disable spectators interpolation

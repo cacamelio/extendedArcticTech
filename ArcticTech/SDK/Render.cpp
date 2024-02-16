@@ -568,6 +568,24 @@ void CRender::GlowCircle2(const Vector2& center, float radius, Color centerColor
 	vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLEFAN, segments - 1, vertex)));
 }
 
+void CRender::Arc(const Vector2& center, float radius, float startAngle, float endAngle, Color color, int numSegments) {
+	auto raw = color.to_int32();
+
+	float angleStep = (endAngle - startAngle) / static_cast<float>(numSegments);
+
+	std::vector<Vertex> vertices;
+
+	for (int i = 0; i <= numSegments; ++i) {
+		float angle = startAngle + static_cast<float>(i) * angleStep;
+		float x = center.x + radius * std::cos(angle);
+		float y = center.y + radius * std::sin(angle);
+		vertices.push_back(Vertex(x, y, color));
+	}
+
+	vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_LINESTRIP, numSegments, vertices)));
+}
+
+
 void CRender::AddFontFromMemory(void* file, unsigned int size) {
 	AddFontMemResourceEx(file, size, 0, &nFonts);
 }

@@ -109,6 +109,7 @@ public:
 	void		AddHitmarker(const Vector& position);
 	void		AddDamageMarker(const Vector& postion, int damage);
 	void		RenderMarkers();
+	void        SpinningStar(const ESPInfo_t& info);
 };
 
 extern CWorldESP* WorldESP;

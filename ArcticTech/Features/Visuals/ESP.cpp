@@ -288,6 +288,7 @@ void CWorldESP::DrawPlayer(int id) {
 	DrawName(info);
 	DrawFlags(info);
 	DrawWeapon(info);
+	//SpinningStar(info);
 }
 
 void CWorldESP::DrawBox(const ESPInfo_t& info) {
@@ -735,4 +736,52 @@ void CWorldESP::RenderMarkers() {
 
 		it++;
 	}
+}
+
+void CWorldESP::SpinningStar(const ESPInfo_t& info)
+{
+	if (!Cheat.InGame || !Cheat.LocalPlayer)
+		return;
+
+	QAngle vang;
+	EngineClient->GetViewAngles(vang);
+	
+	Vector local_origin = info.player->GetAbsOrigin();
+	const Vector& origin = info.m_vecOrigin;
+	
+	int arrow_size = 10;
+	float arrow_distance = 20;
+
+	const float rotation = DEG2RAD(vang.yaw - Math::AngleFromVectors(local_origin, origin).y - 90.f);
+
+	Vector2 center = Vector2(Cheat.ScreenSize.x / 2, Cheat.ScreenSize.y / 2);
+	
+	Vector2 position =
+	{
+		center.x + arrow_distance * std::cos(rotation),
+		center.y + arrow_distance * std::sin(rotation)
+	};
+
+	Vector2 points[3] =
+	{
+		Vector2(position.x - arrow_size, position.y - arrow_size),
+		Vector2(position.x + arrow_size, position.y),
+		Vector2(position.x - arrow_size, position.y + arrow_size)
+	};
+
+	Math::RotateTrianglePoints(points, rotation);
+
+	float width = 5.f;
+
+	auto angle = vang.pitch - Math::AngleFromVectors(Cheat.LocalPlayer->GetEyePosition(), info.m_vecOrigin).y - 90.f;
+
+	Color clr = config.visuals.esp.box_color->get();
+	if (info.m_bDormant)
+		clr = config.visuals.esp.dormant_color->get();
+
+	clr.a *= info.m_flAlpha;
+
+	Render->Arc(Vector2(Cheat.ScreenSize.x / 2, Cheat.ScreenSize.y / 2), 256, angle - width, angle + width, Color(255,255,255, 150 * clr.a / 255), 4.f);
+	Render->Arc(Vector2(Cheat.ScreenSize.x / 2, Cheat.ScreenSize.y / 2), 250, angle - width, angle + width, Color(255,255,255, 150 * clr.a / 255), 1.5f);
+
 }
