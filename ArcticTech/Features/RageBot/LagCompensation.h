@@ -49,6 +49,8 @@ struct LagRecord {
 
 	bool bone_matrix_filled = false;
 
+	bool deallocate_me = false;
+
 	ResolverData_t resolver_data;
 
 	LagRecord* prev_record;
@@ -71,6 +73,7 @@ public:
 	void BacktrackEntity(LagRecord* record, bool copy_matrix = true, bool use_aim_matrix = false);
 	void OnNetUpdate();
 	void Reset(int index = -1);
+	LagRecord* ExtrapolateRecord(LagRecord* record, int ticks = 1);
 
 	// Record helpers
 	float GetLerpTime();

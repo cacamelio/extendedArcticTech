@@ -101,6 +101,8 @@ private:
 	std::condition_variable scan_condition;
 	std::condition_variable result_condition;
 
+	std::vector<LagRecord*> deallocate_records;
+
 	LagRecord* current_record;
 	std::queue<AimPoint_t> thread_work;
 	ScannedTarget_t* result_target;
