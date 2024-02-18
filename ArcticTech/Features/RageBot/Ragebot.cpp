@@ -242,6 +242,8 @@ void CRagebot::SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& target
 		const auto record = &records[i];
 
 		if (!LagCompensation->ValidRecord(record)) {
+			WorldESP->AddDebugMessage(std::string(("CRageBot::SelectRecords")).append((" -> !LagCompensation->ValidRecord |")).append((" L") + std::to_string(__LINE__)));
+
 			if (record->breaking_lag_comp || record->invalid)
 				break;
 
@@ -540,11 +542,16 @@ uintptr_t CRagebot::ThreadScan(int threadId) {
 }
 
 void CRagebot::ScanTarget(CBasePlayer* target) {
+	// Add debug message to indicate starting of ScanTarget function
+
 	std::queue<LagRecord*> records;
 	SelectRecords(target, records);
 
-	if (records.empty())
+	if (records.empty()) {
+		// Add debug message for empty records
+		WorldESP->AddDebugMessage(std::string(("CRageBot::ScanTarget")).append((" -> Records Empty |")).append((" L") + std::to_string(__LINE__)));
 		return;
+	}
 
 	float minimum_damage = CalcMinDamage(target);
 
@@ -557,7 +564,7 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 	while (records.size() > 0) {
 		LagRecord* record = records.front();
 		records.pop();
-		
+
 		LagCompensation->BacktrackEntity(record, false);
 		record->BuildMatrix();
 
@@ -576,17 +583,19 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 
 		std::unique_lock<std::mutex> lock(completed_mutex);
 		result_condition.wait(lock, [this]() {
-			//std::lock_guard<std::mutex> completed_lock(completed_mutex);
-			return scanned_points >= selected_points; 
-		});
+			return scanned_points >= selected_points;
+			});
 	}
 
 	LagCompensation->BacktrackEntity(backup_record);
 	delete backup_record;
 
 	SelectBestPoint(result);
-	if (!result->best_point.record || result->best_point.damage < 2)
+	if (!result->best_point.record || result->best_point.damage < 2) {
+		// Add debug message if best point is not selected or damage is low
+		WorldESP->AddDebugMessage(std::string(("CRageBot::ScanTarget")).append((" -> !SelectBestPoint |")).append((" L") + std::to_string(__LINE__)));
 		return;
+	}
 
 	result->angle = Math::VectorAngles_p(result->best_point.point - ctx.shoot_position);
 
@@ -596,6 +605,7 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 	else {
 		result->hitchance = CalcHitchance(result->angle, result->best_point.record, HitboxToDamagegroup(result->best_point.hitbox));
 	}
+
 }
 
 void CRagebot::RunPrediction(const QAngle& angle) {
@@ -808,7 +818,13 @@ void CRagebot::Run() {
 	ShotManager->AddShot(ctx.shoot_position, best_target.best_point.point, best_target.best_point.damage, HitboxToDamagegroup(best_target.best_point.hitbox), best_target.hitchance, best_target.best_point.safe_point, record, best_target.best_point.impacts, best_target.best_point.num_impacts);
 	if (config.visuals.chams.shot_chams->get())
 		Chams->AddShotChams(record);
+
+	if (WorldESP->DebugMessages.size())
+		WorldESP->DebugMessagesSane = std::move(WorldESP->DebugMessages);
+
+	WorldESP->DebugMessages.clear();
 }
+
 
 void CRagebot::Zeusbot() {
 	const float inaccuracy_tan = std::tan(EnginePrediction->WeaponInaccuracy());
@@ -828,6 +844,9 @@ void CRagebot::Zeusbot() {
 		for (auto i = records.rbegin(); i != records.rend(); i = std::next(i)) {
 			const auto record = &*i;
 			if (!LagCompensation->ValidRecord(record)) {
+
+				WorldESP->AddDebugMessage(std::string(("CRageBot::Knifebot")).append((" -> Invalid Record |")).append((" L") + std::to_string(__LINE__)));
+
 				if (record->breaking_lag_comp)
 					break;
 
@@ -869,6 +888,8 @@ void CRagebot::Zeusbot() {
 
 				if (hitchance < 0.7f)
 					continue;
+
+				WorldESP->AddDebugMessage(std::string(("CRageBot::ZeusBot")).append((" -> Hitchance Success |")).append((" L") + std::to_string(__LINE__)));
 
 				if (config.visuals.effects.client_impacts->get()) {
 					Color col = config.visuals.effects.client_impacts_color->get();
@@ -914,6 +935,9 @@ void CRagebot::Knifebot() {
 		for (auto i = records.rbegin(); i != records.rend(); i = std::next(i)) {
 			const auto record = &*i;
 			if (!LagCompensation->ValidRecord(record)) {
+
+				WorldESP->AddDebugMessage(std::string(("CRageBot::Knifebot")).append((" -> Invalid Record |")).append((" L") + std::to_string(__LINE__)));
+
 				if (record->breaking_lag_comp)
 					break;
 
@@ -1029,10 +1053,14 @@ void CRagebot::AutoRevolver() {
 }
 
 void CRagebot::DormantAimbot() {
+
 	const float inaccuracy_tan = std::tan(EnginePrediction->WeaponInaccuracy());
 
-	if (!ctx.active_weapon->CanShoot() && settings.auto_stop->get(2))
+	if (!ctx.active_weapon->CanShoot() && settings.auto_stop->get(2)) {
+		WorldESP->AddDebugMessage(std::string(("CRageBot::DormantAimbot")).append(" -> NoShoot |").append((" L") + std::to_string(__LINE__)));
+
 		return;
+	}
 
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 		CBasePlayer* player = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntity(i));
@@ -1052,8 +1080,10 @@ void CRagebot::DormantAimbot() {
 		float hc = min(7.f / ((ctx.shoot_position - shoot_target).Q_Length() * inaccuracy_tan), 1.f);
 
 		AutoStop();
-		if (hc * 100.f < settings.hitchance->get() || !ctx.active_weapon->CanShoot())
+		if (hc * 100.f < settings.hitchance->get() || !ctx.active_weapon->CanShoot()) {
+			WorldESP->AddDebugMessage(std::string(("CRageBot::DormantAimbot")).append(" -> NoShoot |").append((" L") + std::to_string(__LINE__)));
 			continue;
+		}
 
 		ctx.cmd->viewangles = Math::VectorAngles_p(shoot_target - ctx.shoot_position) - Cheat.LocalPlayer->m_aimPunchAngle() * cvars.weapon_recoil_scale->GetFloat();
 		ctx.cmd->buttons |= IN_ATTACK;
@@ -1079,6 +1109,7 @@ void CRagebot::DormantAimbot() {
 
 		break;
 	}
+
 }
 
 CRagebot* Ragebot = new CRagebot;
