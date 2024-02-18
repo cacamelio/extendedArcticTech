@@ -87,7 +87,7 @@ void CMenu::Draw() {
 
     static bool insert_pressed = false;
 
-    if (GetAsyncKeyState(VK_INSERT) & 0x8000 || GetAsyncKeyState(VK_DELETE) & 0x8000) {
+    if (GetAsyncKeyState(VK_INSERT) & 0x8000 /*|| GetAsyncKeyState(VK_DELETE) & 0x8000*/) {
         if (!insert_pressed) {
             m_bMenuOpened = !m_bMenuOpened;
             insert_pressed = true;

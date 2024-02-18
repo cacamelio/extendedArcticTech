@@ -512,6 +512,8 @@ void CWorldESP::DrawWeapon(const ESPInfo_t& info) {
 void CWorldESP::OtherESP() {
 	if (!Cheat.InGame) 
 		return;
+
+	RenderDebugMessages();
 	
 	for (int i = 0; i < EntityList->GetHighestEntityIndex(); i++) {
 		CBaseEntity* ent = EntityList->GetClientEntity(i);
@@ -784,4 +786,31 @@ void CWorldESP::SpinningStar(const ESPInfo_t& info)
 	Render->Arc(Vector2(Cheat.ScreenSize.x / 2, Cheat.ScreenSize.y / 2), 256, angle - width, angle + width, Color(255,255,255, 150 * clr.a / 255), 4.f);
 	Render->Arc(Vector2(Cheat.ScreenSize.x / 2, Cheat.ScreenSize.y / 2), 250, angle - width, angle + width, Color(255,255,255, 150 * clr.a / 255), 1.5f);
 
+}
+
+void CWorldESP::AddDebugMessage(std::string msg) {
+	bool dont = false;
+
+	if (DebugMessages.size()) {
+		for (int i = 0; i < DebugMessages.size(); ++i) {
+			auto msgs = DebugMessages[i];
+
+			if (msgs.find(msg) != std::string::npos)
+				dont = true;
+		}
+	}
+
+	if (dont) {
+		return;
+	}
+
+	DebugMessages.push_back(msg);
+}
+
+void CWorldESP::RenderDebugMessages() {
+	for (size_t i{ }; i < DebugMessagesSane.size(); ++i) {
+		auto& indicator = DebugMessagesSane[i];
+		Vector2 size = Render->CalcTextSize(indicator, Verdana);
+		Render->Text(indicator, Vector2(Cheat.ScreenSize.x - static_cast<float>(size.x) - 30, 12.0f + (12.0f * i)), Color(220, 220, 220, 255), Verdana);
+	}
 }

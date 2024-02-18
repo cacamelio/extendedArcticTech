@@ -701,6 +701,9 @@ bool __fastcall hkSetupBones(CBaseEntity* thisptr, void* edx, matrix3x4_t* pBone
 void __fastcall hkRunCommand(IPrediction* thisptr, void* edx, CBasePlayer* player, CUserCmd* cmd, IMoveHelper* moveHelper) {
 	static auto oRunCommand = (tRunCommand)(Hooks::PredictionVMT->GetOriginal(19));
 
+	static ConVar* sv_max_usercmd_future_ticks = CVar->FindVar("sv_max_usercmd_future_ticks");
+
+
 	if (!player || !cmd || player != Cheat.LocalPlayer)
 		return oRunCommand(thisptr, edx, player, cmd, moveHelper);
 
@@ -735,6 +738,7 @@ void __fastcall hkPhysicsSimulate(CBasePlayer* thisptr, void* edx) {
 
 	AnimationSystem->UpdateLocalAnimations(&context->cmd);
 	EnginePrediction->StoreNetvars(context->cmd.command_number);
+
 }
 
 void __fastcall hkPacketStart(CClientState* thisptr, void* edx, int incoming_sequence, int outgoing_acknowledged) {

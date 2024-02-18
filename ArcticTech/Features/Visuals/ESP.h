@@ -110,6 +110,12 @@ public:
 	void		AddDamageMarker(const Vector& postion, int damage);
 	void		RenderMarkers();
 	void        SpinningStar(const ESPInfo_t& info);
+
+	void		AddDebugMessage(std::string msg);
+	void		RenderDebugMessages();
+
+	std::vector<std::string> DebugMessages;
+	std::vector<std::string> DebugMessagesSane;
 };
 
 extern CWorldESP* WorldESP;
