@@ -1191,8 +1191,8 @@ void Hooks::Initialize() {
 	Memory->BytePatch(Utils::PatternScan("engine.dll", "B8 ? ? ? ? 3B F0 0F 4F F0 89 5D"), { 0xB8, 0x3E }); // Bypass 15 tick limit
 
 	// TODO: check this
-	Memory->BytePatch(Utils::PatternScan("engine.dll", "C7 45 ? ? ? ? ? 89 55 ? 3B F3"), { 0xC7, 0x45, 0xB4, 0x00 }); // cmdbackup = 0
-	Memory->BytePatch(Utils::PatternScan("engine.dll", "4E C7 45 ? ? ? ? ? 89 55"), { 0x46 }); // fix for cmdbackup
+	//Memory->BytePatch(Utils::PatternScan("engine.dll", "C7 45 ? ? ? ? ? 89 55 ? 3B F3"), { 0xC7, 0x45, 0xB4, 0x00 }); // cmdbackup = 0
+	//Memory->BytePatch(Utils::PatternScan("engine.dll", "4E C7 45 ? ? ? ? ? 89 55"), { 0x46 }); // fix for cmdbackup
 
 	const char* fart[]{ "client.dll", "engine.dll", "server.dll", "studiorender.dll", "materialsystem.dll", "shaderapidx9.dll", "vstdlib.dll", "vguimatsurface.dll" };
 	long long amongus = 0x69690004C201B0;

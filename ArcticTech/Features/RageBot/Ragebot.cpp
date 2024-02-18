@@ -150,7 +150,7 @@ void CRagebot::AutoStop(bool predict) {
 	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 		static ConVar* sv_airaccelerate = CVar->FindVar("sv_airaccelerate");
 
-		wish_speed = std::clamp((vec_speed.Q_Length2D() * 0.93f) / (sv_airaccelerate->GetFloat() * GlobalVars->frametime), 0.f, 450.f);
+		wish_speed = std::clamp((vec_speed.Q_Length2D() * 0.936f) / (sv_airaccelerate->GetFloat() * GlobalVars->frametime), 0.f, 450.f);
 	}
 
 	Vector nigated_direction = forward * -wish_speed;
