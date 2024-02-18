@@ -166,7 +166,12 @@ float CRagebot::FastHitchance(LagRecord* target, float inaccuracy, int hitbox_ra
 	return min(hitbox_radius / ((ctx.shoot_position - (target->m_vecOrigin + Vector(0, 0, 32))).Q_Length() * inaccuracy), 1.f);
 }
 
-float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup) {
+float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int hitbox) {
+	int damagegroup = HitboxToDamagegroup(hitbox);
+
+	if (hitbox == HITBOX_LEFT_FOOT || hitbox == HITBOX_RIGHT_FOOT)
+		return FastHitchance(target, EnginePrediction->WeaponInaccuracy(), 2);
+
 	Vector forward, right, up;
 	Math::AngleVectors(angles, forward, right, up);
 
@@ -231,7 +236,22 @@ void CRagebot::SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& target
 		return;
 
 	if (Exploits->IsShifting() || !cvars.cl_lagcompensation->GetInt()) {
-		target_records.push(&records.back());
+		LagRecord* record = &records.back();
+
+		if (cvars.cl_lagcompensation->GetInt() == 0) {
+			INetChannelInfo* nci = EngineClient->GetNetChannelInfo();
+
+			float latency = 0.f;
+			if (nci)
+				latency += nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
+
+			int pred_ticks = TIME_TO_TICKS(latency);
+
+			if (record->m_nChokedTicks < 3 || pred_ticks > record->m_nChokedTicks)
+				record = LagCompensation->ExtrapolateRecord(record, pred_ticks);
+		}
+
+		target_records.push(record);
 		return;
 	}
 
@@ -579,6 +599,9 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 			//std::lock_guard<std::mutex> completed_lock(completed_mutex);
 			return scanned_points >= selected_points; 
 		});
+
+		if (record->deallocate_me)
+			deallocate_records.push_back(record);
 	}
 
 	LagCompensation->BacktrackEntity(backup_record);
@@ -687,6 +710,8 @@ void CRagebot::Run() {
 		RunPrediction(vangle);
 	}
 
+	deallocate_records.clear();
+
 	hook_info.disable_interpolation = true;
 	ScanTargets();
 	hook_info.disable_interpolation = false;
@@ -767,17 +792,26 @@ void CRagebot::Run() {
 	if (best_target.player && ctx.active_weapon->m_iItemDefinitionIndex() == Revolver && ctx.active_weapon->CanShoot(false))
 		ctx.cmd->buttons |= IN_ATTACK;
 
-	if (settings.auto_stop->get(1) && !can_shoot_this_tick && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver)
+	if (settings.auto_stop->get(1) && !can_shoot_this_tick && ctx.active_weapon->m_iItemDefinitionIndex() != Revolver) {
+		for (auto record : deallocate_records)
+			delete record;
 		return;
+	}
 
 	if (should_autostop && !AutoPeek->IsReturning())
 		AutoStop();
 
-	if (Exploits->IsShifting())
+	if (Exploits->IsShifting()) {
+		for (auto record : deallocate_records)
+			delete record;
 		return;
+	}
 
-	if (!best_target.player || !can_shoot_this_tick)
+	if (!best_target.player || !can_shoot_this_tick) {
+		for (auto record : deallocate_records)
+			delete record;
 		return;
+	}
 
 	pre_prediction.should_restore = false;
 

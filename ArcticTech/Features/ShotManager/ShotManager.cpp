@@ -460,7 +460,7 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 	shot->client_angle = Math::VectorAngles(target_pos - shoot_pos);
 	shot->command_number = ctx.cmd->command_number;
 	shot->hitchance = hitchance;
-	shot->backtrack = max(GlobalVars->tickcount - record->update_tick, 0);
+	shot->backtrack = GlobalVars->tickcount - record->update_tick;
 	shot->record = record;
 	shot->player_angle = record->player->m_angEyeAngles();
 	shot->wanted_damage = damage;
@@ -472,8 +472,13 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 
 	LUA_CALL_HOOK(LUA_AIM_SHOT, shot);
 
-	while (m_RegisteredShots.size() > 8)
+	while (m_RegisteredShots.size() > 8) {
+		auto& shot = m_RegisteredShots.front();
+		if (shot.record->deallocate_me)
+			delete shot.record;
+
 		m_RegisteredShots.erase(m_RegisteredShots.begin());
+	}
 }
 
 void CShotManager::Reset() {

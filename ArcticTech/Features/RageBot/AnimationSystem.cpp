@@ -152,7 +152,7 @@ void CAnimationSystem::BuildMatrix(CBasePlayer* player, matrix3x4_t* boneToWorld
 	//player->m_bMaintainSequenceTransitions() = false; // uhhhh, idk
 
 	hook_info.setup_bones = true;
-	player->SetupBones(boneToWorld, maxBones, mask, Cheat.LocalPlayer == player ? TICKS_TO_TIME(player->m_nTickBase()) : player->m_flSimulationTime());
+	player->SetupBones(boneToWorld, maxBones, mask, GlobalVars->curtime);
 	hook_info.setup_bones = false;
 
 	player->m_fEffects() = backupEffects;

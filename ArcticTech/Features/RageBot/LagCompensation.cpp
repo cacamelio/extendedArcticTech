@@ -165,6 +165,32 @@ void CLagCompensation::OnNetUpdate() {
 	}
 }
 
+LagRecord* CLagCompensation::ExtrapolateRecord(LagRecord* record, int ticks) {
+	const float time = TICKS_TO_TIME(ticks);
+
+	LagRecord* new_record = new LagRecord;
+
+	*new_record = *record;
+	new_record->m_flSimulationTime += time;
+	new_record->update_tick += ticks;
+	
+	for (int i = 0; i < ticks; i++) {
+		Vector move = record->m_vecVelocity * GlobalVars->interval_per_tick;
+
+		new_record->m_vecOrigin += move;
+
+		if (!(record->m_fFlags & FL_ONGROUND))
+			new_record->m_vecVelocity.z -= cvars.sv_gravity->GetFloat() * GlobalVars->interval_per_tick;
+	}
+
+	Utils::MatrixMove(new_record->aim_matrix, 128, record->m_vecOrigin, new_record->m_vecOrigin);
+	Utils::MatrixMove(new_record->opposite_matrix, 128, record->m_vecOrigin, new_record->m_vecOrigin);
+
+	new_record->deallocate_me = true;
+
+	return new_record;
+}
+
 float CLagCompensation::GetLerpTime() {
 	static const auto cl_interp = CVar->FindVar("cl_interp");
 	static const auto cl_updaterate = CVar->FindVar("cl_updaterate");
