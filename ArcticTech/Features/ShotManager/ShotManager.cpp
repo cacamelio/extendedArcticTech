@@ -482,5 +482,8 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 }
 
 void CShotManager::Reset() {
+	for (auto shot : m_RegisteredShots)
+		if (shot.record->deallocate_me)
+			delete shot.record;
 	m_RegisteredShots.clear();
 }

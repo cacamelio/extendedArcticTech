@@ -513,7 +513,7 @@ void CWorldESP::OtherESP() {
 	if (!Cheat.InGame) 
 		return;
 
-	RenderDebugMessages();
+	//RenderDebugMessages();
 	
 	for (int i = 0; i < EntityList->GetHighestEntityIndex(); i++) {
 		CBaseEntity* ent = EntityList->GetClientEntity(i);

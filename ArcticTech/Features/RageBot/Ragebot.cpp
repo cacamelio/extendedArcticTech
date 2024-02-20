@@ -166,7 +166,12 @@ float CRagebot::FastHitchance(LagRecord* target, float inaccuracy, int hitbox_ra
 	return min(hitbox_radius / ((ctx.shoot_position - (target->m_vecOrigin + Vector(0, 0, 32))).Q_Length() * inaccuracy), 1.f);
 }
 
-float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int damagegroup) {
+float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int hitbox) {
+	if (hitbox == HITBOX_LEFT_FOOT || hitbox == HITBOX_RIGHT_FOOT)
+		return FastHitchance(target, -1, 3.f);
+
+	int damagegroup = HitboxToDamagegroup(hitbox);
+
 	Vector forward, right, up;
 	Math::AngleVectors(angles, forward, right, up);
 
@@ -603,7 +608,7 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 		result->hitchance = min(10.f / ((ctx.shoot_position - result->best_point.point).Q_Length() * std::tan(EnginePrediction->WeaponInaccuracy())), 1.f);
 	}
 	else {
-		result->hitchance = CalcHitchance(result->angle, result->best_point.record, HitboxToDamagegroup(result->best_point.hitbox));
+		result->hitchance = CalcHitchance(result->angle, result->best_point.record, result->best_point.hitbox);
 	}
 
 }
