@@ -168,7 +168,12 @@ void CLagCompensation::OnNetUpdate() {
 LagRecord* CLagCompensation::ExtrapolateRecord(LagRecord* record, int ticks) {
 	const float time = TICKS_TO_TIME(ticks);
 
-	LagRecord* new_record = new LagRecord;
+	auto& records = extrapolated_records[record->player->EntIndex()];
+
+	while (records.size() > 64)
+		records.pop_front();
+
+	LagRecord* new_record = &records.emplace_back();
 
 	*new_record = *record;
 	new_record->m_flSimulationTime += time;
@@ -185,8 +190,6 @@ LagRecord* CLagCompensation::ExtrapolateRecord(LagRecord* record, int ticks) {
 
 	Utils::MatrixMove(new_record->aim_matrix, 128, record->m_vecOrigin, new_record->m_vecOrigin);
 	Utils::MatrixMove(new_record->opposite_matrix, 128, record->m_vecOrigin, new_record->m_vecOrigin);
-
-	new_record->deallocate_me = true;
 
 	return new_record;
 }

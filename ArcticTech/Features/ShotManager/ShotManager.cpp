@@ -472,18 +472,10 @@ void CShotManager::AddShot(const Vector& shoot_pos, const Vector& target_pos, in
 
 	LUA_CALL_HOOK(LUA_AIM_SHOT, shot);
 
-	while (m_RegisteredShots.size() > 8) {
-		auto& shot = m_RegisteredShots.front();
-		if (shot.record->deallocate_me)
-			delete shot.record;
-
+	while (m_RegisteredShots.size() > 8)
 		m_RegisteredShots.erase(m_RegisteredShots.begin());
-	}
 }
 
 void CShotManager::Reset() {
-	for (auto shot : m_RegisteredShots)
-		if (shot.record->deallocate_me)
-			delete shot.record;
 	m_RegisteredShots.clear();
 }

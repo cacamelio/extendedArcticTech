@@ -236,7 +236,21 @@ void CRagebot::SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& target
 		return;
 
 	if (Exploits->IsShifting() || !cvars.cl_lagcompensation->GetInt()) {
-		target_records.push(&records.back());
+		LagRecord* record = &records.back();
+
+		float latency = 0.f;
+		if (INetChannelInfo* nci = EngineClient->GetNetChannelInfo()) {
+			latency += nci->GetLatency(FLOW_INCOMING) + nci->GetLatency(FLOW_OUTGOING);
+
+			int pred_ticks = TIME_TO_TICKS(latency);
+
+			int next_update_tick = record->update_tick + record->m_nChokedTicks;
+
+			if (GlobalVars->tickcount + pred_ticks >= next_update_tick)
+				record = LagCompensation->ExtrapolateRecord(record, pred_ticks);
+		}
+
+		target_records.push(record);
 		return;
 	}
 
@@ -589,7 +603,7 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 		std::unique_lock<std::mutex> lock(completed_mutex);
 		result_condition.wait(lock, [this]() {
 			return scanned_points >= selected_points;
-			});
+		});
 	}
 
 	LagCompensation->BacktrackEntity(backup_record);

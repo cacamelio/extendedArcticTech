@@ -49,8 +49,6 @@ struct LagRecord {
 
 	bool bone_matrix_filled = false;
 
-	bool deallocate_me = false;
-
 	ResolverData_t resolver_data;
 
 	LagRecord* prev_record;
@@ -60,6 +58,7 @@ struct LagRecord {
 
 class CLagCompensation {
 	std::array<std::deque<LagRecord>, 64> lag_records;
+	std::array<std::deque<LagRecord>, 64> extrapolated_records;
 	float max_simulation_time[64];
 	int last_update_tick[64];
 
