@@ -117,4 +117,5 @@ void Interfaces::Initialize() {
 	cvars.sv_infinite_ammo = CVar->FindVar("sv_infinite_ammo");
 	cvars.sensitivity = CVar->FindVar("sensitivity");
 	cvars.default_fov = CVar->FindVar("default_fov");
+	cvars.ff_damage_reduction_grenade = CVar->FindVar("ff_damage_reduction_grenade");
 }

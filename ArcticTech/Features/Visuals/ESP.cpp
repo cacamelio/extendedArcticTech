@@ -582,7 +582,7 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 
 	CBasePlayer* thrower = grenade->GetThrower();
 
-	bool thrower_teammate = thrower && thrower->IsTeammate() && cvars.mp_friendlyfire->GetInt() == 0 && thrower != Cheat.LocalPlayer;
+	bool thrower_teammate = thrower && thrower->IsTeammate() && (cvars.mp_friendlyfire->GetInt() == 0 || cvars.ff_damage_reduction_grenade->GetFloat() == 0.f) && thrower != Cheat.LocalPlayer;
 
 	int weapId = -1;
 	std::string name;

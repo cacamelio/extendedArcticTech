@@ -188,6 +188,8 @@ LagRecord* CLagCompensation::ExtrapolateRecord(LagRecord* record, int ticks) {
 			new_record->m_vecVelocity.z -= cvars.sv_gravity->GetFloat() * GlobalVars->interval_per_tick;
 	}
 
+	new_record->m_vecAbsOrigin = new_record->m_vecOrigin;
+
 	Utils::MatrixMove(new_record->aim_matrix, 128, record->m_vecOrigin, new_record->m_vecOrigin);
 	Utils::MatrixMove(new_record->opposite_matrix, 128, record->m_vecOrigin, new_record->m_vecOrigin);
 

@@ -420,25 +420,30 @@ void CShotManager::OnNetUpdate() {
 				else {
 					auto& records = LagCompensation->records(shot->record->player->EntIndex());
 					bool break_lag_comp = false;
-					for (auto it = records.rbegin(); it != records.rend(); it++) {
-						if (it->m_flSimulationTime < shot->record->m_flSimulationTime)
-							break;
 
-						if (it->breaking_lag_comp) {
-							break_lag_comp = true;
-							break;
+					
+					if (cvars.cl_lagcompensation->GetInt() == 0 && (records.back().m_vecOrigin - it->record->m_vecOrigin).LengthSqr() > 16.f) {
+						it->miss_reason = "prediction error";
+
+					} else {
+						for (auto it = records.rbegin(); it != records.rend(); it++) {
+							if (it->m_flSimulationTime < shot->record->m_flSimulationTime)
+								break;
+
+							if (it->breaking_lag_comp) {
+								break_lag_comp = true;
+								break;
+							}
 						}
-					}
 
-					if (break_lag_comp) {
-						it->miss_reason = "lagcomp failure";
-					}
-					else if (shot->safe_point) {
-						it->miss_reason = "unknown";
-					}
-					else {
-						Resolver->OnMiss(player, shot->record);
-						it->miss_reason = "correction";
+						if (break_lag_comp) {
+							it->miss_reason = "lagcomp failure";
+						} else if (shot->safe_point) {
+							it->miss_reason = "unknown";
+						} else {
+							Resolver->OnMiss(player, shot->record);
+							it->miss_reason = "correction";
+						}
 					}
 				}
 			}

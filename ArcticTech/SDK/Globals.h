@@ -113,6 +113,7 @@ struct CVars {
 	ConVar* sv_infinite_ammo;
 	ConVar* sensitivity;
 	ConVar* default_fov;
+	ConVar* ff_damage_reduction_grenade;
 };
 
 extern CheatState_t Cheat;
