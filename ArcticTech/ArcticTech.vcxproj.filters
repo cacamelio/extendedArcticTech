@@ -228,6 +228,9 @@
     <ClCompile Include="Features\Misc\PingReducer.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Features\Misc\PingSpike.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\Utils.h">
@@ -552,6 +555,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="SDK\Misc\fnv1a.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Features\Misc\PingSpike.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

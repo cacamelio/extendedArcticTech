@@ -542,7 +542,7 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 		CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(grenade->m_hOwnerEntity()));
 		CBasePlayer* local = EntityList->GetLocalOrSpec();
 
-		if (owner != local && owner->m_iTeamNum() == local->m_iTeamNum() && !cvars.mp_friendlyfire->GetInt())
+		if (owner != local && owner->m_iTeamNum() == local->m_iTeamNum() && (!cvars.mp_friendlyfire->GetInt() || cvars.ff_damage_reduction_grenade->GetFloat() == 0.f))
 			return;
 
 		Vector2 pos = Render->WorldToScreen(grenade->GetAbsOrigin());

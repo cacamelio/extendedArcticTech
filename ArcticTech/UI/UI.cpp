@@ -248,6 +248,8 @@ void CMenu::SetupUI() {
 	config.misc.miscellaneous.clantag = misc->AddCheckBox("Clantag");
 	config.misc.miscellaneous.ad_block = misc->AddCheckBox("Ad block");
 	config.misc.miscellaneous.gamesense_mode = misc->AddCheckBox("Gamesense mode");
+	config.misc.miscellaneous.ping_spike = misc->AddKeyBind("Ping spike");
+	config.misc.miscellaneous.ping_spike_amount = misc->AddSliderInt("Amount", 0, 200, 200, "%dms");
 
 	config.misc.movement.auto_jump = movement->AddCheckBox("Auto jump");
 	config.misc.movement.auto_strafe = movement->AddCheckBox("Auto strafe");

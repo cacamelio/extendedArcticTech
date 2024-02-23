@@ -1,4 +1,5 @@
 #include "PingReducer.h"
+#include "PingSpike.h"
 
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Globals.h"
@@ -46,6 +47,8 @@ void CPingReducer::ReadPackets(bool final_tick) {
 		return;
 
 	backup_data.write();
+
+	PingSpike->OnPacketStart();
 
 	Cheat.LocalPlayer->m_fFlags() = backup_flags;
 	Cheat.LocalPlayer->m_nTickBase() = backup_tickbase;

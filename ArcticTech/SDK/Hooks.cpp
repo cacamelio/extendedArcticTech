@@ -30,6 +30,7 @@
 #include "../Features/Visuals/SkinChanger.h"
 #include "../Features/ShotManager/ShotManager.h"
 #include "../Features/Misc/PingReducer.h"
+#include "../Features/Misc/PingSpike.h"
 
 #include "Misc/xorstr.h"
 
@@ -1069,6 +1070,7 @@ void __fastcall hkReadPackets(bool final_tick) {
 		return;
 
 	oReadPackets(final_tick);
+	PingSpike->OnPacketStart();
 }
 
 void __fastcall hkClientCmd_Unrestricted(IVEngineClient* engineClient, void* edx, const char* cmd, bool a2) {
@@ -1104,6 +1106,20 @@ bool __fastcall hkNETMsg_Tick(CClientState* state, void* edx, const CNETMsg_Tick
 void __fastcall hkShutDown(uintptr_t ecx, uintptr_t edx) {
 	Interfaces::Panic = true;
 	oShutDown(ecx, edx);
+}
+
+int __fastcall hkSendDatargam(INetChannel* nc, void* edx, void* datagram) {
+	int backup_seq = nc->m_nInSequenceNr;
+	int backup_reliable = nc->m_iInReliableState;
+
+	PingSpike->OnSendDatagram();
+
+	int result = oSendDatagram(nc, edx, datagram);
+
+	nc->m_nInSequenceNr = backup_seq;
+	nc->m_iInReliableState = backup_reliable;
+
+	return result;
 }
 
 void Hooks::Initialize() {
@@ -1188,6 +1204,7 @@ void Hooks::Initialize() {
 	oClientCmd_Unrestricted = HookFunction<tClientCmd_Unrestricted>(Utils::PatternScan("engine.dll", "55 8B EC 8B 0D ? ? ? ? 81 F9 ? ? ? ? 75 ? F3 0F 10 05 ? ? ? ? 0F 2E 05 ? ? ? ? 8B 0D ? ? ? ? 9F F6 C4 ? 7A ? 39 0D ? ? ? ? 75 ? A1 ? ? ? ? 33 05 ? ? ? ? A9 ? ? ? ? 74 ? 8B 15 ? ? ? ? 85 D2 74 ? 8B 02 8B CA 68 ? ? ? ? FF 90 ? ? ? ? 8B 0D ? ? ? ? 81 F1 ? ? ? ? EB ? 8B 01 FF 50 ? 8B C8 A1"), hkClientCmd_Unrestricted);
 	oUpdateBeam = HookFunction<tUpdateBeam>(Utils::PatternScan("client.dll", "53 8B DC 83 EC ? 83 E4 ? 83 C4 ? 55 8B 6B ? 89 6C 24 ? 8B EC 83 EC ? 56 8B 73 ? 0F 28 C2"), hkUpdateBeam);
 	oNETMsg_Tick = HookFunction<tNETMsg_Tick>(Utils::PatternScan("engine.dll", "55 8B EC 53 56 8B F1 8B 0D ? ? ? ? 57"), hkNETMsg_Tick);
+	oSendDatagram = HookFunction<tSendDatagram>(Utils::PatternScan("engine.dll", "55 8B EC 83 E4 ? B8 ? ? ? ? E8 ? ? ? ? 56 57 8B F9 89 7C 24 ? 83 BF"), hkSendDatargam);
 
 	EventListner->Register();
 

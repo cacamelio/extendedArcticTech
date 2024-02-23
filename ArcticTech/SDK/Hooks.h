@@ -67,6 +67,7 @@ typedef void(__fastcall* tClientCmd_Unrestricted)(IVEngineClient*, void*, const 
 typedef void(* tUpdateBeam)(float, Beam_t*, void*);
 typedef bool(__fastcall* tNETMsg_Tick)(CClientState*, void*, const CNETMsg_Tick&);
 typedef void(__fastcall* tShutDown)(uintptr_t, uintptr_t);
+typedef int(__fastcall* tSendDatagram)(INetChannel*, void*, void*);
 
 inline WNDPROC oWndProc;
 inline tEndScene oEndScene;
@@ -113,6 +114,7 @@ inline tClientCmd_Unrestricted oClientCmd_Unrestricted;
 inline tUpdateBeam oUpdateBeam;
 inline tNETMsg_Tick oNETMsg_Tick;
 inline tShutDown oShutDown;
+inline tSendDatagram oSendDatagram;
 
 namespace Hooks {
 	inline VMT* DirectXDeviceVMT;

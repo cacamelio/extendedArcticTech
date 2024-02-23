@@ -108,6 +108,7 @@
     <ClCompile Include="Features\Misc\EventListner.cpp" />
     <ClCompile Include="Features\Misc\Misc.cpp" />
     <ClCompile Include="Features\Misc\PingReducer.cpp" />
+    <ClCompile Include="Features\Misc\PingSpike.cpp" />
     <ClCompile Include="Features\Misc\Prediction.cpp" />
     <ClCompile Include="Features\RageBot\AnimationSystem.cpp" />
     <ClCompile Include="Features\RageBot\AutoWall.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="Features\Misc\EventListner.h" />
     <ClInclude Include="Features\Misc\Misc.h" />
     <ClInclude Include="Features\Misc\PingReducer.h" />
+    <ClInclude Include="Features\Misc\PingSpike.h" />
     <ClInclude Include="Features\Misc\Prediction.h" />
     <ClInclude Include="Features\RageBot\AnimationSystem.h" />
     <ClInclude Include="Features\RageBot\AutoWall.h" />

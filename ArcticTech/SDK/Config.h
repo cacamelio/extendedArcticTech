@@ -257,6 +257,8 @@ struct config_t {
             CCheckBox* clantag;
             CCheckBox* ad_block;
             CCheckBox* gamesense_mode;
+            CKeyBind* ping_spike;
+            CSliderInt* ping_spike_amount;
         } miscellaneous;
 
         struct movement_t {
