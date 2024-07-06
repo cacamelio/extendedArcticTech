@@ -1,5 +1,5 @@
 # ArcticTech
-This is my hobby project I started in 2021 and quickly abandoned it until 2023, when progress on the project began to grow rapidly. Since I've never recoded it from scratch, the code style is far from perfect and inconsitent.
+ArcticTech is a CSGO hvh cheat I started in 2021 as hobby project and quickly abandoned it until 2023, when progress on the project began to grow rapidly. Since I've never recoded it from scratch, the code style is far from perfect and inconsitent.
 
 ## Build
 Use x86 Release configuration in Visual Studio. There are no external dependencies except [DirectX SDK](ttps://www.microsoft.com/en-us/download/details.aspx?id=6812).
