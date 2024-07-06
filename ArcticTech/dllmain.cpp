@@ -55,7 +55,7 @@ static std::pair<uint64_t, std::string> GetContainingModule(uint64_t address) {
         return std::make_pair((uint64_t)mbi.BaseAddress, ("<cheat>"));
     }
     else {
-        return std::make_pair((uint64_t)mbi.BaseAddress, std::vformat(("<unknown module {:#x}>"), std::make_format_args((DWORD64)mbi.BaseAddress)));
+        return std::make_pair((uint64_t)mbi.BaseAddress, std::format(("<unknown module {:#x}>"), (DWORD64)mbi.BaseAddress));
     }
 
     return std::make_pair(0, ("<unknown module>"));
@@ -81,14 +81,13 @@ long __stdcall ExceptionHandler(EXCEPTION_POINTERS* info) {
         std::string symbol_info;
 
         if (SymFromAddr(GetCurrentProcess(), (DWORD64)info->ExceptionRecord->ExceptionAddress, &displacement, symbol)) {
-            symbol_info = std::vformat(("{}!{} + {:#x}"), std::make_format_args(module_name, symbol->Name, displacement));
+            symbol_info = std::format(("{}!{} + {:#x}"), module_name, symbol->Name, displacement);
         }
         else {
-            symbol_info = std::vformat(("{} + {:#x}"), std::make_format_args(module_name, (DWORD64)info->ExceptionRecord->ExceptionAddress - module_base));
+            symbol_info = std::format(("{} + {:#x}"), module_name, (DWORD64)info->ExceptionRecord->ExceptionAddress - module_base);
         }
 
-        auto message = std::vformat(("Exception code: {:#x}\nException information: {}\n"),
-            std::make_format_args((uintptr_t)info->ExceptionRecord->ExceptionCode, symbol_info));
+        auto message = std::format(("Exception code: {:#x}\nException information: {}\n"), (uintptr_t)info->ExceptionRecord->ExceptionCode, symbol_info);
 
         if (info->ContextRecord->Ebp != 0) {
             message += ("\n");
@@ -110,10 +109,10 @@ long __stdcall ExceptionHandler(EXCEPTION_POINTERS* info) {
                 symbol->MaxNameLen = 255;
 
                 if (SymFromAddr(GetCurrentProcess(), (DWORD64)eip, &displacement, symbol)) {
-                    message += std::vformat(("> {}!{} + {:#x}\n"), std::make_format_args(module_name, symbol->Name, displacement));
+                    message += std::format(("> {}!{} + {:#x}\n"), module_name, symbol->Name, displacement);
                 }
                 else {
-                    message += std::vformat(("> {} + {:#x}\n"), std::make_format_args(module_name, (DWORD64)eip - module_base));
+                    message += std::format(("> {} + {:#x}\n"), module_name, (DWORD64)eip - module_base);
                 }
             }
         }
