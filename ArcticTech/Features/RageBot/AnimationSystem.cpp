@@ -264,7 +264,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 			}
 
 			if (anim_speed > 0.f)
-				player->m_vecVelocity() *= anim_speed / player->m_vecVelocity().Q_Length();
+				player->m_vecVelocity() *= anim_speed / player->m_vecVelocity().Length();
 
 			if (record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight <= 0.f)
 				player->m_vecVelocity() = Vector(0, 0, 0);

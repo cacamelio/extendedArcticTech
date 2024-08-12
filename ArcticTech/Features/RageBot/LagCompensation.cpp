@@ -137,7 +137,16 @@ void CLagCompensation::OnNetUpdate() {
 		AnimationSystem->UpdateAnimations(pl, new_record, records);
 		RecordDataIntoTrack(pl, new_record);
 
-		if (prev_record)
+        LagRecord* prev_valid = nullptr;
+        for (int j = records.size() - 2; j > 0; j--) {
+            auto r = &records[j];
+            if (r->shifting_tickbase)
+                continue;
+            prev_valid = r;
+            break;
+        }
+
+		if (prev_valid)
 			new_record->breaking_lag_comp = (prev_record->m_vecOrigin - new_record->m_vecOrigin).LengthSqr() > 4096.f;
 
 		if (config.visuals.esp.shared_esp->get() && !EngineClient->IsVoiceRecording() && nc) {
