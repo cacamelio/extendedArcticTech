@@ -47,6 +47,7 @@ struct config_t {
         struct aimbot_t {
             CCheckBox* enabled;
             CComboBox* extrapolation;
+            CCheckBox* pitch_resolver;
             CCheckBox* dormant_aim;
             CKeyBind* dormant_aim_key;
             CCheckBox* extended_backtrack;

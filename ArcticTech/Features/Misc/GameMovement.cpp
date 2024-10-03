@@ -96,6 +96,9 @@ void CMovement::AutoStrafe() {
 		float max_diff = 20.f - config.misc.movement.auto_strafe_smooth->get() * 0.01f * 17.f;
 		float vel = Math::Q_sqrt(speed_sqr);
 
+        if (auto maxwsh = cvars.sv_air_max_wishspeed->GetFloat(); maxwsh > 30.f)
+            vel *= 30.f / maxwsh;
+
 		if (vel < 100.f)
 			max_diff *= 1.f + std::clamp(100.f - vel, 0.f, 50.f) * 0.02f;
 
@@ -116,6 +119,7 @@ void CMovement::AutoStrafe() {
 			strafe_side = -strafe_side;
 
 			float strafe_correct = min(90.f, RAD2DEG(std::asin(21.f / vel))) * strafe_side;
+
 			new_angle.yaw += strafe_correct;
 			wish_side = strafe_correct > 0.f ? 1.f : -1.f;
 		}

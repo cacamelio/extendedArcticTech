@@ -29,9 +29,9 @@ void CAntiAim::FakeLag() {
 	fakelag_limit = min(cvars.sv_maxusrcmdprocessticks->GetInt() - 1, config.antiaim.fakelag.limit->get());
 
 	if (ctx.tickbase_shift > 0)
-		fakelag_limit = max((cvars.sv_maxusrcmdprocessticks->GetInt() - 2) - ctx.tickbase_shift, 1);
+		fakelag_limit = max((cvars.sv_maxusrcmdprocessticks->GetInt() - 1) - ctx.tickbase_shift, 1);
 
-	if (config.ragebot.aimbot.doubletap->get() && (GlobalVars->realtime - ctx.last_shot_time) < 0.3f)
+	if (config.ragebot.aimbot.doubletap->get() && (GlobalVars->realtime - ctx.last_shot_time) < 0.2f)
 		fakelag_limit = 2;
 
 	if (config.antiaim.fakelag.enabled->get()) {

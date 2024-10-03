@@ -1,6 +1,7 @@
 #include "PingSpike.h"
 #include "../../SDK/Interfaces.h"
 #include "../../SDK/Config.h"
+#include "../../SDK/Globals.h"
 
 
 static CPingSpike s_PingSpike;
@@ -22,8 +23,13 @@ void CPingSpike::OnPacketStart() {
 	}
 }
 
+void CPingSpike::LevelInit() {
+    sequences.clear();
+    lastincomingsequencenumber = 0;
+}
+
 void CPingSpike::OnSendDatagram() {
-	if (!config.misc.miscellaneous.ping_spike->get())
+	if (!config.misc.miscellaneous.ping_spike->get() || !Cheat.InGame)
 		return;
 
 	float latency = config.misc.miscellaneous.ping_spike_amount->get() / 1000.f;

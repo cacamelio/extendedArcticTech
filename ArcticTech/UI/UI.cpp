@@ -38,6 +38,7 @@ void CMenu::SetupUI() {
 	auto scripts = AddGroupBox("Scripts", "Scripts");
 
 	config.ragebot.aimbot.enabled = aimbot->AddCheckBox("Enabled");
+    config.ragebot.aimbot.pitch_resolver = aimbot->AddCheckBox("Pitch resolver");
 	config.ragebot.aimbot.extrapolation = aimbot->AddComboBox("Extrapolation", { "Disable", "Enable", "Force" });
 	config.ragebot.aimbot.dormant_aim = aimbot->AddCheckBox("Dormant aim");
 	config.ragebot.aimbot.dormant_aim_key = aimbot->AddKeyBind("Dormant aim");

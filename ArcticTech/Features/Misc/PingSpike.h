@@ -16,6 +16,7 @@ class CPingSpike {
 public:
     void OnSendDatagram();
     void OnPacketStart();
+    void LevelInit();
 };
 
 extern CPingSpike* PingSpike;

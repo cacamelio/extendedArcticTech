@@ -66,14 +66,14 @@ Vector CBaseEntity::GetAbsOrigin() {
 	if (!this)
 		return Vector();
 
-	return CallVFunction<Vector&(__thiscall*)(CBaseEntity*)>(this, 10)(this);
+	return *CallVFunction<Vector*(__thiscall*)(CBaseEntity*)>(this, 10)(this);
 }
 
 QAngle CBaseEntity::GetAbsAngles() {
 	if (!this)
 		return QAngle();
 
-	return CallVFunction<QAngle&(__thiscall*)(CBaseEntity*)>(this, 11)(this);
+	return *CallVFunction<QAngle*(__thiscall*)(CBaseEntity*)>(this, 11)(this);
 }
 
 Vector CBaseEntity::GetWorldPosition() {
@@ -112,20 +112,20 @@ void CBaseEntity::SetAbsAngles(QAngle angles) {
 }
 
 void CBaseEntity::SetAbsOrigin(Vector origin) {
-	static auto setAbsAngles = (void(__thiscall*)(CBaseEntity*, const Vector&))Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 51 53 56 57 8B F1 E8");
+	static auto setAbsAngles = (void(__thiscall*)(CBaseEntity*, const Vector*))Utils::PatternScan("client.dll", "55 8B EC 83 E4 F8 51 53 56 57 8B F1 E8");
 
-	setAbsAngles(this, origin);
+	setAbsAngles(this, &origin);
 }
 
 void CBaseEntity::SetCollisionBounds(Vector mins, Vector maxs) {
-	static auto setCollisionBounds = reinterpret_cast<void(__thiscall*)(ICollideable*, const Vector&, const Vector&)>(Utils::PatternScan("client.dll", "53 8B DC 83 EC 08 83 E4 F8 83 C4 04 55 8B 6B 04 89 6C 24 04 8B EC 83 EC 18 56 57 8B 7B"));
+	static auto setCollisionBounds = reinterpret_cast<void(__thiscall*)(ICollideable*, const Vector*, const Vector*)>(Utils::PatternScan("client.dll", "53 8B DC 83 EC 08 83 E4 F8 83 C4 04 55 8B 6B 04 89 6C 24 04 8B EC 83 EC 18 56 57 8B 7B"));
 
 	auto collidable = GetCollideable();
 
 	if (!collidable)
 		return;
 
-	setCollisionBounds(collidable, mins, maxs);
+	setCollisionBounds(collidable, &mins, &maxs);
 }
 
 CBasePlayer* CBaseGrenade::GetThrower() {

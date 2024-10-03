@@ -427,6 +427,7 @@ bool __fastcall hkSetSignonState(void* thisptr, void* edx, int state, int count,
 		Resolver->Reset();
 		SkinChanger->InitCustomModels();
 		NadeWarning->Precache();
+        PingSpike->LevelInit();
 
 		LUA_CALL_HOOK(LUA_LEVELINIT);
 	}
@@ -442,6 +443,7 @@ void __fastcall hkLevelShutdown(IBaseClientDLL* thisptr, void* edx) {
 	LagCompensation->Reset();
 	AnimationSystem->ResetInterpolation();
 	ShotManager->Reset();
+    PingSpike->LevelInit();
 
 	oLevelShutdown(thisptr);
 }
@@ -1015,7 +1017,7 @@ void __fastcall hkCalcViewModel(CBaseViewModel* vm, void* edx, CBasePlayer* play
 }
 
 void __fastcall hkResetLatched(CBasePlayer* thisptr, void* edx) {
-	if (!Cheat.LocalPlayer || thisptr != Cheat.LocalPlayer || EnginePrediction->HasPredictionErrors())
+	if ((!Cheat.LocalPlayer || thisptr != Cheat.LocalPlayer || EnginePrediction->HasPredictionErrors()) && thisptr)
 		return oResetLatched(thisptr, edx);
 }
 

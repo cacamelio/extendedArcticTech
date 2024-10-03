@@ -114,6 +114,7 @@ struct CVars {
 	ConVar* sensitivity;
 	ConVar* default_fov;
 	ConVar* ff_damage_reduction_grenade;
+    ConVar* sv_air_max_wishspeed;
 };
 
 extern CheatState_t Cheat;

@@ -182,6 +182,11 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 			if (player->GetActiveWeapon()->m_fLastShotTime() > player->m_flOldSimulationTime())
 				record->shooting = true;
 
+    QAngle& eye_angles = player->m_angEyeAngles();
+
+    if (config.ragebot.aimbot.pitch_resolver->get() && (std::abs(eye_angles.pitch) > 90 || eye_angles.pitch < -88.f))
+        eye_angles.pitch = 89.f;
+
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;
 	auto backupFrametime = GlobalVars->frametime;

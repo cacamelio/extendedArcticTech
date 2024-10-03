@@ -118,4 +118,5 @@ void Interfaces::Initialize() {
 	cvars.sensitivity = CVar->FindVar("sensitivity");
 	cvars.default_fov = CVar->FindVar("default_fov");
 	cvars.ff_damage_reduction_grenade = CVar->FindVar("ff_damage_reduction_grenade");
+    cvars.sv_air_max_wishspeed = CVar->FindVar("sv_air_max_wishspeed");
 }

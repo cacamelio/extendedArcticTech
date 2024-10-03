@@ -245,7 +245,7 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	float vel_sqr = player->m_vecVelocity().LengthSqr();
 
 	if (vel_sqr < 256.f || record->animlayers[ANIMATION_LAYER_MOVEMENT_MOVE].m_flWeight <= 0.f || record->resolver_data.resolver_type == ResolverType::NONE || !(player->m_fFlags() & FL_ONGROUND)) {
-		if (record->resolver_data.antiaim_type == R_AntiAimType::JITTER && records.size() > 16 && !config.antiaim.angles.legacy_desync->get()) {
+		if (record->resolver_data.antiaim_type == R_AntiAimType::JITTER && records.size() > 16) {
 			float eyeYaw = player->m_angEyeAngles().yaw;
 			float prevEyeYaw = FindAvgYaw(records);
 			float delta = Math::AngleDiff(eyeYaw, prevEyeYaw);

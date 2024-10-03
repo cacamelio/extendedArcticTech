@@ -55,6 +55,7 @@ void on_refresh_config() {
 void CConfig::Init() {
     add(config.ragebot.aimbot.enabled);
     add(config.ragebot.aimbot.extrapolation);
+    add(config.ragebot.aimbot.pitch_resolver);
     add(config.ragebot.aimbot.dormant_aim);
     add(config.ragebot.aimbot.dormant_aim_key);
     add(config.ragebot.aimbot.extended_backtrack);

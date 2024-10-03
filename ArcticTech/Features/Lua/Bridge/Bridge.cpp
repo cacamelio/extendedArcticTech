@@ -1354,7 +1354,7 @@ namespace api {
 			auto cc = ent->GetClientClass();
 
 			if (!cc)
-				return 0;
+				return "";
 
 			return cc->m_pNetworkName;
 		}
