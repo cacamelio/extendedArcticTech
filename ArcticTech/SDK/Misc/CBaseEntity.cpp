@@ -63,17 +63,21 @@ const model_t* CBaseEntity::GetModel() {
 }
 
 Vector CBaseEntity::GetAbsOrigin() {
-	if (!this)
-		return Vector();
+    return *reinterpret_cast<Vector*>(reinterpret_cast<uintptr_t>(this) + 0xA0);
 
-	return *CallVFunction<Vector*(__thiscall*)(CBaseEntity*)>(this, 10)(this);
+	//if (!this)
+	//	return Vector();
+
+	//return *CallVFunction<Vector*(__thiscall*)(CBaseEntity*)>(this, 10)(this);
 }
 
 QAngle CBaseEntity::GetAbsAngles() {
-	if (!this)
-		return QAngle();
+    return *reinterpret_cast<QAngle*>(reinterpret_cast<uintptr_t>(this) + 0xC4);
 
-	return *CallVFunction<QAngle*(__thiscall*)(CBaseEntity*)>(this, 11)(this);
+	//if (!this)
+	//	return QAngle();
+
+	//return *CallVFunction<QAngle*(__thiscall*)(CBaseEntity*)>(this, 11)(this);
 }
 
 Vector CBaseEntity::GetWorldPosition() {
