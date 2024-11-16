@@ -100,7 +100,7 @@ void CLagCompensation::OnNetUpdate() {
 	for (int i = 0; i < ClientState->m_nMaxClients; i++) {
 		CBasePlayer* pl = (CBasePlayer*)EntityList->GetClientEntity(i);
 
-		if (!pl || !pl->IsAlive() || pl == Cheat.LocalPlayer || pl->m_bDormant())
+		if (!pl || !pl->IsAlive() || pl == Cheat.LocalPlayer || pl->m_bDormant() || pl->m_iHealth() <= 0 || pl->m_lifeState() != LIFE_ALIVE)
 			continue;
 
 		auto& records = lag_records[i];
