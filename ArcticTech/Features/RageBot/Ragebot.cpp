@@ -127,7 +127,7 @@ void CRagebot::AutoStop(bool predict) {
 	float target_speed = ctx.active_weapon->MaxSpeed() * 0.2f;
 
 	if (vec_speed.LengthSqr() < ((target_speed + 1.f) * (target_speed + 1.f))) {
-		float cmd_speed = Math::Q_sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
+		float cmd_speed = std::sqrt(ctx.cmd->forwardmove * ctx.cmd->forwardmove + ctx.cmd->sidemove * ctx.cmd->sidemove);
 	
 		if (cmd_speed > 2.f) {
 			float factor = target_speed / cmd_speed;
@@ -145,12 +145,12 @@ void CRagebot::AutoStop(bool predict) {
 	Vector forward;
 	Math::AngleVectors(direction, forward);
 
-	float wish_speed = std::clamp(vec_speed.Q_Length2D(), 0.f, 450.f);
+	float wish_speed = std::clamp(vec_speed.Length2D(), 0.f, 450.f);
 
 	if (!(Cheat.LocalPlayer->m_fFlags() & FL_ONGROUND)) {
 		static ConVar* sv_airaccelerate = CVar->FindVar("sv_airaccelerate");
 
-		wish_speed = std::clamp((vec_speed.Q_Length2D() * 0.936f) / (sv_airaccelerate->GetFloat() * GlobalVars->frametime), 0.f, 450.f);
+		wish_speed = std::clamp((vec_speed.Length2D() * 0.936f) / (sv_airaccelerate->GetFloat() * GlobalVars->frametime), 0.f, 450.f);
 	}
 
 	Vector nigated_direction = forward * -wish_speed;
@@ -163,7 +163,7 @@ float CRagebot::FastHitchance(LagRecord* target, float inaccuracy, int hitbox_ra
 	if (inaccuracy == -1.f)
 		inaccuracy = std::tan(EnginePrediction->WeaponInaccuracy());
 
-	return min(hitbox_radius / ((ctx.shoot_position - (target->m_vecOrigin + Vector(0, 0, 32))).Q_Length() * inaccuracy), 1.f);
+	return min(hitbox_radius / ((ctx.shoot_position - (target->m_vecOrigin + Vector(0, 0, 32))).Length() * inaccuracy), 1.f);
 }
 
 float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int hitbox) {
@@ -194,7 +194,7 @@ float CRagebot::CalcHitchance(QAngle angles, LagRecord* target, int hitbox) {
 		}
 
 		Vector direction = forward + (right * (s_val.bcos * inaccuracy + s_val.dcos * spread)) + (up * (s_val.bsin * inaccuracy + s_val.dsin * spread));
-		direction.Q_Normalized();
+		direction.Normalized();
 
 		if (!EngineTrace->RayIntersectPlayer(ctx.shoot_position, ctx.shoot_position + (direction * 8192.f), target->player, target->clamped_matrix, damagegroup))
 			continue;
@@ -619,7 +619,7 @@ void CRagebot::ScanTarget(CBasePlayer* target) {
 	result->angle = Math::VectorAngles_p(result->best_point.point - ctx.shoot_position);
 
 	if (frametime_issues || Exploits->IsShifting()) { // fast hitchance approx
-		result->hitchance = min(10.f / ((ctx.shoot_position - result->best_point.point).Q_Length() * std::tan(EnginePrediction->WeaponInaccuracy())), 1.f);
+		result->hitchance = min(10.f / ((ctx.shoot_position - result->best_point.point).Length() * std::tan(EnginePrediction->WeaponInaccuracy())), 1.f);
 	}
 	else {
 		result->hitchance = CalcHitchance(result->angle, result->best_point.record, result->best_point.hitbox);
@@ -730,8 +730,8 @@ void CRagebot::Run() {
 	if (settings.auto_stop->get(2) && !local_on_ground) { // superior "dynamic autostop"
 		float flInaccuracyJumpInitial = ctx.weapon_info->_flInaccuracyUnknown;
 
-		float fSqrtMaxJumpSpeed = Math::Q_sqrt(cvars.sv_jump_impulse->GetFloat());
-		float fSqrtVerticalSpeed = Math::Q_sqrt(abs(ctx.local_velocity.z) * 0.7f);
+		float fSqrtMaxJumpSpeed = std::sqrt(cvars.sv_jump_impulse->GetFloat());
+		float fSqrtVerticalSpeed = std::sqrt(abs(ctx.local_velocity.z) * 0.7f);
 
 		float flAirSpeedInaccuracy = Math::RemapVal(fSqrtVerticalSpeed,
 			fSqrtMaxJumpSpeed * 0.25f,
@@ -903,7 +903,7 @@ void CRagebot::Zeusbot() {
 						continue;
 				}
 
-				float hitchance = min(12.f / ((ctx.shoot_position - point).Q_Length() * inaccuracy_tan), 1.f);
+				float hitchance = min(12.f / ((ctx.shoot_position - point).Length() * inaccuracy_tan), 1.f);
 
 				if (hitchance < 0.7f)
 					continue;
@@ -1096,7 +1096,7 @@ void CRagebot::DormantAimbot() {
 		if (!AutoWall->FireBullet(Cheat.LocalPlayer, ctx.shoot_position, shoot_target, bullet) || bullet.damage < CalcMinDamage(player) || (bullet.enterTrace.hit_entity != nullptr && bullet.enterTrace.hit_entity->IsPlayer()))
 			continue;
 
-		float hc = min(7.f / ((ctx.shoot_position - shoot_target).Q_Length() * inaccuracy_tan), 1.f);
+		float hc = min(7.f / ((ctx.shoot_position - shoot_target).Length() * inaccuracy_tan), 1.f);
 
 		AutoStop();
 		if (hc * 100.f < settings.hitchance->get() || !ctx.active_weapon->CanShoot()) {

@@ -84,9 +84,6 @@
     <ClCompile Include="SDK\Interfaces\IClientEntityList.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="SDK\Misc\Vector.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="SDK\Interfaces\IEffects.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>

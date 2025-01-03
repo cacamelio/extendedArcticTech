@@ -245,7 +245,7 @@ int CAntiAim::DesyncFreestand() {
 	if (!target)
 		return 0;
 
-	Vector forward = (target->m_vecOrigin() - Cheat.LocalPlayer->m_vecOrigin()).Q_Normalized();
+	Vector forward = (target->m_vecOrigin() - Cheat.LocalPlayer->m_vecOrigin()).Normalized();
 	Vector eyePos = Cheat.LocalPlayer->GetEyePosition();
 
 	Vector right = Math::AngleVectors(QAngle(0, base_yaw + 90.f, 0));
@@ -280,7 +280,7 @@ void CAntiAim::SlowWalk() {
 
 	float maxSpeed = (Cheat.LocalPlayer->m_bIsScoped() ? ctx.weapon_info->flMaxSpeedAlt : ctx.weapon_info->flMaxSpeed) * 0.3f;
 
-	float movespeed = Math::Q_sqrt(ctx.cmd->sidemove * ctx.cmd->sidemove + ctx.cmd->forwardmove * ctx.cmd->forwardmove);
+	float movespeed = std::sqrt(ctx.cmd->sidemove * ctx.cmd->sidemove + ctx.cmd->forwardmove * ctx.cmd->forwardmove);
 	
 	if (movespeed == 0)
 		return;
@@ -366,7 +366,7 @@ void CAntiAim::JitterMove() {
 
 bool CAntiAim::IsPeeking() {
 	Vector velocity = Cheat.LocalPlayer->m_vecVelocity();
-	auto norm_vel = velocity.Q_Normalized();
+	auto norm_vel = velocity.Normalized();
 	Vector move_factor = velocity * TICKS_TO_TIME((ctx.cmd->buttons & IN_USE) ? 2.4f : 4.4f) + norm_vel * 8.f;
 	
 	Vector backup_abs_orgin = Cheat.LocalPlayer->GetAbsOrigin();

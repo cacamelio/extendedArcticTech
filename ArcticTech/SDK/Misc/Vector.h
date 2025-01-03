@@ -209,13 +209,9 @@ public:
 		return std::sqrt(x * x + y * y + z * z);
 	}
 
-	float Q_Length() const;
-
 	float Length2D() const {
 		return std::sqrt(x * x + y * y);
 	}
-
-	float Q_Length2D() const;
 
 	float Length2DSqr() const {
 		return x * x + y * y;
@@ -240,8 +236,6 @@ public:
 		return delta.Length();
 	}
 
-	Vector Q_Normalized() const;
-
 	float Normalize() {
 		const float len = Length();
 		if (len > 0.f) {
@@ -251,8 +245,6 @@ public:
 		}
 		return len;
 	}
-
-	float Q_Normalize();
 
 	bool Zero() const {
 		return x == 0 && y == 0 && z == 0;
@@ -271,7 +263,7 @@ public:
 	}
 
 	float CosBetween(const Vector& other) const {
-		return Dot(other) / (Q_Length() * other.Q_Length());
+		return Dot(other) / (Length() * other.Length());
 	}
 
 	Vector2 to_vec2() const {

@@ -39,7 +39,7 @@ Vector RayCircleIntersection(Vector ray, Vector center, float r) {
 			return Vector(x, y);
 		}
 
-		float d_sqrt = Math::Q_sqrt(d);
+		float d_sqrt = std::sqrt(d);
 
 		float x = (-b + d_sqrt) / (2 * a);
 		float y = k * x;
@@ -79,7 +79,7 @@ Vector RayCircleIntersection(Vector ray, Vector center, float r) {
 			return Vector(x, y);
 		}
 
-		float d_sqrt = Math::Q_sqrt(d);
+		float d_sqrt = std::sqrt(d);
 
 		float y = (-b + d_sqrt) / (2 * a);
 		float x = k * y;
@@ -103,7 +103,7 @@ float CalculateThrowYaw(const Vector& wish_dir, const Vector& vel, float throw_v
 	dir_normalized.z = 0;
 	dir_normalized.Normalize();
 
-	float cos_pitch = dir_normalized.Dot(wish_dir) / wish_dir.Q_Length();
+	float cos_pitch = dir_normalized.Dot(wish_dir) / wish_dir.Length();
 
 	//Vector dir = (wish_dir - vel * 1.25f) / (std::clamp(throw_velocity * 0.9f, 15.f, 750.f) * (std::clamp(throw_strength, 0.f, 1.f) * 0.7f + 0.3f));
 	//return Math::VectorAngles_p(dir).yaw;
@@ -311,7 +311,7 @@ void GrenadePrediction::Draw() {
 			CGameTrace tr = EngineTrace->TraceRay(vecDetonate + Vector(0, 0, 16), player->m_vecOrigin() + Vector(0, 0, 32), 0x1, player);
 
 			if (tr.fraction == 1.f) {
-				float dist = (player->m_vecOrigin() - vecDetonate).Q_Length2D() / 12.f;
+				float dist = (player->m_vecOrigin() - vecDetonate).Length2D() / 12.f;
 
 				if (dist < minDistance) {
 					additional_info = std::format("{:.2}ft", dist);
@@ -705,7 +705,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	if (Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_ROAMING)
 		local_pos = ctx.shoot_position;
 
-	float distance = (local_pos - vecDetonate).Q_Length();
+	float distance = (local_pos - vecDetonate).Length();
 
 	if (!shouldDrawCircle || distance > 550)
 		return;

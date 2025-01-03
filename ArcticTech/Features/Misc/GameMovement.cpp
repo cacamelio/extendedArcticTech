@@ -94,7 +94,7 @@ void CMovement::AutoStrafe() {
 	if (speed_sqr > 256.f) {
 		float diff = Math::AngleDiff(target_yaw, last_yaw);
 		float max_diff = 20.f - config.misc.movement.auto_strafe_smooth->get() * 0.01f * 17.f;
-		float vel = Math::Q_sqrt(speed_sqr);
+		float vel = std::sqrt(speed_sqr);
 
         if (auto maxwsh = cvars.sv_air_max_wishspeed->GetFloat(); maxwsh > 30.f)
             vel *= 30.f / maxwsh;
@@ -209,7 +209,7 @@ void CMovement::QuickStop() {
 	Vector forward;
 	Math::AngleVectors(direction, forward);
 
-	Vector nigated_direction = forward * -std::clamp(vec_speed.Q_Length2D(), 0.f, 450.f) * 0.9f;
+	Vector nigated_direction = forward * -std::clamp(vec_speed.Length2D(), 0.f, 450.f) * 0.9f;
 
 	ctx.cmd->sidemove = nigated_direction.y;
 	ctx.cmd->forwardmove = nigated_direction.x;

@@ -39,7 +39,7 @@ struct CUserCmd_lua {
 		if (speed.has_value()) {
 			sp = speed.value();
 		} else {
-			sp = move.Q_Length();
+			sp = move.Length();
 		}
 
 		move = Math::AngleVectors(QAngle(0.f, viewangles.yaw - yaw, 0.f)) * sp;

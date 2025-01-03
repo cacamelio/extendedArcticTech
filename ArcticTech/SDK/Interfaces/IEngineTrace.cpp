@@ -65,7 +65,7 @@ bool IEngineTrace::RayIntersectPlayer(const Vector& start, const Vector& end, CB
 			Vector start_scaled;
 
 			Math::VectorTransform(start, bone_matrix[box->bone], &start_scaled);
-			delta = Math::VectorRotate((end - start).Q_Normalized() * 8192.f, bone_matrix[box->bone]);
+			delta = Math::VectorRotate((end - start).Normalized() * 8192.f, bone_matrix[box->bone]);
 			if (IntersectBBHitbox(start_scaled, delta, min, max)) {
 				return true;
 			}

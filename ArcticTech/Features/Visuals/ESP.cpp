@@ -344,7 +344,7 @@ void CWorldESP::DrawHealth(const ESPInfo_t& info) {
 	float base_dmg = 100;
 
 	if (ctx.weapon_info && (ctx.active_weapon->m_iItemDefinitionIndex() == Ssg08 || ctx.active_weapon->m_iItemDefinitionIndex() == Revolver)) {
-		float distance = (Cheat.LocalPlayer->GetAbsOrigin() - info.m_vecOrigin).Q_Length();
+		float distance = (Cheat.LocalPlayer->GetAbsOrigin() - info.m_vecOrigin).Length();
 		base_dmg = ctx.weapon_info->iDamage * std::powf(ctx.weapon_info->flRangeModifier, (distance * 0.002f));
 		info.player->ScaleDamage(HITGROUP_STOMACH, ctx.weapon_info, base_dmg);
 	}
@@ -476,7 +476,7 @@ void CWorldESP::DrawFlags(const ESPInfo_t& info) {
 
 	//if (record) {
 	//	Render->Line(Render->WorldToScreen(record->m_vecOrigin), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color());
-	//	Render->Text(std::to_string(record->m_vecVelocity.Q_Length()), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color(), SmallFont, TEXT_OUTLINED);
+	//	Render->Text(std::to_string(record->m_vecVelocity.Length()), Render->WorldToScreen(record->m_vecOrigin + record->m_vecVelocity), Color(), SmallFont, TEXT_OUTLINED);
 	//}
 }
 
@@ -555,7 +555,7 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 		if (Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_ROAMING)
 			camera_pos = ctx.camera_postion;
 
-		float distance = (camera_pos - grenade->GetAbsOrigin()).Q_Length();
+		float distance = (camera_pos - grenade->GetAbsOrigin()).Length();
 
 		if (distance > 550)
 			return;

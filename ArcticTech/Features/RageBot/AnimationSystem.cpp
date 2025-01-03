@@ -250,7 +250,7 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 			if (weapon_info)
 				max_speed = player->m_bIsScoped() ? weapon_info->flMaxSpeedAlt : weapon_info->flMaxSpeed;
 
-			float vel_length = player->m_vecVelocity().Q_Length();
+			float vel_length = player->m_vecVelocity().Length();
 			if (vel_length > max_speed)
 				player->m_vecVelocity() *= max_speed / vel_length;
 

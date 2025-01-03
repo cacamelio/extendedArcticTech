@@ -255,7 +255,7 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 	static ConVar* mp_friendlyfire = CVar->FindVar("mp_friendlyfire");
 
 	Vector eyePosition = start;
-	Vector direction = (end - start).Q_Normalized();
+	Vector direction = (end - start).Normalized();
 
 	if (!ctx.weapon_info)
 		return false;

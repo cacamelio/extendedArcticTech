@@ -151,7 +151,7 @@ void CResolver::DetectFreestand(CBasePlayer* player, LagRecord* record, const st
 
 	Vector eyePos = player->m_vecOrigin() + Vector(0, 0, 64 - player->m_flDuckAmount() * 16.f);
 
-	Vector forward = (Cheat.LocalPlayer->m_vecOrigin() - player->m_vecOrigin()).Q_Normalized();
+	Vector forward = (Cheat.LocalPlayer->m_vecOrigin() - player->m_vecOrigin()).Normalized();
 
 	float notModifiedYaw = player->m_angEyeAngles().yaw;
 
