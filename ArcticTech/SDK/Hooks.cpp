@@ -110,6 +110,8 @@ void __fastcall hkHudUpdate(IBaseClientDLL* thisptr, void* edx, bool bActive) {
 	WorldESP->OtherESP();
 	WorldESP->RenderMarkers();
 
+	Menu->BindsList();
+
 	NadePrediction.Start();
 	NadePrediction.Draw();
 

@@ -721,7 +721,7 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 	if (pos.x <= 0.f || pos.y <= 0.f || pos.x >= Cheat.ScreenSize.x || pos.y >= Cheat.ScreenSize.y)
 		pos = Render->GetOOF(vecDetonate) * (Cheat.ScreenSize * 0.5f - Vector2(50, 50)) + Cheat.ScreenSize * 0.5f;
 
-	Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
+	Render->CircleFilled(pos, circle_radius, Color(0, 0, 0, 150 * alpha));
 	Render->GlowCircle2(pos, circle_radius - 2.f, Color(40, 40, 40, 230 * alpha), Color(20, 20, 20, 230 * alpha));
 
 	if (weapId == HeGrenade) {
@@ -731,12 +731,25 @@ void GrenadeWarning::Warning(CBaseGrenade* entity, int weapId) {
 
 		Render->Text(std::to_string(int(damage)).c_str(), pos + Vector2(0, 13), Color(255, 255, 255, 255 * alpha), Verdana, TEXT_CENTERED | TEXT_DROPSHADOW);
 		Render->Image(Resources::HeGrenade, pos - Vector2(10, 21), Color(255, 255, 255, 230 * alpha));
-	} else if (weapId == Molotov) {
+	} 
+	else if (weapId == Molotov) {
 		float distance = (vecDetonate - local->GetAbsOrigin()).Length2D();
 
 		Render->GlowCircle(pos, circle_radius - 5.f, Color(255, 50, 50, std::clamp((430 - distance) / 250.f, 0.f, 1.f) * 210));
 		Render->Image(Resources::Molotov, pos - Vector2(10, 18), Color(255, 255, 255, 230 * alpha));
 	}
+
+	//yea pasted from drip
+
+	float detonationProgress = std::clamp((flExpireTime - simulationTime) / timeInAir, 0.0f, 1.0f);
+
+	constexpr float startAngle = 270.f;
+	float endAngle = startAngle + (360.f * detonationProgress);
+	float outerCircleRadius = circle_radius - 1.f;
+	constexpr float thickness = 10.0f;
+
+	Render->DrawArcSegment(pos, outerCircleRadius, startAngle, endAngle, Color(255, 255, 255, 230 * alpha), 50, thickness);
+
 }
 
 int GrenadePrediction::CalcDamage(Vector pos, CBasePlayer* target, CBaseEntity* skip) {

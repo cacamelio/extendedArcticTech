@@ -1,4 +1,5 @@
 #include "Render.h"
+#include "Render.h"
 #include "Globals.h"
 #include "../Utils/Utils.h"
 
@@ -448,6 +449,21 @@ void CRender::PolyFilled(std::vector<Vector2> points, Color color) {
 		vertex[i] = Vertex(points[i].x, points[i].y, color);
 	}
 	vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_TRIANGLEFAN, size - 2, vertex)));
+}
+
+void CRender::DrawArcSegment(const Vector2& center, float radius, float startAngle, float endAngle, Color color, int segments, float thickness) {
+	std::vector<Vertex> vertices;
+
+	float angleStep = (endAngle - startAngle) / static_cast<float>(segments);
+
+	for (int i = 0; i <= segments; ++i) {
+		float angle = DEG2RAD(startAngle + angleStep * i);
+		float x = center.x + radius * cos(angle);
+		float y = center.y + radius * sin(angle);
+		vertices.push_back(Vertex(x, y, color));
+	}
+
+	vecDrawData.emplace_back(DrawCommand_t(EDrawType::PRIMITIVE, primitive_command_t(D3DPT_LINESTRIP, segments, vertices)));
 }
 
 void CRender::Circle(const Vector2& center, float radius, Color color, int segments, float start, float end) {

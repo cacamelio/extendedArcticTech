@@ -225,6 +225,7 @@ public:
     void                Line(const Vector2& start, const Vector2& end, Color color);
     void                PolyLine(std::vector<Vector2> points, Color color);
     void                PolyFilled(std::vector<Vector2> points, Color color);
+    void                DrawArcSegment(const Vector2& center, float radius, float startAngle, float endAngle, Color color, int segments, float thickness);
     void                Circle(const Vector2& center, float radius, Color color, int segments = -1, float begin = 0.f, float end = 360.f);
     void                CircleFilled(const Vector2& center, float radius, Color color, int segments = -1);
     void                Circle3D(const Vector& center, float radius, Color color, bool filled);

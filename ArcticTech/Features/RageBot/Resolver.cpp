@@ -209,12 +209,16 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 	if (GameRules()->IsFreezePeriod() || player->m_fFlags() & FL_FROZEN || !Cheat.LocalPlayer->IsAlive() || record->shooting)
 		return;
 
+	player_info_t pinfo;
+	EngineClient->GetPlayerInfo(player->EntIndex(), &pinfo);
+
 	LagRecord* prevRecord = record->prev_record;
 
 	record->resolver_data.max_desync_delta = player->GetMaxDesyncDelta();
 
 //#ifndef RESOLVER_DEBUG
-	if (!record->m_nChokedTicks || player->m_bIsDefusing()) {
+	if (record->m_nChokedTicks < 2 || pinfo.fakeplayer ||
+		player->m_bIsDefusing()) {
 		record->resolver_data.side = 0;
 		record->resolver_data.resolver_type = ResolverType::NONE;
 		return;

@@ -159,6 +159,7 @@ void CMenu::Draw() {
         ImGui::End();
     }
 
+
     ImGui::Render();
 
     ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());

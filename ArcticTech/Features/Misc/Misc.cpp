@@ -65,6 +65,9 @@ void Miscellaneous::Clantag()
 }
 
 void Miscellaneous::FastThrow() {
+
+	//yea its pasted from drip
+
 	static bool fast_throw_triggred = false;
 	static int nLastButtons = 0;
 
@@ -86,12 +89,12 @@ void Miscellaneous::FastThrow() {
 	}
 
 	if (ctx.tickbase_shift > 0) {
-		Exploits->LC_OverrideTickbase(ctx.tickbase_shift);
-
+		
 		float arm_time = max(Cheat.LocalPlayer->m_flNextAttack(), grenade->m_flNextPrimaryAttack());
+		float current_time = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
+		int ticks_to_throw = TIME_TO_TICKS(arm_time - current_time);
 
-		if (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) + TICKS_TO_TIME(ctx.tickbase_shift - 7) > arm_time)
-			Exploits->LC_OverrideTickbase(7);
+		Exploits->LC_OverrideTickbase(ticks_to_throw);
 
 		if (grenade->m_flThrowTime() > 0.f)
 			fast_throw_triggred = true;

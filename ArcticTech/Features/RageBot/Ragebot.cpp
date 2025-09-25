@@ -292,10 +292,15 @@ void CRagebot::SelectRecords(CBasePlayer* player, std::queue<LagRecord*>& target
 	}
 
 	if (target_records.empty()) {
-		// TODO: should be extrapolation here
+
 		auto last_record = &records.back();
-		if (!last_record->shifting_tickbase && !last_record->invalid)
-			target_records.push(last_record);
+
+		if (!last_record->shifting_tickbase && !last_record->invalid) {
+			int extrapolation_ticks = TIME_TO_TICKS(EngineClient->GetNetChannelInfo()->GetLatency(FLOW_INCOMING) + EngineClient->GetNetChannelInfo()->GetLatency(FLOW_OUTGOING));
+			auto extrapolated_record = LagCompensation->ExtrapolateRecord(last_record, extrapolation_ticks);
+
+			target_records.push(extrapolated_record ? extrapolated_record : last_record);
+		}
 	}
 }
 
@@ -761,8 +766,8 @@ void CRagebot::Run() {
 
 		float jump_max_hc = FastHitchance(target.best_point.record, min_jump_inaccuracy_tan);
 
-		if (target.best_point.damage > target.minimum_damage && ctx.cmd->command_number - last_target_shot < 256 && target.player == last_target) {
-			if (target.hitchance > hitchance) {
+		if (target.best_point.damage >= target.minimum_damage && ctx.cmd->command_number - last_target_shot < 256 && target.player == last_target) {
+			if (target.hitchance >= hitchance) {
 				best_target = target;
 				should_autostop = true;
 				break;
@@ -772,7 +777,7 @@ void CRagebot::Run() {
 			}
 		}
 
-		if (target.hitchance > hitchance && target.best_point.damage > max(best_target.best_point.damage, target.minimum_damage))
+		if (target.hitchance >= hitchance && target.best_point.damage > max(best_target.best_point.damage, target.minimum_damage))
 			best_target = target;
 
 		if (target.best_point.damage > target.minimum_damage) {
@@ -787,7 +792,8 @@ void CRagebot::Run() {
 			if (settings.auto_stop->get(0) && (local_on_ground || (settings.auto_stop->get(2) && jump_max_hc >= hitchance)) && target.best_point.damage > target.minimum_damage * 0.4f)
 				should_autostop = true;
 
-			Exploits->block_charge = true;
+			//Exploits->block_charge = true;
+			Exploits->block_charge = local_on_ground;
 		}
 	}
 

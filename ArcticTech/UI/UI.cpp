@@ -89,7 +89,7 @@ void CMenu::SetupUI() {
 	setup_weapon_config(config.ragebot.weapons.revolver);
 	setup_weapon_config(config.ragebot.weapons.pistol);
 
-	config.antiaim.angles.pitch = aa_angles->AddComboBox("Pitch", { "Disabled", "Down" });
+	config.antiaim.angles.pitch = aa_angles->AddComboBox("Pitch", { "Disabled", "Up", "Zero", "Down" });
 	config.antiaim.angles.yaw = aa_angles->AddComboBox("Yaw", { "Forward", "Backward", "At target" });
 	config.antiaim.angles.yaw_jitter = aa_angles->AddCheckBox("Yaw jitter");
 	config.antiaim.angles.modifier_value = aa_angles->AddSliderInt("Modifier value", -180, 180, 0);
@@ -141,9 +141,9 @@ void CMenu::SetupUI() {
 	config.visuals.esp.damage_marker_color = player_esp->AddColorPicker("Damage marker");
 
 	config.visuals.esp.anti_fatality->SetVisible(false);
-	config.visuals.esp.show_server_hitboxes->SetVisible(false);
-	config.visuals.esp.bounding_box->SetVisible(false);
-	config.visuals.esp.box_color->SetVisible(false);
+	config.visuals.esp.show_server_hitboxes->SetVisible(true);
+	config.visuals.esp.bounding_box->SetVisible(true);
+	config.visuals.esp.box_color->SetVisible(true);
 	config.visuals.esp.ammo->SetVisible(false);
 	config.visuals.esp.ammo_color->SetVisible(false);
 
@@ -251,6 +251,7 @@ void CMenu::SetupUI() {
 	config.misc.miscellaneous.gamesense_mode = misc->AddCheckBox("Gamesense mode");
 	config.misc.miscellaneous.ping_spike = misc->AddKeyBind("Ping spike");
 	config.misc.miscellaneous.ping_spike_amount = misc->AddSliderInt("Amount", 0, 200, 200, "%dms");
+	config.misc.miscellaneous.indicators = misc->AddMultiCombo("Indicators", { "Watermark","Hotkeys" });
 
 	config.misc.movement.auto_jump = movement->AddCheckBox("Auto jump");
 	config.misc.movement.auto_strafe = movement->AddCheckBox("Auto strafe");
@@ -649,4 +650,138 @@ void CMenu::SetupUI() {
 		config.visuals.effects.fov_zoom->SetVisible(config.visuals.effects.fov->get() != 90);
 		config.visuals.effects.fov_second_zoom->SetVisible(config.visuals.effects.fov->get() != 90);
 	});
+}
+
+
+void CMenu::BindsList() {
+
+	//note : yeah i initally just stole a keybind list from a lua but decided to make a custom one
+
+	if (!config.misc.miscellaneous.indicators->get(1)) 
+		return;
+
+	static Vector2 drag_pos = Vector2(400, 200);
+	static bool dragging = false;
+	static Vector2 drag_offset = Vector2(0, 0);
+	static float width = 220.0f; 
+
+	const std::vector<std::string> modes = { "hold", "toggle", "always" };
+
+	struct KeybindDraw {
+		std::string name;
+		std::string mode;
+		Color color;
+	};
+
+	std::vector<KeybindDraw> draw_list;
+	float max_name_width = 0.0f, max_mode_width = 0.0f;
+
+
+	for (const auto& widget : m_KeyBinds) {
+		if (!widget || widget->GetType() != WidgetType::KeyBind)
+			continue;
+
+		auto* keybind = static_cast<CKeyBind*>(widget);
+		if (keybind->key == 0 || keybind->name == "Force thirdperson" || keybind->mode == 2)
+			continue;
+
+		if (keybind->mode == 0 && !keybind->get())
+			continue;
+		if (keybind->mode == 1 && !keybind->toggled)
+			continue;
+		if (keybind->mode == 2)
+			continue;
+
+		std::string bind_name = keybind->name;
+		std::string bind_mode = "[" + modes[keybind->mode] + "]";
+
+		Vector2 name_size = Render->CalcTextSize(bind_name, Verdana);
+		Vector2 mode_size = Render->CalcTextSize(bind_mode, Verdana);
+
+		max_name_width = max(max_name_width, name_size.x);
+		max_mode_width = max(max_mode_width, mode_size.x);
+
+		draw_list.push_back({ bind_name, bind_mode, Color(255, 255, 255) });
+	}
+
+	if (draw_list.empty())
+		return;
+
+	float title_bar_height = 30.0f; 
+	float item_height = 20.0f;
+	float padding = 12.0f; 
+	float spacing = 4.0f;
+
+	float total_height = title_bar_height + (draw_list.size() * item_height) + (padding * 2);
+	width = max(width, max_name_width + max_mode_width + (padding * 2) + 20.0f);
+
+	Vector2 mouse = Render->GetMousePos();
+
+	Vector2 title_bar_min = drag_pos;
+	Vector2 title_bar_max = drag_pos + Vector2(width, title_bar_height);
+	bool hovered = Render->InBounds(title_bar_min, title_bar_max);
+
+	if (!(GetAsyncKeyState(VK_LBUTTON) & 0x8000))
+		dragging = false;
+
+	if (!dragging && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) && hovered) {
+		dragging = true;
+		drag_offset = mouse - drag_pos;
+	}
+
+	if (dragging) {
+		drag_pos = mouse - drag_offset;
+		drag_pos.x = std::clamp(drag_pos.x, 0.0f, Cheat.ScreenSize.x - width);
+		drag_pos.y = std::clamp(drag_pos.y, 0.0f, Cheat.ScreenSize.y - total_height);
+	}
+
+
+	Color accent_color = Color(105, 163, 255); 
+	Color bg_color = Color(36, 36, 36, 240); 
+	Color border_color = Color(60, 60, 60, 255); 
+	Color text_color = Color(255, 255, 255);
+	Color title_text_color = Color(255, 255, 255);
+
+
+	Render->BoxFilled(drag_pos, drag_pos + Vector2(width, total_height), bg_color, 4);
+
+	Render->Box(drag_pos, drag_pos + Vector2(width, total_height), border_color, 4, 2);
+
+	Vector2 title_bg_min = drag_pos;
+	Vector2 title_bg_max = drag_pos + Vector2(width, title_bar_height);
+	Render->BoxFilled(title_bg_min, title_bg_max, Color(45, 45, 45, 255), 4);
+
+	Vector2 accent_line_min = drag_pos + Vector2(0, title_bar_height - 2);
+	Vector2 accent_line_max = drag_pos + Vector2(width, title_bar_height);
+	Render->BoxFilled(accent_line_min, accent_line_max, accent_color, 0);
+
+	Vector2 title_text_size = Render->CalcTextSize("Hotkeys", VerdanaBold);
+	Vector2 title_pos = drag_pos + Vector2(
+		(width - title_text_size.x) * 0.5f,
+		(title_bar_height - title_text_size.y) * 0.5f
+	);
+	Render->Text("Hotkeys", title_pos, title_text_color, VerdanaBold);
+
+
+	float y = drag_pos.y + title_bar_height + padding;
+
+	for (const auto& k : draw_list) {
+		Vector2 name_pos = Vector2(drag_pos.x + padding, y);
+		Vector2 mode_pos = Vector2(drag_pos.x + width - padding - Render->CalcTextSize(k.mode, Verdana).x, y);
+
+		Render->Text(k.name, name_pos, k.color, Verdana);
+		Render->Text(k.mode, mode_pos, Color(180, 180, 180), Verdana); // slightly dimmer for mode text
+
+		// line between items 
+		if (&k != &draw_list.back()) {
+			Vector2 line_start = Vector2(drag_pos.x + padding, y + item_height - 1);
+			Vector2 line_end = Vector2(drag_pos.x + width - padding, y + item_height - 1);
+			Render->Line(line_start, line_end, Color(60, 60, 60, 100));
+		}
+
+		y += item_height;
+	}
+
+	// edit (shadow effect looks ugly so no)
+	//Render->Box(drag_pos + Vector2(2, 2), drag_pos + Vector2(width + 2, total_height + 2), Color(0, 0, 0, 80), 4, 1);
 }

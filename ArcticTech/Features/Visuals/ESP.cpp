@@ -542,7 +542,10 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 		CBasePlayer* owner = reinterpret_cast<CBasePlayer*>(EntityList->GetClientEntityFromHandle(grenade->m_hOwnerEntity()));
 		CBasePlayer* local = EntityList->GetLocalOrSpec();
 
-		if (owner == nullptr || owner != local && owner->m_iTeamNum() == local->m_iTeamNum() && (!cvars.mp_friendlyfire->GetInt() || cvars.ff_damage_reduction_grenade->GetFloat() == 0.f))
+		if (!owner || !local)
+			return;
+
+		if (owner != local && owner->m_iTeamNum() == local->m_iTeamNum() && (!cvars.mp_friendlyfire->GetInt() || cvars.ff_damage_reduction_grenade->GetFloat() == 0.f))
 			return;
 
 		Vector2 pos = Render->WorldToScreen(grenade->GetAbsOrigin());
@@ -570,12 +573,24 @@ void CWorldESP::DrawGrenade(CBaseGrenade* grenade, ClientClass* cl_class) {
 			alpha *= (end_time - GlobalVars->curtime) * 4.f;
 		else if (GlobalVars->curtime - grenade->m_flInfernoSpawnTime() < 0.1667f)
 			alpha *= (GlobalVars->curtime - grenade->m_flInfernoSpawnTime()) * 6.f;
+		
+		//yea i pasted from drip 
 
-		Render->CircleFilled(pos, circle_radius, Color(16, 16, 16, 190 * alpha));
+		Render->CircleFilled(pos, circle_radius, Color(0, 0, 0, 150 * alpha));
 		Render->GlowCircle2(pos, circle_radius - 2, Color(40, 40, 40, 230 * alpha), Color(20, 20, 20, 230 * alpha));
 		Render->GlowCircle(pos, circle_radius - 4, Color(255, 50, 50, std::clamp((380 - distance) / 200.f, 0.f, 1.f) * 215 * alpha));
 
 		Render->Image(Resources::Inferno, pos - Vector2(15, 15), Color(255, 255, 255, 230 * alpha));
+
+		constexpr auto fire_time = 7.03125f;
+
+		auto fire_timer = ((grenade->m_flInfernoSpawnTime() + fire_time) - GlobalVars->curtime) / fire_time;
+
+		constexpr float startAngle = 270.f;
+		float endAngle = startAngle + (360.f * fire_timer);
+		float outerCircleRadius = circle_radius - 1.f;
+		constexpr float thickness = 10.0f;
+		Render->DrawArcSegment(pos, circle_radius + 1.f, startAngle, endAngle, Color(255, 255, 255, 230 * alpha), 50, thickness);
 
 		return;
 	}

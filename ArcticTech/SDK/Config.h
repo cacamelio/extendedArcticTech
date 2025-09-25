@@ -260,6 +260,7 @@ struct config_t {
             CCheckBox* gamesense_mode;
             CKeyBind* ping_spike;
             CSliderInt* ping_spike_amount;
+            CMultiCombo* indicators;
         } miscellaneous;
 
         struct movement_t {
@@ -273,6 +274,7 @@ struct config_t {
             CCheckBox* infinity_duck;
             CCheckBox* quick_stop;
         } movement;
+
     } misc;
 
     struct skinchanger_t {

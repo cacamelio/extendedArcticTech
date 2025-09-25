@@ -299,6 +299,7 @@ void CConfig::Init() {
     add(config.misc.miscellaneous.gamesense_mode);
     add(config.misc.miscellaneous.ping_spike);
     add(config.misc.miscellaneous.ping_spike_amount);
+    add(config.misc.miscellaneous.indicators);
     add(config.misc.movement.auto_jump);
     add(config.misc.movement.auto_strafe);
     add(config.misc.movement.auto_strafe_smooth);

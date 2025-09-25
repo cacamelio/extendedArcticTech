@@ -6,6 +6,8 @@
 #include "../Lua/Bridge/Bridge.h"
 #include "../Misc/Prediction.h"
 
+
+
 void CAnimationSystem::CorrectLocalMatrix(matrix3x4_t* mat, int size) {
 	Utils::MatrixMove(mat, size, sent_abs_origin, Cheat.LocalPlayer->GetAbsOrigin());
 }
@@ -186,6 +188,15 @@ void CAnimationSystem::UpdateAnimations(CBasePlayer* player, LagRecord* record, 
 
     if (config.ragebot.aimbot.pitch_resolver->get() && (std::abs(eye_angles.pitch) > 90 || eye_angles.pitch < -88.f))
         eye_angles.pitch = 89.f;
+
+	/*if (config.ragebot.aimbot.pitch_resolver->get() && (std::abs(eye_angles.pitch) > 90 || std::abs(eye_angles.pitch) < -90.0)) {
+			if (eye_angles.pitch < -179.f) eye_angles.pitch += 360.f;
+			else if (eye_angles.pitch > 90.0 || eye_angles.pitch < -90.0) eye_angles.pitch = 89.f;
+			else if (eye_angles.pitch > 89.0 && eye_angles.pitch < 91.0) eye_angles.pitch -= 90.f;
+			else if (eye_angles.pitch > 179.0 && eye_angles.pitch < 181.0) eye_angles.pitch -= 180;
+			else if (eye_angles.pitch > -179.0 && eye_angles.pitch < -181.0) eye_angles.pitch += 180;
+			else if (fabs(eye_angles.pitch) == 0) eye_angles.pitch = copysign(89.0f, eye_angles.pitch);
+	}*/
 
 	auto backupRealtime = GlobalVars->realtime;
 	auto backupCurtime = GlobalVars->curtime;

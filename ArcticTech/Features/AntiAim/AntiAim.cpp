@@ -100,6 +100,12 @@ void CAntiAim::Angles() {
 		case 0:
 			break;
 		case 1:
+			pitch = -89;
+			break;
+		case 2:
+			pitch = 0;
+			break;
+		case 3:
 			pitch = 89;
 			break;
 		}

@@ -65,7 +65,7 @@ class CKeyBind : public IBaseWidget {
 	bool pressed_once = false;
 public:
 	int key = 0;
-	int mode = 2;
+	int mode = 1;
 	bool toggled = false;
 
 	bool get();
@@ -283,6 +283,8 @@ public:
 	void			Setup();
 	void			SetupUI();
 	void			Release();
+	void            BindsList();
+	void            Watermark();
 	void			Draw();
 	bool			WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
