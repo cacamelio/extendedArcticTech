@@ -45,6 +45,10 @@ void CAntiAim::FakeLag() {
 		}
 	}
 
+	else if (config.antiaim.angles.body_yaw->get()) {  //fake lag is required for body yaw
+		fakelag = 1;
+	}
+
 	if (Cheat.LocalPlayer->m_vecOrigin() - ctx.local_sent_origin > 64.f)
 		fakelag = 1;
 
@@ -382,6 +386,7 @@ bool CAntiAim::IsPeeking() {
 
 	Vector scan_points[] = {
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_HEAD),
+		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_STOMACH),
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_PELVIS),
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_LEFT_FOOT),
 		Cheat.LocalPlayer->GetHitboxCenter(HITBOX_RIGHT_FOOT)
@@ -408,7 +413,7 @@ bool CAntiAim::IsPeeking() {
 		if (ctx.active_weapon)
 			ctx.weapon_info = ctx.active_weapon->GetWeaponInfo();
 
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 5; i++) {
 			FireBulletData_t data;
 			if (AutoWall->FireBullet(player, enemyShootPos, scan_points[i], data, Cheat.LocalPlayer) && data.damage > 1.f) {
 				info.m_bHit = true;
@@ -428,6 +433,7 @@ bool CAntiAim::IsPeeking() {
 	//DebugOverlay->AddBoxOverlay(scan_points[1], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
 	//DebugOverlay->AddBoxOverlay(scan_points[2], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
 	//DebugOverlay->AddBoxOverlay(scan_points[3], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
+	//DebugOverlay->AddBoxOverlay(scan_points[4], Vector(-1, -1, -1), Vector(1, 1, 1), QAngle(), r, g, 0, 255, GlobalVars->interval_per_tick * 2);
 
 
 	ctx.active_weapon = backup_active_weapon;
