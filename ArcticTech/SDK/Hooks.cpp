@@ -547,6 +547,8 @@ void __fastcall hkFrameStageNotify(IBaseClientDLL* thisptr, void* edx, EClientFr
 		cvars.cl_foot_contact_shadows->SetInt(0);
 		cvars.r_drawsprites->SetInt(!config.visuals.effects.removals->get(6));
 
+		CVar->FindVar("cl_use_new_headbob")->SetInt(!config.visuals.effects.css_viewmodel->get());
+
 		if (Cheat.LocalPlayer && config.visuals.effects.removals->get(4))
 			Cheat.LocalPlayer->m_flFlashDuration() = 0.f;
 
@@ -1018,9 +1020,20 @@ void __fastcall hkCalcViewModel(CBaseViewModel* vm, void* edx, CBasePlayer* play
 	oCalcViewModel(vm, edx, player, eyePosition, eyeAngles);
 }
 
+//credits : uwukson
+
 void __fastcall hkResetLatched(CBasePlayer* thisptr, void* edx) {
-	if ((!Cheat.LocalPlayer || thisptr != Cheat.LocalPlayer || EnginePrediction->HasPredictionErrors()) && thisptr)
-		return oResetLatched(thisptr, edx);
+	if (!thisptr || !Cheat.LocalPlayer)
+		goto ORIGINAL;
+
+	if (EnginePrediction->HasPredictionErrors())
+		goto ORIGINAL;
+
+	if (Cheat.LocalPlayer == thisptr)
+		return;
+
+ORIGINAL:
+	return oResetLatched(thisptr, edx);
 }
 
 void __fastcall hkGetExposureRange(float* min, float* max) {

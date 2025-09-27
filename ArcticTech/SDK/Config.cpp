@@ -288,6 +288,8 @@ void CConfig::Init() {
     add(config.visuals.effects.sun_distance);
     add(config.visuals.effects.scope_blend);
     add(config.visuals.effects.viewmodel_scope_alpha);
+    //uwukson
+    add(config.visuals.effects.css_viewmodel);
     add(config.misc.miscellaneous.anti_untrusted);
     add(config.misc.miscellaneous.ping_reducer);
     add(config.misc.miscellaneous.automatic_grenade_release);

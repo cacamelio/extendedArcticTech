@@ -33,27 +33,27 @@ void Miscellaneous::Clantag()
 			case 0: tag = (""); break;
 			case 1: tag = ("a"); break;
 			case 2: tag = ("ar"); break;
-			case 3: tag = ("arc");break;
-			case 4: tag = ("arct");break;
-			case 5: tag = ("arcti");break;
-			case 6: tag = ("arctic");break;
-			case 7: tag = ("arctict");break;
-			case 8: tag = ("arcticte");break;
-			case 9: tag = ("arctictec");break;
-			case 10: tag = ("arctictech");break;
-			case 11: tag = ("arctictech");break;
-			case 12: tag = ("arctictech");break;
-			case 13: tag = ("arctictech");break;
-			case 14: tag = ("arctictec");break;
-			case 15: tag = ("arcticte");break;
-			case 16: tag = ("arctict");break;
-			case 17: tag = ("arctic");break;
-			case 18: tag = ("arcti");break;
-			case 19: tag = ("arct");break;
-			case 20: tag = ("arc");break;
-			case 21: tag = ("ar");break;
-			case 22: tag = ("a");break;
-			case 23: tag = ("");break;
+			case 3: tag = ("arc"); break;
+			case 4: tag = ("arct"); break;
+			case 5: tag = ("arcti"); break;
+			case 6: tag = ("arctic"); break;
+			case 7: tag = ("arctict"); break;
+			case 8: tag = ("arcticte"); break;
+			case 9: tag = ("arctictec"); break;
+			case 10: tag = ("arctictech"); break;
+			case 11: tag = ("arctictech"); break;
+			case 12: tag = ("arctictech"); break;
+			case 13: tag = ("arctictech"); break;
+			case 14: tag = ("arctictec"); break;
+			case 15: tag = ("arcticte"); break;
+			case 16: tag = ("arctict"); break;
+			case 17: tag = ("arctic"); break;
+			case 18: tag = ("arcti"); break;
+			case 19: tag = ("arct"); break;
+			case 20: tag = ("arc"); break;
+			case 21: tag = ("ar"); break;
+			case 22: tag = ("a"); break;
+			case 23: tag = (""); break;
 			}
 
 			Utils::SetClantag(tag);
@@ -65,9 +65,6 @@ void Miscellaneous::Clantag()
 }
 
 void Miscellaneous::FastThrow() {
-
-	//yea its pasted from drip
-
 	static bool fast_throw_triggred = false;
 	static int nLastButtons = 0;
 
@@ -89,12 +86,12 @@ void Miscellaneous::FastThrow() {
 	}
 
 	if (ctx.tickbase_shift > 0) {
-		
-		float arm_time = max(Cheat.LocalPlayer->m_flNextAttack(), grenade->m_flNextPrimaryAttack());
-		float current_time = TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase());
-		int ticks_to_throw = TIME_TO_TICKS(arm_time - current_time);
+		Exploits->LC_OverrideTickbase(ctx.tickbase_shift);
 
-		Exploits->LC_OverrideTickbase(ticks_to_throw);
+		float arm_time = max(Cheat.LocalPlayer->m_flNextAttack(), grenade->m_flNextPrimaryAttack());
+
+		if (TICKS_TO_TIME(Cheat.LocalPlayer->m_nTickBase()) + TICKS_TO_TIME(ctx.tickbase_shift - 7) > arm_time)
+			Exploits->LC_OverrideTickbase(7);
 
 		if (grenade->m_flThrowTime() > 0.f)
 			fast_throw_triggred = true;

@@ -244,6 +244,8 @@ struct config_t {
             CSliderInt* sun_distance;
             CSliderInt* scope_blend;
             CSliderInt* viewmodel_scope_alpha;
+            //uwukson
+            CCheckBox* css_viewmodel;
         } effects;
     } visuals;
 

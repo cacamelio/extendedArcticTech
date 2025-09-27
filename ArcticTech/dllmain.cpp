@@ -145,6 +145,9 @@ void Initialize(HMODULE hModule) {
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 {
     if (dwReason == DLL_PROCESS_ATTACH)
+    {
+        DisableThreadLibraryCalls(hModule);
         CreateThread(0, 0, (LPTHREAD_START_ROUTINE)Initialize, hModule, 0, 0);
+    }
     return TRUE;
 }
