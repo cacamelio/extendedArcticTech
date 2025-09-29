@@ -787,3 +787,74 @@ void CMenu::BindsList() {
 	// edit (shadow effect looks ugly so no)
 	//Render->Box(drag_pos + Vector2(2, 2), drag_pos + Vector2(width + 2, total_height + 2), Color(0, 0, 0, 80), 4, 1);
 }
+
+void CMenu::Watermark() {
+	if (!config.misc.miscellaneous.indicators->get(0))
+		return;
+
+	static Vector2 drag_pos = Vector2(Cheat.ScreenSize.x - 250.0f, 10.0f);
+	static bool dragging = false;
+	static Vector2 drag_offset = Vector2(0, 0);
+
+	auto now = std::chrono::system_clock::now();
+	auto time_t = std::chrono::system_clock::to_time_t(now);
+	std::tm tm;
+	localtime_s(&tm, &time_t);
+
+	char time_buf[9];
+	strftime(time_buf, sizeof(time_buf), "%H:%M", &tm);
+
+	bool connected = Cheat.InGame && EngineClient->IsConnected();
+
+	std::string ping_text;
+	if (connected) {
+		if (auto net_channel = EngineClient->GetNetChannelInfo()) {
+			int ping = static_cast<int>(net_channel->GetAvgLatency(FLOW_OUTGOING) * 1000.0f);
+			ping_text = std::to_string(ping) + "ms";
+		}
+	}
+
+	std::string watermark_text = "arctictech | " + (connected ? (ping_text + " | ") : "") + time_buf;
+	Vector2 text_size = Render->CalcTextSize(watermark_text, VerdanaBold);
+	float padding = 12.0f;
+	float width = text_size.x + padding * 2;
+	float height = 30.0f;
+
+	Vector2 mouse = Render->GetMousePos();
+	Vector2 title_bar_min = drag_pos;
+	Vector2 title_bar_max = drag_pos + Vector2(width, height);
+	bool hovered = Render->InBounds(title_bar_min, title_bar_max);
+
+	if (!(GetAsyncKeyState(VK_LBUTTON) & 0x8000))
+		dragging = false;
+
+	if (!dragging && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) && hovered) {
+		dragging = true;
+		drag_offset = mouse - drag_pos;
+	}
+
+	if (dragging) {
+		drag_pos = mouse - drag_offset;
+		drag_pos.x = std::clamp(drag_pos.x, 0.0f, Cheat.ScreenSize.x - width);
+		drag_pos.y = std::clamp(drag_pos.y, 0.0f, Cheat.ScreenSize.y - height);
+	}
+
+	Color accent_color = Color(105, 163, 255);
+	Color bg_color = Color(36, 36, 36, 240);
+	Color border_color = Color(60, 60, 60, 255);
+	Color text_color = Color(255, 255, 255);
+
+	Render->BoxFilled(drag_pos, drag_pos + Vector2(width, height), bg_color, 4);
+	Render->Box(drag_pos, drag_pos + Vector2(width, height), border_color, 4, 2);
+
+	Vector2 accent_line_min = drag_pos + Vector2(0, height - 2);
+	Vector2 accent_line_max = drag_pos + Vector2(width, height);
+	Render->BoxFilled(accent_line_min, accent_line_max, accent_color, 0);
+
+	Vector2 text_pos = drag_pos + Vector2(
+		(width - text_size.x) * 0.5f,
+		(height - text_size.y) * 0.5f
+	);
+
+	Render->Text(watermark_text, text_pos, text_color, VerdanaBold);
+}

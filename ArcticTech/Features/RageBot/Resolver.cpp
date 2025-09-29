@@ -254,7 +254,9 @@ void CResolver::Run(CBasePlayer* player, LagRecord* record, std::deque<LagRecord
 			float prevEyeYaw = FindAvgYaw(records);
 			float delta = Math::AngleDiff(eyeYaw, prevEyeYaw);
 
-			if (delta < 0.f)
+			if (delta == 0.f)
+				record->resolver_data.side = 0;
+			else if (delta < 0.f)
 				record->resolver_data.side = 1;
 			else
 				record->resolver_data.side = -1;

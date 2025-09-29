@@ -319,4 +319,81 @@ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vec
 	return false;
 }
 
+/*
+ bool CAutoWall::FireBullet(CBasePlayer* attacker, const Vector& start, const Vector& end, FireBulletData_t& data, CBasePlayer* target) {
+	static ConVar* mp_friendlyfire = CVar->FindVar("mp_friendlyfire");
+
+	Vector eyePosition = start;
+	Vector direction = (end - start).Normalized();
+
+	if (!ctx.weapon_info)
+		return false;
+
+	CTraceFilter filter;
+	filter.pSkip = attacker;
+
+	float currentDistance = 0.f;
+	const float maxWeaponRange = ctx.weapon_info->flRange;
+	float remainingRange = maxWeaponRange;
+	const float targetRange = (end - start).Length(); // real linear distance
+
+	int possibleHitsRemaining = 4;
+	data.damage = (float)ctx.weapon_info->iDamage;
+	Ray_t ray;
+
+	bool friendlyFire = mp_friendlyfire ? mp_friendlyfire->GetInt() != 0 : false;
+
+	const int MAX_IMPACTS = ARRAYSIZE(data.impacts); 
+
+	while (possibleHitsRemaining > 0 && data.damage >= 1.f && remainingRange > 0.0f) {
+		Vector rayEnd = eyePosition + direction * remainingRange;
+
+		ray.Init(eyePosition, rayEnd);
+		EngineTrace->TraceRay(ray, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &data.enterTrace);
+
+		ClipTraceToPlayers(eyePosition, rayEnd + direction * 40.f, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &data.enterTrace, target);
+
+		if (data.num_impacts < MAX_IMPACTS)
+			data.impacts[data.num_impacts++] = data.enterTrace.endpos;
+
+		if (data.enterTrace.fraction == 1.0f)
+			return (target == nullptr); // if targeting a specific player, missing them means false; otherwise true (bullet went out)
+
+		surfacedata_t* enterSurfaceData = PhysicSurfaceProps->GetSurfaceData(data.enterTrace.surface.surfaceProps);
+		if (!enterSurfaceData)
+			break;
+
+		float traveled = data.enterTrace.fraction * remainingRange;
+		currentDistance += traveled;
+
+		data.damage *= std::powf(ctx.weapon_info->flRangeModifier, (currentDistance * 0.002f));
+
+		if (target == nullptr && currentDistance > targetRange)
+			return true;
+
+		if (currentDistance > 3000.f || enterSurfaceData->game.flPenetrationModifier < 0.1f)
+			break;
+
+		CBasePlayer* hit_player = reinterpret_cast<CBasePlayer*>(data.enterTrace.hit_entity);
+
+		if (hit_player && hit_player->m_iTeamNum() == attacker->m_iTeamNum() && !friendlyFire)
+			return false;
+
+		if (data.enterTrace.hit_entity && data.enterTrace.hit_entity->IsPlayer() && (!target || target == data.enterTrace.hit_entity))
+		{
+			if (hit_player)
+				hit_player->ScaleDamage(data.enterTrace.hitgroup, ctx.weapon_info, data.damage);
+			return true;
+		}
+
+		if (!HandleBulletPenetration(attacker, ctx.weapon_info, data.enterTrace, enterSurfaceData, eyePosition, direction, possibleHitsRemaining, data.damage))
+			break;
+
+		remainingRange = maxWeaponRange - currentDistance;
+	}
+
+	return false;
+}
+*/
+
 CAutoWall* AutoWall = new CAutoWall;

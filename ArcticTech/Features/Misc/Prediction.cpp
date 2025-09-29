@@ -22,13 +22,15 @@ void CPrediction::RunPreThink(CBasePlayer* player) {
 }
 
 void CPrediction::RunThink(CBasePlayer* player) {
-	static auto SetNextThink = reinterpret_cast<void(__thiscall*)(int)>(Utils::PatternScan("client.dll", "55 8B EC 56 57 8B F9 8B B7 ? ? ? ? 8B C6"));
+	//static auto SetNextThink = reinterpret_cast<void(__thiscall*)(int)>(Utils::PatternScan("client.dll", "55 8B EC 56 57 8B F9 8B B7 ? ? ? ? 8B C6"));
+	static auto SetNextThink = reinterpret_cast<void(__thiscall*)(CBasePlayer*, int)>(Utils::PatternScan("client.dll", "55 8B EC 56 57 8B F9 8B B7 ? ? ? ? 8B C6"));
 	int thinktick = player->m_nNextThinkTick();
 
 	if (thinktick <= 0 || thinktick > player->m_nTickBase())
 		return;
 
-	SetNextThink(0);
+	//SetNextThink(0);
+	SetNextThink(player, 0);
 
 	player->Think();
 }
@@ -219,6 +221,7 @@ void CPrediction::StoreNetvars(int place) {
 	nv.m_flDuckSpeed = local->m_flDuckSpeed();
 	nv.m_flVelocityModifier = local->m_flVelocityModifier();
 	nv.m_flThirdpersonRecoil = local->m_flThirdpersonRecoil();
+	nv.m_vecNetworkOrigin = local->m_vecNetworkOrigin();
 	nv.filled = true;
 }
 
@@ -232,30 +235,30 @@ void CPrediction::RestoreNetvars(int place) {
 	if (!nv.filled || nv.command_number != place)
 		return;
 
-	auto aim_punch_vel_diff = nv.m_aimPunchAngleVel - Cheat.LocalPlayer->m_aimPunchAngleVel();
-	auto aim_punch_diff = nv.m_aimPunchAngle - Cheat.LocalPlayer->m_aimPunchAngle();
-	auto viewoffset_diff = nv.m_vecViewOffset - Cheat.LocalPlayer->m_vecViewOffset();
-	auto velocity_diff = nv.m_vecVelocity - Cheat.LocalPlayer->m_vecVelocity();
-	auto fall_vel_diff = nv.m_flFallVelocity - Cheat.LocalPlayer->m_flFallVelocity();
-	auto net_origin_diff = nv.m_vecNetworkOrigin - Cheat.LocalPlayer->m_vecNetworkOrigin();
+	auto aim_punch_vel_diff = nv.m_aimPunchAngleVel - local->m_aimPunchAngleVel();
+	auto aim_punch_diff = nv.m_aimPunchAngle - local->m_aimPunchAngle();
+	auto viewoffset_diff = nv.m_vecViewOffset - local->m_vecViewOffset();
+	auto velocity_diff = nv.m_vecVelocity - local->m_vecVelocity();
+	auto fall_vel_diff = nv.m_flFallVelocity - local->m_flFallVelocity();
+	auto net_origin_diff = nv.m_vecNetworkOrigin - local->m_vecNetworkOrigin();
 
-	if (std::abs(aim_punch_diff.pitch) <= 0.03125f && std::abs(aim_punch_diff.yaw) <= 0.03125 && std::abs(aim_punch_diff.roll) <= 0.03125f)
-		Cheat.LocalPlayer->m_aimPunchAngle() = nv.m_aimPunchAngle;
+	if (std::abs(aim_punch_diff.pitch) <= 0.03125f && std::abs(aim_punch_diff.yaw) <= 0.03125f && std::abs(aim_punch_diff.roll) <= 0.03125f)
+		local->m_aimPunchAngle() = nv.m_aimPunchAngle;
 	else
 		has_prediction_errors = true;
 
-	if (std::abs(aim_punch_vel_diff.pitch) <= 0.03125f && std::abs(aim_punch_vel_diff.yaw) <= 0.03125 && std::abs(aim_punch_vel_diff.roll) <= 0.03125f)
-		Cheat.LocalPlayer->m_aimPunchAngleVel() = nv.m_aimPunchAngleVel;
+	if (std::abs(aim_punch_vel_diff.pitch) <= 0.03125f && std::abs(aim_punch_vel_diff.yaw) <= 0.03125f && std::abs(aim_punch_vel_diff.roll) <= 0.03125f)
+		local->m_aimPunchAngleVel() = nv.m_aimPunchAngleVel;
 	else
 		has_prediction_errors = true;
 
 	if (std::abs(viewoffset_diff.z) <= 0.065f)
-		Cheat.LocalPlayer->m_vecViewOffset() = nv.m_vecViewOffset;
+		local->m_vecViewOffset() = nv.m_vecViewOffset;
 	else
 		has_prediction_errors = true;
 
 	if (std::abs(fall_vel_diff) <= 0.5f)
-		Cheat.LocalPlayer->m_flFallVelocity() = nv.m_flFallVelocity;
+		local->m_flFallVelocity() = nv.m_flFallVelocity;
 	else
 		has_prediction_errors = true;
 
@@ -296,7 +299,7 @@ void CPrediction::RunCommand(CUserCmd* cmd) {
 	int fire_cmd = 0;
 
 	while (iter_cmd > lowest_cmd) {
-		auto cmd_data = local_data[iter_cmd % 150];
+		auto cmd_data = local_data[iter_cmd % MULTIPLAYER_BACKUP];
 		fire_cmd = iter_cmd;
 
 		if (!(cmd_data.m_nButtons & IN_ATTACK))
@@ -310,7 +313,8 @@ void CPrediction::RunCommand(CUserCmd* cmd) {
 	}
 
 	if (fire_cmd != 0 && cmd->command_number - fire_cmd >= 3)
-		weapon->m_flPostponeFireReadyTime() = TICKS_TO_TIME(local_data[(fire_cmd + 3) % 150].m_nTickBase) + 0.2f;
+		weapon->m_flPostponeFireReadyTime() = TICKS_TO_TIME(local_data[(fire_cmd + 3) % MULTIPLAYER_BACKUP].m_nTickBase) + 0.2f;
+
 }
 
 void CPrediction::NetUpdate() {

@@ -52,6 +52,13 @@ class CBasePlayer;
 
 typedef unsigned int CBaseHandle;
 
+//credit uwukson
+
+struct IInterpolatedVar {
+	uint8_t pad[0x24];
+	float m_InterpolationAmount;
+};
+
 class VarMapEntry_t
 {
 public:
@@ -59,7 +66,7 @@ public:
 	unsigned short		m_bNeedsToInterpolate;	// Set to false when this var doesn't
 	// need Interpolate() called on it anymore.
 	void* data;
-	void* watcher;
+	IInterpolatedVar* watcher;
 };
 
 struct VarMapping_t
