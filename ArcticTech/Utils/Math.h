@@ -45,6 +45,7 @@ namespace Math {
 	float			AngleNormalizePositive(float angle);
 	float			AngleDiff(float next, float cur);
 	float			AngleToPositive(float angle);
+	float           Interpolate(float current, float target, float speed);
 	void			AngleVectors(const QAngle& angles, Vector& forward, Vector& right, Vector& up);
 	void			AngleVectors(const QAngle& angles, Vector& forward);
 	Vector			AngleVectors(const QAngle& angles);

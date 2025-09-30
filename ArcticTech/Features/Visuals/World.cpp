@@ -169,28 +169,44 @@ void CWorld::ProcessCamera(CViewSetup* setup) {
 	setup->fov = player_fov;
 	m_flFOVOverriden = player_fov;
 
+	static float current_fraction = 0.0f;
+
 	if (config.visuals.effects.thirdperson->get() && Cheat.LocalPlayer->IsAlive()) {
-		Input->m_fCameraInThirdPerson = true;
-		QAngle angles; EngineClient->GetViewAngles(angles);
-		QAngle backAngle = QAngle(angles.yaw - 180, -angles.pitch, 0);
-		backAngle.Normalize();
+		if (!Input->m_fCameraInThirdPerson) {
+			current_fraction = 0.0f;
+			Input->m_fCameraInThirdPerson = true;
+		}
+
+		QAngle angles;
+		EngineClient->GetViewAngles(angles);
+
 		Vector cameraDirection = Math::AngleVectors(angles);
-		if (cameraDirection.z == 0.f) // fuck valve shitcode
+		if (cameraDirection.z == 0.f) // fuck volvo shitcode
 			cameraDirection.z = 0.01f;
+
+		float desired_distance = config.visuals.effects.thirdperson_distance->get();
 
 		CGameTrace trace;
 		CTraceFilterWorldOnly filter;
 		Ray_t ray;
 		Vector eyePos = (ctx.fake_duck ? Vector(0, 0, 64) : Cheat.LocalPlayer->m_vecViewOffset()) + Cheat.LocalPlayer->GetAbsOrigin();
-		ray.Init(eyePos, eyePos - cameraDirection * config.visuals.effects.thirdperson_distance->get(), Vector(-16, -16, -16), Vector(16, 16, 16));
+		ray.Init(eyePos, eyePos - cameraDirection * desired_distance, Vector(-16, -16, -16), Vector(16, 16, 16));
 
 		EngineTrace->TraceRay(ray, CONTENTS_SOLID, &filter, &trace);
 
-		float distance = trace.fraction * config.visuals.effects.thirdperson_distance->get();
+		if (current_fraction > trace.fraction)
+			current_fraction = trace.fraction;
+		else if (current_fraction > 0.9999f)
+			current_fraction = 1.0f;
 
+		current_fraction = Math::Interpolate(current_fraction, trace.fraction, GlobalVars->interval_per_tick * 10.0f);
+
+
+		Input->m_fCameraInThirdPerson = current_fraction > 0.05f;
+
+		float distance = desired_distance * current_fraction;
 		Input->m_vecCameraOffset = Vector(angles.pitch, angles.yaw, distance);
 	}
-
 	else {
 		Input->m_fCameraInThirdPerson = false;
 
@@ -198,18 +214,31 @@ void CWorld::ProcessCamera(CViewSetup* setup) {
 		{
 			Cheat.LocalPlayer->m_iObserverMode() = 5;
 		}
-
 	}
 
-	if (Cheat.LocalPlayer && (!Cheat.LocalPlayer->IsAlive() || Cheat.LocalPlayer->m_iTeamNum() == 1) && Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_CHASE) { // disable spectators interpolation
+	if (Cheat.LocalPlayer && (!Cheat.LocalPlayer->IsAlive() || Cheat.LocalPlayer->m_iTeamNum() == 1) && Cheat.LocalPlayer->m_iObserverMode() == OBS_MODE_CHASE) {// disable spectators interpolation
+		static float observer_current_fraction = 0.0f;
+
 		CBasePlayer* observer = (CBasePlayer*)EntityList->GetClientEntityFromHandle(Cheat.LocalPlayer->m_hObserverTarget());
 
 		if (observer) {
 			Vector dir = Math::AngleVectors(setup->angles);
 			Vector origin = AnimationSystem->GetInterpolated(observer) + Vector(0, 0, 64 - observer->m_flDuckAmount() * 28);
-			CGameTrace trace = EngineTrace->TraceHull(origin, 
-				origin - dir * config.visuals.effects.thirdperson_distance->get(), Vector(-20, -20, -20), Vector(20, 20, 20), CONTENTS_SOLID, observer);
-			setup->origin = trace.endpos;
+
+			float desired_distance = config.visuals.effects.thirdperson_distance->get();
+
+			CGameTrace trace = EngineTrace->TraceHull(origin,
+				origin - dir * desired_distance, Vector(-20, -20, -20), Vector(20, 20, 20), CONTENTS_SOLID, observer);
+
+			if (observer_current_fraction > trace.fraction)
+				observer_current_fraction = trace.fraction;
+			else if (observer_current_fraction > 0.9999f)
+				observer_current_fraction = 1.0f;
+
+			observer_current_fraction = Math::Interpolate(observer_current_fraction, trace.fraction, GlobalVars->interval_per_tick * 10.0f);
+
+			float distance = desired_distance * observer_current_fraction;
+			setup->origin = origin - dir * distance;
 		}
 	}
 }

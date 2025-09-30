@@ -96,6 +96,19 @@ float Math::AngleToPositive(float angle) {
 	return angle > 0.f ? angle : 360.f + angle;
 }
 
+float Math::Interpolate(float current, float target, float speed) {
+	if (speed <= 0.0f)
+		return target;
+
+	float delta = target - current;
+
+	// if we very close, just snap to target lmao
+	if (std::abs(delta) < 0.001f)
+		return target;
+
+	return current + delta * std::clamp(speed, 0.0f, 1.0f);
+}
+
 void Math::AngleVectors(const QAngle& angles, Vector& forward, Vector& right, Vector& up) {
 	float sr, sp, sy, cr, cp, cy;
 
